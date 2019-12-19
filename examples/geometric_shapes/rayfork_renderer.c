@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 // We undef these since they are defined in glad.h and windows.h redefines them and we get warnings
+#ifdef _WIN32
 #undef APIENTRY
 #undef ARRAYSIZE
 
@@ -30,6 +31,13 @@ double rf_get_time(void)
     assert(QueryPerformanceCounter(&qpc_result) != FALSE);
     return (double)qpc_result.QuadPart / global_performance_counter_frequency.QuadPart;
 }
+#elif
+double rf_get_time(void)
+{
+    //To implement on linux
+    return 0;
+}
+#endif
 
 void rf_wait(float ms)
 {
