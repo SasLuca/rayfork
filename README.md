@@ -64,6 +64,11 @@ and how it gets loaded heavily depends on your platform layer. There can also be
 - The user must provide the implementation for a couple of simple functions that rely on hosted functionality (eg: IO functions, time query functions, logging)
 - Most text handling functions were removed.
 - More functions now ask for the size of buffers.
+- Library was tested and works on Windows, Android and iOS.
+
+## Rayfork example running on iOS and Windows:
+![](https://i.gyazo.com/26acc43576d3156852c25bf4c57ca1cf.png)
+![](https://i.gyazo.com/thumb/1000/95dd519e8c6d6733acdb70f746a169fc-png.jpg)
 
 We plan to also fork and apply a similar set of changes to:
 - Raudio
