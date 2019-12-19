@@ -4703,8 +4703,8 @@ RF_INTERNAL void _rf_gen_draw_quad(void);              // Generate and draw quad
 #endif  // RF_GRAPHICS_API_OPENGL_33 || RF_GRAPHICS_API_OPENGL_ES2
 
 #if defined(RF_GRAPHICS_API_OPENGL_11)
-RF_INTERNAL int _rf_generate_mipmaps(unsigned char* data, int baseWidth, int baseHeight);
-RF_INTERNAL rf_color* _rf_gen_next_mipmap(rf_color* srcData, int srcWidth, int srcHeight);
+RF_INTERNAL int _rf_generate_mipmaps(const rf_context* rf_ctx,  unsigned char* data, int baseWidth, int baseHeight);
+RF_INTERNAL rf_color* _rf_gen_next_mipmap(const rf_context* rf_ctx,  rf_color* srcData, int srcWidth, int srcHeight);
 #endif
 
 //----------------------------------------------------------------------------------
@@ -6132,7 +6132,7 @@ RF_API void rf_gl_generate_mipmaps(const rf_context* rf_ctx, rf_texture2d* textu
 
             // NOTE: data size is reallocated to fit mipmaps data
             // NOTE: CPU mipmap generation only supports RGBA 32bit data
-            int mipmapCount = _rf_generate_mipmaps(data, texture->width, texture->height);
+            int mipmapCount = _rf_generate_mipmaps(rf_ctx, data, texture->width, texture->height);
 
             int size = texture->width*texture->height*4;
             int offset = size;
@@ -8029,7 +8029,7 @@ RF_INTERNAL void _rf_gen_draw_cube(void)
 #if defined(RF_GRAPHICS_API_OPENGL_11)
 // Mipmaps data is generated after image data
 // NOTE: Only works with RGBA (4 bytes) data!
-RF_INTERNAL int _rf_generate_mipmaps(unsigned char* data, int baseWidth, int baseHeight)
+RF_INTERNAL int _rf_generate_mipmaps(const rf_context* rf_ctx,  unsigned char* data, int baseWidth, int baseHeight)
 {
     int mipmapCount = 1;                // Required mipmap levels count (including base level)
     int width = baseWidth;
@@ -8081,7 +8081,7 @@ RF_INTERNAL int _rf_generate_mipmaps(unsigned char* data, int baseWidth, int bas
 
     for (int mip = 1; mip < mipmapCount; mip++)
     {
-        mipmap = _rf_gen_next_mipmap(image, width, height);
+        mipmap = _rf_gen_next_mipmap(rf_ctx, image, width, height);
 
         offset += (width*height*4); // Size of last mipmap
         j = 0;
@@ -8112,7 +8112,7 @@ RF_INTERNAL int _rf_generate_mipmaps(unsigned char* data, int baseWidth, int bas
 }
 
 // Manual mipmap generation (basic scaling algorithm)
-RF_INTERNAL rf_color* _rf_gen_next_mipmap(rf_color* srcData, int srcWidth, int srcHeight)
+RF_INTERNAL rf_color* _rf_gen_next_mipmap(const rf_context* rf_ctx,  rf_color* srcData, int srcWidth, int srcHeight)
 {
     int x2, y2;
     rf_color prow, pcol;
