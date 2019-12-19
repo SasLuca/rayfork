@@ -31,7 +31,7 @@ double rf_get_time(void)
     assert(QueryPerformanceCounter(&qpc_result) != FALSE);
     return (double)qpc_result.QuadPart / global_performance_counter_frequency.QuadPart;
 }
-#elif
+#else
 double rf_get_time(void)
 {
     //To implement on linux
