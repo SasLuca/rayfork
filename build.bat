@@ -20,4 +20,12 @@ echo Building basic_shapes example
 cl /nologo /Zi /Fe:basic_shapes /I "../../dependencies" /I "../../rayfork" /I "../../examples/basic_shapes/" /I "../../examples/basic_shapes/dependencies" ../../examples/basic_shapes/main.c ../../examples/basic_shapes/game.c ../../examples/basic_shapes/rayfork_renderer.c ../../examples/basic_shapes/dependencies/glad/glad.c /link user32.lib Gdi32.lib Opengl32.lib
 popd
 
+::collision area
+if not exist collision_area mkdir collision_area
+pushd collision_area
+echo.
+echo Building collision_area example
+cl /nologo /Zi /Fe:collision_area /I "../../dependencies" /I "../../rayfork" /I "../../examples/collision_area/" /I "../../examples/collision_area/dependencies" ../../examples/collision_area/main.c ../../examples/collision_area/game.c ../../examples/collision_area/rayfork_renderer.c ../../examples/collision_area/dependencies/glad/glad.c /link user32.lib Gdi32.lib Opengl32.lib
+popd
+
 popd

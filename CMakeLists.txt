@@ -19,3 +19,9 @@ add_executable(basic_shapes
         examples/basic_shapes/game.c
         examples/basic_shapes/rayfork_renderer.c
         examples/basic_shapes/dependencies/glad/glad.c)
+
+add_executable(collision_area
+        examples/collision_area/main.c
+        examples/collision_area/game.c
+        examples/collision_area/rayfork_renderer.c
+        examples/collision_area/dependencies/glad/glad.c)
