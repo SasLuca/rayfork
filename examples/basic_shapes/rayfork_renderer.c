@@ -33,11 +33,18 @@ double rf_get_time(void)
     assert(QueryPerformanceCounter(&qpc_result) != FALSE);
     return (double)qpc_result.QuadPart / global_performance_counter_frequency.QuadPart;
 }
-#else //@Todo: Implement functions on linux too
+#elif defined(__linux__)
+
+#include <time.h>
+
+//Source: http://man7.org/linux/man-pages/man2/clock_gettime.2.html
 double rf_get_time(void)
 {
-    //To implement on linux
-    return 0;
+    struct timespec result;
+
+    assert(clock_gettime(CLOCK_MONOTONIC_RAW, &result) == 0);
+
+    return (double) result.tv_sec;
 }
 #endif
 
