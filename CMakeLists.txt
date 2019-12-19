@@ -13,3 +13,9 @@ add_executable(geometric_shapes
         examples/geometric_shapes/game.c
         examples/geometric_shapes/rayfork_renderer.c
         examples/geometric_shapes/dependencies/glad/glad.c)
+
+add_executable(basic_shapes
+        examples/basic_shapes/main.c
+        examples/basic_shapes/game.c
+        examples/basic_shapes/rayfork_renderer.c
+        examples/basic_shapes/dependencies/glad/glad.c)
