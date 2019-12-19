@@ -84,3 +84,22 @@ I love coding in C/C++ and I want to make games in low level languages.
 
 Many libraries however do not follow the principles that I look for in a library (see [this article](https://handmade.network/wiki/7138-how_to_write_better_game_libraries).
 I want to create a set of libraries that indie developers can confidently and easily use to develop their projects without sacrificing control, portability or quality.
+
+# Advice for contributors
+- Keep the naming convention to snake case, use `rf_function_name` for interface functions and `_rf_function_name` for private functions.
+
+- Prefix all functions with `RF_API` or `RF_INTERNAL`
+
+- Don't include additional headers in the interface, work towards minimising includes in general.
+
+- Use `//region` for folding regions of code. `//region` is already used throught the codebase so consider using an editor with support for folding those regions to get an easier grasp of the code.
+
+- For porting Raylib examples, consider copying an existing example from the `examples` folder and just change the name. This is the fastest way to start working on this. The examples so far use `sokol_app` for the window management and GLAD for OpenGL loading.
+
+- Try to apply the advice from [this article](https://handmade.network/wiki/7138-how_to_write_better_game_libraries) in general. 
+Some of the more important advice would be:
+  - Don't allocate memory, ask the user for buffers/allocators.
+  - Don't use non constant global variables.
+  - Avoid os-dependent functions.
+
+- If you want to use CLion there is a .idea folder provided.
