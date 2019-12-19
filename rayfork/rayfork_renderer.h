@@ -2,13 +2,71 @@
 #ifndef RF_RENDERER_H
 #define RF_RENDERER_H
 
-#define RF_API extern
-#define RF_INTERNAL static
-
 #include <stdarg.h> // Required for: va_list - Only used by TraceLogCallback @ToRemove
 #include <stdbool.h>
-#include <stdint.h>
-#include <float.h>
+
+//region basic defines
+#ifndef RF_API
+#define RF_API extern
+#endif
+
+#ifndef RF_INTERNAL
+#define RF_INTERNAL static
+#endif
+
+#define RF_PI 3.14159265358979323846f
+
+#define RF_DEG2RAD (RF_PI/180.0f)
+#define RF_RAD2DEG (180.0f/RF_PI)
+
+// Allow custom memory allocators
+#ifndef RF_MALLOC
+#define RF_MALLOC(sz) malloc(sz)
+#endif
+
+#ifndef RF_FREE
+#define RF_FREE(p) free(p)
+#endif
+
+// NOTE: MSC C++ compiler does not support compound literals (C99 feature)
+// Plain structures in C++ (without constructors) can be initialized from { } initializers.
+#define RF_CLITERAL(type) (type)
+
+#define rf_max_text_buffer_length 1024 // Size of internal RF_INTERNAL buffers used on  some functions:
+#define rf_max_text_unicode_chars 512 // Maximum number of unicode codepoints
+#define rf_textsplit_max_text_buffer_length 1024 // Size of RF_INTERNAL buffer: _rf_text_split()
+#define rf_textsplit_max_substrings_count 128 // Size of RF_INTERNAL pointers array: _rf_text_split()
+
+// Some Basic Colors
+// NOTE: Custom raylib color palette for amazing visuals on rf_white background
+#define rf_lightgray RF_CLITERAL(rf_color){ 200, 200, 200, 255 } // Light Gray
+#define rf_gray RF_CLITERAL(rf_color){ 130, 130, 130, 255 } // Gray
+#define rf_darkgray RF_CLITERAL(rf_color){ 80, 80, 80, 255 } // Dark Gray
+#define rf_yellow RF_CLITERAL(rf_color){ 253, 249, 0, 255 } // Yellow
+#define rf_gold RF_CLITERAL(rf_color){ 255, 203, 0, 255 } // Gold
+#define rf_orange RF_CLITERAL(rf_color){ 255, 161, 0, 255 } // Orange
+#define rf_pink RF_CLITERAL(rf_color){ 255, 109, 194, 255 } // Pink
+#define rf_red RF_CLITERAL(rf_color){ 230, 41, 55, 255 } // Red
+#define rf_maroon RF_CLITERAL(rf_color){ 190, 33, 55, 255 } // Maroon
+#define rf_green RF_CLITERAL(rf_color){ 0, 228, 48, 255 } // Green
+#define rf_lime RF_CLITERAL(rf_color){ 0, 158, 47, 255 } // Lime
+#define rf_darkgreen RF_CLITERAL(rf_color){ 0, 117, 44, 255 } // Dark Green
+#define rf_skyblue RF_CLITERAL(rf_color){ 102, 191, 255, 255 } // Sky Blue
+#define rf_blue RF_CLITERAL(rf_color){ 0, 121, 241, 255 } // Blue
+#define rf_darkblue RF_CLITERAL(rf_color){ 0, 82, 172, 255 } // Dark Blue
+#define rf_purple RF_CLITERAL(rf_color){ 200, 122, 255, 255 } // Purple
+#define rf_violet RF_CLITERAL(rf_color){ 135, 60, 190, 255 } // Violet
+#define rf_darkpurple RF_CLITERAL(rf_color){ 112, 31, 126, 255 } // Dark Purple
+#define rf_beige RF_CLITERAL(rf_color){ 211, 176, 131, 255 } // Beige
+#define rf_brown RF_CLITERAL(rf_color){ 127, 106, 79, 255 } // Brown
+#define rf_darkbrown RF_CLITERAL(rf_color){ 76, 63, 47, 255 } // Dark Brown
+
+#define rf_white RF_CLITERAL(rf_color){ 255, 255, 255, 255 } // White
+#define rf_black RF_CLITERAL(rf_color){ 0, 0, 0, 255 } // Black
+#define rf_blank RF_CLITERAL(rf_color){ 0, 0, 0, 0 } // Blank (Transparent)
+#define rf_magenta RF_CLITERAL(rf_color){ 255, 0, 255, 255 } // Magenta
+#define rf_raywhite RF_CLITERAL(rf_color){ 245, 245, 245, 255 } // My own White (raylib logo)
+//endregion
 
 //region gl constants
 
@@ -105,57 +163,7 @@
 
 //endregion
 
-// Some basic Defines
-#define RF_PI 3.14159265358979323846f
-
-#define RF_DEG2RAD (RF_PI/180.0f)
-#define RF_RAD2DEG (180.0f/RF_PI)
-
-// Allow custom memory allocators
-#define RF_MALLOC(sz) malloc(sz)
-#define RF_FREE(p) free(p)
-
-// NOTE: MSC C++ compiler does not support compound literals (C99 feature)
-// Plain structures in C++ (without constructors) can be initialized from { } initializers.
-#define RF_CLITERAL(type) (type)
-
-#define rf_max_text_buffer_length 1024 // Size of internal RF_INTERNAL buffers used on  some functions:
-#define rf_max_text_unicode_chars 512 // Maximum number of unicode codepoints
-#define rf_textsplit_max_text_buffer_length 1024 // Size of RF_INTERNAL buffer: _rf_text_split()
-#define rf_textsplit_max_substrings_count 128 // Size of RF_INTERNAL pointers array: _rf_text_split()
-
-// Some Basic Colors
-// NOTE: Custom raylib color palette for amazing visuals on rf_white background
-#define rf_lightgray RF_CLITERAL(rf_color){ 200, 200, 200, 255 } // Light Gray
-#define rf_gray RF_CLITERAL(rf_color){ 130, 130, 130, 255 } // Gray
-#define rf_darkgray RF_CLITERAL(rf_color){ 80, 80, 80, 255 } // Dark Gray
-#define rf_yellow RF_CLITERAL(rf_color){ 253, 249, 0, 255 } // Yellow
-#define rf_gold RF_CLITERAL(rf_color){ 255, 203, 0, 255 } // Gold
-#define rf_orange RF_CLITERAL(rf_color){ 255, 161, 0, 255 } // Orange
-#define rf_pink RF_CLITERAL(rf_color){ 255, 109, 194, 255 } // Pink
-#define rf_red RF_CLITERAL(rf_color){ 230, 41, 55, 255 } // Red
-#define rf_maroon RF_CLITERAL(rf_color){ 190, 33, 55, 255 } // Maroon
-#define rf_green RF_CLITERAL(rf_color){ 0, 228, 48, 255 } // Green
-#define rf_lime RF_CLITERAL(rf_color){ 0, 158, 47, 255 } // Lime
-#define rf_darkgreen RF_CLITERAL(rf_color){ 0, 117, 44, 255 } // Dark Green
-#define rf_skyblue RF_CLITERAL(rf_color){ 102, 191, 255, 255 } // Sky Blue
-#define rf_blue RF_CLITERAL(rf_color){ 0, 121, 241, 255 } // Blue
-#define rf_darkblue RF_CLITERAL(rf_color){ 0, 82, 172, 255 } // Dark Blue
-#define rf_purple RF_CLITERAL(rf_color){ 200, 122, 255, 255 } // Purple
-#define rf_violet RF_CLITERAL(rf_color){ 135, 60, 190, 255 } // Violet
-#define rf_darkpurple RF_CLITERAL(rf_color){ 112, 31, 126, 255 } // Dark Purple
-#define rf_beige RF_CLITERAL(rf_color){ 211, 176, 131, 255 } // Beige
-#define rf_brown RF_CLITERAL(rf_color){ 127, 106, 79, 255 } // Brown
-#define rf_darkbrown RF_CLITERAL(rf_color){ 76, 63, 47, 255 } // Dark Brown
-
-#define rf_white RF_CLITERAL(rf_color){ 255, 255, 255, 255 } // White
-#define rf_black RF_CLITERAL(rf_color){ 0, 0, 0, 255 } // Black
-#define rf_blank RF_CLITERAL(rf_color){ 0, 0, 0, 0 } // Blank (Transparent)
-#define rf_magenta RF_CLITERAL(rf_color){ 255, 0, 255, 255 } // Magenta
-#define rf_raywhite RF_CLITERAL(rf_color){ 245, 245, 245, 255 } // My own White (raylib logo)
-
 //region structs
-
 typedef struct rf_sizei rf_sizei;
 struct rf_sizei
 {
@@ -637,7 +645,7 @@ struct rf_context
     int render_offset_x; // Offset X from render area (must be divided by 2)
     int render_offset_y; // Offset Y from render area (must be divided by 2)
     rf_matrix screen_scaling; // rf_matrix to scale screen (fr
-    uint64_t base_time; // Base time measure for hi-res timer
+    unsigned long long base_time; // Base time measure for hi-res timer
 
     double current_time; // Current time measure
     double previous_time; // Previous time measure
@@ -854,9 +862,9 @@ RF_API int rf_get_random_value(int min, int max); // Returns a random value betw
 
 // Files management functions
 RF_API int rf_get_file_size(const char* filename);
-RF_API void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize);
+RF_API void rf_load_file_into_buffer(const char* filename, rf_byte* buffer, int bufferSize);
 RF_API bool rf_file_exists(const char* fileName); // Check if file exist
-RF_API bool rf_write_to_file(const char* filename, uint8_t* buffer, int buffer_size);
+RF_API bool rf_write_to_file(const char* filename, rf_byte* buffer, int buffer_size);
 
 //endregion
 
@@ -1284,6 +1292,10 @@ RF_API void rf_gl_unload_mesh(const rf_context* rf_ctx, rf_mesh mesh); // Unload
 
 //region implementation
 #ifdef RF_RENDERER_IMPL
+
+#ifndef RF_ASSERT
+    #define RF_ASSERT(condition, msg) assert(condition)
+#endif
 
 //region implementation includes
 #include <math.h>
@@ -1829,7 +1841,7 @@ RF_API rf_font rf_load_font_ex(const rf_context* rf_ctx, const char* fileName, i
     font.chars_count = (chars_count > 0)? chars_count : 95;
     font.chars = rf_load_font_data(rf_ctx, fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
 
-    assert(font.chars != NULL);
+    RF_ASSERT(font.chars != NULL, "Font not initialised properly.");
 
     rf_image atlas = rf_gen_image_font_atlas(rf_ctx, font.chars, &font.recs, font.chars_count, font.base_size, 2, 0);
     font.texture = rf_load_texture_from_image(rf_ctx, atlas);
@@ -1855,7 +1867,7 @@ RF_API rf_load_font_async_result rf_load_font_async(const rf_context* rf_ctx, co
     font.chars_count = (chars_count > 0)? chars_count : 95;
     font.chars = rf_load_font_data(rf_ctx, fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
 
-    assert(font.chars != NULL);
+    RF_ASSERT(font.chars != NULL, "Font not initialised properly.");
 
     rf_image atlas = rf_gen_image_font_atlas(rf_ctx, font.chars, &font.recs, font.chars_count, font.base_size, 2, 0);
 
@@ -13067,7 +13079,7 @@ RF_API rf_image rf_load_image(const rf_context* rf_ctx, const char* fileName)
         int imgBpp = 0;
 
         int file_size = rf_get_file_size(fileName);
-        uint8_t* image_file_buffer = (uint8_t*) RF_MALLOC(file_size);
+        rf_byte* image_file_buffer = (rf_byte*) RF_MALLOC(file_size);
         rf_load_file_into_buffer(fileName, image_file_buffer, file_size);
 
         if (image_file_buffer != NULL)

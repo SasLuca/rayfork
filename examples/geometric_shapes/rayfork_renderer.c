@@ -8,8 +8,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// We undef these since they are defined in glad.h and windows.h redefines them and we get warnings
+//Windows only
 #ifdef _WIN32
+
+// We undef these since they are defined in glad.h and windows.h redefines them and we get warnings
 #undef APIENTRY
 #undef ARRAYSIZE
 
@@ -31,7 +33,7 @@ double rf_get_time(void)
     assert(QueryPerformanceCounter(&qpc_result) != FALSE);
     return (double)qpc_result.QuadPart / global_performance_counter_frequency.QuadPart;
 }
-#else
+#else //@Todo: Implement functions on linux too
 double rf_get_time(void)
 {
     //To implement on linux
