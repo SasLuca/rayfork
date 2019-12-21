@@ -46,6 +46,26 @@ double rf_get_time(void)
 
     return (double) result.tv_sec;
 }
+#elif defined(__MACH__)
+#include <mach/mach_time.h>
+static bool global_mach_time_initialized;
+static uint64_t global_mach_time_start;
+static double global_mach_time_seconds_factor;
+
+double rf_get_time(void)
+{
+    uint64_t time;
+    if (!global_mach_time_initialized)
+    {
+        mach_timebase_info_data_t timebase;
+        mach_timebase_info(&timebase);
+        global_mach_time_seconds_factor = 1e-9 * (double)timebase.numer / (double)timebase.denom;
+        global_mach_time_start = mach_absolute_time();
+        global_mach_time_initialized = true;
+    }
+    time = mach_absolute_time();
+    return (double)(time - global_mach_time_start) * global_mach_time_seconds_factor;
+}
 #endif
 
 void rf_wait(float ms)

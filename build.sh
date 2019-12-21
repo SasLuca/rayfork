@@ -1,8 +1,15 @@
 #!/bin/bash
 
-FLAGS="-g -D_DEFAULT_SOURCE"
 INCLUDES="-I../../rayfork -I../../dependencies -I../../examples/geometric_shapes/ -I../../examples/geometric_shapes/dependencies"
-LIBRARIES="-lGL -lm -lpthread -ldl -lrt -lX11"
+
+if [ "$(uname)" = "Darwin" ]
+then
+  FLAGS="-g -D_DEFAULT_SOURCE -ObjC -fobjc-arc"
+  LIBRARIES="-framework Cocoa"
+else
+  FLAGS="-g -D_DEFAULT_SOURCE"
+  LIBRARIES="-lGL -lm -lpthread -ldl -lrt -lX11"
+fi
 
 mkdir -p bin
 pushd bin
