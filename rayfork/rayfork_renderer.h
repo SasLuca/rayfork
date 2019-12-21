@@ -1,3 +1,28 @@
+/**********************************************************************************************
+*
+*   rayfork_renderer - A single header library 2D/3D rendering
+*   rayfork - a set of header only libraries that are forked from the amazing Raylib (https://www.raylib.com/)
+*
+*   FEATURES:
+*       - Cross-platform with no default platform layer
+*       - 2D shapes, textures and ninepatch rendering
+*       - 3D rendering
+*       - Text rendering
+*       - Async asset loading
+*
+*   DEPENDENCIES:
+*       - stb_image
+*       - stb_image_write
+*       - stb_image_resize
+*       - stb_perlin
+*       - stb_rect_pack
+*       - stb_truetype
+*       - cgltf
+*       - par_shapes
+*       - tinyobj_loader_c
+*
+***********************************************************************************************/
+
 //region interface
 #ifndef RF_RENDERER_H
 #define RF_RENDERER_H
@@ -164,6 +189,7 @@
 //endregion
 
 //region structs
+
 typedef struct rf_sizei rf_sizei;
 struct rf_sizei
 {
@@ -1302,7 +1328,6 @@ RF_API void rf_gl_unload_mesh(const rf_context* rf_ctx, rf_mesh mesh); // Unload
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <assert.h>
 #include <ctype.h>
 
@@ -2798,16 +2823,16 @@ RF_API rf_vector2 rf_measure_text_from_buffer(rf_font font, const char* text, in
 #define rf_vector3_to_float(vec) (rf_vector3_to_float_v(vec).v)
 
 // NOTE: Helper types to be used instead of array return types for *ToFloat functions
-typedef struct rf_float3 rf_float3; 
+typedef struct rf_float3 rf_float3;
 struct rf_float3
-{ 
-    float v[3];  
+{
+    float v[3];
 };
 
 typedef struct rf_float16 rf_float16;
-struct rf_float16 
-{ 
-    float v[16]; 
+struct rf_float16
+{
+    float v[16];
 };
 
 // Clamp float value
@@ -10134,7 +10159,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(const rf_context* rf_ctx, rf_image cubicmap,
     rf_vector3 n6 = { 0.0f, 0.0f, -1.0f };
 
     // NOTE: We use texture rectangles to define different textures for top-bottom-front-back-right-left (6)
-    typedef struct rf_rectanglef rf_rectanglef; 
+    typedef struct rf_rectanglef rf_rectanglef;
     struct rf_rectanglef
     {
         float x;
