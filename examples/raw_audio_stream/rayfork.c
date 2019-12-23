@@ -1,10 +1,12 @@
 //This is the translation unit for the rayfork implementation
 //Here we also implement the platform specific functions
 
+#define RF_AUDIO_IMPL
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
 #include "rayfork.h"
+#include "rayfork_audio.h"
 #include <stdio.h>
 #include <stdbool.h>
 

@@ -1320,7 +1320,7 @@ RF_API void rf_gl_unload_mesh(const rf_context* rf_ctx, rf_mesh mesh); // Unload
 #ifdef RF_RENDERER_IMPL
 
 #ifndef RF_ASSERT
-    #define RF_ASSERT(condition, msg) assert(condition)
+    #define RF_ASSERT(condition) assert(condition)
 #endif
 
 //region implementation includes
@@ -1866,7 +1866,7 @@ RF_API rf_font rf_load_font_ex(const rf_context* rf_ctx, const char* fileName, i
     font.chars_count = (chars_count > 0)? chars_count : 95;
     font.chars = rf_load_font_data(rf_ctx, fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
 
-    RF_ASSERT(font.chars != NULL, "Font not initialised properly.");
+    RF_ASSERT(font.chars != NULL);
 
     rf_image atlas = rf_gen_image_font_atlas(rf_ctx, font.chars, &font.recs, font.chars_count, font.base_size, 2, 0);
     font.texture = rf_load_texture_from_image(rf_ctx, atlas);
@@ -1892,7 +1892,7 @@ RF_API rf_load_font_async_result rf_load_font_async(const rf_context* rf_ctx, co
     font.chars_count = (chars_count > 0)? chars_count : 95;
     font.chars = rf_load_font_data(rf_ctx, fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
 
-    RF_ASSERT(font.chars != NULL, "Font not initialised properly.");
+    RF_ASSERT(font.chars != NULL);
 
     rf_image atlas = rf_gen_image_font_atlas(rf_ctx, font.chars, &font.recs, font.chars_count, font.base_size, 2, 0);
 

@@ -25,3 +25,9 @@ add_executable(collision_area
         examples/collision_area/game.c
         examples/collision_area/rayfork_renderer.c
         examples/collision_area/dependencies/glad/glad.c)
+
+add_executable(raw_audio_stream
+        examples/raw_audio_stream/main.c
+        examples/raw_audio_stream/game.c
+        examples/raw_audio_stream/rayfork.c
+        examples/raw_audio_stream/dependencies/glad/glad.c)
