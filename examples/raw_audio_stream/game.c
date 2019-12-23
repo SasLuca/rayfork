@@ -8,6 +8,8 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+#include <malloc.h>
 
 #define MAX_SAMPLES               512
 #define MAX_SAMPLES_PER_UPDATE   4096
@@ -144,12 +146,21 @@ void on_frame(void)
     rf_end_drawing(&rf_ctx);
 }
 
-void on_cleanup(void)
+void on_event(const sapp_event* event)
 {
-    //Empty
+    if (event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
+    {
+        mousePosition = (rf_vector2) { event->mouse_x, event->mouse_y };
+    }
+
+    if (event->type == SAPP_EVENTTYPE_MOUSE_DOWN && event->mouse_button == SAPP_MOUSEBUTTON_LEFT)
+    {
+        const float fp = mousePosition.y;
+        frequency = 40.0f + fp;
+    }
 }
 
-void on_event(const sapp_event* event)
+void on_cleanup(void)
 {
     //Empty
 }

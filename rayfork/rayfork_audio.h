@@ -673,10 +673,10 @@ extern void rf_set_master_volume(float volume)
 // Initialize a new audio buffer (filled with silence)
 static rf_audio_buffer* _rf_init_audio_buffer(ma_format format, ma_uint32 channels, ma_uint32 sample_rate, ma_uint32 buffer_size_in_frames, int usage)
 {
-    rf_audio_buffer* audio_buffer = (rf_audio_buffer*) RF_CALLOC(1, sizeof(audio_buffer));
+    rf_audio_buffer* audio_buffer = (rf_audio_buffer*) RF_CALLOC(1, sizeof(rf_audio_buffer));
     audio_buffer->buffer = RF_CALLOC(buffer_size_in_frames * channels * ma_get_bytes_per_sample(format), 1);
 
-    RF_ASSERT(audio_buffer == NULL);
+    //RF_ASSERT(audio_buffer == NULL);
 
     // Audio data runs through a format converter
     ma_pcm_converter_config dspConfig;
