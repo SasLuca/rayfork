@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 rf_context rf_ctx;
-#define screen_width 800
+#define SCREEN_WIDTH 800
 #define screen_height 450
 
 float mouse_x;
@@ -18,7 +18,7 @@ rf_rectangle box_a = { 10, (float) screen_height / 2 - 50, 200, 100 };
 int box_a_speed_x = 4;
 
 // Box B: Mouse moved box
-rf_rectangle box_b = { (float) screen_width / 2 - 30, (float) screen_height / 2 - 30, 60, 60 };
+rf_rectangle box_b = {(float) SCREEN_WIDTH / 2 - 30, (float) screen_height / 2 - 30, 60, 60 };
 
 // Collision rectangle
 rf_rectangle box_collision = { 0 };
@@ -38,7 +38,7 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, screen_width, screen_height);
+    rf_context_init(&rf_ctx, SCREEN_WIDTH, screen_height);
     rf_set_target_fps(&rf_ctx, 60);
     rf_load_font_default(&rf_ctx);
 }
@@ -49,14 +49,14 @@ void on_frame(void)
     if (!pause) box_a.x += box_a_speed_x;
 
     // Bounce box on x screen limits
-    if (((box_a.x + box_a.width) >= screen_width) || (box_a.x <= 0)) box_a_speed_x *= -1;
+    if (((box_a.x + box_a.width) >= SCREEN_WIDTH) || (box_a.x <= 0)) box_a_speed_x *= -1;
 
     // Update player-controlled-box (box02)
     box_b.x = mouse_x - box_b.width/2;
     box_b.y = mouse_y - box_b.height/2;
 
     // Make sure Box B does not go out of move area limits
-    if ((box_b.x + box_b.width) >= screen_width) box_b.x = screen_width - box_b.width;
+    if ((box_b.x + box_b.width) >= SCREEN_WIDTH) box_b.x = SCREEN_WIDTH - box_b.width;
     else if (box_b.x <= 0) box_b.x = 0;
 
     if ((box_b.y + box_b.height) >= screen_height) box_b.y = screen_height - box_b.height;
@@ -74,7 +74,7 @@ void on_frame(void)
 
     rf_clear_background(rf_raywhite);
 
-    rf_draw_rectangle(&rf_ctx, 0, 0, screen_width, screen_upper_limit, collision? rf_red : rf_black);
+    rf_draw_rectangle(&rf_ctx, 0, 0, SCREEN_WIDTH, screen_upper_limit, collision ? rf_red : rf_black);
 
     rf_draw_rectangle_rec(&rf_ctx, box_a, rf_gold);
     rf_draw_rectangle_rec(&rf_ctx, box_b, rf_blue);
@@ -85,12 +85,12 @@ void on_frame(void)
         rf_draw_rectangle_rec(&rf_ctx, box_collision, rf_lime);
 
         // Draw collision message
-        rf_draw_text(&rf_ctx, "COLLISION!", screen_width / 2 - rf_measure_text(&rf_ctx, "COLLISION!", 20) / 2, screen_upper_limit / 2 - 10, 20, rf_black);
+        rf_draw_text(&rf_ctx, "COLLISION!", SCREEN_WIDTH / 2 - rf_measure_text(&rf_ctx, "COLLISION!", 20) / 2, screen_upper_limit / 2 - 10, 20, rf_black);
 
         // Draw collision area
         char text_buff[512];
         snprintf(text_buff, 512, "Collision Area: %i", (int) box_collision.width * (int) box_collision.height);
-        rf_draw_text(&rf_ctx, text_buff, screen_width / 2 - 100, screen_upper_limit + 10, 20, rf_black);
+        rf_draw_text(&rf_ctx, text_buff, SCREEN_WIDTH / 2 - 100, screen_upper_limit + 10, 20, rf_black);
     }
 
     rf_draw_fps(&rf_ctx, 10, 10);

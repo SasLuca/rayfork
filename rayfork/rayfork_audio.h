@@ -27,22 +27,28 @@
 
 //region interface
 
-#ifndef RAUDIO_H
-#define RAUDIO_H
+#ifndef RF_AUDIO_H
+#define RF_AUDIO_H
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
 //----------------------------------------------------------------------------------
 // Allow custom memory allocators
 #ifndef RF_MALLOC
-#define RF_MALLOC(sz)       malloc(sz)
+#define RF_MALLOC(sz) malloc(sz)
 #endif
-#ifndef RF_CALLOC
-#define RF_CALLOC(n,sz)     calloc(n,sz)
-#endif
+
 #ifndef RF_FREE
-#define RF_FREE(p)          free(p)
+#define RF_FREE(p) free(p)
 #endif
+
+#define RF_LOG_TRACE 0
+#define RF_LOG_DEBUG 1
+#define RF_LOG_INFO 2
+#define RF_LOG_WARNING 3
+#define RF_LOG_ERROR 4
+#define RF_LOG_FATAL 5
+
 #ifndef RF_LOG
 #define RF_LOG(log_type, msg, ...)
 #endif
@@ -108,7 +114,10 @@ extern "C" { // Prevents name mangling of functions
 //----------------------------------------------------------------------------------
 
 // Audio device management functions
-extern void rf_audio_init(void);                // Initialize audio device and context
+typedef struct rf_audio_context rf_audio_context; // Forward declaration
+
+extern void rf_audio_init(rf_audio_context* audio_ctx); // Initialize audio device and context
+extern void rf_audio_set_context_ptr(rf_audio_context* audio_ctx); //Sets the global context ptr
 extern void rf_audio_cleanup(void);             // Close the audio device and context
 extern bool rf_is_audio_device_ready(void);     // Check if audio device has been initialized successfully
 extern void rf_set_master_volume(float volume); // Set master volume (listener)
@@ -171,7 +180,7 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
 }
 #endif
 
-#endif // RAUDIO_H
+#endif // RF_AUDIO_H
 //endregion
 
 //region implementation
@@ -307,21 +316,26 @@ struct rf_audio_buffer
     rf_audio_buffer* prev;     // Previous audio buffer on the list
 };
 
-// Audio buffers are tracked in a linked list
-static rf_audio_buffer* rf_global_first_audio_buffer = NULL;
-static rf_audio_buffer* rf_global_last_audio_buffer = NULL;
+struct rf_audio_context
+{
+    // Audio buffers are tracked in a linked list
+    rf_audio_buffer* first_audio_buffer;
+    rf_audio_buffer* last_audio_buffer;
 
-// miniaudio global variables
-static ma_context rf_global_context;
-static ma_device rf_global_device;
-static ma_mutex rf_global_audio_lock;
-static bool rf_global_is_audio_initialised = false;
-static float rf_global_master_volume = 1.0f;
+    // miniaudio global variables
+    ma_context context;
+    ma_device device;
+    ma_mutex audio_lock;
+    bool is_audio_initialised;
+    float master_volume;
 
-// Multi channel playback global variables
-static rf_audio_buffer* rf_audio_buffer_pool[RF_MAX_AUDIO_BUFFER_POOL_CHANNELS] = { 0 };
-static unsigned int rf_audio_buffer_pool_counter = 0;
-static unsigned int rf_audio_buffer_pool_channels[RF_MAX_AUDIO_BUFFER_POOL_CHANNELS] = { 0 };
+    // Multi channel playback global variables
+    rf_audio_buffer* audio_buffer_pool[RF_MAX_AUDIO_BUFFER_POOL_CHANNELS];
+    unsigned int audio_buffer_pool_counter;
+    unsigned int audio_buffer_pool_channels[RF_MAX_AUDIO_BUFFER_POOL_CHANNELS];
+};
+
+static rf_audio_context* _rf_global_audio_context = NULL;
 
 // miniaudio functions declaration
 static void _rf_ma_callback__on_log(ma_context* pContext, ma_device*  pDevice, ma_uint32 logLevel, const char* message);
@@ -353,7 +367,7 @@ static void _rf_ma_callback__on_log(ma_context* pContext, ma_device*  pDevice, m
     (void)pContext;
     (void)pDevice;
 
-    RF_LOG(LOG_ERROR, message);   // All log messages from miniaudio are errors
+    RF_LOG(RF_LOG_ERROR, message);   // All log messages from miniaudio are errors
 }
 
 // Sending audio data to device callback function
@@ -367,9 +381,9 @@ static void _rf_ma_callback__on_send_audio_data_to_device(ma_device*  pDevice, v
 
     // Using a mutex here for thread-safety which makes things not real-time
     // This is unlikely to be necessary for this project, but may want to consider how you might want to avoid this
-    ma_mutex_lock(&rf_global_audio_lock);
+    ma_mutex_lock(&_rf_global_audio_context->audio_lock);
     {
-        for (rf_audio_buffer* rf_audio_buffer = rf_global_first_audio_buffer; rf_audio_buffer != NULL; rf_audio_buffer = rf_audio_buffer->next)
+        for (rf_audio_buffer* rf_audio_buffer = _rf_global_audio_context->first_audio_buffer; rf_audio_buffer != NULL; rf_audio_buffer = rf_audio_buffer->next)
         {
             // Ignore stopped or paused sounds
             if (!rf_audio_buffer->playing || rf_audio_buffer->paused) continue;
@@ -380,7 +394,7 @@ static void _rf_ma_callback__on_send_audio_data_to_device(ma_device*  pDevice, v
             {
                 if (framesRead > frameCount)
                 {
-                    RF_LOG(LOG_DEBUG, "Mixed too many frames from audio buffer");
+                    RF_LOG(RF_LOG_DEBUG, "Mixed too many frames from audio buffer");
                     break;
                 }
 
@@ -402,7 +416,7 @@ static void _rf_ma_callback__on_send_audio_data_to_device(ma_device*  pDevice, v
                     ma_uint32 framesJustRead = (ma_uint32)ma_pcm_converter_read(&rf_audio_buffer->dsp, tempBuffer, framesToReadRightNow);
                     if (framesJustRead > 0)
                     {
-                        float* framesOut = (float* )pFramesOut + (framesRead*rf_global_device.playback.channels);
+                        float* framesOut = (float* )pFramesOut + (framesRead*_rf_global_audio_context->device.playback.channels);
                         float* framesIn  = tempBuffer;
 
                         _rf_ma_callback__mix_audio_frames(framesOut, framesIn, framesJustRead, rf_audio_buffer->volume);
@@ -436,7 +450,7 @@ static void _rf_ma_callback__on_send_audio_data_to_device(ma_device*  pDevice, v
         }
     }
 
-    ma_mutex_unlock(&rf_global_audio_lock);
+    ma_mutex_unlock(&_rf_global_audio_context->audio_lock);
 }
 
 // DSP read from audio buffer callback function
@@ -449,7 +463,7 @@ static ma_uint32 _rf_ma_callback__on_audio_buffer_dsp_read(ma_pcm_converter* pDS
 
     if (current_sub_buffer_index > 1)
     {
-        RF_LOG(LOG_DEBUG, "Frame cursor position moved too far forward in audio stream");
+        RF_LOG(RF_LOG_DEBUG, "Frame cursor position moved too far forward in audio stream");
         return 0;
     }
 
@@ -537,12 +551,12 @@ static void _rf_ma_callback__mix_audio_frames(float* framesOut, const float* fra
 {
     for (ma_uint32 iFrame = 0; iFrame < frameCount; ++iFrame)
     {
-        for (ma_uint32 iChannel = 0; iChannel < rf_global_device.playback.channels; ++iChannel)
+        for (ma_uint32 iChannel = 0; iChannel < _rf_global_audio_context->device.playback.channels; ++iChannel)
         {
-            float* frameOut = framesOut + (iFrame*rf_global_device.playback.channels);
-            const float* frameIn  = framesIn  + (iFrame*rf_global_device.playback.channels);
+            float* frameOut = framesOut + (iFrame*_rf_global_audio_context->device.playback.channels);
+            const float* frameIn  = framesIn  + (iFrame*_rf_global_audio_context->device.playback.channels);
 
-            frameOut[iChannel] += (frameIn[iChannel]*rf_global_master_volume*localVolume);
+            frameOut[iChannel] += (frameIn[iChannel]*_rf_global_audio_context->master_volume*localVolume);
         }
     }
 }
@@ -553,30 +567,34 @@ static void _rf_init_audio_buffer_pool()
     // Dummy buffers
     for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++)
     {
-        rf_audio_buffer_pool[i] = _rf_init_audio_buffer(RF_DEVICE_FORMAT, RF_DEVICE_CHANNELS, RF_DEVICE_SAMPLE_RATE, 0, rf_audio_buffer_static);
+        _rf_global_audio_context->audio_buffer_pool[i] = _rf_init_audio_buffer(RF_DEVICE_FORMAT, RF_DEVICE_CHANNELS, RF_DEVICE_SAMPLE_RATE, 0, rf_audio_buffer_static);
     }
 }
 
 // Close the audio buffers pool
 static void _rf_close_audio_buffer_pool()
 {
-    for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++) RF_FREE(rf_audio_buffer_pool[i]);
+    for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++) RF_FREE(_rf_global_audio_context->audio_buffer_pool[i]);
 }
 
 //----------------------------------------------------------------------------------
 // Module Functions Definition - Audio Device initialization and Closing
 //----------------------------------------------------------------------------------
 // Initialize audio device
-extern void rf_audio_init(void)
+extern void rf_audio_init(rf_audio_context* audio_ctx)
 {
+    _rf_global_audio_context = audio_ctx;
+    *_rf_global_audio_context = (rf_audio_context) {}; //Zero the struct just to be sure
+    _rf_global_audio_context->master_volume = 1.0f;
+
     // Init audio context
     ma_context_config contextConfig = ma_context_config_init();
     contextConfig.logCallback = _rf_ma_callback__on_log;
 
-    ma_result result = ma_context_init(NULL, 0, &contextConfig, &rf_global_context);
+    ma_result result = ma_context_init(NULL, 0, &contextConfig, &_rf_global_audio_context->context);
     if (result != MA_SUCCESS)
     {
-        RF_LOG(LOG_ERROR, "Failed to initialize audio context");
+        RF_LOG(RF_LOG_ERROR, "Failed to initialize audio context");
         return;
     }
 
@@ -593,68 +611,75 @@ extern void rf_audio_init(void)
     config.dataCallback       = _rf_ma_callback__on_send_audio_data_to_device;
     config.pUserData          = NULL;
 
-    result = ma_device_init(&rf_global_context, &config, &rf_global_device);
+    result = ma_device_init(&_rf_global_audio_context->context, &config, &_rf_global_audio_context->device);
     if (result != MA_SUCCESS)
     {
-        RF_LOG(LOG_ERROR, "Failed to initialize audio playback device");
-        ma_context_uninit(&rf_global_context);
+        RF_LOG(RF_LOG_ERROR, "Failed to initialize audio playback device");
+        ma_context_uninit(&_rf_global_audio_context->context);
         return;
     }
 
     // Keep the device running the whole time. May want to consider doing something a bit smarter and only have the device running
     // while there's at least one sound being played.
-    result = ma_device_start(&rf_global_device);
+    result = ma_device_start(&_rf_global_audio_context->device);
     if (result != MA_SUCCESS)
     {
-        RF_LOG(LOG_ERROR, "Failed to start audio playback device");
-        ma_device_uninit(&rf_global_device);
-        ma_context_uninit(&rf_global_context);
+        RF_LOG(RF_LOG_ERROR, "Failed to start audio playback device");
+        ma_device_uninit(&_rf_global_audio_context->device);
+        ma_context_uninit(&_rf_global_audio_context->context);
         return;
     }
 
     // Mixing happens on a seperate thread which means we need to synchronize. I'm using a mutex here to make things simple, but may
     // want to look at something a bit smarter later on to keep everything real-time, if that's necessary.
-    if (ma_mutex_init(&rf_global_context, &rf_global_audio_lock) != MA_SUCCESS)
+    if (ma_mutex_init(&_rf_global_audio_context->context, &_rf_global_audio_context->audio_lock) != MA_SUCCESS)
     {
-        RF_LOG(LOG_ERROR, "Failed to create mutex for audio mixing");
-        ma_device_uninit(&rf_global_device);
-        ma_context_uninit(&rf_global_context);
+        RF_LOG(RF_LOG_ERROR, "Failed to create mutex for audio mixing");
+        ma_device_uninit(&_rf_global_audio_context->device);
+        ma_context_uninit(&_rf_global_audio_context->context);
         return;
     }
 
-    RF_LOG(LOG_INFO, "Audio device initialized successfully");
-    RF_LOG(LOG_INFO, "Audio backend: miniaudio / %s", ma_get_backend_name(rf_global_context.backend));
-    RF_LOG(LOG_INFO, "Audio format: %s -> %s", ma_get_format_name(rf_global_device.playback.format), ma_get_format_name(rf_global_device.playback.internalFormat));
-    RF_LOG(LOG_INFO, "Audio channels: %d -> %d", rf_global_device.playback.channels, rf_global_device.playback.internalChannels);
-    RF_LOG(LOG_INFO, "Audio sample rate: %d -> %d", rf_global_device.sample_rate, rf_global_device.playback.internalSampleRate);
-    RF_LOG(LOG_INFO, "Audio buffer size: %d", rf_global_device.playback.internalBufferSizeInFrames);
+    RF_LOG(RF_LOG_INFO, "Audio device initialized successfully");
+    RF_LOG(RF_LOG_INFO, "Audio backend: miniaudio / %s", ma_get_backend_name(_rf_global_audio_context->context.backend));
+    RF_LOG(RF_LOG_INFO, "Audio format: %s -> %s", ma_get_format_name(_rf_global_audio_context->device.playback.format), ma_get_format_name(_rf_global_audio_context->device.playback.internalFormat));
+    RF_LOG(RF_LOG_INFO, "Audio channels: %d -> %d", _rf_global_audio_context->device.playback.channels, _rf_global_audio_context->device.playback.internalChannels);
+    RF_LOG(RF_LOG_INFO, "Audio sample rate: %d -> %d", _rf_global_audio_context->device.sample_rate, _rf_global_audio_context->device.playback.internalSampleRate);
+    RF_LOG(RF_LOG_INFO, "Audio buffer size: %d", _rf_global_audio_context->device.playback.internalBufferSizeInFrames);
 
     _rf_init_audio_buffer_pool();
-    RF_LOG(LOG_INFO, "Audio multichannel pool size: %i", RF_MAX_AUDIO_BUFFER_POOL_CHANNELS);
+    RF_LOG(RF_LOG_INFO, "Audio multichannel pool size: %i", RF_MAX_AUDIO_BUFFER_POOL_CHANNELS);
 
-    rf_global_is_audio_initialised = true;
+    _rf_global_audio_context->is_audio_initialised = true;
+}
+
+//Sets the global context ptr
+extern void rf_audio_set_context_ptr(rf_audio_context* audio_ctx)
+{
+    _rf_global_audio_context = audio_ctx;
+    RF_LOG(RF_LOG_WARNING, "Global context pointer set.");
 }
 
 // Close the audio device for all contexts
 extern void rf_audio_cleanup(void)
 {
-    if (rf_global_is_audio_initialised)
+    if (_rf_global_audio_context->is_audio_initialised)
     {
-        ma_mutex_uninit(&rf_global_audio_lock);
-        ma_device_uninit(&rf_global_device);
-        ma_context_uninit(&rf_global_context);
+        ma_mutex_uninit(&_rf_global_audio_context->audio_lock);
+        ma_device_uninit(&_rf_global_audio_context->device);
+        ma_context_uninit(&_rf_global_audio_context->context);
 
         _rf_close_audio_buffer_pool();
 
-        RF_LOG(LOG_INFO, "Audio device closed successfully");
+        RF_LOG(RF_LOG_INFO, "Audio device closed successfully");
     }
-    else RF_LOG(LOG_WARNING, "Could not close audio device because it is not currently initialized");
+    else RF_LOG(RF_LOG_WARNING, "Could not close audio device because it is not currently initialized");
 }
 
 // Check if device has been initialized successfully
 extern bool rf_is_audio_device_ready(void)
 {
-    return rf_global_is_audio_initialised;
+    return _rf_global_audio_context->is_audio_initialised;
 }
 
 // Set master volume (listener)
@@ -663,7 +688,7 @@ extern void rf_set_master_volume(float volume)
     if (volume < 0.0f) volume = 0.0f;
     else if (volume > 1.0f) volume = 1.0f;
 
-    rf_global_master_volume = volume;
+    _rf_global_audio_context->master_volume = volume;
 }
 
 //----------------------------------------------------------------------------------
@@ -673,8 +698,10 @@ extern void rf_set_master_volume(float volume)
 // Initialize a new audio buffer (filled with silence)
 static rf_audio_buffer* _rf_init_audio_buffer(ma_format format, ma_uint32 channels, ma_uint32 sample_rate, ma_uint32 buffer_size_in_frames, int usage)
 {
-    rf_audio_buffer* audio_buffer = (rf_audio_buffer*) RF_CALLOC(1, sizeof(rf_audio_buffer));
-    audio_buffer->buffer = RF_CALLOC(buffer_size_in_frames * channels * ma_get_bytes_per_sample(format), 1);
+    rf_audio_buffer* audio_buffer = (rf_audio_buffer*) RF_MALLOC(sizeof(rf_audio_buffer));
+    *audio_buffer = (rf_audio_buffer){};
+    audio_buffer->buffer = RF_MALLOC(buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
+    memset(audio_buffer, 0, buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
 
     //RF_ASSERT(audio_buffer == NULL);
 
@@ -695,7 +722,7 @@ static rf_audio_buffer* _rf_init_audio_buffer(ma_format format, ma_uint32 channe
 
     if (result != MA_SUCCESS)
     {
-        RF_LOG(LOG_ERROR, "rf_init_audio_buffer() : Failed to create data conversion pipeline");
+        RF_LOG(RF_LOG_ERROR, "rf_init_audio_buffer() : Failed to create data conversion pipeline");
         RF_FREE(audio_buffer);
         return NULL;
     }
@@ -814,35 +841,35 @@ static void _rf_set_audio_buffer_pitch(rf_audio_buffer* buffer, float pitch)
 // Track audio buffer to linked list next position
 static void _rf_track_audio_buffer(rf_audio_buffer* buffer)
 {
-    ma_mutex_lock(&rf_global_audio_lock);
+    ma_mutex_lock(&_rf_global_audio_context->audio_lock);
     {
-        if (rf_global_first_audio_buffer == NULL) rf_global_first_audio_buffer = buffer;
+        if (_rf_global_audio_context->first_audio_buffer == NULL) _rf_global_audio_context->first_audio_buffer = buffer;
         else
         {
-            rf_global_last_audio_buffer->next = buffer;
-            buffer->prev = rf_global_last_audio_buffer;
+            _rf_global_audio_context->last_audio_buffer->next = buffer;
+            buffer->prev = _rf_global_audio_context->last_audio_buffer;
         }
 
-        rf_global_last_audio_buffer = buffer;
+        _rf_global_audio_context->last_audio_buffer = buffer;
     }
-    ma_mutex_unlock(&rf_global_audio_lock);
+    ma_mutex_unlock(&_rf_global_audio_context->audio_lock);
 }
 
 // Untrack audio buffer from linked list
 static void _rf_untrack_audio_buffer(rf_audio_buffer* buffer)
 {
-    ma_mutex_lock(&rf_global_audio_lock);
+    ma_mutex_lock(&_rf_global_audio_context->audio_lock);
     {
-        if (buffer->prev == NULL) rf_global_first_audio_buffer = buffer->next;
+        if (buffer->prev == NULL) _rf_global_audio_context->first_audio_buffer = buffer->next;
         else buffer->prev->next = buffer->next;
 
-        if (buffer->next == NULL) rf_global_last_audio_buffer = buffer->prev;
+        if (buffer->next == NULL) _rf_global_audio_context->last_audio_buffer = buffer->prev;
         else buffer->next->prev = buffer->prev;
 
         buffer->prev = NULL;
         buffer->next = NULL;
     }
-    ma_mutex_unlock(&rf_global_audio_lock);
+    ma_mutex_unlock(&_rf_global_audio_context->audio_lock);
 }
 
 //----------------------------------------------------------------------------------
@@ -867,7 +894,7 @@ extern rf_wave rf_load_wave_from_file(const char* filename)
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
         else if (_rf_is_file_extension(filename, ".mp3")) rf_wave = rf_load_mp3(filename);
 #endif
-    else RF_LOG(LOG_WARNING, "[%s] Audio fileformat not supported, it can't be loaded", filename);
+    else RF_LOG(RF_LOG_WARNING, "[%s] Audio fileformat not supported, it can't be loaded", filename);
 
     return rf_wave;
 }
@@ -906,13 +933,13 @@ extern rf_short_audio_stream rf_load_short_audio_stream_from_wave(rf_wave wave)
         ma_uint32 frameCountIn = wave.sample_count / wave.channels;
 
         ma_uint32 frameCount = (ma_uint32)ma_convert_frames(NULL, RF_DEVICE_FORMAT, RF_DEVICE_CHANNELS, RF_DEVICE_SAMPLE_RATE, NULL, formatIn, wave.channels, wave.sample_rate, frameCountIn);
-        if (frameCount == 0) RF_LOG(LOG_WARNING, "LoadSoundFromWave() : Failed to get frame count for format conversion");
+        if (frameCount == 0) RF_LOG(RF_LOG_WARNING, "LoadSoundFromWave() : Failed to get frame count for format conversion");
 
         rf_audio_buffer* rf_audio_buffer = _rf_init_audio_buffer(RF_DEVICE_FORMAT, RF_DEVICE_CHANNELS, RF_DEVICE_SAMPLE_RATE, frameCount, rf_audio_buffer_static);
-        if (rf_audio_buffer == NULL) RF_LOG(LOG_WARNING, "LoadSoundFromWave() : Failed to create audio buffer");
+        if (rf_audio_buffer == NULL) RF_LOG(RF_LOG_WARNING, "LoadSoundFromWave() : Failed to create audio buffer");
 
         frameCount = (ma_uint32)ma_convert_frames(rf_audio_buffer->buffer, rf_audio_buffer->dsp.formatConverterIn.config.formatIn, rf_audio_buffer->dsp.formatConverterIn.config.channels, rf_audio_buffer->dsp.src.config.sampleRateIn, wave.data, formatIn, wave.channels, wave.sample_rate, frameCountIn);
-        if (frameCount == 0) RF_LOG(LOG_WARNING, "LoadSoundFromWave() : Format conversion failed");
+        if (frameCount == 0) RF_LOG(RF_LOG_WARNING, "LoadSoundFromWave() : Format conversion failed");
 
         rf_short_audio_stream.sample_count = frameCount*RF_DEVICE_CHANNELS;
         rf_short_audio_stream.stream.sample_rate = RF_DEVICE_SAMPLE_RATE;
@@ -967,8 +994,8 @@ extern void rf_export_wave(rf_wave wave, const char* filename)
         fclose(rawFile);
     }
 
-    if (success) RF_LOG(LOG_INFO, "Wave exported successfully: %s", filename);
-    else RF_LOG(LOG_WARNING, "Wave could not be exported.");
+    if (success) RF_LOG(RF_LOG_INFO, "Wave exported successfully: %s", filename);
+    else RF_LOG(RF_LOG_WARNING, "Wave could not be exported.");
 }
 
 // Export wave sample data to code (.h)
@@ -1033,13 +1060,13 @@ extern void rf_play_short_audio_stream_multi(rf_short_audio_stream short_audio_s
     // find the first non playing pool entry
     for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++)
     {
-        if (rf_audio_buffer_pool_channels[i] > oldAge)
+        if (_rf_global_audio_context->audio_buffer_pool_channels[i] > oldAge)
         {
-            oldAge = rf_audio_buffer_pool_channels[i];
+            oldAge = _rf_global_audio_context->audio_buffer_pool_channels[i];
             oldIndex = i;
         }
 
-        if (!_rf_is_audio_buffer_playing(rf_audio_buffer_pool[i]))
+        if (!_rf_is_audio_buffer_playing(_rf_global_audio_context->audio_buffer_pool[i]))
         {
             index = i;
             break;
@@ -1049,12 +1076,12 @@ extern void rf_play_short_audio_stream_multi(rf_short_audio_stream short_audio_s
     // If no none playing pool members can be index choose the oldest
     if (index == -1)
     {
-        RF_LOG(LOG_WARNING,"pool age %i ended a sound early no room in buffer pool", rf_audio_buffer_pool_counter);
+        RF_LOG(RF_LOG_WARNING,"pool age %i ended a sound early no room in buffer pool", _rf_global_audio_context->audio_buffer_pool_counter);
 
         if (oldIndex == -1)
         {
             // Shouldn't be able to get here... but just in case something odd happens!
-            RF_LOG(LOG_ERROR,"sound buffer pool couldn't determine oldest buffer not playing sound");
+            RF_LOG(RF_LOG_ERROR,"sound buffer pool couldn't determine oldest buffer not playing sound");
 
             return;
         }
@@ -1062,32 +1089,32 @@ extern void rf_play_short_audio_stream_multi(rf_short_audio_stream short_audio_s
         index = oldIndex;
 
         // Just in case...
-        _rf_stop_audio_buffer(rf_audio_buffer_pool[index]);
+        _rf_stop_audio_buffer(_rf_global_audio_context->audio_buffer_pool[index]);
     }
 
     // Experimentally mutex lock doesn't seem to be needed this makes sense
     // as audioBufferPool[index] isn't playing and the only stuff we're copying
     // shouldn't be changing...
 
-    rf_audio_buffer_pool_channels[index] = rf_audio_buffer_pool_counter;
-    rf_audio_buffer_pool_counter++;
+    _rf_global_audio_context->audio_buffer_pool_channels[index] = _rf_global_audio_context->audio_buffer_pool_counter;
+    _rf_global_audio_context->audio_buffer_pool_counter++;
 
-    rf_audio_buffer_pool[index]->volume = short_audio_stream.stream.buffer->volume;
-    rf_audio_buffer_pool[index]->pitch = short_audio_stream.stream.buffer->pitch;
-    rf_audio_buffer_pool[index]->looping = short_audio_stream.stream.buffer->looping;
-    rf_audio_buffer_pool[index]->usage = short_audio_stream.stream.buffer->usage;
-    rf_audio_buffer_pool[index]->is_sub_buffer_processed[0] = false;
-    rf_audio_buffer_pool[index]->is_sub_buffer_processed[1] = false;
-    rf_audio_buffer_pool[index]->buffer_size_in_frames = short_audio_stream.stream.buffer->buffer_size_in_frames;
-    rf_audio_buffer_pool[index]->buffer = short_audio_stream.stream.buffer->buffer;
+    _rf_global_audio_context->audio_buffer_pool[index]->volume = short_audio_stream.stream.buffer->volume;
+    _rf_global_audio_context->audio_buffer_pool[index]->pitch = short_audio_stream.stream.buffer->pitch;
+    _rf_global_audio_context->audio_buffer_pool[index]->looping = short_audio_stream.stream.buffer->looping;
+    _rf_global_audio_context->audio_buffer_pool[index]->usage = short_audio_stream.stream.buffer->usage;
+    _rf_global_audio_context->audio_buffer_pool[index]->is_sub_buffer_processed[0] = false;
+    _rf_global_audio_context->audio_buffer_pool[index]->is_sub_buffer_processed[1] = false;
+    _rf_global_audio_context->audio_buffer_pool[index]->buffer_size_in_frames = short_audio_stream.stream.buffer->buffer_size_in_frames;
+    _rf_global_audio_context->audio_buffer_pool[index]->buffer = short_audio_stream.stream.buffer->buffer;
 
-    _rf_play_audio_buffer(rf_audio_buffer_pool[index]);
+    _rf_play_audio_buffer(_rf_global_audio_context->audio_buffer_pool[index]);
 }
 
 // Stop any sound played with PlaySoundMulti()
 extern void rf_stop_short_audio_stream_multi(void)
 {
-    for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++) _rf_stop_audio_buffer(rf_audio_buffer_pool[i]);
+    for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++) _rf_stop_audio_buffer(_rf_global_audio_context->audio_buffer_pool[i]);
 }
 
 // Get number of sounds playing in the multichannel buffer pool
@@ -1097,7 +1124,7 @@ extern int rf_get_short_audio_streams_playing(void)
 
     for (int i = 0; i < RF_MAX_AUDIO_BUFFER_POOL_CHANNELS; i++)
     {
-        if (_rf_is_audio_buffer_playing(rf_audio_buffer_pool[i])) counter++;
+        if (_rf_is_audio_buffer_playing(_rf_global_audio_context->audio_buffer_pool[i])) counter++;
     }
 
     return counter;
@@ -1150,7 +1177,7 @@ extern void rf_format_wave(rf_wave* wave, int sample_rate, int sample_size, int 
     ma_uint32 frameCount = (ma_uint32)ma_convert_frames(NULL, formatOut, channels, sample_rate, NULL, formatIn, wave->channels, wave->sample_rate, frameCountIn);
     if (frameCount == 0)
     {
-        RF_LOG(LOG_ERROR, "WaveFormat() : Failed to get frame count for format conversion.");
+        RF_LOG(RF_LOG_ERROR, "WaveFormat() : Failed to get frame count for format conversion.");
         return;
     }
 
@@ -1159,7 +1186,7 @@ extern void rf_format_wave(rf_wave* wave, int sample_rate, int sample_size, int 
     frameCount = (ma_uint32)ma_convert_frames(data, formatOut, channels, sample_rate, wave->data, formatIn, wave->channels, wave->sample_rate, frameCountIn);
     if (frameCount == 0)
     {
-        RF_LOG(LOG_ERROR, "WaveFormat() : Format conversion failed.");
+        RF_LOG(RF_LOG_ERROR, "WaveFormat() : Format conversion failed.");
         return;
     }
 
@@ -1208,7 +1235,7 @@ extern void rf_crop_wave(rf_wave* rf_wave, int init_sample, int final_sample)
         RF_FREE(rf_wave->data);
         rf_wave->data = data;
     }
-    else RF_LOG(LOG_WARNING, "Wave crop range out of bounds");
+    else RF_LOG(RF_LOG_WARNING, "Wave crop range out of bounds");
 }
 
 // Get samples data from wave as a floats array
@@ -1359,16 +1386,16 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
             else if (rf_long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
 #endif
 
-        RF_LOG(LOG_WARNING, "[%s] Music file could not be opened", filename);
+        RF_LOG(RF_LOG_WARNING, "[%s] Music file could not be opened", filename);
     }
     else
     {
         // Show some music stream info
-        RF_LOG(LOG_INFO, "[%s] Music file successfully loaded:", filename);
-        RF_LOG(LOG_INFO, "   Total samples: %i", rf_long_audio_stream.sample_count);
-        RF_LOG(LOG_INFO, "   Sample rate: %i Hz", rf_long_audio_stream.stream.sample_rate);
-        RF_LOG(LOG_INFO, "   Sample size: %i bits", rf_long_audio_stream.stream.sample_size);
-        RF_LOG(LOG_INFO, "   Channels: %i (%s)", rf_long_audio_stream.stream.channels, (rf_long_audio_stream.stream.channels == 1)? "Mono" : (rf_long_audio_stream.stream.channels == 2)? "Stereo" : "Multi");
+        RF_LOG(RF_LOG_INFO, "[%s] Music file successfully loaded:", filename);
+        RF_LOG(RF_LOG_INFO, "   Total samples: %i", rf_long_audio_stream.sample_count);
+        RF_LOG(RF_LOG_INFO, "   Sample rate: %i Hz", rf_long_audio_stream.stream.sample_rate);
+        RF_LOG(RF_LOG_INFO, "   Sample size: %i bits", rf_long_audio_stream.stream.sample_size);
+        RF_LOG(RF_LOG_INFO, "   Channels: %i (%s)", rf_long_audio_stream.stream.channels, (rf_long_audio_stream.stream.channels == 1)? "Mono" : (rf_long_audio_stream.stream.channels == 2)? "Stereo" : "Multi");
     }
 
     return rf_long_audio_stream;
@@ -1412,7 +1439,7 @@ extern void rf_play_long_audio_stream(rf_long_audio_stream long_audio_stream)
         rf_play_audio_stream(long_audio_stream.stream);  // WARNING: This resets the cursor position.
         rf_audio_buffer->frame_cursor_pos = frame_cursor_pos;
     }
-    else RF_LOG(LOG_ERROR, "PlayMusicStream() : No audio buffer");
+    else RF_LOG(RF_LOG_ERROR, "PlayMusicStream() : No audio buffer");
 
 }
 
@@ -1463,7 +1490,8 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
     unsigned int subBufferSizeInFrames = long_audio_stream.stream.buffer->buffer_size_in_frames / 2;
 
     // NOTE: Using dynamic allocation because it could require more than 16KB
-    void* pcm = RF_CALLOC(subBufferSizeInFrames * long_audio_stream.stream.channels * long_audio_stream.stream.sample_size / 8, 1);
+    void* pcm = RF_MALLOC(subBufferSizeInFrames * long_audio_stream.stream.channels * long_audio_stream.stream.sample_size / 8);
+    memset(pcm, 0, subBufferSizeInFrames * long_audio_stream.stream.channels * long_audio_stream.stream.sample_size / 8);
 
     int samplesCount = 0;    // Total size of data streamed in L+R samples for xm floats, individual L or R for ogg shorts
 
@@ -1618,7 +1646,7 @@ extern rf_audio_stream rf_create_audio_stream(unsigned int sample_rate, unsigned
     ma_format formatIn = ((stream.sample_size == 8)? ma_format_u8 : ((stream.sample_size == 16)? ma_format_s16 : ma_format_f32));
 
     // The size of a streaming buffer must be at least double the size of a period
-    unsigned int periodSize = rf_global_device.playback.internalBufferSizeInFrames/rf_global_device.playback.internalPeriods;
+    unsigned int periodSize = _rf_global_audio_context->device.playback.internalBufferSizeInFrames/_rf_global_audio_context->device.playback.internalPeriods;
     unsigned int subBufferSize = RF_AUDIO_BUFFER_SIZE;
 
     if (subBufferSize < periodSize) subBufferSize = periodSize;
@@ -1628,9 +1656,9 @@ extern rf_audio_stream rf_create_audio_stream(unsigned int sample_rate, unsigned
     if (stream.buffer != NULL)
     {
         stream.buffer->looping = true;    // Always loop for streaming buffers
-        RF_LOG(LOG_INFO, "Audio stream loaded successfully (%i Hz, %i bit, %s)", stream.sample_rate, stream.sample_size, (stream.channels == 1)? "Mono" : "Stereo");
+        RF_LOG(RF_LOG_INFO, "Audio stream loaded successfully (%i Hz, %i bit, %s)", stream.sample_rate, stream.sample_size, (stream.channels == 1)? "Mono" : "Stereo");
     }
-    else RF_LOG(LOG_ERROR, "InitAudioStream() : Failed to create audio buffer");
+    else RF_LOG(RF_LOG_ERROR, "InitAudioStream() : Failed to create audio buffer");
 
     return stream;
 }
@@ -1640,7 +1668,7 @@ extern void rf_close_audio_stream(rf_audio_stream stream)
 {
     _rf_close_audio_buffer(stream.buffer);
 
-    RF_LOG(LOG_INFO, "Unloaded audio stream data");
+    RF_LOG(RF_LOG_INFO, "Unloaded audio stream data");
 }
 
 // Update audio stream buffers with data
@@ -1693,11 +1721,11 @@ extern void rf_update_audio_stream(rf_audio_stream stream, const void* data, int
 
                 rf_audio_buffer->is_sub_buffer_processed[subBufferToUpdate] = false;
             }
-            else RF_LOG(LOG_ERROR, "UpdateAudioStream() : Attempting to write too many frames to buffer");
+            else RF_LOG(RF_LOG_ERROR, "UpdateAudioStream() : Attempting to write too many frames to buffer");
         }
-        else RF_LOG(LOG_ERROR, "UpdateAudioStream() : Audio buffer not available for updating");
+        else RF_LOG(RF_LOG_ERROR, "UpdateAudioStream() : Audio buffer not available for updating");
     }
-    else RF_LOG(LOG_ERROR, "UpdateAudioStream() : No audio buffer");
+    else RF_LOG(RF_LOG_ERROR, "UpdateAudioStream() : No audio buffer");
 }
 
 // Check if any audio stream buffers requires refill
@@ -1705,7 +1733,7 @@ extern bool rf_is_audio_stream_processed(rf_audio_stream stream)
 {
     if (stream.buffer == NULL)
     {
-        RF_LOG(LOG_ERROR, "IsAudioStreamProcessed() : No audio buffer");
+        RF_LOG(RF_LOG_ERROR, "IsAudioStreamProcessed() : No audio buffer");
         return false;
     }
 
@@ -1794,7 +1822,7 @@ static rf_wave rf_load_wav(const char* filename)
 
     if (wavFile == NULL)
     {
-        RF_LOG(LOG_WARNING, "[%s] WAV file could not be opened", filename);
+        RF_LOG(RF_LOG_WARNING, "[%s] WAV file could not be opened", filename);
         rf_wave.data = NULL;
     }
     else
@@ -1806,7 +1834,7 @@ static rf_wave rf_load_wav(const char* filename)
         if (strncmp(wavRiffHeader.chunkID, "RIFF", 4) ||
             strncmp(wavRiffHeader.format, "WAVE", 4))
         {
-                RF_LOG(LOG_WARNING, "[%s] Invalid RIFF or WAVE Header", filename);
+                RF_LOG(RF_LOG_WARNING, "[%s] Invalid RIFF or WAVE Header", filename);
         }
         else
         {
@@ -1817,7 +1845,7 @@ static rf_wave rf_load_wav(const char* filename)
             if ((wavFormat.subChunkID[0] != 'f') || (wavFormat.subChunkID[1] != 'm') ||
                 (wavFormat.subChunkID[2] != 't') || (wavFormat.subChunkID[3] != ' '))
             {
-                RF_LOG(LOG_WARNING, "[%s] Invalid Wave format", filename);
+                RF_LOG(RF_LOG_WARNING, "[%s] Invalid Wave format", filename);
             }
             else
             {
@@ -1831,7 +1859,7 @@ static rf_wave rf_load_wav(const char* filename)
                 if ((wavData.subChunkID[0] != 'd') || (wavData.subChunkID[1] != 'a') ||
                     (wavData.subChunkID[2] != 't') || (wavData.subChunkID[3] != 'a'))
                 {
-                    RF_LOG(LOG_WARNING, "[%s] Invalid data header", filename);
+                    RF_LOG(RF_LOG_WARNING, "[%s] Invalid data header", filename);
                 }
                 else
                 {
@@ -1849,7 +1877,7 @@ static rf_wave rf_load_wav(const char* filename)
                     // NOTE: Only support 8 bit, 16 bit and 32 bit sample sizes
                     if ((rf_wave.sample_size != 8) && (rf_wave.sample_size != 16) && (rf_wave.sample_size != 32))
                     {
-                        RF_LOG(LOG_WARNING, "[%s] WAV sample size (%ibit) not supported, converted to 16bit", filename, rf_wave.sample_size);
+                        RF_LOG(RF_LOG_WARNING, "[%s] WAV sample size (%ibit) not supported, converted to 16bit", filename, rf_wave.sample_size);
                         rf_format_wave(&rf_wave, rf_wave.sample_rate, 16, rf_wave.channels);
                     }
 
@@ -1857,13 +1885,13 @@ static rf_wave rf_load_wav(const char* filename)
                     if (rf_wave.channels > 2)
                     {
                         rf_format_wave(&rf_wave, rf_wave.sample_rate, rf_wave.sample_size, 2);
-                        RF_LOG(LOG_WARNING, "[%s] WAV channels number (%i) not supported, converted to 2 channels", filename, rf_wave.channels);
+                        RF_LOG(RF_LOG_WARNING, "[%s] WAV channels number (%i) not supported, converted to 2 channels", filename, rf_wave.channels);
                     }
 
                     // NOTE: subChunkSize comes in bytes, we need to translate it to number of samples
                     rf_wave.sample_count = (wavData.subChunkSize/(rf_wave.sample_size/8))/rf_wave.channels;
 
-                    RF_LOG(LOG_INFO, "[%s] WAV file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+                    RF_LOG(RF_LOG_INFO, "[%s] WAV file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
                 }
             }
         }
@@ -1905,7 +1933,7 @@ static int rf_save_wav(rf_wave rf_wave, const char* filename)
 
     FILE *wavFile = fopen(filename, "wb");
 
-    if (wavFile == NULL) RF_LOG(LOG_WARNING, "[%s] WAV audio file could not be created", filename);
+    if (wavFile == NULL) RF_LOG(RF_LOG_WARNING, "[%s] WAV audio file could not be created", filename);
     else
     {
         RiffHeader riffHeader;
@@ -1964,7 +1992,7 @@ static rf_wave rf_load_ogg(const char* filename)
 
     stb_vorbis *oggFile = stb_vorbis_open_filename(filename, NULL, NULL);
 
-    if (oggFile == NULL) RF_LOG(LOG_WARNING, "[%s] OGG file could not be opened", filename);
+    if (oggFile == NULL) RF_LOG(RF_LOG_WARNING, "[%s] OGG file could not be opened", filename);
     else
     {
         stb_vorbis_info info = stb_vorbis_get_info(oggFile);
@@ -1975,16 +2003,16 @@ static rf_wave rf_load_ogg(const char* filename)
         rf_wave.sample_count = (unsigned int)stb_vorbis_stream_length_in_samples(oggFile)*info.channels;  // Independent by channel
 
         float totalSeconds = stb_vorbis_stream_length_in_seconds(oggFile);
-        if (totalSeconds > 10) RF_LOG(LOG_WARNING, "[%s] Ogg audio length is larger than 10 seconds (%f), that's a big file in memory, consider music streaming", filename, totalSeconds);
+        if (totalSeconds > 10) RF_LOG(RF_LOG_WARNING, "[%s] Ogg audio length is larger than 10 seconds (%f), that's a big file in memory, consider music streaming", filename, totalSeconds);
 
         rf_wave.data = (short *)RF_MALLOC(rf_wave.sample_count*rf_wave.channels*sizeof(short));
 
         // NOTE: Returns the number of samples to process (be careful! we ask for number of shorts!)
         int numSamplesOgg = stb_vorbis_get_samples_short_interleaved(oggFile, info.channels, (short *)rf_wave.data, rf_wave.sample_count*rf_wave.channels);
 
-        RF_LOG(LOG_DEBUG, "[%s] Samples obtained: %i", filename, numSamplesOgg);
+        RF_LOG(RF_LOG_DEBUG, "[%s] Samples obtained: %i", filename, numSamplesOgg);
 
-        RF_LOG(LOG_INFO, "[%s] OGG file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+        RF_LOG(RF_LOG_INFO, "[%s] OGG file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
         stb_vorbis_close(oggFile);
     }
@@ -2008,10 +2036,10 @@ static rf_wave rf_load_flac(const char* filename)
     rf_wave.sample_size = 16;
 
     // NOTE: Only support up to 2 channels (mono, stereo)
-    if (rf_wave.channels > 2) RF_LOG(LOG_WARNING, "[%s] FLAC channels number (%i) not supported", filename, rf_wave.channels);
+    if (rf_wave.channels > 2) RF_LOG(RF_LOG_WARNING, "[%s] FLAC channels number (%i) not supported", filename, rf_wave.channels);
 
-    if (rf_wave.data == NULL) RF_LOG(LOG_WARNING, "[%s] FLAC data could not be loaded", filename);
-    else RF_LOG(LOG_INFO, "[%s] FLAC file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+    if (rf_wave.data == NULL) RF_LOG(RF_LOG_WARNING, "[%s] FLAC data could not be loaded", filename);
+    else RF_LOG(RF_LOG_INFO, "[%s] FLAC file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
     return rf_wave;
 }
@@ -2035,10 +2063,10 @@ static rf_wave rf_load_mp3(const char* filename)
     rf_wave.sample_size = 32;
 
     // NOTE: Only support up to 2 channels (mono, stereo)
-    if (rf_wave.channels > 2) RF_LOG(LOG_WARNING, "[%s] MP3 channels number (%i) not supported", filename, rf_wave.channels);
+    if (rf_wave.channels > 2) RF_LOG(RF_LOG_WARNING, "[%s] MP3 channels number (%i) not supported", filename, rf_wave.channels);
 
-    if (rf_wave.data == NULL) RF_LOG(LOG_WARNING, "[%s] MP3 data could not be loaded", filename);
-    else RF_LOG(LOG_INFO, "[%s] MP3 file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+    if (rf_wave.data == NULL) RF_LOG(RF_LOG_WARNING, "[%s] MP3 data could not be loaded", filename);
+    else RF_LOG(RF_LOG_INFO, "[%s] MP3 file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
     return rf_wave;
 }

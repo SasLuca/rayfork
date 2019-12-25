@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+//region platform functions impl
+
+//region get_time implementation
+
 //Windows only
 #ifdef _WIN32
 
@@ -70,6 +74,8 @@ double rf_get_time(void)
 }
 #endif
 
+//endregion
+
 void rf_wait(float ms)
 {
     //Can be left unimplemented
@@ -126,3 +132,14 @@ void rf_trace_log(const rf_context* rf_ctx, int logType, const char* text, ...)
 {
     //Can be left unimplemented
 }
+
+//endregion
+
+//region audio
+rf_audio_context global_audio_ctx;
+
+void init_audio(void)
+{
+    rf_audio_init(&global_audio_ctx); // Initialize audio device
+}
+//endregion

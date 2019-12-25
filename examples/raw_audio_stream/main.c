@@ -8,10 +8,10 @@
 #define screen_width 800
 #define screen_height 450
 
-void on_init(void);
-void on_frame(void);
-void on_cleanup(void);
-void on_event(const sapp_event* event);
+extern void on_init(void);
+extern void on_frame(void);
+extern void on_cleanup(void);
+extern void on_event(const sapp_event* event);
 
 sapp_desc sokol_main(int argc, char** argv) 
 {
