@@ -627,9 +627,6 @@ struct rf_gl_context
     rf_rectangle rec_tex_shapes;
 };
 
-// Callbacks to be implemented by users
-typedef void (*RF_LOG_callback)(int logType, const char* text, va_list args);
-
 typedef unsigned char rf_byte;
 
 typedef struct rf_context rf_context;
@@ -1491,20 +1488,6 @@ RF_INTERNAL bool _rf_is_file_extension(const char* fileName, const char* ext)
     return result;
 }
 
-// @Explanation: Formatting of text with variables to 'embed'
-// @ToRemove @Note(Lulu): Needed for loading gltf files. Review and remove in the future
-RF_INTERNAL const char* _rf_text_format(const char* text, ...)
-{
-    RF_INTERNAL char buffer[rf_max_text_buffer_length] = { 0 };
-
-    va_list args;
-    va_start(args, text);
-    vsprintf(buffer, text, args);
-    va_end(args);
-
-    return buffer;
-}
-
 // Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found
 // When a invalid UTF8 rf_byte is encountered we exit as soon as possible and a '?'(0x3f) codepoint is returned
 // Total number of bytes processed are returned as a parameter
@@ -2278,7 +2261,9 @@ RF_API void rf_draw_fps(int posX, int posY)
     }
 
     // NOTE: We have rounding errors every frame, so it oscillates a lot
-    rf_draw_text(_rf_text_format("%2i FPS", fps), posX, posY, 20, rf_lime);
+    char buff[100];
+    snprintf(buff, 100, "%2i FPS", fps);
+    rf_draw_text(buff, posX, posY, 20, rf_lime);
 }
 
 // Draw text (using default font)
@@ -11624,7 +11609,9 @@ RF_INTERNAL rf_texture _rf_load_texture_from_cgltf_image(cgltf_image *image, con
         }
         else
         {
-            rf_image rimage = rf_load_image(_rf_text_format("%s/%s", texPath, image->uri));
+            char buff[1024];
+            snprintf(buff, 1024, "%s/%s", texPath, image->uri);
+            rf_image rimage = rf_load_image(buff);
 
             // TODO: Tint shouldn't be applied here!
             rf_image_color_tint(&rimage, tint);

@@ -185,7 +185,6 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
 
 //region implementation
 #ifdef RF_AUDIO_IMPL
-#include <stdarg.h> // Required for: va_list, va_start(), vfprintf(), va_end()
 
 #define MA_NO_JACK
 #define MINIAUDIO_IMPLEMENTATION
