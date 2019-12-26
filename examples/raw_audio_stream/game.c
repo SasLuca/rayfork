@@ -41,7 +41,7 @@ void on_init(void)
 
     //Initialise rayfork and load the default font
     rf_context_init(&rf_ctx, screen_width, screen_height);
-    rf_load_font_default(&rf_ctx);
+    rf_load_font_default();
 
     // Init raw audio stream (sample rate: 22050, sample size: 16bit-short, channels: 1-mono)
     stream = rf_create_audio_stream(22050, 16, 1);
@@ -66,7 +66,7 @@ void on_init(void)
     // Computed size in samples of the sine wave
     wave_length = 1;
 
-    rf_set_target_fps(&rf_ctx, 30); // Set our game to run at 30 frames-per-second
+    rf_set_target_fps(30); // Set our game to run at 30 frames-per-second
 }
 
 void on_frame(void)
@@ -128,14 +128,14 @@ void on_frame(void)
     }
 
     // Draw
-    rf_begin_drawing(&rf_ctx);
+    rf_begin_drawing();
 
     rf_clear_background(rf_raywhite);
 
     char buff[500];
     snprintf(buff, 500, "sine frequency: %i", (int)frequency);
-    rf_draw_text(&rf_ctx, buff, 800 - 220, 10, 20, rf_red);
-    rf_draw_text(&rf_ctx, "click mouse button to change frequency", 10, 10, 20, rf_darkgray);
+    rf_draw_text(buff, 800 - 220, 10, 20, rf_red);
+    rf_draw_text("click mouse button to change frequency", 10, 10, 20, rf_darkgray);
 
     // Draw the current buffer state proportionate to the screen
     for (int i = 0; i < screen_width; i++)
@@ -143,10 +143,10 @@ void on_frame(void)
         position.x = i;
         position.y = 250 + 50 * data[i * max_samples / screen_width] / 32000;
 
-        rf_draw_pixel_v(&rf_ctx, position, rf_red);
+        rf_draw_pixel_v(position, rf_red);
     }
 
-    rf_end_drawing(&rf_ctx);
+    rf_end_drawing();
 }
 
 void on_event(const sapp_event* event)

@@ -39,8 +39,8 @@ void on_init(void)
 
     //Initialise rayfork and load the default font
     rf_context_init(&rf_ctx, SCREEN_WIDTH, screen_height);
-    rf_set_target_fps(&rf_ctx, 60);
-    rf_load_font_default(&rf_ctx);
+    rf_set_target_fps(60);
+    rf_load_font_default();
 }
 
 void on_frame(void)
@@ -70,32 +70,32 @@ void on_frame(void)
     
     // Draw
     //-----------------------------------------------------
-    rf_begin_drawing(&rf_ctx);
+    rf_begin_drawing();
 
     rf_clear_background(rf_raywhite);
 
-    rf_draw_rectangle(&rf_ctx, 0, 0, SCREEN_WIDTH, screen_upper_limit, collision ? rf_red : rf_black);
+    rf_draw_rectangle(0, 0, SCREEN_WIDTH, screen_upper_limit, collision ? rf_red : rf_black);
 
-    rf_draw_rectangle_rec(&rf_ctx, box_a, rf_gold);
-    rf_draw_rectangle_rec(&rf_ctx, box_b, rf_blue);
+    rf_draw_rectangle_rec(box_a, rf_gold);
+    rf_draw_rectangle_rec(box_b, rf_blue);
 
     if (collision)
     {
         // Draw collision area
-        rf_draw_rectangle_rec(&rf_ctx, box_collision, rf_lime);
+        rf_draw_rectangle_rec(box_collision, rf_lime);
 
         // Draw collision message
-        rf_draw_text(&rf_ctx, "COLLISION!", SCREEN_WIDTH / 2 - rf_measure_text(&rf_ctx, "COLLISION!", 20) / 2, screen_upper_limit / 2 - 10, 20, rf_black);
+        rf_draw_text("COLLISION!", SCREEN_WIDTH / 2 - rf_measure_text("COLLISION!", 20) / 2, screen_upper_limit / 2 - 10, 20, rf_black);
 
         // Draw collision area
         char text_buff[512];
         snprintf(text_buff, 512, "Collision Area: %i", (int) box_collision.width * (int) box_collision.height);
-        rf_draw_text(&rf_ctx, text_buff, SCREEN_WIDTH / 2 - 100, screen_upper_limit + 10, 20, rf_black);
+        rf_draw_text(text_buff, SCREEN_WIDTH / 2 - 100, screen_upper_limit + 10, 20, rf_black);
     }
 
-    rf_draw_fps(&rf_ctx, 10, 10);
+    rf_draw_fps(10, 10);
 
-    rf_end_drawing(&rf_ctx);
+    rf_end_drawing();
 }
 
 void on_event(const sapp_event* event)

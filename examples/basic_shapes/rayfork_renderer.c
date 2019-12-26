@@ -118,9 +118,3 @@ bool rf_write_to_file(const char* filename, uint8_t* buffer, int buffer_size)
     fclose(file);
     return result;
 }
-
-// Show trace log messages (rf_log_info, rf_log_warning, LOG_ERROR, LOG_DEBUG)
-void rf_trace_log(const rf_context* rf_ctx, int logType, const char* text, ...)
-{
-    //Can be left unimplemented
-}
