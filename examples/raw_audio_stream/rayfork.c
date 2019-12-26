@@ -136,9 +136,12 @@ void rf_trace_log(const rf_context* rf_ctx, int logType, const char* text, ...)
 //endregion
 
 //region audio
+
+//With rayfork_audio the context struct must be in the same translation unit as the rayfork_audio implementation.
+//This is done in order to only include miniaudio (which is very big) in the translation unit with the implementation.
 rf_audio_context global_audio_ctx;
 
-void init_audio(void)
+extern void init_audio(void)
 {
     rf_audio_init(&global_audio_ctx); // Initialize audio device
 }
