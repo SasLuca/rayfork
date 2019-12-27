@@ -24,6 +24,7 @@
 ***********************************************************************************************/
 
 //region interface
+
 #ifndef RF_RENDERER_H
 #define RF_RENDERER_H
 
@@ -43,7 +44,7 @@
 #define RF_DEG2RAD (RF_PI/180.0f)
 #define RF_RAD2DEG (180.0f/RF_PI)
 
-// NOTE: MSC C++ compiler does not support compound literals (C99 feature)
+// NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
 // Plain structures in C++ (without constructors) can be initialized from { } initializers.
 #define RF_CLITERAL(type) (type)
 
@@ -1280,6 +1281,7 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 //endregion
 
 //region implementation
+
 #ifdef RF_RENDERER_IMPL
 
 #ifndef RF_ASSERT
@@ -1314,6 +1316,7 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 rf_context* _rf_global_context_ptr;
 
 //region implementation includes
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1352,6 +1355,7 @@ rf_context* _rf_global_context_ptr;
 //endregion
 
 //region default time implementation
+
 #ifndef RF_CUSTOM_TIME
 
 //Windows only
@@ -1444,6 +1448,7 @@ RF_API void rf_wait(float duration)
 //endregion
 
 //region default io implementation
+
 #ifndef RF_CUSTOM_IO
 // Files management functions
 int rf_get_file_size(const char* filename)
@@ -2884,6 +2889,7 @@ RF_API rf_vector2 rf_measure_text_from_buffer(rf_font font, const char* text, in
 //endregion
 
 //region raymath
+
 // Return float vector for rf_matrix
 #define rf_matrix_to_float(mat) (rf_matrix_to_floatv(mat).v)
 
@@ -4758,6 +4764,7 @@ RF_API rf_color rf_fade(rf_color color, float alpha)
 //endregion
 
 //region rlgl
+
 #define GL_SHADING_LANGUAGE_VERSION         0x8B8C
 #define GL_COMPRESSED_RGB_S3TC_DXT1_EXT     0x83F0
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT    0x83F1
@@ -15857,5 +15864,7 @@ RF_INTERNAL rf_image _rf_load_animated_gif(const char* fileName, int* frames, in
     return image;
 }
 //endregion
+
 #endif
-//endregion //implementation
+
+//endregion

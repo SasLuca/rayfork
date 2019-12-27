@@ -1,5 +1,5 @@
 #include "stdint.h"
-#include "rayfork.h"
+#include "rayfork_renderer.h"
 
 typedef struct game_data game_data;
 struct game_data

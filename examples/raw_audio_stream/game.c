@@ -5,7 +5,7 @@
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
 #include "rayfork_audio.h"
-#include "rayfork.h"
+#include "rayfork_renderer.h"
 #include "sokol_app.h"
 
 #include <math.h>
