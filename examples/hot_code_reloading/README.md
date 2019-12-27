@@ -19,3 +19,5 @@ hot-reload the code.
 
 From CLion you can build the `hot_code_reloading_dynamic` target and then run the `hot_code_reloading` target.
 After that you can make changes to `game.c` and build the`hot_code_reloading_dynamic` target again and then press the `R` key to hot-reload the code.
+
+![](https://i.gyazo.com/884f3d322d9656145c52cb49e1993127.gif)
