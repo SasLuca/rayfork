@@ -104,11 +104,11 @@ sapp_desc sokol_main(int argc, char** argv)
 {
     return (sapp_desc) 
     {
-        .width = 800,
-        .height = 450,
-        .init_cb = on_init,
-        .frame_cb = on_frame,
+        .width      = 800,
+        .height     = 450,
+        .init_cb    = on_init,
+        .frame_cb   = on_frame,
         .cleanup_cb = on_cleanup,
-        .event_cb = on_event,
+        .event_cb   = on_event,
     };
 }
