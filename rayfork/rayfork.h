@@ -38,31 +38,10 @@
 #define RF_INTERNAL static
 #endif
 
-// Trace log type
-#define RF_LOG_TRACE 0
-#define RF_LOG_DEBUG 1
-#define RF_LOG_INFO 2
-#define RF_LOG_WARNING 3
-#define RF_LOG_ERROR 4
-#define RF_LOG_FATAL 5
-
-#ifndef RF_LOG
-#define RF_LOG(log_type, msg, ...)
-#endif
-
 #define RF_PI 3.14159265358979323846f
 
 #define RF_DEG2RAD (RF_PI/180.0f)
 #define RF_RAD2DEG (180.0f/RF_PI)
-
-// Allow custom memory allocators
-#ifndef RF_MALLOC
-#define RF_MALLOC(sz) malloc(sz)
-#endif
-
-#ifndef RF_FREE
-#define RF_FREE(p) free(p)
-#endif
 
 // NOTE: MSC C++ compiler does not support compound literals (C99 feature)
 // Plain structures in C++ (without constructors) can be initialized from { } initializers.
@@ -868,12 +847,8 @@ typedef enum rf_ninepatch_type
 
 //region platform layer
 
-RF_API void rf_wait(float);
-RF_API void rf_swap_buffers(void);
-RF_API double rf_get_time(void); // Returns elapsed time in seconds since InitWindow()
-
-//Logging
-RF_API int rf_get_random_value(int min, int max); // Returns a random value between min and max (both included)
+RF_API void rf_wait(float); // Wait for some milliseconds (pauses program execution)
+RF_API double rf_get_time(void); // Returns elapsed time in seconds since rf_context_init
 
 // Files management functions
 RF_API int rf_get_file_size(const char* filename);
@@ -887,7 +862,11 @@ RF_API bool rf_write_to_file(const char* filename, rf_byte* buffer, int buffer_s
 
 // Initialisation functions
 RF_API void rf_context_init(rf_context* rf_ctx, int width, int height);
+RF_API void rf_set_global_context_ptr(rf_context* rf_ctx);
 RF_API void rf_load_font_default();
+
+// Misc
+RF_API int rf_get_random_value(int min, int max); // Returns a random value between min and max (both included)
 
 // Drawing-related functions
 RF_API void rf_clear_background(rf_color color); // Set background color (framebuffer clear color)
@@ -1307,6 +1286,31 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
     #define RF_ASSERT(condition) assert(condition)
 #endif
 
+#ifndef _rf_is_file_extension
+    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext))
+#endif
+
+// Trace log type
+#define RF_LOG_TRACE 0
+#define RF_LOG_DEBUG 1
+#define RF_LOG_INFO 2
+#define RF_LOG_WARNING 3
+#define RF_LOG_ERROR 4
+#define RF_LOG_FATAL 5
+
+#ifndef RF_LOG
+#define RF_LOG(log_type, msg, ...)
+#endif
+
+// Allow custom memory allocators
+#ifndef RF_MALLOC
+#define RF_MALLOC(sz) malloc(sz)
+#endif
+
+#ifndef RF_FREE
+#define RF_FREE(p) free(p)
+#endif
+
 rf_context* _rf_global_context_ptr;
 
 //region implementation includes
@@ -1345,6 +1349,143 @@ rf_context* _rf_global_context_ptr;
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h" // Required for: ttf font data reading
 
+//endregion
+
+//region default time implementation
+#ifndef RF_CUSTOM_TIME
+
+//Windows only
+#ifdef _WIN32
+
+static long long int _rf_global_performance_counter_frequency;
+static bool _rf_global_performance_counter_frequency_initialised;
+
+//If windows.h is not included
+#if !defined(_WINDOWS_)
+//Definition so that we don't have to include windows.h
+int __stdcall QueryPerformanceCounter(long long int* lpPerformanceCount);
+int __stdcall QueryPerformanceFrequency(long long int* lpFrequency);
+void __stdcall Sleep(int dwMilliseconds);
+#endif
+
+// Returns elapsed time in seconds since InitWindow()
+RF_API double rf_get_time(void)
+{
+    if (!_rf_global_performance_counter_frequency_initialised)
+    {
+        RF_ASSERT(QueryPerformanceFrequency(&_rf_global_performance_counter_frequency) != false);
+        _rf_global_performance_counter_frequency_initialised = true;
+    }
+
+    long long int qpc_result = {0};
+    RF_ASSERT(QueryPerformanceCounter(&qpc_result) != false);
+    return (double) qpc_result / _rf_global_performance_counter_frequency;
+}
+
+RF_API void rf_wait(float duration)
+{
+    Sleep((int) duration);
+}
+
+#elif defined(__linux__)
+
+#include <time.h>
+
+//Source: http://man7.org/linux/man-pages/man2/clock_gettime.2.html
+RF_API double rf_get_time(void)
+{
+    struct timespec result;
+
+    RF_ASSERT(clock_gettime(CLOCK_MONOTONIC_RAW, &result) == 0);
+
+    return (double) result.tv_sec;
+}
+
+RF_API void rf_wait(float duration)
+{
+    long milliseconds = (long) duration;
+    struct timespec ts;
+    ts.tv_sec = milliseconds / 1000;
+    ts.tv_nsec = (milliseconds % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+}
+
+#elif defined(__MACH__)
+
+#include <mach/mach_time.h>
+#include <unistd.h>
+static bool _rf_global_mach_time_initialized;
+static uint64_t _rf_global_mach_time_start;
+static double _rf_global_mach_time_seconds_factor;
+
+RF_API double rf_get_time(void)
+{
+    uint64_t time;
+    if (!_rf_global_mach_time_initialized)
+    {
+        mach_timebase_info_data_t timebase;
+        mach_timebase_info(&timebase);
+        _rf_global_mach_time_seconds_factor = 1e-9 * (double)timebase.numer / (double)timebase.denom;
+        _rf_global_mach_time_start = mach_absolute_time();
+        _rf_global_mach_time_initialized = true;
+    }
+    time = mach_absolute_time();
+    return (double)(time - _rf_global_mach_time_start) * _rf_global_mach_time_seconds_factor;
+}
+
+RF_API void rf_wait(float duration)
+{
+    usleep(duration * 1000);
+}
+
+#endif
+
+#endif
+//endregion
+
+//region default io implementation
+#ifndef RF_CUSTOM_IO
+// Files management functions
+int rf_get_file_size(const char* filename)
+{
+    FILE* file = fopen(filename, "r");
+
+    fseek(file, 0L, SEEK_END);
+    int size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
+    fclose(file);
+    return size;
+}
+
+void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize)
+{
+    FILE* file = fopen(filename, "r");
+    RF_ASSERT(file != NULL);
+
+    size_t newLen = fread(buffer, sizeof(char), bufferSize, file);
+
+    RF_ASSERT(ferror(file) == 0);
+
+    fclose(file);
+}
+
+bool rf_file_exists(const char* filename)
+{
+    FILE* file = fopen(filename, "r");
+    bool result = file != NULL;
+    fclose(file);
+    return result;
+}
+
+bool rf_write_to_file(const char* filename, uint8_t* buffer, int buffer_size)
+{
+    FILE* file = fopen(filename, "r");
+    bool result = fwrite(buffer, 1, buffer_size, file);
+    fclose(file);
+    return result;
+}
+#endif
 //endregion
 
 //region text
@@ -1462,29 +1603,6 @@ RF_INTERNAL const char** _rf_text_split(const char* text, char delimiter, int* c
     }
 
     *count = counter;
-    return result;
-}
-
-RF_INTERNAL bool _rf_is_file_extension(const char* fileName, const char* ext)
-{
-    bool result = false;
-    const char* fileExt = _rf_get_file_extension(fileName);
-
-    if (fileExt != NULL)
-    {
-        int extCount = 0;
-        const char** checkExts = _rf_text_split(ext, ';', &extCount);
-
-        for (int i = 0; i < extCount; i++)
-        {
-            if (strcmp(fileExt, checkExts[i] + 1) == 0)
-            {
-                result = true;
-                break;
-            }
-        }
-    }
-
     return result;
 }
 
@@ -4157,7 +4275,6 @@ RF_API void rf_begin_drawing()
 RF_API void rf_end_drawing()
 {
     rf_gl_draw(); // Draw Buffers (Only OpenGL 3+ and ES2)
-    rf_swap_buffers(); // Copy back buffer to front buffer
 
     // Frame time control system
     _rf_global_context_ptr->current_time = rf_get_time();
@@ -4702,6 +4819,7 @@ RF_INTERNAL rf_color* _rf_gen_next_mipmap( rf_color* srcData, int srcWidth, int 
 // Initialize rlgl: OpenGL extensions, default buffers/shaders/textures, OpenGL states
 RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
 {
+    RF_ASSERT(width != 0 && height != 0);
     _rf_global_context_ptr = rf_ctx;
 
     *_rf_global_context_ptr = (rf_context)

@@ -31,7 +31,7 @@ To use rayfork simply include the header and it's dependencies in your project a
 #include <your_opengl> //Include the opengl headers for your platform
 #define RF_RENDERER_IMPL //You must define this in at least one .c/.cpp files to include the implementation
 #define RF_GRAPHICS_API_OPENGL_33 //Choose a graphics API
-#include "rayfork_renderer.h" //Include rayfork
+#include "rayfork.h" //Include rayfork
 
 #define RF_AUDIO_IMPL //You must define this in at least one .c/.cpp files to include the implementation
 #include "rayfork_audio.h" //Include rayfork audio
@@ -41,7 +41,7 @@ rf_audio_context rf_audio_ctx; //Create a context variable for rayfork_audio. No
 
 void init()
 {
-    rf_context_init(&rf_ctx, screen_width, screen_height); //init rayfork_renderer
+    rf_context_init(&rf_ctx, screen_width, screen_height); //init rayfork
     rf_load_font_default(); //Optionally load the default raylib font
     rf_audio_init(&rf_audio_ctx); //init rayfork_audio
 }
@@ -51,11 +51,9 @@ For an actual example you can clone this project and compile it using the CMake 
 You can also open the project in CLion and compile and run it.
 Several Raylib [examples](https://www.raylib.com/examples.html) have been ported to rayfork and more will be ported.
 
-# Current status
+# Changes from Raylib
 
-Currently only the Raylib renderer has been forked into `rayfork_renderer.h`.
-
-Regarding `rayfork_renderer.h` this is a non-exhaustive list of changes and things to be aware of:
+This is a non-exhaustive list of changes and things to be aware of:
 - Only the OpenGL33 and OpenglES2 graphics backends work. Opengl22 has issues with font rendering (at least with the default font) and the Opengl1 just doesn't work. 
 - Support for VR was removed, might be added again later on.
 - Input was removed since that is dependent on the platform layer.
@@ -63,14 +61,25 @@ Regarding `rayfork_renderer.h` this is a non-exhaustive list of changes and thin
 and how it gets loaded heavily depends on your platform layer. There can also be multiple mutually exclusive ways to load OpenGL on just one platform.
 - Async loading functions were added for certain asset types, we plan to support async loading for all asset types.
 - The naming convention was changed to `rf_function_name` for public functions and `_rf_function_name` for private functions.
-- All global variables were moved into a struct called `rf_context` which must be initialised by the user and passed by pointer to most functions.
+- All global variables were moved into a struct called `rf_context` which must be allocated and initialised by the user. The functions use a global pointer to the `rf_context` struct that can be set by the user.
 - The user must provide the implementation for a couple of simple functions that rely on hosted functionality (eg: IO functions, time query functions, logging)
 - Most text handling functions were removed.
 - More functions now ask for the size of buffers.
-- Library was tested and works on Windows, Android and iOS.
+- Library was tested and works on Windows, MacOS, Linux, Android and iOS.
+
+# Porting Raylib project to Rayfork
+
+If you wrote a project in Raylib and want to move it over to Rayfork there are several things you might need to change:
+
+1. You must provide your own platform layer which handle window creation and opengl loading. Examples of these include: sokol_app with glad, SDL, GLFW.
+2. You must create a `rf_context` struct and use it to initialise the library.
+3. You must change the names of the functions to match the Rayfork naming convention.
+4. You must replace any functions from Raylib that were removed in Rayfork (eg: the text manipulation functions).
+
+It is strongly advised that you review some of the examples to understand the changes made when moving a project from Raylib to Rayfork.
 
 ## Rayfork example running on iOS and Windows:
-![](https://i.gyazo.com/26acc43576d3156852c25bf4c57ca1cf.png)
+![](https://i.gyazo.com/a61b1fa44732a4cfbf4e7e59a2c5f772.png)
 ![](https://i.gyazo.com/thumb/1000/95dd519e8c6d6733acdb70f746a169fc-png.jpg)
 
 We plan to also fork and apply a similar set of changes to:
@@ -86,7 +95,6 @@ However, due to its nature, several design choices in Raylib make it hard to use
 - Little control over memory allocations and IO
 
 The Rayfork header libraries are designed to address those issues and make it easy to develop professional games using the API from Raylib.
-
 
 # Contribute
 If you want to be able to develop games easily with libraries that respect the principles mentioned above, please consider contributing to Rayfork.

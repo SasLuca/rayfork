@@ -3,31 +3,53 @@
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
-#include "sokol_app.h"
-#include "rayfork.h"
+#include "game.h"
+#include "stdio.h"
 
-rf_context rf_ctx;
-const int screen_width = 800;
-const int screen_height = 450;
+game_data* global_game_data;
 
-void on_init(void)
+extern void game_init(game_data* game_data)
 {
+    //Reset game data pointer
+    global_game_data = game_data;
+
     //Load opengl with glad
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, screen_width, screen_height);
+    rf_context_init(&game_data->rf_ctx, global_game_data->screen_width, global_game_data->screen_height);
     rf_set_target_fps(60);
     rf_load_font_default();
 }
 
-void on_frame(void)
+extern void game_refresh(game_data* game_data)
 {
+    //Load opengl with glad
+    gladLoadGL();
+
+    global_game_data = game_data;
+    global_game_data->reload_count++;
+    rf_set_global_context_ptr(&global_game_data->rf_ctx);
+}
+
+extern void game_update(void)
+{
+    const int screen_width = global_game_data->screen_width;
+
     rf_begin_drawing();
 
         rf_clear_background(rf_raywhite);
 
-        rf_draw_text("some basic shapes available on raylib", 20, 20, 20, rf_darkgray);
+        if (global_game_data->reload_count > 0)
+        {
+            char temp_str[512];
+            snprintf(temp_str, 512, "Some basic shapes available on raylib\nCode reloaded %d times", global_game_data->reload_count);
+            rf_draw_text(temp_str, 20, 20, 20, rf_darkgray);
+        }
+        else
+        {
+            rf_draw_text("some basic shapes available on raylib", 20, 20, 20, rf_darkgray);
+        }
 
         rf_draw_circle(screen_width / 4, 120, 35, rf_darkblue);
 
@@ -53,14 +75,4 @@ void on_frame(void)
                                (rf_vector2){(float)screen_width / 4 * 3 + 20, 230}, rf_darkblue);
 
     rf_end_drawing();
-}
-
-void on_cleanup(void)
-{
-    //Empty
-}
-
-void on_event(const sapp_event* event)
-{
-    //Empty
 }

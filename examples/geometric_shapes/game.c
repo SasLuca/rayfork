@@ -1,5 +1,6 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
+#define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
 #include "sokol_app.h"

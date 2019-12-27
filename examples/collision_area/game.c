@@ -1,10 +1,11 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
+#define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
 #include "sokol_app.h"
 #include "rayfork.h"
-#include <stdio.h>
+#include "stdio.h"
 
 rf_context rf_ctx;
 #define SCREEN_WIDTH 800

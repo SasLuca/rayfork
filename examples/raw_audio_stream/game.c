@@ -1,18 +1,21 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
+#define RF_AUDIO_IMPL
+#define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
-#include "sokol_app.h"
-#include "rayfork.h"
 #include "rayfork_audio.h"
+#include "rayfork.h"
+#include "sokol_app.h"
 
 #include <math.h>
 #include <stdio.h>
-#include <string.h>
-#include <malloc.h>
 
 #define max_samples               512
 #define max_samples_per_update   4096
+
+#define screen_width 800
+#define screen_height 450
 
 rf_context rf_ctx;
 rf_audio_stream stream;
@@ -26,20 +29,19 @@ int wave_length;
 rf_vector2 position;
 bool is_left_button_down;
 
-#define screen_width 800
-#define screen_height 450
-
-//rayfork_audio is initialised in rayfork.c
-extern void init_audio(void);
+// With rayfork_audio the context struct must be in the same translation unit as the rayfork_audio implementation.
+// This is done in order to only include miniaudio (which is very big) in the translation unit with the implementation.
+rf_audio_context global_audio_ctx;
 
 void on_init(void)
 {
-    //Load opengl with glad
+    // Load opengl with glad
     gladLoadGL();
 
-    init_audio();
+    // Initialize audio device
+    rf_audio_init(&global_audio_ctx);
 
-    //Initialise rayfork and load the default font
+    // Initialise rayfork and load the default font
     rf_context_init(&rf_ctx, screen_width, screen_height);
     rf_load_font_default();
 
