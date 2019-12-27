@@ -9322,7 +9322,7 @@ RF_API rf_material* rf_load_materials(const char* fileName, int* material_count)
     {
         tinyobj_material_t *mats;
 
-        int result = tinyobj_parse_mtl_file(&mats, &count, fileName);
+        int result = tinyobj_parse_mtl_file(&mats, (size_t*) &count, fileName);
         if (result != TINYOBJ_SUCCESS) {
             RF_LOG(RF_LOG_WARNING, "[%s] Could not parse Materials file", fileName);
         }
@@ -11114,7 +11114,7 @@ RF_INTERNAL rf_model _rf_load_obj(const char* fileName)
     if (data != NULL)
     {
         unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
-        int ret = tinyobj_parse_obj(&attrib, &meshes, &mesh_count, &materials, &material_count, data, dataLength, flags);
+        int ret = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, (size_t*) &material_count, data, dataLength, flags);
 
         if (ret != TINYOBJ_SUCCESS) RF_LOG(RF_LOG_WARNING, "[%s] rf_model data could not be loaded", fileName);
         else RF_LOG(RF_LOG_INFO, "[%s] rf_model data loaded successfully: %i meshes / %i materials", fileName, mesh_count, material_count);
