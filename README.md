@@ -31,10 +31,9 @@ To use rayfork simply include the header and it's dependencies in your project a
 #include <your_opengl> //Include the opengl headers for your platform
 #define RF_RENDERER_IMPL //You must define this in at least one .c/.cpp files to include the implementation
 #define RF_GRAPHICS_API_OPENGL_33 //Choose a graphics API
-#include "rayfork.h" //Include rayfork
-
 #define RF_AUDIO_IMPL //You must define this in at least one .c/.cpp files to include the implementation
-#include "rayfork_audio.h" //Include rayfork audio
+#include "rayfork_audio.h" //Include rayfork audio (note: it's usually better to include rayfork_audio first)
+#include "rayfork.h" //Include rayfork
 
 rf_context rf_ctx; //Create a context variable
 rf_audio_context rf_audio_ctx; //Create a context variable for rayfork_audio. Note that in the case of rayfork_audio the context struct must be in the same translation unit as the implementation
