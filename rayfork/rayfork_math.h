@@ -188,6 +188,10 @@ RF_API bool rf_check_collision_point_triangle(rf_vector2 point, rf_vector2 p1, r
 
 //endregion
 
+//region misc
+RF_API int rf_get_random_value(int min, int max); // Returns a random value between min and max (both included)
+//endregion
+
 #endif
 
 //endregion
@@ -197,6 +201,7 @@ RF_API bool rf_check_collision_point_triangle(rf_vector2 point, rf_vector2 p1, r
 #ifdef RF_MATH_IMPL
 
 #include <math.h>
+#include <stdlib.h>
 
 //region math
 
@@ -1602,6 +1607,23 @@ rf_rectangle rf_get_collision_rec(rf_rectangle rec1, rf_rectangle rec2)
     }
 
     return retRec;
+}
+
+//endregion
+
+//region misc
+
+// Returns a random value between min and max (both included)
+RF_API int rf_get_random_value(int min, int max)
+{
+    if (min > max)
+    {
+        int tmp = max;
+        max = min;
+        min = tmp;
+    }
+
+    return (rand() % (abs(max - min) + 1) + min);
 }
 
 //endregion

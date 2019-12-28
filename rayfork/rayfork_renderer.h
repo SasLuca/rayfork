@@ -792,8 +792,6 @@ RF_API double rf_get_time(void); // Returns elapsed time in seconds since rf_con
 // Files management functions
 RF_API int rf_get_file_size(const char* filename);
 RF_API void rf_load_file_into_buffer(const char* filename, rf_byte* buffer, int bufferSize);
-RF_API bool rf_file_exists(const char* fileName); // Check if file exist
-RF_API bool rf_write_to_file(const char* filename, rf_byte* buffer, int buffer_size);
 
 //endregion
 
@@ -803,9 +801,6 @@ RF_API bool rf_write_to_file(const char* filename, rf_byte* buffer, int buffer_s
 RF_API void rf_context_init(rf_context* rf_ctx, int width, int height);
 RF_API void rf_set_global_context_ptr(rf_context* rf_ctx);
 RF_API void rf_load_font_default();
-
-// Misc
-RF_API int rf_get_random_value(int min, int max); // Returns a random value between min and max (both included)
 
 // Drawing-related functions
 RF_API void rf_clear_background(rf_color color); // Set background color (framebuffer clear color)
@@ -1405,22 +1400,6 @@ void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferS
     RF_ASSERT(ferror(file) == 0);
 
     fclose(file);
-}
-
-bool rf_file_exists(const char* filename)
-{
-    FILE* file = fopen(filename, "r");
-    bool result = file != NULL;
-    fclose(file);
-    return result;
-}
-
-bool rf_write_to_file(const char* filename, uint8_t* buffer, int buffer_size)
-{
-    FILE* file = fopen(filename, "r");
-    bool result = fwrite(buffer, 1, buffer_size, file);
-    fclose(file);
-    return result;
 }
 #endif
 //endregion
@@ -3402,19 +3381,6 @@ RF_API rf_color rf_color_from_int(int hexValue)
     color.a = (unsigned char)hexValue & 0xFF;
 
     return color;
-}
-
-// Returns a random value between min and max (both included)
-RF_API int rf_get_random_value(int min, int max)
-{
-    if (min > max)
-    {
-        int tmp = max;
-        max = min;
-        min = tmp;
-    }
-
-    return (rand()%(abs(max - min) + 1) + min);
 }
 
 // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
