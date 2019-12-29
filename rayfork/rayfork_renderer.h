@@ -1210,7 +1210,8 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 
 //region implementation
 
-#ifdef RF_RENDERER_IMPL
+#if defined(RF_RENDERER_IMPL) && !defined(RF_RENDERER_IMPL_DEFINED)
+#define RF_RENDERER_IMPL_DEFINED
 
 #ifndef RF_ASSERT
     #define RF_ASSERT(condition) assert(condition)

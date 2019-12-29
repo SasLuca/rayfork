@@ -184,7 +184,8 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
 //endregion
 
 //region implementation
-#ifdef RF_AUDIO_IMPL
+#if defined(RF_AUDIO_IMPL) && !defined(RF_AUDIO_IMPL_DEFINED)
+#define RF_AUDIO_IMPL_DEFINED
 
 #define MA_NO_JACK
 #define MINIAUDIO_IMPLEMENTATION

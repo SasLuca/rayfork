@@ -198,7 +198,8 @@ RF_API int rf_get_random_value(int min, int max); // Returns a random value betw
 
 //region implementation
 
-#ifdef RF_MATH_IMPL
+#if defined(RF_MATH_IMPL) && !defined(RF_MATH_IMPL_DEFINED)
+#define RF_MATH_IMPL_DEFINED
 
 #include <math.h>
 #include <stdlib.h>
