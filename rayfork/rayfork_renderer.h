@@ -8412,7 +8412,8 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int resX, int resZ)
 #define rf_custom_mesh_gen_plane
     par_shapes_mesh *plane = par_shapes_create_plane(resX, resZ); // No normals/texcoords generated!!!
     par_shapes_scale(plane, width, length, 1.0f);
-    par_shapes_rotate(plane, -RF_PI / 2.0f, (float[]){ 1, 0, 0 });
+    float axis[] = { 1, 0, 0 };
+    par_shapes_rotate(plane, -RF_PI / 2.0f, axis);
     par_shapes_translate(plane, -width/2, 0.0f, length/2);
 
     mesh.vertices = (float* )RF_MALLOC(plane->ntriangles*3*3*sizeof(float));
@@ -8596,20 +8597,25 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices)
     // Height and radius are both 1.0, but they can easily be changed with par_shapes_scale
     par_shapes_mesh *cylinder = par_shapes_create_cylinder(slices, 8);
     par_shapes_scale(cylinder, radius, radius, height);
-    par_shapes_rotate(cylinder, -RF_PI / 2.0f, (float[]){ 1, 0, 0 });
+    float axis[] = { 1, 0, 0 };
+    par_shapes_rotate(cylinder, -RF_PI / 2.0f, axis);
 
     // Generate an orientable disk shape (top cap)
-    par_shapes_mesh *capTop = par_shapes_create_disk(radius, slices, (float[]){ 0, 0, 0 }, (float[]){ 0, 0, 1 });
+    float center[] = { 0, 0, 0 };
+    float normal[] = { 0, 0, 1 };
+    float normal_minus_1[] = { 0, 0, -1 };
+    par_shapes_mesh *capTop = par_shapes_create_disk(radius, slices, center, normal);
     capTop->tcoords = PAR_MALLOC(float, 2*capTop->npoints);
     for (int i = 0; i < 2*capTop->npoints; i++) capTop->tcoords[i] = 0.0f;
-    par_shapes_rotate(capTop, -RF_PI / 2.0f, (float[]){ 1, 0, 0 });
+
+    par_shapes_rotate(capTop, -RF_PI / 2.0f, axis);
     par_shapes_translate(capTop, 0, height, 0);
 
     // Generate an orientable disk shape (bottom cap)
-    par_shapes_mesh *capBottom = par_shapes_create_disk(radius, slices, (float[]){ 0, 0, 0 }, (float[]){ 0, 0, -1 });
+    par_shapes_mesh *capBottom = par_shapes_create_disk(radius, slices, center, normal_minus_1);
     capBottom->tcoords = PAR_MALLOC(float, 2*capBottom->npoints);
     for (int i = 0; i < 2*capBottom->npoints; i++) capBottom->tcoords[i] = 0.95f;
-    par_shapes_rotate(capBottom, RF_PI / 2.0f, (float[]){ 1, 0, 0 });
+    par_shapes_rotate(capBottom, RF_PI / 2.0f, axis);
 
     par_shapes_merge_and_free(cylinder, capTop);
     par_shapes_merge_and_free(cylinder, capBottom);

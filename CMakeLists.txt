@@ -4,6 +4,15 @@ project(rayfork C)
 set(CMAKE_C_STANDARD 99)
 
 if (EXAMPLES)
+    include_directories(dependencies)
+    include_directories(dependencies/cgltf)
+    include_directories(dependencies/dr_libs)
+    include_directories(dependencies/jar)
+    include_directories(dependencies/miniaudio)
+    include_directories(dependencies/par)
+    include_directories(dependencies/stb)
+    include_directories(dependencies/tinyobjloader-c)
+
     include_directories(examples/dependencies/)
     include_directories(examples/dependencies/sokol)
     include_directories(examples/dependencies/glad)
@@ -19,8 +28,6 @@ endif()
 
 add_library(rayfork INTERFACE)
 
-target_include_directories(rayfork INTERFACE rayfork/)
-
 target_include_directories(rayfork INTERFACE dependencies)
 target_include_directories(rayfork INTERFACE dependencies/cgltf)
 target_include_directories(rayfork INTERFACE dependencies/dr_libs)
@@ -29,3 +36,5 @@ target_include_directories(rayfork INTERFACE dependencies/miniaudio)
 target_include_directories(rayfork INTERFACE dependencies/par)
 target_include_directories(rayfork INTERFACE dependencies/stb)
 target_include_directories(rayfork INTERFACE dependencies/tinyobjloader-c)
+
+target_include_directories(rayfork INTERFACE rayfork/)
