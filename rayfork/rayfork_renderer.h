@@ -1299,9 +1299,15 @@ static bool _rf_global_performance_counter_frequency_initialised;
 //If windows.h is not included
 #if !defined(_WINDOWS_)
 //Definition so that we don't have to include windows.h
-int __stdcall QueryPerformanceCounter(long long int* lpPerformanceCount);
-int __stdcall QueryPerformanceFrequency(long long int* lpFrequency);
-void __stdcall Sleep(int dwMilliseconds);
+#ifdef __cplusplus
+extern "C" int __stdcall QueryPerformanceCounter(long long int* lpPerformanceCount);
+extern "C" int __stdcall QueryPerformanceFrequency(long long int* lpFrequency);
+extern "C" void __stdcall Sleep(int dwMilliseconds);
+#else
+extern int __stdcall QueryPerformanceCounter(long long int* lpPerformanceCount);
+extern int __stdcall QueryPerformanceFrequency(long long int* lpFrequency);
+extern void __stdcall Sleep(int dwMilliseconds);
+#endif
 #endif
 
 // Returns elapsed time in seconds since InitWindow()
@@ -3475,7 +3481,7 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
         _rf_global_context_ptr->gl_ctx.current_matrix_mode = -1;
         _rf_global_context_ptr->gl_ctx.current_depth = -1.0f;
-        _rf_global_context_ptr->gl_ctx.max_depth_bits = 16;
+        _rf_global_context_ptr->gl_ctx.max_depth_bits = 16;Q
     #endif
 
     _rf_global_context_ptr->gl_ctx.player_eyes_position = 1.85f;
