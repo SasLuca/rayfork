@@ -3469,29 +3469,25 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     RF_ASSERT(width != 0 && height != 0);
     _rf_global_context_ptr = rf_ctx;
 
-    *_rf_global_context_ptr = (rf_context)
-            {
-                    .gl_ctx = (rf_gl_context)
-                            {
-#if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
-                                    .current_matrix_mode = -1,
-                                    .current_depth = -1.0f,
-                                    .max_depth_bits = 16,
-#endif
+    *_rf_global_context_ptr = RF_CLITERAL(rf_context) {0};
+    _rf_global_context_ptr->gl_ctx = RF_CLITERAL(rf_gl_context) {0};
 
-                                    .player_eyes_position = 1.85f,
+    #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
+        _rf_global_context_ptr->gl_ctx.current_matrix_mode = -1;
+        _rf_global_context_ptr->gl_ctx.current_depth = -1.0f;
+        _rf_global_context_ptr->gl_ctx.max_depth_bits = 16;
+    #endif
 
-                                    .camera_move_control = { 'W', 'S', 'D', 'A', 'E', 'Q' },
-                                    .camera_pan_control_key = 2,
-                                    .camera_alt_control_key = 342,
-                                    .camera_smooth_zoom_control_key = 341,
+    _rf_global_context_ptr->gl_ctx.player_eyes_position = 1.85f;
+    _rf_global_context_ptr->gl_ctx.camera_move_control = { 'W', 'S', 'D', 'A', 'E', 'Q' };
+    _rf_global_context_ptr->gl_ctx.camera_pan_control_key = 2;
+    _rf_global_context_ptr->gl_ctx.camera_alt_control_key = 342;
+    _rf_global_context_ptr->gl_ctx.camera_smooth_zoom_control_key = 341;
+    _rf_global_context_ptr->gl_ctx.camera_mode = rf_camera_custom;
 
-                                    .camera_mode = rf_camera_custom
-                            },
-                    .screen_scaling = rf_matrix_identity(),
-                    .current_width = width,
-                    .current_height = height,
-            };
+    _rf_global_context_ptr->screen_scaling = rf_matrix_identity(),
+    _rf_global_context_ptr->current_width = width,
+    _rf_global_context_ptr->current_height = height,
 
     _rf_setup_frame_buffer(width, height);
 
