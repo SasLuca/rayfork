@@ -2,5 +2,13 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/cgltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/dr_libs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/jar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/miniaudio" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/par" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/stb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/tinyobjloader-c" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/examples/dependencies/sokol" vcs="Git" />
   </component>
 </project>

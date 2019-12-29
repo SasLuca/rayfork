@@ -971,7 +971,11 @@ RF_API rf_font rf_load_font_ex(const char* fileName, int fontSize, int* fontChar
 RF_API rf_load_font_async_result rf_load_font_async(const char* fileName, int fontSize, int* fontChars, int chars_count);
 RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result fontJobResult);
 RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstChar); // Load font from rf_image (XNA style)
+
+#ifndef RF_NO_STB_TRUETYPE
 RF_API rf_char_info* rf_load_font_data(const char* fileName, int fontSize, int* fontChars, int chars_count, int type); // Load font data for further use
+#endif
+
 RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle** recs, int chars_count, int fontSize, int padding, int packMethod); // Generate image font atlas using chars info
 RF_API void rf_unload_font(rf_font font); // Unload rf_font from GPU memory (VRAM)
 RF_API void rf_unload_font_default();
@@ -1263,6 +1267,7 @@ rf_context* _rf_global_context_ptr;
 #define STBI_MALLOC RF_MALLOC
 #define STBI_FREE RF_FREE
 #define STBI_REALLOC(p,newsz) RF_MALLOC(newsz)
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h" // Required for: stbi_load_from_file()
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -2017,6 +2022,8 @@ RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstCh
     return spriteFont;
 }
 
+#ifndef RF_NO_STB_TRUETYPE
+
 // Load font data for further use
 // NOTE: Requires TTF font and can generate SDF data
 RF_API rf_char_info* rf_load_font_data(const char* fileName, int fontSize, int* fontChars, int chars_count, int type)
@@ -2117,6 +2124,8 @@ RF_API rf_char_info* rf_load_font_data(const char* fileName, int fontSize, int* 
 
     return chars;
 }
+
+#endif
 
 // Generate image font atlas using chars info
 // NOTE: Packing method: 0-Default, 1-Skyline
