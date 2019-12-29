@@ -6951,8 +6951,7 @@ RF_INTERNAL rf_color* _rf_gen_next_mipmap( rf_color* srcData, int srcWidth, int 
 #define rf_player_movement_sensitivity 20.0f
 
 // rf_camera3d move modes (first person and third person cameras)
-typedef enum rf_camera_move rf_camera_move;
-enum rf_camera_move
+typedef enum rf_camera_move
 {
     rf_move_front = 0,
     rf_move_back,
@@ -6960,7 +6959,7 @@ enum rf_camera_move
     rf_move_left,
     rf_move_up,
     rf_move_down
-};
+} rf_camera_move;
 
 // Select camera mode (multiple camera modes available)
 RF_API void rf_set_camera_mode(rf_camera3d camera, int mode)
@@ -9998,8 +9997,7 @@ RF_INTERNAL rf_model _rf_load_iqm(const char* fileName)
     //-----------------------------------------------------------------------------------
 
     // IQM vertex data types
-    typedef enum rf_iqm_vertex_type rf_iqm_vertex_type;
-    enum rf_iqm_vertex_type
+    typedef enum rf_iqm_vertex_type
     {
         rf_iqm_position = 0,
         rf_iqm_texcoord = 1,
@@ -10009,7 +10007,7 @@ RF_INTERNAL rf_model _rf_load_iqm(const char* fileName)
         rf_iqm_blendweights = 5,
         rf_iqm_color = 6, // NOTE: Vertex colors unused by default
         rf_iqm_custom = 0x10 // NOTE: Custom vertex values unused by default
-    };
+    }  rf_iqm_vertex_type;
 
     rf_model model = { 0 };
 
