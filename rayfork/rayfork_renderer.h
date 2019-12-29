@@ -3479,7 +3479,12 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     #endif
 
     _rf_global_context_ptr->gl_ctx.player_eyes_position = 1.85f;
-    _rf_global_context_ptr->gl_ctx.camera_move_control = { 'W', 'S', 'D', 'A', 'E', 'Q' };
+    _rf_global_context_ptr->gl_ctx.camera_move_control[0] = 'W';
+    _rf_global_context_ptr->gl_ctx.camera_move_control[1] = 'S';
+    _rf_global_context_ptr->gl_ctx.camera_move_control[2] = 'D';
+    _rf_global_context_ptr->gl_ctx.camera_move_control[3] = 'A';
+    _rf_global_context_ptr->gl_ctx.camera_move_control[4] = 'E';
+    _rf_global_context_ptr->gl_ctx.camera_move_control[5] = 'Q';
     _rf_global_context_ptr->gl_ctx.camera_pan_control_key = 2;
     _rf_global_context_ptr->gl_ctx.camera_alt_control_key = 342;
     _rf_global_context_ptr->gl_ctx.camera_smooth_zoom_control_key = 341;
