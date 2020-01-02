@@ -1316,12 +1316,20 @@ RF_API double rf_get_time(void)
 {
     if (!_rf_global_performance_counter_frequency_initialised)
     {
+        #ifdef _WINDOWS_
+        RF_ASSERT(QueryPerformanceFrequency((LARGE_INTEGER*)&_rf_global_performance_counter_frequency) != false);
+        #else
         RF_ASSERT(QueryPerformanceFrequency(&_rf_global_performance_counter_frequency) != false);
+        #endif
         _rf_global_performance_counter_frequency_initialised = true;
     }
 
     long long int qpc_result = {0};
+    #ifdef _WINDOWS_
+    RF_ASSERT(QueryPerformanceCounter((LARGE_INTEGER*)&qpc_result) != false);
+    #else
     RF_ASSERT(QueryPerformanceCounter(&qpc_result) != false);
+    #endif
     return (double) qpc_result / (double) _rf_global_performance_counter_frequency;
 }
 

@@ -54,13 +54,3 @@ void on_frame(void)
 
     rf_end_drawing();
 }
-
-void on_cleanup(void)
-{
-    //Empty
-}
-
-void on_event(const sapp_event* event)
-{
-    //Empty
-}
