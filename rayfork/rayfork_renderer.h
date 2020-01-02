@@ -1400,7 +1400,7 @@ RF_API void rf_wait(float duration)
 // Files management functions
 int rf_get_file_size(const char* filename)
 {
-    FILE* file = fopen(filename, "r");
+    FILE* file = fopen(filename, "rb");
 
     fseek(file, 0L, SEEK_END);
     int size = ftell(file);
@@ -1412,7 +1412,7 @@ int rf_get_file_size(const char* filename)
 
 void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize)
 {
-    FILE* file = fopen(filename, "r");
+    FILE* file = fopen(filename, "rb");
     RF_ASSERT(file != NULL);
 
     size_t newLen = fread(buffer, sizeof(char), bufferSize, file);
@@ -1839,7 +1839,7 @@ RF_API rf_font rf_load_font(const char* fileName)
 
     rf_font font = { 0 };
 
-    if (_rf_is_file_extension(fileName, ".ttf;.otf")) font = rf_load_font_ex(fileName, rf_default_ttf_fontsize, NULL, rf_default_ttf_numchars);
+    if (_rf_is_file_extension(fileName, ".ttf") || _rf_is_file_extension(fileName, ".otf")) font = rf_load_font_ex(fileName, rf_default_ttf_fontsize, NULL, rf_default_ttf_numchars);
     else
     {
         rf_image image = rf_load_image(fileName);
