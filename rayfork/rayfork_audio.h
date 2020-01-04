@@ -207,7 +207,7 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
 #include <assert.h>
 
 #ifndef _rf_is_file_extension
-#define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext))
+    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext) == 0)
 #endif
 
 #ifndef RF_ASSERT

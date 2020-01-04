@@ -1218,7 +1218,7 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 #endif
 
 #ifndef _rf_is_file_extension
-    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext))
+    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext) == 0)
 #endif
 
 // Trace log type
