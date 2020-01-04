@@ -928,7 +928,7 @@ extern rf_short_audio_stream rf_load_short_audio_stream_from_file(const char* fi
 // NOTE: Wave data must be unallocated manually
 extern rf_short_audio_stream rf_load_short_audio_stream_from_wave(rf_wave wave)
 {
-    rf_short_audio_stream rf_short_audio_stream = { 0 };
+    rf_short_audio_stream short_audio_stream = { 0 };
 
     if (wave.data != NULL)
     {
@@ -953,14 +953,14 @@ extern rf_short_audio_stream rf_load_short_audio_stream_from_wave(rf_wave wave)
         frameCount = (ma_uint32)ma_convert_frames(rf_audio_buffer->buffer, rf_audio_buffer->dsp.formatConverterIn.config.formatIn, rf_audio_buffer->dsp.formatConverterIn.config.channels, rf_audio_buffer->dsp.src.config.sampleRateIn, wave.data, formatIn, wave.channels, wave.sample_rate, frameCountIn);
         if (frameCount == 0) RF_LOG(RF_LOG_WARNING, "LoadSoundFromWave() : Format conversion failed");
 
-        rf_short_audio_stream.sample_count = frameCount*RF_DEVICE_CHANNELS;
-        rf_short_audio_stream.stream.sample_rate = RF_DEVICE_SAMPLE_RATE;
-        rf_short_audio_stream.stream.sample_size = 32;
-        rf_short_audio_stream.stream.channels = RF_DEVICE_CHANNELS;
-        rf_short_audio_stream.stream.buffer = rf_audio_buffer;
+        short_audio_stream.sample_count = frameCount*RF_DEVICE_CHANNELS;
+        short_audio_stream.stream.sample_rate = RF_DEVICE_SAMPLE_RATE;
+        short_audio_stream.stream.sample_size = 32;
+        short_audio_stream.stream.channels = RF_DEVICE_CHANNELS;
+        short_audio_stream.stream.buffer = rf_audio_buffer;
     }
 
-    return rf_short_audio_stream;
+    return short_audio_stream;
 }
 
 // Unload wave data
@@ -1276,7 +1276,7 @@ extern float* rf_get_wave_data(rf_wave rf_wave)
 // Load music stream from file
 extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 {
-    rf_long_audio_stream rf_long_audio_stream = { 0 };
+    rf_long_audio_stream long_audio_stream = { 0 };
     bool musicLoaded = false;
 
     if (false) { }
@@ -1284,17 +1284,17 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
     else if (_rf_is_file_extension(filename, ".ogg"))
     {
         // Open ogg audio stream
-        rf_long_audio_stream.ctx_data = stb_vorbis_open_filename(filename, NULL, NULL);
+        long_audio_stream.ctx_data = stb_vorbis_open_filename(filename, NULL, NULL);
 
-        if (rf_long_audio_stream.ctx_data != NULL)
+        if (long_audio_stream.ctx_data != NULL)
         {
-            rf_long_audio_stream.ctx_type = rf_audio_context_ogg;
-            stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis *)rf_long_audio_stream.ctx_data);  // Get Ogg file info
+            long_audio_stream.ctx_type = rf_audio_context_ogg;
+            stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis *)long_audio_stream.ctx_data);  // Get Ogg file info
 
             // OGG bit rate defaults to 16 bit, it's enough for compressed format
-            rf_long_audio_stream.stream = rf_create_audio_stream(info.sample_rate, 16, info.channels);
-            rf_long_audio_stream.sample_count = (unsigned int)stb_vorbis_stream_length_in_samples((stb_vorbis *)rf_long_audio_stream.ctx_data)*info.channels;
-            rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
+            long_audio_stream.stream = rf_create_audio_stream(info.sample_rate, 16, info.channels);
+            long_audio_stream.sample_count = (unsigned int)stb_vorbis_stream_length_in_samples((stb_vorbis *)long_audio_stream.ctx_data)*info.channels;
+            long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
         }
     }
@@ -1302,16 +1302,16 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 #if defined(RF_SUPPORT_FILEFORMAT_FLAC)
     else if (_rf_is_file_extension(filename, ".flac"))
     {
-        rf_long_audio_stream.ctx_data = drflac_open_file(filename);
+        long_audio_stream.ctx_data = drflac_open_file(filename);
 
-        if (rf_long_audio_stream.ctx_data != NULL)
+        if (long_audio_stream.ctx_data != NULL)
         {
-            rf_long_audio_stream.ctx_type = rf_audio_context_flac;
-            drflac *ctxFlac = (drflac *)rf_long_audio_stream.ctx_data;
+            long_audio_stream.ctx_type = rf_audio_context_flac;
+            drflac *ctxFlac = (drflac *)long_audio_stream.ctx_data;
 
-            rf_long_audio_stream.stream = rf_create_audio_stream(ctxFlac->sample_rate, ctxFlac->bitsPerSample, ctxFlac->channels);
-            rf_long_audio_stream.sample_count = (unsigned int)ctxFlac->totalSampleCount;
-            rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
+            long_audio_stream.stream = rf_create_audio_stream(ctxFlac->sample_rate, ctxFlac->bitsPerSample, ctxFlac->channels);
+            long_audio_stream.sample_count = (unsigned int)ctxFlac->totalSampleCount;
+            long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
         }
     }
@@ -1320,17 +1320,17 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
     else if (_rf_is_file_extension(filename, ".mp3"))
     {
         drmp3 *ctxMp3 = RF_MALLOC(sizeof(drmp3));
-        rf_long_audio_stream.ctx_data = ctxMp3;
+        long_audio_stream.ctx_data = ctxMp3;
 
         int result = drmp3_init_file(ctxMp3, filename, NULL, NULL);
 
         if (result > 0)
         {
-            rf_long_audio_stream.ctx_type = rf_audio_context_mp3;
+            long_audio_stream.ctx_type = rf_audio_context_mp3;
 
-            rf_long_audio_stream.stream = rf_create_audio_stream(ctxMp3->sampleRate, 32, ctxMp3->channels);
-            rf_long_audio_stream.sample_count = drmp3_get_pcm_frame_count(ctxMp3)*ctxMp3->channels;
-            rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
+            long_audio_stream.stream = rf_create_audio_stream(ctxMp3->sampleRate, 32, ctxMp3->channels);
+            long_audio_stream.sample_count = drmp3_get_pcm_frame_count(ctxMp3)*ctxMp3->channels;
+            long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
         }
     }
@@ -1344,16 +1344,16 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 
         if (result == 0)    // XM context created successfully
         {
-            rf_long_audio_stream.ctx_type = rf_audio_context_xm;
+            long_audio_stream.ctx_type = rf_audio_context_xm;
             jar_xm_set_max_loop_count(ctxXm, 0);    // Set infinite number of loops
 
             // NOTE: Only stereo is supported for XM
-            rf_long_audio_stream.stream = rf_create_audio_stream(48000, 16, 2);
-            rf_long_audio_stream.sample_count = (unsigned int)jar_xm_get_remaining_samples(ctxXm);
-            rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
+            long_audio_stream.stream = rf_create_audio_stream(48000, 16, 2);
+            long_audio_stream.sample_count = (unsigned int)jar_xm_get_remaining_samples(ctxXm);
+            long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
 
-            rf_long_audio_stream.ctx_data = ctxXm;
+            long_audio_stream.ctx_data = ctxXm;
         }
     }
 #endif
@@ -1361,19 +1361,19 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
     else if (_rf_is_file_extension(filename, ".mod"))
     {
         jar_mod_context_t *ctxMod = RF_MALLOC(sizeof(jar_mod_context_t));
-        rf_long_audio_stream.ctx_data = ctxMod;
+        long_audio_stream.ctx_data = ctxMod;
 
         jar_mod_init(ctxMod);
         int result = jar_mod_load_file(ctxMod, filename);
 
         if (result > 0)
         {
-            rf_long_audio_stream.ctx_type = rf_audio_context_mod;
+            long_audio_stream.ctx_type = rf_audio_context_mod;
 
             // NOTE: Only stereo is supported for MOD
-            rf_long_audio_stream.stream = rf_create_audio_stream(48000, 16, 2);
-            rf_long_audio_stream.sample_count = (unsigned int)jar_mod_max_samples(ctxMod);
-            rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
+            long_audio_stream.stream = rf_create_audio_stream(48000, 16, 2);
+            long_audio_stream.sample_count = (unsigned int)jar_mod_max_samples(ctxMod);
+            long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
         }
     }
@@ -1383,19 +1383,19 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
     {
         if (false) { }
 #if defined(RF_SUPPORT_FILEFORMAT_OGG)
-            else if (rf_long_audio_stream.ctx_type == rf_audio_context_ogg) stb_vorbis_close((stb_vorbis *)rf_long_audio_stream.ctx_data);
+            else if (long_audio_stream.ctx_type == rf_audio_context_ogg) stb_vorbis_close((stb_vorbis *)long_audio_stream.ctx_data);
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_FLAC)
-            else if (rf_long_audio_stream.ctx_type == rf_audio_context_flac) drflac_free((drflac *)rf_long_audio_stream.ctx_data);
+            else if (long_audio_stream.ctx_type == rf_audio_context_flac) drflac_free((drflac *)long_audio_stream.ctx_data);
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
-            else if (rf_long_audio_stream.ctx_type == rf_audio_context_mp3) { drmp3_uninit((drmp3 *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
+            else if (long_audio_stream.ctx_type == rf_audio_context_mp3) { drmp3_uninit((drmp3 *)long_audio_stream.ctx_data); RF_FREE(long_audio_stream.ctx_data); }
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_XM)
-            else if (rf_long_audio_stream.ctx_type == rf_audio_context_xm) jar_xm_free_context((jar_xm_context_t *)rf_long_audio_stream.ctx_data);
+            else if (long_audio_stream.ctx_type == rf_audio_context_xm) jar_xm_free_context((jar_xm_context_t *)long_audio_stream.ctx_data);
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MOD)
-            else if (rf_long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
+            else if (long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)long_audio_stream.ctx_data); RF_FREE(long_audio_stream.ctx_data); }
 #endif
 
         RF_LOG(RF_LOG_WARNING, "[%s] Music file could not be opened", filename);
@@ -1404,10 +1404,10 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
     {
         // Show some music stream info
         RF_LOG(RF_LOG_INFO, "[%s] Music file successfully loaded:", filename);
-        RF_LOG(RF_LOG_INFO, "   Total samples: %i", rf_long_audio_stream.sample_count);
-        RF_LOG(RF_LOG_INFO, "   Sample rate: %i Hz", rf_long_audio_stream.stream.sample_rate);
-        RF_LOG(RF_LOG_INFO, "   Sample size: %i bits", rf_long_audio_stream.stream.sample_size);
-        RF_LOG(RF_LOG_INFO, "   Channels: %i (%s)", rf_long_audio_stream.stream.channels, (rf_long_audio_stream.stream.channels == 1)? "Mono" : (rf_long_audio_stream.stream.channels == 2)? "Stereo" : "Multi");
+        RF_LOG(RF_LOG_INFO, "   Total samples: %i", long_audio_stream.sample_count);
+        RF_LOG(RF_LOG_INFO, "   Sample rate: %i Hz", long_audio_stream.stream.sample_rate);
+        RF_LOG(RF_LOG_INFO, "   Sample size: %i bits", long_audio_stream.stream.sample_size);
+        RF_LOG(RF_LOG_INFO, "   Channels: %i (%s)", long_audio_stream.stream.channels, (long_audio_stream.stream.channels == 1)? "Mono" : (long_audio_stream.stream.channels == 2)? "Stereo" : "Multi");
     }
 
     return rf_long_audio_stream;
@@ -1476,19 +1476,19 @@ extern void rf_stop_long_audio_stream(rf_long_audio_stream long_audio_stream)
     switch (long_audio_stream.ctx_type)
     {
 #if defined(RF_SUPPORT_FILEFORMAT_OGG)
-        case rf_audio_context_ogg: stb_vorbis_seek_start((stb_vorbis *)rf_long_audio_stream.ctx_data); break;
+        case rf_audio_context_ogg: stb_vorbis_seek_start((stb_vorbis *)long_audio_stream.ctx_data); break;
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_FLAC)
-        case rf_audio_context_flac: drflac_seek_to_pcm_frame((drflac *)rf_long_audio_stream.ctx_data, 0); break;
+        case rf_audio_context_flac: drflac_seek_to_pcm_frame((drflac *)long_audio_stream.ctx_data, 0); break;
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
-        case rf_audio_context_mp3: drmp3_seek_to_pcm_frame((drmp3 *)rf_long_audio_stream.ctx_data, 0); break;
+        case rf_audio_context_mp3: drmp3_seek_to_pcm_frame((drmp3 *)long_audio_stream.ctx_data, 0); break;
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_XM)
-        case rf_audio_context_xm: jar_xm_reset((jar_xm_context_t *)rf_long_audio_stream.ctx_data); break;
+        case rf_audio_context_xm: jar_xm_reset((jar_xm_context_t *)long_audio_stream.ctx_data); break;
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MOD)
-        case rf_audio_context_mod: jar_mod_seek_start((jar_mod_context_t *)rf_long_audio_stream.ctx_data); break;
+        case rf_audio_context_mod: jar_mod_seek_start((jar_mod_context_t *)long_audio_stream.ctx_data); break;
 #endif
         default: break;
     }
@@ -1522,7 +1522,7 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
             case rf_audio_context_ogg:
             {
                 // NOTE: Returns the number of samples to process (be careful! we ask for number of shorts!)
-                stb_vorbis_get_samples_short_interleaved((stb_vorbis *)rf_long_audio_stream.ctx_data, rf_long_audio_stream.stream.channels, (short *)pcm, samplesCount);
+                stb_vorbis_get_samples_short_interleaved((stb_vorbis *)long_audio_stream.ctx_data, long_audio_stream.stream.channels, (short *)pcm, samplesCount);
 
             } break;
 #endif
@@ -1530,7 +1530,7 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
             case rf_audio_context_flac:
             {
                 // NOTE: Returns the number of samples to process (not required)
-                drflac_read_pcm_frames_s16((drflac *)rf_long_audio_stream.ctx_data, samplesCount, (short *)pcm);
+                drflac_read_pcm_frames_s16((drflac *)long_audio_stream.ctx_data, samplesCount, (short *)pcm);
 
             } break;
 #endif
@@ -1538,7 +1538,7 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
             case rf_audio_context_mp3:
             {
                 // NOTE: samplesCount, actually refers to framesCount and returns the number of frames processed
-                drmp3_read_pcm_frames_f32((drmp3 *)rf_long_audio_stream.ctx_data, samplesCount/rf_long_audio_stream.stream.channels, (float* )pcm);
+                drmp3_read_pcm_frames_f32((drmp3 *)long_audio_stream.ctx_data, samplesCount/long_audio_stream.stream.channels, (float* )pcm);
 
             } break;
 #endif
@@ -1546,14 +1546,14 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
             case rf_audio_context_xm:
             {
                 // NOTE: Internally this function considers 2 channels generation, so samplesCount/2
-                jar_xm_generate_samples_16bit((jar_xm_context_t *)rf_long_audio_stream.ctx_data, (short *)pcm, samplesCount/2);
+                jar_xm_generate_samples_16bit((jar_xm_context_t *)long_audio_stream.ctx_data, (short *)pcm, samplesCount/2);
             } break;
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MOD)
             case rf_audio_context_mod:
             {
                 // NOTE: 3rd parameter (nbsample) specify the number of stereo 16bits samples you want, so sampleCount/2
-                jar_mod_fillbuffer((jar_mod_context_t *)rf_long_audio_stream.ctx_data, (short *)pcm, samplesCount/2, 0);
+                jar_mod_fillbuffer((jar_mod_context_t *)long_audio_stream.ctx_data, (short *)pcm, samplesCount/2, 0);
             } break;
 #endif
             default: break;
