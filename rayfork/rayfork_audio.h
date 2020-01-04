@@ -25,6 +25,16 @@
 *       jar_mod.h    - MOD audio file loading
 **********************************************************************************************/
 
+//For development purposes, these defines are only seen by CLion and are used to enable all the code in the IDE and check for errors
+#ifdef __JETBRAINS_IDE__
+#define RF_AUDIO_IMPL
+#define RF_SUPPORT_FILEFORMAT_OGG
+#define RF_SUPPORT_FILEFORMAT_XM
+#define RF_SUPPORT_FILEFORMAT_MOD
+#define RF_SUPPORT_FILEFORMAT_FLAC
+#define RF_SUPPORT_FILEFORMAT_MP3
+#endif
+
 //region interface
 
 #ifndef RF_AUDIO_H
@@ -209,12 +219,12 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
     #include "stb_vorbis.h"    // OGG loading functions
 #endif
 
-#if defined(SUPPORT_FILEFORMAT_XM)
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
 #define JAR_XM_IMPLEMENTATION
     #include "jar_xm.h"        // XM loading functions
 #endif
 
-#if defined(SUPPORT_FILEFORMAT_MOD)
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
 #define JAR_MOD_IMPLEMENTATION
     #include "jar_mod.h"       // MOD loading functions
 #endif
@@ -1312,20 +1322,20 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
         drmp3 *ctxMp3 = RF_MALLOC(sizeof(drmp3));
         rf_long_audio_stream.ctx_data = ctxMp3;
 
-        int result = drmp3_init_file(ctxMp3, filename, NULL);
+        int result = drmp3_init_file(ctxMp3, filename, NULL, NULL);
 
         if (result > 0)
         {
             rf_long_audio_stream.ctx_type = rf_audio_context_mp3;
 
-            rf_long_audio_stream.stream = rf_create_audio_stream(ctxMp3->sample_rate, 32, ctxMp3->channels);
+            rf_long_audio_stream.stream = rf_create_audio_stream(ctxMp3->sampleRate, 32, ctxMp3->channels);
             rf_long_audio_stream.sample_count = drmp3_get_pcm_frame_count(ctxMp3)*ctxMp3->channels;
             rf_long_audio_stream.loop_count = 0;   // Infinite loop by default
             musicLoaded = true;
         }
     }
 #endif
-#if defined(SUPPORT_FILEFORMAT_XM)
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
     else if (_rf_is_file_extension(filename, ".xm"))
     {
         jar_xm_context_t *ctxXm = NULL;
@@ -1347,7 +1357,7 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
         }
     }
 #endif
-#if defined(SUPPORT_FILEFORMAT_MOD)
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
     else if (_rf_is_file_extension(filename, ".mod"))
     {
         jar_mod_context_t *ctxMod = RF_MALLOC(sizeof(jar_mod_context_t));
@@ -1381,10 +1391,10 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
             else if (rf_long_audio_stream.ctx_type == rf_audio_context_mp3) { drmp3_uninit((drmp3 *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
 #endif
-#if defined(SUPPORT_FILEFORMAT_XM)
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
             else if (rf_long_audio_stream.ctx_type == rf_audio_context_xm) jar_xm_free_context((jar_xm_context_t *)rf_long_audio_stream.ctx_data);
 #endif
-#if defined(SUPPORT_FILEFORMAT_MOD)
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
             else if (rf_long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
 #endif
 
@@ -1410,19 +1420,19 @@ extern void rf_unload_long_audio_stream(rf_long_audio_stream long_audio_stream)
 
     if (false) { }
 #if defined(RF_SUPPORT_FILEFORMAT_OGG)
-    else if (rf_long_audio_stream.ctx_type == rf_audio_context_ogg) stb_vorbis_close((stb_vorbis *)rf_long_audio_stream.ctx_data);
+    else if (long_audio_stream.ctx_type == rf_audio_context_ogg) stb_vorbis_close((stb_vorbis *)long_audio_stream.ctx_data);
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_FLAC)
-    else if (rf_long_audio_stream.ctx_type == rf_audio_context_flac) drflac_free((drflac *)rf_long_audio_stream.ctx_data);
+    else if (long_audio_stream.ctx_type == rf_audio_context_flac) drflac_free((drflac *)long_audio_stream.ctx_data);
 #endif
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
-    else if (rf_long_audio_stream.ctx_type == rf_audio_context_mp3) { drmp3_uninit((drmp3 *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
+    else if (long_audio_stream.ctx_type == rf_audio_context_mp3) { drmp3_uninit((drmp3 *)long_audio_stream.ctx_data); RF_FREE(long_audio_stream.ctx_data); }
 #endif
-#if defined(SUPPORT_FILEFORMAT_XM)
-    else if (rf_long_audio_stream.ctx_type == rf_audio_context_xm) jar_xm_free_context((jar_xm_context_t *)rf_long_audio_stream.ctx_data);
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
+    else if (long_audio_stream.ctx_type == rf_audio_context_xm) jar_xm_free_context((jar_xm_context_t *)long_audio_stream.ctx_data);
 #endif
-#if defined(SUPPORT_FILEFORMAT_MOD)
-    else if (rf_long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)rf_long_audio_stream.ctx_data); RF_FREE(rf_long_audio_stream.ctx_data); }
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
+    else if (long_audio_stream.ctx_type == rf_audio_context_mod) { jar_mod_unload((jar_mod_context_t *)long_audio_stream.ctx_data); RF_FREE(long_audio_stream.ctx_data); }
 #endif
 }
 
@@ -1474,10 +1484,10 @@ extern void rf_stop_long_audio_stream(rf_long_audio_stream long_audio_stream)
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
         case rf_audio_context_mp3: drmp3_seek_to_pcm_frame((drmp3 *)rf_long_audio_stream.ctx_data, 0); break;
 #endif
-#if defined(SUPPORT_FILEFORMAT_XM)
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
         case rf_audio_context_xm: jar_xm_reset((jar_xm_context_t *)rf_long_audio_stream.ctx_data); break;
 #endif
-#if defined(SUPPORT_FILEFORMAT_MOD)
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
         case rf_audio_context_mod: jar_mod_seek_start((jar_mod_context_t *)rf_long_audio_stream.ctx_data); break;
 #endif
         default: break;
@@ -1532,14 +1542,14 @@ extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream)
 
             } break;
 #endif
-#if defined(SUPPORT_FILEFORMAT_XM)
+#if defined(RF_SUPPORT_FILEFORMAT_XM)
             case rf_audio_context_xm:
             {
                 // NOTE: Internally this function considers 2 channels generation, so samplesCount/2
                 jar_xm_generate_samples_16bit((jar_xm_context_t *)rf_long_audio_stream.ctx_data, (short *)pcm, samplesCount/2);
             } break;
 #endif
-#if defined(SUPPORT_FILEFORMAT_MOD)
+#if defined(RF_SUPPORT_FILEFORMAT_MOD)
             case rf_audio_context_mod:
             {
                 // NOTE: 3rd parameter (nbsample) specify the number of stereo 16bits samples you want, so sampleCount/2
