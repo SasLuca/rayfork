@@ -2067,7 +2067,7 @@ static rf_wave rf_load_mp3(const char* filename)
     // Decode an entire MP3 file in one go
     uint64_t totalFrameCount = 0;
     drmp3_config config = { 0 };
-    rf_wave.data = drmp3_open_file_and_read_pcm_frames_f32(filename, &config, &totalFrameCount);
+    rf_wave.data = drmp3_open_file_and_read_pcm_frames_f32(filename, &config, &totalFrameCount, NULL);
 
     rf_wave.channels = config.outputChannels;
     rf_wave.sample_rate = config.outputSampleRate;
