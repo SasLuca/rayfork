@@ -1410,7 +1410,7 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
         RF_LOG(RF_LOG_INFO, "   Channels: %i (%s)", long_audio_stream.stream.channels, (long_audio_stream.stream.channels == 1)? "Mono" : (long_audio_stream.stream.channels == 2)? "Stereo" : "Multi");
     }
 
-    return rf_long_audio_stream;
+    return long_audio_stream;
 }
 
 // Unload music stream
