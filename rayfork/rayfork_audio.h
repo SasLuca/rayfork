@@ -63,6 +63,14 @@
 #define RF_LOG(log_type, msg, ...)
 #endif
 
+// NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
+// Plain structures in C++ (without constructors) can be initialized from { } initializers.
+#ifdef __cplusplus
+#define RF_CLITERAL(type) type
+#else
+#define RF_CLITERAL(type) (type)
+#endif
+
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
@@ -207,7 +215,7 @@ extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   //
 #include <assert.h>
 
 #ifndef _rf_is_file_extension
-    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext) == 0)
+    #define _rf_is_file_extension(filename, ext) ((strrchr(filename, '.') != NULL) && (strcmp(strrchr(filename, '.'), ext) == 0))
 #endif
 
 #ifndef RF_ASSERT
@@ -711,9 +719,9 @@ extern void rf_set_master_volume(float volume)
 static rf_audio_buffer* _rf_init_audio_buffer(ma_format format, ma_uint32 channels, ma_uint32 sample_rate, ma_uint32 buffer_size_in_frames, int usage)
 {
     rf_audio_buffer* audio_buffer = (rf_audio_buffer*) RF_MALLOC(sizeof(rf_audio_buffer));
-    *audio_buffer = (rf_audio_buffer){};
-    audio_buffer->buffer = RF_MALLOC(buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
-    memset(audio_buffer, 0, buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
+    *audio_buffer = RF_CLITERAL(rf_audio_buffer){};
+    audio_buffer->buffer = (unsigned char*) RF_MALLOC(buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
+    memset(audio_buffer->buffer, 0, buffer_size_in_frames * channels * ma_get_bytes_per_sample(format));
 
     //RF_ASSERT(audio_buffer == NULL);
 
@@ -1319,7 +1327,7 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 #if defined(RF_SUPPORT_FILEFORMAT_MP3)
     else if (_rf_is_file_extension(filename, ".mp3"))
     {
-        drmp3 *ctxMp3 = RF_MALLOC(sizeof(drmp3));
+        drmp3* ctxMp3 = (drmp3*) RF_MALLOC(sizeof(drmp3));
         long_audio_stream.ctx_data = ctxMp3;
 
         int result = drmp3_init_file(ctxMp3, filename, NULL, NULL);
@@ -1360,7 +1368,7 @@ extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename)
 #if defined(RF_SUPPORT_FILEFORMAT_MOD)
     else if (_rf_is_file_extension(filename, ".mod"))
     {
-        jar_mod_context_t *ctxMod = RF_MALLOC(sizeof(jar_mod_context_t));
+        jar_mod_context_t* ctxMod = (jar_mod_context_t*) RF_MALLOC(sizeof(jar_mod_context_t));
         long_audio_stream.ctx_data = ctxMod;
 
         jar_mod_init(ctxMod);
@@ -2017,7 +2025,7 @@ static rf_wave rf_load_ogg(const char* filename)
         float totalSeconds = stb_vorbis_stream_length_in_seconds(oggFile);
         if (totalSeconds > 10) RF_LOG(RF_LOG_WARNING, "[%s] Ogg audio length is larger than 10 seconds (%f), that's a big file in memory, consider music streaming", filename, totalSeconds);
 
-        rf_wave.data = (short *)RF_MALLOC(rf_wave.sample_count*rf_wave.channels*sizeof(short));
+        rf_wave.data = (short*) RF_MALLOC(rf_wave.sample_count*rf_wave.channels*sizeof(short));
 
         // NOTE: Returns the number of samples to process (be careful! we ask for number of shorts!)
         int numSamplesOgg = stb_vorbis_get_samples_short_interleaved(oggFile, info.channels, (short *)rf_wave.data, rf_wave.sample_count*rf_wave.channels);

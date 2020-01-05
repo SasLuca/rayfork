@@ -42,7 +42,11 @@
 
 // NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
 // Plain structures in C++ (without constructors) can be initialized from { } initializers.
+#ifdef __cplusplus
+#define RF_CLITERAL(type) type
+#else
 #define RF_CLITERAL(type) (type)
+#endif
 
 #define rf_max_text_buffer_length 1024 // Size of internal RF_INTERNAL buffers used on  some functions:
 #define rf_max_text_unicode_chars 512 // Maximum number of unicode codepoints
@@ -1218,7 +1222,7 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 #endif
 
 #ifndef _rf_is_file_extension
-    #define _rf_is_file_extension(filename, ext) (strrchr(filename, '.') != NULL && strcmp(strrchr(filename, '.'), ext) == 0)
+    #define _rf_is_file_extension(filename, ext) ((strrchr(filename, '.') != NULL) && (strcmp(strrchr(filename, '.'), ext) == 0))
 #endif
 
 // Trace log type
@@ -2381,7 +2385,7 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vector2 position,
                                     (rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
-                                            font.recs[index].height*scaleFactor }, (rf_vector2){ 0, 0 }, 0.0f, tint);
+                                            font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
             }
 
             if (font.chars[index].advance_x == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
@@ -2426,7 +2430,7 @@ RF_API void rf_draw_text_from_buffer(rf_font font, const char* text, int length,
                                     (rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
-                                            font.recs[index].height*scaleFactor }, (rf_vector2){ 0, 0 }, 0.0f, tint);
+                                            font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
             }
 
             if (font.chars[index].advance_x == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
@@ -2559,7 +2563,7 @@ RF_API void rf_draw_text_rec_ex(rf_font font, const char* text, rf_rectangle rec
                                         (rf_rectangle){ rec.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                                 rec.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                                 font.recs[index].width*scaleFactor,
-                                                font.recs[index].height*scaleFactor }, (rf_vector2){ 0, 0 }, 0.0f,
+                                                font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f,
                                         (!isGlyphSelected)? tint : selectText);
                 }
             }
@@ -3248,7 +3252,7 @@ RF_API rf_vector2 rf_get_world_to_screen2d(rf_vector2 position, rf_camera2d came
     rf_matrix matCamera = rf_get_camera_matrix2d(camera);
     rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, matCamera);
 
-    return (rf_vector2){ transform.x, transform.y };
+    return RF_CLITERAL(rf_vector2){ transform.x, transform.y };
 }
 
 // Returns the world space position for a 2d camera screen space position
@@ -3257,7 +3261,7 @@ RF_API rf_vector2 rf_get_screen_to_world2d(rf_vector2 position, rf_camera2d came
     rf_matrix invMatCamera = rf_matrix_invert(rf_get_camera_matrix2d(camera));
     rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, invMatCamera);
 
-    return (rf_vector2){ transform.x, transform.y };
+    return RF_CLITERAL(rf_vector2){ transform.x, transform.y };
 }
 
 // Set target FPS (maximum)
@@ -8377,7 +8381,7 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius)
 
     // TexCoords definition
     rf_vector2 *texcoords = (rf_vector2 *)RF_MALLOC(vertex_count*sizeof(rf_vector2));
-    for (int n = 0; n < vertex_count; n++) texcoords[n] = (rf_vector2){ 0.0f, 0.0f };
+    for (int n = 0; n < vertex_count; n++) texcoords[n] = RF_CLITERAL(rf_vector2){ 0.0f, 0.0f };
 
     mesh.vertex_count = vertex_count;
     mesh.triangle_count = sides;
@@ -8955,12 +8959,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -8980,12 +8984,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 if (((z < cubicmap.height - 1) &&
@@ -9011,12 +9015,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n6;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ frontTexUV.x, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9043,12 +9047,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n5;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ backTexUV.x, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9075,12 +9079,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n1;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ rightTexUV.x, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9107,12 +9111,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n2;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ leftTexUV.x, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
             }
@@ -9138,12 +9142,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -9163,12 +9167,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = (rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = (rf_vector2){ bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
                 vertex_texcoord_counter += 6;
             }
         }
@@ -11100,20 +11104,20 @@ RF_API void rf_draw_ring_lines(rf_vector2 center, float innerRadius, float outer
 // Draw a color-filled rectangle
 RF_API void rf_draw_rectangle(int posX, int posY, int width, int height, rf_color color)
 {
-    rf_draw_rectangle_v((rf_vector2){ (float)posX, (float)posY }, (rf_vector2){ (float)width, (float)height }, color);
+    rf_draw_rectangle_v((rf_vector2){ (float)posX, (float)posY }, RF_CLITERAL(rf_vector2){ (float)width, (float)height }, color);
 }
 
 // Draw a color-filled rectangle (Vector version)
 // NOTE: On OpenGL 3.3 and ES2 we use QUADS to avoid drawing order issues (view rf_gl_draw)
 RF_API void rf_draw_rectangle_v(rf_vector2 position, rf_vector2 size, rf_color color)
 {
-    rf_draw_rectangle_pro((rf_rectangle){ position.x, position.y, size.x, size.y }, (rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
+    rf_draw_rectangle_pro((rf_rectangle){ position.x, position.y, size.x, size.y }, RF_CLITERAL(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle
 RF_API void rf_draw_rectangle_rec(rf_rectangle rec, rf_color color)
 {
-    rf_draw_rectangle_pro(rec, (rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
+    rf_draw_rectangle_pro(rec, RF_CLITERAL(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle with pro parameters
@@ -13894,7 +13898,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
     {
         int y = (i/seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
         int x = (i%seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
-        seeds[i] = (rf_vector2){ (float)x, (float)y};
+        seeds[i] = RF_CLITERAL(rf_vector2){ (float)x, (float)y};
     }
 
     for (int y = 0; y < height; y++)
@@ -14045,7 +14049,7 @@ RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode)
 // Draw a rf_texture2d
 RF_API void rf_draw_texture(rf_texture2d texture, int posX, int posY, rf_color tint)
 {
-    rf_draw_texture_ex(texture, (rf_vector2){ (float)posX, (float)posY }, 0.0f, 1.0f, tint);
+    rf_draw_texture_ex(texture, RF_CLITERAL(rf_vector2){ (float)posX, (float)posY }, 0.0f, 1.0f, tint);
 }
 
 // Draw a rf_texture2d with position defined as rf_vector2
