@@ -1741,7 +1741,7 @@ RF_API void rf_load_font_default()
     int imWidth = 128;
     int imHeight = 128;
 
-    rf_color* imagePixels = (rf_color*) RF_MALLOC(imWidth*imHeight*sizeof(rf_color));
+    rf_color* imagePixels = RF_CLITERAL(rf_color*) RF_MALLOC(imWidth*imHeight*sizeof(rf_color));
 
     for (int i = 0; i < imWidth*imHeight; i++) imagePixels[i] = rf_blank; // Initialize array
 
@@ -1909,7 +1909,7 @@ RF_API rf_load_font_async_result rf_load_font_async(const char* fileName, int fo
         font.chars[i].image = rf_image_from_image(atlas, font.recs[i]);
     }
 
-    return (rf_load_font_async_result) { font, atlas };
+    return RF_CLITERAL(rf_load_font_async_result) { font, atlas };
 }
 
 RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result fontJobResult)
@@ -2382,7 +2382,7 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vector2 position,
             if (letter != ' ')
             {
                 rf_draw_texture_pro(font.texture, font.recs[index],
-                                    (rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                    RF_CLITERAL(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
                                             font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
@@ -2427,7 +2427,7 @@ RF_API void rf_draw_text_from_buffer(rf_font font, const char* text, int length,
             if (letter != ' ')
             {
                 rf_draw_texture_pro(font.texture, font.recs[index],
-                                    (rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                    RF_CLITERAL(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
                                             font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
@@ -2560,7 +2560,7 @@ RF_API void rf_draw_text_rec_ex(rf_font font, const char* text, rf_rectangle rec
                 if ((letter != ' ') && (letter != '\t'))
                 {
                     rf_draw_texture_pro(font.texture, font.recs[index],
-                                        (rf_rectangle){ rec.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                        RF_CLITERAL(rf_rectangle){ rec.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                                 rec.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                                 font.recs[index].width*scaleFactor,
                                                 font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f,
@@ -3417,7 +3417,7 @@ RF_API rf_color rf_fade(rf_color color, float alpha)
     if (alpha < 0.0f) alpha = 0.0f;
     else if (alpha > 1.0f) alpha = 1.0f;
 
-    return (rf_color){color.r, color.g, color.b, (unsigned char)(255.0f*alpha)};
+    return RF_CLITERAL(rf_color){color.r, color.g, color.b, (unsigned char)(255.0f*alpha)};
 }
 
 //endregion
@@ -9903,18 +9903,18 @@ RF_INTERNAL rf_model _rf_load_obj(const char* fileName)
             model.materials[m].maps[rf_map_diffuse].texture = rf_get_texture_default(); // Get default texture, in case no texture is defined
 
             if (materials[m].diffuse_texname != NULL) model.materials[m].maps[rf_map_diffuse].texture = rf_load_texture(materials[m].diffuse_texname); //char* diffuse_texname; // map_Kd
-            model.materials[m].maps[rf_map_diffuse].color = (rf_color){ (float)(materials[m].diffuse[0]*255.0f), (float)(materials[m].diffuse[1]*255.0f), (float)(materials[m].diffuse[2]*255.0f), 255 }; //float diffuse[3];
+            model.materials[m].maps[rf_map_diffuse].color = RF_CLITERAL(rf_color){ (float)(materials[m].diffuse[0]*255.0f), (float)(materials[m].diffuse[1]*255.0f), (float)(materials[m].diffuse[2]*255.0f), 255 }; //float diffuse[3];
             model.materials[m].maps[rf_map_diffuse].value = 0.0f;
 
             if (materials[m].specular_texname != NULL) model.materials[m].maps[rf_map_specular].texture = rf_load_texture(materials[m].specular_texname); //char* specular_texname; // map_Ks
-            model.materials[m].maps[rf_map_specular].color = (rf_color){ (float)(materials[m].specular[0]*255.0f), (float)(materials[m].specular[1]*255.0f), (float)(materials[m].specular[2]*255.0f), 255 }; //float specular[3];
+            model.materials[m].maps[rf_map_specular].color = RF_CLITERAL(rf_color){ (float)(materials[m].specular[0]*255.0f), (float)(materials[m].specular[1]*255.0f), (float)(materials[m].specular[2]*255.0f), 255 }; //float specular[3];
             model.materials[m].maps[rf_map_specular].value = 0.0f;
 
             if (materials[m].bump_texname != NULL) model.materials[m].maps[rf_map_normal].texture = rf_load_texture(materials[m].bump_texname); //char* bump_texname; // map_bump, bump
             model.materials[m].maps[rf_map_normal].color = rf_white;
             model.materials[m].maps[rf_map_normal].value = materials[m].shininess;
 
-            model.materials[m].maps[rf_map_emission].color = (rf_color){ (float)(materials[m].emission[0]*255.0f), (float)(materials[m].emission[1]*255.0f), (float)(materials[m].emission[2]*255.0f), 255 }; //float emission[3];
+            model.materials[m].maps[rf_map_emission].color = RF_CLITERAL(rf_color){ (float)(materials[m].emission[0]*255.0f), (float)(materials[m].emission[1]*255.0f), (float)(materials[m].emission[2]*255.0f), 255 }; //float emission[3];
 
             if (materials[m].displacement_texname != NULL) model.materials[m].maps[rf_map_height].texture = rf_load_texture(materials[m].displacement_texname); //char* displacement_texname; // disp
         }
@@ -10529,7 +10529,7 @@ RF_INTERNAL rf_model _rf_load_gltf(const char* fileName)
         for (int i = 0; i < model.material_count - 1; i++)
         {
             model.materials[i] = rf_load_material_default();
-            rf_color tint = (rf_color){ 255, 255, 255, 255 };
+            rf_color tint = RF_CLITERAL(rf_color){ 255, 255, 255, 255 };
             const char* texPath = _rf_get_directory_path(fileName);
 
             //Ensure material follows raylib support for PBR (metallic/roughness flow)
@@ -11671,7 +11671,7 @@ RF_INTERNAL rf_texture2d _rf_get_shapes_texture()
     if (_rf_global_context_ptr->gl_ctx.tex_shapes.id == 0)
     {
         _rf_global_context_ptr->gl_ctx.tex_shapes = rf_get_texture_default(); // Use default white texture
-        _rf_global_context_ptr->gl_ctx.rec_tex_shapes = (rf_rectangle){ 0.0f, 0.0f, 1.0f, 1.0f };
+        _rf_global_context_ptr->gl_ctx.rec_tex_shapes = RF_CLITERAL(rf_rectangle){ 0.0f, 0.0f, 1.0f, 1.0f };
     }
 
     return _rf_global_context_ptr->gl_ctx.tex_shapes;
@@ -12143,7 +12143,7 @@ RF_API rf_rectangle rf_get_image_alpha_border(rf_image image, float threshold)
             }
         }
 
-        crop = (rf_rectangle){ xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
+        crop = RF_CLITERAL(rf_rectangle){ xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
 
         RF_FREE(pixels);
     }
@@ -12664,7 +12664,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap(rf_image image, int layoutType
 
         rf_image faces = { 0 }; // Vertical column image
         rf_rectangle faceRecs[6] = { 0 }; // Face source rectangles
-        for (int i = 0; i < 6; i++) faceRecs[i] = (rf_rectangle){ 0, 0, size, size };
+        for (int i = 0; i < 6; i++) faceRecs[i] = RF_CLITERAL(rf_rectangle){ 0, 0, size, size };
 
         if (layoutType == rf_cubemap_line_vertical)
         {
@@ -12705,7 +12705,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap(rf_image image, int layoutType
             // TODO: rf_image formating does not work with compressed textures!
         }
 
-        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], (rf_rectangle){ 0, size*i, size, size }, rf_white);
+        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], RF_CLITERAL(rf_rectangle){ 0, size*i, size, size }, rf_white);
 
         cubemap.id = rf_gl_load_texture_cubemap(faces.data, size, faces.format);
         if (cubemap.id == 0) RF_LOG(RF_LOG_WARNING, "Cubemap image could not be loaded.");
@@ -12870,23 +12870,23 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
         // Support offsets out of canvas new size -> original image is cropped
         if (offset_x < 0)
         {
-            rf_image_crop(image, (rf_rectangle) { -offset_x, 0, image->width + offset_x, image->height });
+            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { -offset_x, 0, image->width + offset_x, image->height });
             offset_x = 0;
         }
         else if (offset_x > (newWidth - image->width))
         {
-            rf_image_crop(image, (rf_rectangle) { 0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
+            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
             offset_x = newWidth - image->width;
         }
 
         if (offset_y < 0)
         {
-            rf_image_crop(image, (rf_rectangle) { 0, -offset_y, image->width, image->height + offset_y });
+            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, -offset_y, image->width, image->height + offset_y });
             offset_y = 0;
         }
         else if (offset_y > (newHeight - image->height))
         {
-            rf_image_crop(image, (rf_rectangle) { 0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
+            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
             offset_y = newHeight - image->height;
         }
 
@@ -13219,27 +13219,27 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
     // Allow negative position within destination with cropping
     if (dstRec.x < 0)
     {
-        rf_image_crop(&srcCopy, (rf_rectangle) { -dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { -dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
         dstRec.width = dstRec.width + dstRec.x;
         dstRec.x = 0;
     }
 
     if ((dstRec.x + dstRec.width) > dst->width)
     {
-        rf_image_crop(&srcCopy, (rf_rectangle) { 0, 0, dst->width - dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, 0, dst->width - dstRec.x, dstRec.height });
         dstRec.width = dst->width - dstRec.x;
     }
 
     if (dstRec.y < 0)
     {
-        rf_image_crop(&srcCopy, (rf_rectangle) { 0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
         dstRec.height = dstRec.height + dstRec.y;
         dstRec.y = 0;
     }
 
     if ((dstRec.y + dstRec.height) > dst->height)
     {
-        rf_image_crop(&srcCopy, (rf_rectangle) { 0, 0, dstRec.width, dst->height - dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, 0, dstRec.width, dst->height - dstRec.y });
         dstRec.height = dst->height - dstRec.y;
     }
 
@@ -13281,7 +13281,7 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
                 fout.z = (fsrc.z*fsrc.w + fdst.z*fdst.w*(1 - fsrc.w))/fout.w;
             }
 
-            dstPixels[j*(int)dst->width + i] = (rf_color){ (unsigned char)(fout.x*255.0f),
+            dstPixels[j*(int)dst->width + i] = RF_CLITERAL(rf_color){ (unsigned char)(fout.x*255.0f),
                     (unsigned char)(fout.y*255.0f),
                     (unsigned char)(fout.z*255.0f),
                     (unsigned char)(fout.w*255.0f) };
@@ -13343,8 +13343,8 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, float fontSize,
         {
             if (letter != ' ')
             {
-                rf_image_draw(&imText, font.chars[index].image, (rf_rectangle){ 0, 0, font.chars[index].image.width, font.chars[index].image.height },
-                              (rf_rectangle){ (float)(positionX + font.chars[index].offset_x),(float)font.chars[index].offset_y,
+                rf_image_draw(&imText, font.chars[index].image, RF_CLITERAL(rf_rectangle){ 0, 0, font.chars[index].image.width, font.chars[index].image.height },
+                              RF_CLITERAL(rf_rectangle){ (float)(positionX + font.chars[index].offset_x),(float)font.chars[index].offset_y,
                                       font.chars[index].image.width, font.chars[index].image.height }, tint);
             }
 
@@ -13374,17 +13374,17 @@ RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rectangle rec, rf_color co
     if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0)) return;
 
     rf_image imRec = rf_gen_image_color((int)rec.width, (int)rec.height, color);
-    rf_image_draw(dst, imRec, (rf_rectangle){ 0, 0, rec.width, rec.height }, rec, rf_white);
+    rf_image_draw(dst, imRec, RF_CLITERAL(rf_rectangle){ 0, 0, rec.width, rec.height }, rec, rf_white);
     rf_unload_image(imRec);
 }
 
 // Draw rectangle lines within an image
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rectangle rec, int thick, rf_color color)
 {
-    rf_image_draw_rectangle(dst, (rf_rectangle){ rec.x, rec.y, rec.width, thick }, color);
-    rf_image_draw_rectangle(dst, (rf_rectangle){ rec.x, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, (rf_rectangle){ rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, (rf_rectangle){ rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y + thick, thick, rec.height - thick*2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick*2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
 }
 
 // Draw text (default font) within an image (destination)
@@ -13873,7 +13873,7 @@ RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, i
             float p = (stb_perlin_fbm_noise3(nx, ny, 1.0f, 2.0f, 0.5f, 6) + 1.0f)/2.0f;
 
             int intensity = (int)(p*255.0f);
-            pixels[y*width + x] = (rf_color){intensity, intensity, intensity, 255};
+            pixels[y*width + x] = RF_CLITERAL(rf_color){intensity, intensity, intensity, 255};
         }
     }
 
@@ -13931,7 +13931,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
             int intensity = (int)(minDistance*256.0f/tileSize);
             if (intensity > 255) intensity = 255;
 
-            pixels[y*width + x] = (rf_color){ intensity, intensity, intensity, 255 };
+            pixels[y*width + x] = RF_CLITERAL(rf_color){ intensity, intensity, intensity, 255 };
         }
     }
 
