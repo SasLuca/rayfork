@@ -612,7 +612,7 @@ RF_API rf_float3 rf_vector3_to_float_v(rf_vector3 v)
 // Compute matrix determinant
 RF_API float rf_matrix_determinant(rf_matrix mat)
 {
-    float result = { 0 };
+    float result = 0.0;
 
     // Cache the matrix values (speed optimization)
     float a00 = mat.m0, a01 = mat.m1, a02 = mat.m2, a03 = mat.m3;
