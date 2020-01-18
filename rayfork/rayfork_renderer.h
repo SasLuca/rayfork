@@ -100,7 +100,7 @@
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_21)
-#undef RF_GRAPHICS_API_OPENGL_11
+    #undef RF_GRAPHICS_API_OPENGL_11
     #undef RF_GRAPHICS_API_OPENGL_33
     #undef RF_GRAPHICS_API_OPENGL_ES2
 #endif
@@ -1402,7 +1402,7 @@ RF_API void rf_wait(float duration)
 
 #ifndef RF_CUSTOM_IO
 // Files management functions
-int rf_get_file_size(const char* filename)
+RF_API int rf_get_file_size(const char* filename)
 {
     FILE* file = fopen(filename, "rb");
 
@@ -1414,7 +1414,7 @@ int rf_get_file_size(const char* filename)
     return size;
 }
 
-void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize)
+RF_API void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize)
 {
     FILE* file = fopen(filename, "rb");
     RF_ASSERT(file != NULL);
