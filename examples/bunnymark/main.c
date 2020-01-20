@@ -46,6 +46,6 @@ sapp_desc sokol_main(int argc, char** argv)
         .init_cb = on_init,
         .frame_cb = platform_on_frame,
         .event_cb = platform_on_event,
-        .window_title = "raylib [core] example - keyboard input",
+        .window_title = "rayfork [textures] example - bunnymark",
     };
 }

@@ -189,11 +189,11 @@ typedef struct rf_input_state_for_update_camera rf_input_state_for_update_camera
 struct rf_input_state_for_update_camera
 {
     rf_vector2 mouse_position;
-    int mouse_wheel_move;
-    bool is_camera_pan_control_key_down;
-    bool is_camera_alt_control_key_down;
-    bool is_camera_smooth_zoom_control_key;
-    bool direction_keys[6];
+    int mouse_wheel_move; //mouse wheel movement Y
+    bool is_camera_pan_control_key_down; //MOUSE_MIDDLE_BUTTON
+    bool is_camera_alt_control_key_down; //KEY_LEFT_ALT
+    bool is_camera_smooth_zoom_control_key; //KEY_LEFT_CONTROL
+    bool direction_keys[6]; //'W', 'S', 'D', 'A', 'E', 'Q'
 };
 
 //RGBA (32bit)
@@ -7022,10 +7022,10 @@ RF_API void rf_set_camera_mode(rf_camera3d camera, int mode)
 //       Mouse: IsMouseButtonDown(), GetMousePosition(), GetMouseWheelMove()
 //       Keys:  IsKeyDown()
 // TODO: Port to quaternion-based camera
-RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_camera inputState)
+RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_update_camera inputState)
 {
-    RF_INTERNAL int swingCounter = 0; // Used for 1st person swinging movement
-    RF_INTERNAL rf_vector2 previousMousePosition = { 0.0f, 0.0f };
+    static int swingCounter = 0; // Used for 1st person swinging movement
+    static rf_vector2 previousMousePosition = { 0.0f, 0.0f };
 
     // TODO: Compute _rf_global_context_ptr->gl_ctx.camera_target_distance and _rf_global_context_ptr->gl_ctx.camera_angle here
 
@@ -11894,6 +11894,7 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target)
 }
 
 // Get pixel data from image in the form of rf_color struct array
+// @Todo: Good candidate for refactoring since its easy. Dont alloc a buffer for the user ffs
 RF_API rf_color* rf_get_image_data(rf_image image)
 {
     rf_color* pixels = (rf_color* )RF_MALLOC(image.width*image.height*sizeof(rf_color));

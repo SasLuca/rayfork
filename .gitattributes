@@ -5,3 +5,5 @@
 *.mp3 binary
 *.wav binary
 *.raw binary
+*.obj binary
+*.gltf binary

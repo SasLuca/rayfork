@@ -19,6 +19,12 @@ if (EXAMPLES)
 
     include_directories(rayfork)
 
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+    add_subdirectory(examples/dependencies/glfw EXCLUDE_FROM_ALL)
+
     add_subdirectory(examples/basic_window)
     add_subdirectory(examples/basic_shapes)
     add_subdirectory(examples/input_keys)
@@ -27,6 +33,7 @@ if (EXAMPLES)
     add_subdirectory(examples/raw_audio_stream)
     add_subdirectory(examples/hot_code_reloading)
     add_subdirectory(examples/bunnymark)
+    add_subdirectory(examples/first_person_maze)
     add_subdirectory(examples/compile)
 endif()
 

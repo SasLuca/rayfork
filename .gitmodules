@@ -22,3 +22,6 @@
 [submodule "examples/dependencies/sokol"]
 	path = examples/dependencies/sokol
 	url = https://github.com/floooh/sokol
+[submodule "examples/dependencies/glfw"]
+	path = examples/dependencies/glfw
+	url = https://github.com/glfw/glfw
