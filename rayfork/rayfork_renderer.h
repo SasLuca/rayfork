@@ -795,7 +795,7 @@ RF_API double rf_get_time(void); // Returns elapsed time in seconds since rf_con
 
 // Files management functions
 RF_API int rf_get_file_size(const char* filename);
-RF_API void rf_load_file_into_buffer(const char* filename, rf_byte* buffer, int bufferSize);
+RF_API void rf_load_file_into_buffer(const char* filename, rf_byte* buffer, int buffer_size);
 
 //endregion
 
@@ -1250,13 +1250,6 @@ rf_context* _rf_global_context_ptr;
 
 //region implementation includes
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <ctype.h>
-
 #define RF_MATH_IMPL
 #include "rayfork_math.h"
 
@@ -1407,21 +1400,29 @@ RF_API int rf_get_file_size(const char* filename)
     FILE* file = fopen(filename, "rb");
 
     fseek(file, 0L, SEEK_END);
-    int size = ftell(file);
+    const int size = ftell(file);
     fseek(file, 0L, SEEK_SET);
 
     fclose(file);
+
     return size;
 }
 
-RF_API void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int bufferSize)
+RF_API void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int buffer_size)
 {
     FILE* file = fopen(filename, "rb");
     RF_ASSERT(file != NULL);
 
-    size_t newLen = fread(buffer, sizeof(char), bufferSize, file);
+    fseek(file, 0L, SEEK_END);
+    const int file_size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
+    RF_ASSERT(file_size < buffer_size);
+
+    const size_t read_size = fread(buffer, sizeof(char), buffer_size, file);
 
     RF_ASSERT(ferror(file) == 0);
+    RF_ASSERT(read_size == file_size);
 
     fclose(file);
 }
@@ -1452,7 +1453,7 @@ RF_INTERNAL const char* _rf_strprbrk(const char* s, const char* charset)
 // Get directory for a given filePath
 RF_INTERNAL const char* _rf_get_directory_path(const char* filePath)
 {
-#define rf_max_filepath_length 512 // Use common value
+    #define rf_max_filepath_length 512 // Use common value
     const char* lastSlash = NULL;
     RF_INTERNAL char dirPath[rf_max_filepath_length];
     memset(dirPath, 0, rf_max_filepath_length);
@@ -1723,7 +1724,8 @@ RF_API void rf_load_font_default()
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 };
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+    };
 
     int charsHeight = 10;
     int charsDivisor = 1; // Every char is separated from the consecutive by a 1 pixel divisor, horizontally and vertically
@@ -1741,7 +1743,7 @@ RF_API void rf_load_font_default()
     int imWidth = 128;
     int imHeight = 128;
 
-    rf_color* imagePixels = RF_CLITERAL(rf_color*) RF_MALLOC(imWidth*imHeight*sizeof(rf_color));
+    rf_color* imagePixels = (rf_color*) RF_MALLOC(imWidth * imHeight * sizeof(rf_color));
 
     for (int i = 0; i < imWidth*imHeight; i++) imagePixels[i] = rf_blank; // Initialize array
 
@@ -3440,20 +3442,20 @@ RF_API rf_color rf_fade(rf_color color, float alpha)
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT       0x84FE
 
 #if defined(RF_GRAPHICS_API_OPENGL_11)
-#define GL_UNSIGNED_SHORT_5_6_5             0x8363
+    #define GL_UNSIGNED_SHORT_5_6_5             0x8363
     #define GL_UNSIGNED_SHORT_5_5_5_1           0x8034
     #define GL_UNSIGNED_SHORT_4_4_4_4           0x8033
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_21)
-#define GL_LUMINANCE                        0x1909
+    #define GL_LUMINANCE                        0x1909
     #define GL_LUMINANCE_ALPHA                  0x190A
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_ES2)
-#define glClearDepth                glClearDepthf
-#define GL_READ_FRAMEBUFFER         GL_FRAMEBUFFER
-#define GL_DRAW_FRAMEBUFFER         GL_FRAMEBUFFER
+    #define glClearDepth                glClearDepthf
+    #define GL_READ_FRAMEBUFFER         GL_FRAMEBUFFER
+    #define GL_DRAW_FRAMEBUFFER         GL_FRAMEBUFFER
 #endif
 
 //----------------------------------------------------------------------------------

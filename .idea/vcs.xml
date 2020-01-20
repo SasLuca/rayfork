@@ -6,6 +6,7 @@
     <mapping directory="$PROJECT_DIR$/dependencies/dr_libs" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/dependencies/jar" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/dependencies/miniaudio" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/dependencies/miniaudio/tools/external/dred" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/dependencies/par" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/dependencies/stb" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/dependencies/tinyobjloader-c" vcs="Git" />
