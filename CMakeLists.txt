@@ -26,6 +26,7 @@ if (EXAMPLES)
     add_subdirectory(examples/geometric_shapes)
     add_subdirectory(examples/raw_audio_stream)
     add_subdirectory(examples/hot_code_reloading)
+    add_subdirectory(examples/bunnymark)
     add_subdirectory(examples/compile)
 endif()
 

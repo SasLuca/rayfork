@@ -122,13 +122,17 @@
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_11) || defined(RF_GRAPHICS_API_OPENGL_33)
-// This is the maximum amount of elements (quads) per batch
-// NOTE: Be careful with text, every letter maps to a quad
-#define rf_max_batch_elements            8192
+    // This is the maximum amount of elements (quads) per batch
+    // NOTE: Be careful with text, every letter maps to a quad
+    #ifndef rf_max_batch_elements
+        #define rf_max_batch_elements 8192
+    #endif
 #elif defined(RF_GRAPHICS_API_OPENGL_ES2)
-// We reduce memory sizes for embedded systems (RPI and HTML5)
+    // We reduce memory sizes for embedded systems (RPI and HTML5)
     // NOTE: On HTML5 (emscripten) this is allocated on heap, by default it's only 16MB!...just take care...
-    #define rf_max_batch_elements            2048
+    #ifndef rf_max_batch_elements
+        #define rf_max_batch_elements            2048
+    #endif
 #endif
 
 #define rf_max_batch_buffering                  1      // Max number of buffers for batching (multi-buffering)
@@ -1417,7 +1421,7 @@ RF_API void rf_load_file_into_buffer(const char* filename, uint8_t* buffer, int 
     const int file_size = ftell(file);
     fseek(file, 0L, SEEK_SET);
 
-    RF_ASSERT(file_size < buffer_size);
+    RF_ASSERT(file_size <= buffer_size);
 
     const size_t read_size = fread(buffer, sizeof(char), buffer_size, file);
 
