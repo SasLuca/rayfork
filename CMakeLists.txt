@@ -19,6 +19,7 @@ if (EXAMPLES)
 
     include_directories(rayfork)
 
+    add_subdirectory(examples/basic_window)
     add_subdirectory(examples/basic_shapes)
     add_subdirectory(examples/collision_area)
     add_subdirectory(examples/geometric_shapes)
