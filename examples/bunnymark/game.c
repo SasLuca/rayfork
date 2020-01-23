@@ -104,7 +104,7 @@ void on_frame(const input_data input)
     char text[1024];
     snprintf(text, sizeof(text), "bunnies: %i", bunnies_count);
     rf_draw_text(text, 120, 10, 20, rf_green);
-    snprintf(text, sizeof(text), "batched draw calls: %i", 1 + bunnies_count / rf_max_batch_elements);
+    snprintf(text, sizeof(text), "batched draw calls: %i", 1 + bunnies_count / RF_MAX_BATCH_ELEMENTS);
     rf_draw_text(text, 320, 10, 20, rf_maroon);
 
     rf_draw_fps(10, 10);

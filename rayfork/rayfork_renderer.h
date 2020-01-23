@@ -33,115 +33,83 @@
 
 //region basic defines
 #ifndef RF_API
-#define RF_API extern
+    #define RF_API extern
 #endif
 
 #ifndef RF_INTERNAL
-#define RF_INTERNAL static
+    #define RF_INTERNAL static
 #endif
 
 // NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
 // Plain structures in C++ (without constructors) can be initialized from { } initializers.
 #ifdef __cplusplus
-#define RF_CLITERAL(type) type
+    #define RF_CLIT(type) type
 #else
-#define RF_CLITERAL(type) (type)
+    #define RF_CLIT(type) (type)
 #endif
 
-#define rf_max_text_buffer_length 1024 // Size of internal RF_INTERNAL buffers used on  some functions:
-#define rf_max_text_unicode_chars 512 // Maximum number of unicode codepoints
-#define rf_textsplit_max_text_buffer_length 1024 // Size of RF_INTERNAL buffer: _rf_text_split()
-#define rf_textsplit_max_substrings_count 128 // Size of RF_INTERNAL pointers array: _rf_text_split()
+#define RF_MAX_TEXT_BUFFER_LENGTH 1024 // Size of internal RF_INTERNAL buffers used on  some functions:
+#define RF_MAX_TEXT_UNICODE_CHARS 512 // Maximum number of unicode codepoints
+#define RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH 1024 // Size of RF_INTERNAL buffer: _rf_text_split()
+#define RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT 128 // Size of RF_INTERNAL pointers array: _rf_text_split()
 
 // Some Basic Colors
-// NOTE: Custom raylib color palette for amazing visuals on rf_white background
-#define rf_lightgray RF_CLITERAL(rf_color){ 200, 200, 200, 255 } // Light Gray
-#define rf_gray RF_CLITERAL(rf_color){ 130, 130, 130, 255 } // Gray
-#define rf_darkgray RF_CLITERAL(rf_color){ 80, 80, 80, 255 } // Dark Gray
-#define rf_yellow RF_CLITERAL(rf_color){ 253, 249, 0, 255 } // Yellow
-#define rf_gold RF_CLITERAL(rf_color){ 255, 203, 0, 255 } // Gold
-#define rf_orange RF_CLITERAL(rf_color){ 255, 161, 0, 255 } // Orange
-#define rf_pink RF_CLITERAL(rf_color){ 255, 109, 194, 255 } // Pink
-#define rf_red RF_CLITERAL(rf_color){ 230, 41, 55, 255 } // Red
-#define rf_maroon RF_CLITERAL(rf_color){ 190, 33, 55, 255 } // Maroon
-#define rf_green RF_CLITERAL(rf_color){ 0, 228, 48, 255 } // Green
-#define rf_lime RF_CLITERAL(rf_color){ 0, 158, 47, 255 } // Lime
-#define rf_darkgreen RF_CLITERAL(rf_color){ 0, 117, 44, 255 } // Dark Green
-#define rf_skyblue RF_CLITERAL(rf_color){ 102, 191, 255, 255 } // Sky Blue
-#define rf_blue RF_CLITERAL(rf_color){ 0, 121, 241, 255 } // Blue
-#define rf_darkblue RF_CLITERAL(rf_color){ 0, 82, 172, 255 } // Dark Blue
-#define rf_purple RF_CLITERAL(rf_color){ 200, 122, 255, 255 } // Purple
-#define rf_violet RF_CLITERAL(rf_color){ 135, 60, 190, 255 } // Violet
-#define rf_darkpurple RF_CLITERAL(rf_color){ 112, 31, 126, 255 } // Dark Purple
-#define rf_beige RF_CLITERAL(rf_color){ 211, 176, 131, 255 } // Beige
-#define rf_brown RF_CLITERAL(rf_color){ 127, 106, 79, 255 } // Brown
-#define rf_darkbrown RF_CLITERAL(rf_color){ 76, 63, 47, 255 } // Dark Brown
+// NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
+#define RF_LIGHTGRAY RF_CLIT(rf_color){ 200, 200, 200, 255 } // Light Gray
+#define RF_GRAY RF_CLIT(rf_color){ 130, 130, 130, 255 } // Gray
+#define RF_DARKGRAY RF_CLIT(rf_color){ 80, 80, 80, 255 } // Dark Gray
+#define RF_YELLOW RF_CLIT(rf_color){ 253, 249, 0, 255 } // Yellow
+#define RF_GOLD RF_CLIT(rf_color){ 255, 203, 0, 255 } // Gold
+#define RF_ORANGE RF_CLIT(rf_color){ 255, 161, 0, 255 } // Orange
+#define RF_PINK RF_CLIT(rf_color){ 255, 109, 194, 255 } // Pink
+#define RF_RED RF_CLIT(rf_color){ 230, 41, 55, 255 } // Red
+#define RF_MAROON RF_CLIT(rf_color){ 190, 33, 55, 255 } // Maroon
+#define RF_GREEN RF_CLIT(rf_color){ 0, 228, 48, 255 } // Green
+#define RF_LIME RF_CLIT(rf_color){ 0, 158, 47, 255 } // Lime
+#define RF_DARKGREEN RF_CLIT(rf_color){ 0, 117, 44, 255 } // Dark Green
+#define RF_SKYBLUE RF_CLIT(rf_color){ 102, 191, 255, 255 } // Sky Blue
+#define RF_BLUE RF_CLIT(rf_color){ 0, 121, 241, 255 } // Blue
+#define RF_DARKBLUE RF_CLIT(rf_color){ 0, 82, 172, 255 } // Dark Blue
+#define RF_PURPLE RF_CLIT(rf_color){ 200, 122, 255, 255 } // Purple
+#define RF_VIOLET RF_CLIT(rf_color){ 135, 60, 190, 255 } // Violet
+#define RF_DARKPURPLE RF_CLIT(rf_color){ 112, 31, 126, 255 } // Dark Purple
+#define RF_BEIGE RF_CLIT(rf_color){ 211, 176, 131, 255 } // Beige
+#define RF_BROWN RF_CLIT(rf_color){ 127, 106, 79, 255 } // Brown
+#define RF_DARKBROWN RF_CLIT(rf_color){ 76, 63, 47, 255 } // Dark Brown
 
-#define rf_white RF_CLITERAL(rf_color){ 255, 255, 255, 255 } // White
-#define rf_black RF_CLITERAL(rf_color){ 0, 0, 0, 255 } // Black
-#define rf_blank RF_CLITERAL(rf_color){ 0, 0, 0, 0 } // Blank (Transparent)
-#define rf_magenta RF_CLITERAL(rf_color){ 255, 0, 255, 255 } // Magenta
-#define rf_raywhite RF_CLITERAL(rf_color){ 245, 245, 245, 255 } // My own White (raylib logo)
+#define RF_WHITE RF_CLIT(rf_color){ 255, 255, 255, 255 } // White
+#define RF_BLACK RF_CLIT(rf_color){ 0, 0, 0, 255 } // Black
+#define RF_BLANK RF_CLIT(rf_color){ 0, 0, 0, 0 } // Blank (Transparent)
+#define RF_MAGENTA RF_CLIT(rf_color){ 255, 0, 255, 255 } // Magenta
+#define RF_RAYWHITE RF_CLIT(rf_color){ 245, 245, 245, 255 } // My own White (raylib logo)
+
 //endregion
 
 //region gl constants
 
-// Security check in case multiple RF_GRAPHICS_API_OPENGL_* defined
-// Security check in case no GRAPHICS_API_OPENGL_* defined
-#if !defined(RF_GRAPHICS_API_OPENGL_11) && !defined(RF_GRAPHICS_API_OPENGL_21) && !defined(RF_GRAPHICS_API_OPENGL_33) && !defined(RF_GRAPHICS_API_OPENGL_ES2)
-#define RF_GRAPHICS_API_OPENGL_33
+#if !defined(RF_GRAPHICS_API_OPENGL33) && !defined(RF_GRAPHICS_API_OPENGL_ES2)
+    #error Rayfork error: Must choose a graphics API.
 #endif
 
-// Security checks in case multiple GRAPHICS_API_OPENGL_* defined
-#if defined(RF_GRAPHICS_API_OPENGL_11)
-#undef RF_GRAPHICS_API_OPENGL_21
-    #undef RF_GRAPHICS_API_OPENGL_33
-    #undef RF_GRAPHICS_API_OPENGL_ES2
+#if defined(RF_GRAPHICS_API_OPENGL33) && defined(RF_GRAPHICS_API_OPENGL_ES2)
+    #error Rayfork error: You must choose only one graphics API.
 #endif
 
-#if defined(RF_GRAPHICS_API_OPENGL_21)
-    #undef RF_GRAPHICS_API_OPENGL_11
-    #undef RF_GRAPHICS_API_OPENGL_33
-    #undef RF_GRAPHICS_API_OPENGL_ES2
-#endif
-
-#if defined(RF_GRAPHICS_API_OPENGL_33)
-#undef RF_GRAPHICS_API_OPENGL_11
-#undef RF_GRAPHICS_API_OPENGL_21
-#undef RF_GRAPHICS_API_OPENGL_ES2
-#endif
-
-#if defined(RF_GRAPHICS_API_OPENGL_ES2)
-#undef RF_GRAPHICS_API_OPENGL_11
-    #undef RF_GRAPHICS_API_OPENGL_21
-    #undef RF_GRAPHICS_API_OPENGL_33
-#endif
-
-#if defined(RF_GRAPHICS_API_OPENGL_21)
-#define RF_GRAPHICS_API_OPENGL_33
-#endif
-
-#if defined(RF_GRAPHICS_API_OPENGL_11) || defined(RF_GRAPHICS_API_OPENGL_33)
-    // This is the maximum amount of elements (quads) per batch
-    // NOTE: Be careful with text, every letter maps to a quad
-    #ifndef rf_max_batch_elements
-        #define rf_max_batch_elements 8192
-    #endif
-#elif defined(RF_GRAPHICS_API_OPENGL_ES2)
-    // We reduce memory sizes for embedded systems (RPI and HTML5)
-    // NOTE: On HTML5 (emscripten) this is allocated on heap, by default it's only 16MB!...just take care...
-    #ifndef rf_max_batch_elements
-        #define rf_max_batch_elements            2048
+#ifndef RF_MAX_BATCH_ELEMENTS
+    #if defined(RF_GRAPHICS_API_OPENGL_33)
+        #define RF_MAX_BATCH_ELEMENTS 8192
+    #else
+        #define RF_MAX_BATCH_ELEMENTS 2048
     #endif
 #endif
 
-#define rf_max_batch_buffering                  1      // Max number of buffers for batching (multi-buffering)
-#define rf_max_matrix_stack_size               32      // Max size of rf_matrix _rf_global_context_ptr->gl_ctx.stack
-#define rf_max_drawcall_registered            256      // Max _rf_global_context_ptr->gl_ctx.draws by state changes (mode, texture)
+#define RF_MAX_BATCH_BUFFERING                  1      // Max number of buffers for batching (multi-buffering)
+#define RF_MAX_MATRIX_STACK_SIZE               32      // Max size of rf_matrix _rf_global_context_ptr->gl_ctx.stack
+#define RF_MAX_DRAWCALL_REGISTERED            256      // Max _rf_global_context_ptr->gl_ctx.draws by state changes (mode, texture)
 
 // rf_shader and material limits
-#define rf_max_shader_locations                32      // Maximum number of predefined locations stored in shader struct
-#define rf_max_material_maps                   12      // Maximum number of texture maps stored in shader struct
+#define RF_MAX_SHADER_LOCATIONS                32      // Maximum number of predefined locations stored in shader struct
+#define RF_MAX_MATERIAL_MAPS                   12      // Maximum number of texture maps stored in shader struct
 
 // @ToRemove @Note(lulu): Im pretty sure we can remove these since its the job of the user to include opengl
 // rf_texture parameters (equivalent to OpenGL defines)
@@ -174,12 +142,12 @@
 #define GL_QUADS                        0x0007      // GL_QUADS
 
 // Default vertex attribute names on shader to set location points
-#define DEFAULT_ATTRIB_POSITION_NAME    "vertexPosition"    // shader-location = 0
-#define DEFAULT_ATTRIB_TEXCOORD_NAME    "vertexTexCoord"    // shader-location = 1
-#define DEFAULT_ATTRIB_NORMAL_NAME      "vertexNormal"      // shader-location = 2
-#define DEFAULT_ATTRIB_COLOR_NAME       "vertexColor"       // shader-location = 3
-#define DEFAULT_ATTRIB_TANGENT_NAME     "vertexTangent"     // shader-location = 4
-#define DEFAULT_ATTRIB_TEXCOORD2_NAME   "vertexTexCoord2"   // shader-location = 5
+#define RF_DEFAULT_ATTRIB_POSITION_NAME    "vertexPosition"    // shader-location = 0
+#define RF_DEFAULT_ATTRIB_TEXCOORD_NAME    "vertexTexCoord"    // shader-location = 1
+#define RF_DEFAULT_ATTRIB_NORMAL_NAME      "vertexNormal"      // shader-location = 2
+#define RF_DEFAULT_ATTRIB_COLOR_NAME       "vertexColor"       // shader-location = 3
+#define RF_DEFAULT_ATTRIB_TANGENT_NAME     "vertexTangent"     // shader-location = 4
+#define RF_DEFAULT_ATTRIB_TEXCOORD2_NAME   "vertexTexCoord2"   // shader-location = 5
 
 //endregion
 
@@ -221,7 +189,6 @@ struct rf_image
 // rf_texture2d type
 // NOTE: Data stored in GPU memory
 typedef struct rf_texture2d rf_texture2d;
-typedef struct rf_texture2d rf_texture;
 typedef struct rf_texture2d rf_texture_cubemap;
 struct rf_texture2d
 {
@@ -292,7 +259,7 @@ struct rf_camera3d
     rf_vector3 target;   // Camera target it looks-at
     rf_vector3 up;       // Camera up vector (rotation over its axis)
     float fovy;       // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
-    int type;         // Camera type, defines GL_PROJECTION type: rf_camera_perspective or rf_camera_orthographic
+    int type;         // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
 };
 
 // rf_camera2d type, defines a 2d camera
@@ -338,7 +305,7 @@ typedef struct rf_shader rf_shader;
 struct rf_shader
 {
     unsigned int id; // rf_shader program id
-    int* locs;       // rf_shader locations array (rf_max_shader_locations)
+    int* locs;       // rf_shader locations array (RF_MAX_SHADER_LOCATIONS)
 };
 
 // rf_material texture map
@@ -355,7 +322,7 @@ typedef struct rf_material rf_material;
 struct rf_material
 {
     rf_shader shader;     // rf_material shader
-    rf_material_map* maps; // rf_material maps array (rf_max_material_maps)
+    rf_material_map* maps; // rf_material maps array (RF_MAX_MATERIAL_MAPS)
     float* params;     // rf_material generic parameters (if required)
 };
 
@@ -434,9 +401,9 @@ struct rf_bounding_box
 typedef struct rf_dynamic_buffer rf_dynamic_buffer;
 struct rf_dynamic_buffer
 {
-    int vCounter;               // vertex position counter to process (and draw) from full buffer
-    int tcCounter;              // vertex texcoord counter to process (and draw) from full buffer
-    int cCounter;               // vertex color counter to process (and draw) from full buffer
+    int v_counter;               // vertex position counter to process (and draw) from full buffer
+    int tc_counter;              // vertex texcoord counter to process (and draw) from full buffer
+    int c_counter;               // vertex color counter to process (and draw) from full buffer
     float* vertices;            // vertex position (XYZ - 3 components per vertex) (shader-location = 0)
     float* texcoords;           // vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
     unsigned char* colors;      // vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
@@ -458,10 +425,10 @@ struct rf_draw_call
 {
     int mode;                   // Drawing mode: LINES, TRIANGLES, QUADS
     int vertex_count;            // Number of vertex of the draw
-    int vertexAlignment;        // Number of vertex required for index alignment (LINES, TRIANGLES)
+    int vertex_alignment;        // Number of vertex required for index alignment (LINES, TRIANGLES)
     //unsigned int vao_id;         // Vertex array id to be used on the draw
     //unsigned int shaderId;      // rf_shader id to be used on the draw
-    unsigned int textureId;     // rf_texture id to be used on the draw
+    unsigned int texture_id;     // rf_texture id to be used on the draw
     // TODO: Support additional texture units?
 
     //rf_matrix _rf_global_context_ptr->gl_ctx.projection;        // Projection matrix for this draw
@@ -472,7 +439,7 @@ typedef struct rf_gl_context rf_gl_context;
 struct rf_gl_context
 {
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    rf_matrix stack[rf_max_matrix_stack_size];
+    rf_matrix stack[RF_MAX_MATRIX_STACK_SIZE];
     int stack_counter;
 
     rf_matrix modelview;
@@ -483,7 +450,7 @@ struct rf_gl_context
 
     // Default dynamic buffer for elements data
     // NOTE: A multi-buffering system is supported
-    rf_dynamic_buffer vertex_data[rf_max_batch_buffering];
+    rf_dynamic_buffer vertex_data[RF_MAX_BATCH_BUFFERING];
     int current_buffer;
 
     // transform matrix to be used with rlTranslate, rlRotate, rlScale
@@ -626,94 +593,94 @@ struct rf_context
 // rf_shader location point type
 typedef enum rf_shader_location_index
 {
-    rf_loc_vertex_position = 0,
-    rf_loc_vertex_texcoord01,
-    rf_loc_vertex_texcoord02,
-    rf_loc_vertex_normal,
-    rf_loc_vertex_tangent,
-    rf_loc_vertex_color,
-    rf_loc_matrix_mvp,
-    rf_loc_matrix_model,
-    rf_loc_matrix_view,
-    rf_loc_matrix_projection,
-    rf_loc_vector_view,
-    rf_loc_color_diffuse,
-    rf_loc_color_specular,
-    rf_loc_color_ambient,
-    rf_loc_map_albedo, // rf_loc_map_diffuse
-    rf_loc_map_metalness, // rf_loc_map_specular
-    rf_loc_map_normal,
-    rf_loc_map_roughness,
-    rf_loc_map_occlusion,
-    rf_loc_map_emission,
-    rf_loc_map_height,
-    rf_loc_map_cubemap,
-    rf_loc_map_irradiance,
-    rf_loc_map_prefilter,
-    rf_loc_map_brdf
+    RF_LOC_VERTEX_POSITION = 0,
+    RF_LOC_VERTEX_TEXCOORD01,
+    RF_LOC_VERTEX_TEXCOORD02,
+    RF_LOC_VERTEX_NORMAL,
+    RF_LOC_VERTEX_TANGENT,
+    RF_LOC_VERTEX_COLOR,
+    RF_LOC_MATRIX_MVP,
+    RF_LOC_MATRIX_MODEL,
+    RF_LOC_MATRIX_VIEW,
+    RF_LOC_MATRIX_PROJECTION,
+    RF_LOC_VECTOR_VIEW,
+    RF_LOC_COLOR_DIFFUSE,
+    RF_LOC_COLOR_SPECULAR,
+    RF_LOC_COLOR_AMBIENT,
+    RF_LOC_MAP_ALBEDO, // RF_LOC_MAP_DIFFUSE
+    RF_LOC_MAP_METALNESS, // RF_LOC_MAP_SPECULAR
+    RF_LOC_MAP_NORMAL,
+    RF_LOC_MAP_ROUGHNESS,
+    RF_LOC_MAP_OCCLUSION,
+    RF_LOC_MAP_EMISSION,
+    RF_LOC_MAP_HEIGHT,
+    RF_LOC_MAP_CUBEMAP,
+    RF_LOC_MAP_IRRADIANCE,
+    RF_LOC_MAP_PREFILTER,
+    RF_LOC_MAP_BRDF,
 } rf_shader_location_index;
 
-#define rf_loc_map_diffuse rf_loc_map_albedo
-#define rf_loc_map_specular rf_loc_map_metalness
+#define RF_LOC_MAP_DIFFUSE RF_LOC_MAP_ALBEDO
+#define RF_LOC_MAP_SPECULAR RF_LOC_MAP_METALNESS
 
 // rf_shader uniform data types
 typedef enum rf_shader_uniform_data_type
 {
-    rf_uniform_float = 0,
-    rf_uniform_vec2,
-    rf_uniform_vec3,
-    rf_uniform_vec4,
-    rf_uniform_int,
-    rf_uniform_ivec2,
-    rf_uniform_ivec3,
-    rf_uniform_ivec4,
-    rf_uniform_sampler2d
+    RF_UNIFORM_FLOAT = 0,
+    RF_UNIFORM_VEC2,
+    RF_UNIFORM_VEC3,
+    RF_UNIFORM_VEC4,
+    RF_UNIFORM_INT,
+    RF_UNIFORM_IVEC2,
+    RF_UNIFORM_IVEC3,
+    RF_UNIFORM_IVEC4,
+    RF_UNIFORM_SAMPLER2D
 } rf_shader_uniform_data_type;
 
 // rf_material map type
 typedef enum rf_material_map_type
 {
-    rf_map_albedo = 0, // rf_map_diffuse
-    rf_map_metalness = 1, // rf_map_specular
-    rf_map_normal = 2,
-    rf_map_roughness = 3,
-    rf_map_occlusion,
-    rf_map_emission,
-    rf_map_height,
-    rf_map_cubemap, // NOTE: Uses GL_TEXTURE_CUBE_MAP
-    rf_map_irradiance, // NOTE: Uses GL_TEXTURE_CUBE_MAP
-    rf_map_prefilter, // NOTE: Uses GL_TEXTURE_CUBE_MAP
-    rf_map_brdf
+    RF_MAP_ALBEDO = 0, // RF_MAP_DIFFUSE
+    RF_MAP_METALNESS = 1, // RF_MAP_SPECULAR
+    RF_MAP_NORMAL = 2,
+    RF_MAP_ROUGHNESS = 3,
+    RF_MAP_OCCLUSION,
+    RF_MAP_EMISSION,
+    RF_MAP_HEIGHT,
+    RF_MAP_CUBEMAP, // NOTE: Uses GL_TEXTURE_CUBE_MAP
+    RF_MAP_IRRADIANCE, // NOTE: Uses GL_TEXTURE_CUBE_MAP
+    RF_MAP_PREFILTER, // NOTE: Uses GL_TEXTURE_CUBE_MAP
+    RF_MAP_BRDF
 } rf_material_map_type;
 
-#define rf_map_diffuse rf_map_albedo
-#define rf_map_specular rf_map_metalness
+#define RF_MAP_DIFFUSE RF_MAP_ALBEDO
+#define RF_MAP_SPECULAR RF_MAP_METALNESS
 
 // Pixel formats
 // NOTE: Support depends on OpenGL version and platform
 typedef enum rf_pixel_format
 {
-    rf_uncompressed_grayscale = 1, // 8 bit per pixel (no alpha)
-    rf_uncompressed_gray_alpha, // 8*2 bpp (2 channels)
-    rf_uncompressed_r5g6b5, // 16 bpp
-    rf_uncompressed_r8g8b8, // 24 bpp
-    rf_uncompressed_r5g5b5a1, // 16 bpp (1 bit alpha)
-    rf_uncompressed_r4g4b4a4, // 16 bpp (4 bit alpha)
-    rf_uncompressed_r8g8b8a8, // 32 bpp
-    rf_uncompressed_r32, // 32 bpp (1 channel - float)
-    rf_uncompressed_r32g32b32, // 32*3 bpp (3 channels - float)
-    rf_uncompressed_r32g32b32a32, // 32*4 bpp (4 channels - float)
-    rf_compressed_dxt1_rgb, // 4 bpp (no alpha)
-    rf_compressed_dxt1_rgba, // 4 bpp (1 bit alpha)
-    rf_compressed_dxt3_rgba, // 8 bpp
-    rf_compressed_dxt5_rgba, // 8 bpp
-    rf_compressed_etc1_rgb, // 4 bpp
-    rf_compressed_etc2_rgb, // 4 bpp
-    rf_compressed_etc2_eac_rgba, // 8 bpp
-    rf_compressed_pvrt_rgb, // 4 bpp
-    rf_compressed_pvrt_rgba, // 4 bpp
-    rf_compressed_astc_4x4_rgba, // 8 bpp
-    rf_compressed_astc_8x8_rgba // 2 bpp
+    RF_UNCOMPRESSED_GRAYSCALE = 1, // 8 bit per pixel (no alpha)
+    RF_UNCOMPRESSED_GRAY_ALPHA, // 8*2 bpp (2 channels)
+    RF_UNCOMPRESSED_R5G6B5, // 16 bpp
+    RF_UNCOMPRESSED_R8G8B8, // 24 bpp
+    RF_UNCOMPRESSED_R5G5B5A1, // 16 bpp (1 bit alpha)
+    RF_UNCOMPRESSED_R4G4B4A4, // 16 bpp (4 bit alpha)
+    RF_UNCOMPRESSED_R8G8B8A8, // 32 bpp
+    RF_UNCOMPRESSED_R32, // 32 bpp (1 channel - float)
+    RF_UNCOMPRESSED_R32G32B32, // 32*3 bpp (3 channels - float)
+    RF_UNCOMPRESSED_R32G32B32A32, // 32*4 bpp (4 channels - float)
+    RF_COMPRESSED_DXT1_RGB, // 4 bpp (no alpha)
+    RF_COMPRESSED_DXT1_RGBA, // 4 bpp (1 bit alpha)
+    RF_COMPRESSED_DXT3_RGBA, // 8 bpp
+    RF_COMPRESSED_DXT5_RGBA, // 8 bpp
+    RF_COMPRESSED_ETC1_RGB, // 4 bpp
+    RF_COMPRESSED_ETC2_RGB, // 4 bpp
+    RF_COMPRESSED_ETC2_EAC_RGBA, // 8 bpp
+    RF_COMPRESSED_PVRT_RGB, // 4 bpp
+    RF_COMPRESSED_PVRT_RGBA, // 4 bpp
+    RF_COMPRESSED_ASTC_4x4_RGBA, // 8 bpp
+    RF_COMPRESSED_ASTC_8x8_RGBA // 2 bpp
 } rf_pixel_format;
 
 // rf_texture parameters: filter mode
@@ -721,73 +688,65 @@ typedef enum rf_pixel_format
 // NOTE 2: Filter is accordingly set for minification and magnification
 typedef enum rf_texture_filter_mode
 {
-    rf_filter_point = 0, // No filter, just pixel aproximation
-    rf_filter_bilinear, // Linear filtering
-    rf_filter_trilinear, // Trilinear filtering (linear with mipmaps)
-    rf_filter_anisotropic_4x, // Anisotropic filtering 4x
-    rf_filter_anisotropic_8x, // Anisotropic filtering 8x
-    rf_filter_anisotropic_16x, // Anisotropic filtering 16x
+    RF_FILTER_POINT = 0, // No filter, just pixel aproximation
+    RF_FILTER_BILINEAR, // Linear filtering
+    RF_FILTER_TRILINEAR, // Trilinear filtering (linear with mipmaps)
+    RF_FILTER_ANISOTROPIC_4x, // Anisotropic filtering 4x
+    RF_FILTER_ANISOTROPIC_8x, // Anisotropic filtering 8x
+    RF_FILTER_ANISOTROPIC_16x, // Anisotropic filtering 16x
 } rf_texture_filter_mode;
 
 // Cubemap layout type
 typedef enum rf_cubemap_layout_type
 {
-    rf_cubemap_auto_detect = 0, // Automatically detect layout type
-    rf_cubemap_line_vertical, // Layout is defined by a vertical line with faces
-    rf_cubemap_line_horizontal, // Layout is defined by an horizontal line with faces
-    rf_cubemap_cross_three_by_four, // Layout is defined by a 3x4 cross with cubemap faces
-    rf_cubemap_cross_four_by_three, // Layout is defined by a 4x3 cross with cubemap faces
-    rf_cubemap_panorama // Layout is defined by a panorama image (equirectangular map)
+    RF_CUBEMAP_AUTO_DETECT = 0, // Automatically detect layout type
+    RF_CUBEMAP_LINE_VERTICAL, // Layout is defined by a vertical line with faces
+    RF_CUBEMAP_LINE_HORIZONTAL, // Layout is defined by an horizontal line with faces
+    RF_CUBEMAP_CROSS_THREE_BY_FOUR, // Layout is defined by a 3x4 cross with cubemap faces
+    RF_CUBEMAP_CROSS_FOUR_BY_TREE, // Layout is defined by a 4x3 cross with cubemap faces
+    RF_CUBEMAP_PANORAMA // Layout is defined by a panorama image (equirectangular map)
 } rf_cubemap_layout_type;
 
 // rf_texture parameters: wrap mode
 typedef enum rf_texture_wrap_mode
 {
-    rf_wrap_repeat = 0, // Repeats texture in tiled mode
-    rf_wrap_clamp, // Clamps texture to edge pixel in tiled mode
-    rf_wrap_mirror_repeat, // Mirrors and repeats the texture in tiled mode
-    rf_wrap_mirror_clamp // Mirrors and clamps to border the texture in tiled mode
+    RF_WRAP_REPEAT = 0, // Repeats texture in tiled mode
+    RF_WRAP_CLAMP, // Clamps texture to edge pixel in tiled mode
+    RF_WRAP_MIRROR_REPEAT, // Mirrors and repeats the texture in tiled mode
+    RF_WRAP_MIRROR_CLAMP // Mirrors and clamps to border the texture in tiled mode
 } rf_texture_wrap_mode;
-
-// rf_font type, defines generation method
-typedef enum rf_font_type
-{
-    rf_font_default = 0, // Default font generation, anti-aliased
-    rf_font_bitmap, // Bitmap font generation, no anti-aliasing
-    rf_font_sdf // SDF font generation, requires external shader
-} rf_font_type;
 
 // rf_color blending modes (pre-defined)
 typedef enum rf_blend_mode
 {
-    rf_blend_alpha = 0, // Blend textures considering alpha (default)
-    rf_blend_additive, // Blend textures adding colors
-    rf_blend_multiplied // Blend textures multiplying colors
+    RF_BLEND_ALPHA = 0, // Blend textures considering alpha (default)
+    RF_BLEND_ADDITIVE, // Blend textures adding colors
+    RF_BLEND_MULTIPLIED // Blend textures multiplying colors
 } rf_blend_mode;
 
 // Camera system modes
 typedef enum rf_camera_mode
 {
-    rf_camera_custom = 0,
-    rf_camera_free,
-    rf_camera_orbital,
-    rf_camera_first_person,
-    rf_camera_third_person
+    RF_CAMERA_CUSTOM = 0,
+    RF_CAMERA_FREE,
+    RF_CAMERA_ORBITAL,
+    RF_CAMERA_FIRST_PERSON,
+    RF_CAMERA_THIRD_PERSON
 } rf_camera_mode;
 
 // Camera GL_PROJECTION modes
 typedef enum rf_camera_type
 {
-    rf_camera_perspective = 0,
-    rf_camera_orthographic
+    RF_CAMERA_PERSPECTIVE = 0,
+    RF_CAMERA_ORTHOGRAPHIC
 } rf_camera_type;
 
 // Type of n-patch
 typedef enum rf_ninepatch_type
 {
-    rf_npt_9patch = 0, // Npatch defined by 3x3 tiles
-    rf_npt_3patch_vertical, // Npatch defined by 1x3 tiles
-    rf_npt_3patch_horizontal // Npatch defined by 3x1 tiles
+    RF_NPT_9PATCH = 0, // Npatch defined by 3x3 tiles
+    RF_NPT_3PATCH_VERTICAL, // Npatch defined by 1x3 tiles
+    RF_NPT_3PATCH_HORIZONTAL // Npatch defined by 3x1 tiles
 } rf_ninepatch_type;
 
 //endregion
@@ -1036,7 +995,7 @@ RF_API void rf_unload_mesh(rf_mesh mesh); // Unload mesh from memory (RAM and/or
 RF_API rf_material* rf_load_materials(const char* fileName, int* material_count); // Load materials from model file
 RF_API rf_material rf_load_material_default() ; // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 RF_API void rf_unload_material(rf_material material); // Unload material from GPU memory (VRAM)
-RF_API void rf_set_material_texture(rf_material* material, int mapType, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+RF_API void rf_set_material_texture(rf_material* material, int mapType, rf_texture2d texture); // Set texture for a material map type (RF_MAP_DIFFUSE, RF_MAP_SPECULAR...)
 RF_API void rf_set_model_mesh_material(rf_model* model, int meshId, int materialId); // Set material for a mesh
 
 // rf_model animations loading/unloading functions
@@ -1511,18 +1470,18 @@ RF_INTERNAL const char* _rf_get_file_name_without_ext(const char* filePath)
 // Split string into multiple strings
 RF_INTERNAL const char** _rf_text_split(const char* text, char delimiter, int* count)
 {
-    #define rf_textsplit_max_substrings_count 128
-    #define rf_textsplit_max_text_buffer_length 1024
-    #define rf_max_text_buffer_length 1024
+    #define RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT 128
+    #define RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH 1024
+    #define RF_MAX_TEXT_BUFFER_LENGTH 1024
     // NOTE: Current implementation returns a copy of the provided string with '\0' (string end delimiter)
     // inserted between strings defined by "delimiter" parameter. No memory is dynamically allocated,
     // all used memory is static... it has some limitations:
-    //      1. Maximum number of possible split strings is set by rf_textsplit_max_substrings_count
-    //      2. Maximum size of text to split is rf_textsplit_max_text_buffer_length
+    //      1. Maximum number of possible split strings is set by RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT
+    //      2. Maximum size of text to split is RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH
 
-    RF_INTERNAL const char* result[rf_textsplit_max_substrings_count] = { NULL };
-    RF_INTERNAL char buffer[rf_textsplit_max_text_buffer_length] = { 0 };
-    memset(buffer, 0, rf_textsplit_max_text_buffer_length);
+    RF_INTERNAL const char* result[RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT] = { NULL };
+    RF_INTERNAL char buffer[RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH] = { 0 };
+    memset(buffer, 0, RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH);
 
     result[0] = buffer;
     int counter = 0;
@@ -1532,7 +1491,7 @@ RF_INTERNAL const char** _rf_text_split(const char* text, char delimiter, int* c
         counter = 1;
 
         // Count how many substrings we have on text and point to every one
-        for (int i = 0; i < rf_max_text_buffer_length; i++)
+        for (int i = 0; i < RF_MAX_TEXT_BUFFER_LENGTH; i++)
         {
             buffer[i] = text[i];
             if (buffer[i] == '\0') break;
@@ -1542,7 +1501,7 @@ RF_INTERNAL const char** _rf_text_split(const char* text, char delimiter, int* c
                 result[counter] = buffer + i + 1;
                 counter++;
 
-                if (counter == rf_textsplit_max_substrings_count) break;
+                if (counter == RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT) break;
             }
         }
     }
@@ -1749,7 +1708,7 @@ RF_API void rf_load_font_default()
 
     rf_color* imagePixels = (rf_color*) RF_MALLOC(imWidth * imHeight * sizeof(rf_color));
 
-    for (int i = 0; i < imWidth*imHeight; i++) imagePixels[i] = rf_blank; // Initialize array
+    for (int i = 0; i < imWidth*imHeight; i++) imagePixels[i] = RF_BLANK; // Initialize array
 
     int counter = 0; // rf_font data elements counter
 
@@ -1758,7 +1717,7 @@ RF_API void rf_load_font_default()
     {
         for (int j = 31; j >= 0; j--)
         {
-            if (rf_bit_check(default_font_data[counter], j)) imagePixels[i+j] = rf_white;
+            if (rf_bit_check(default_font_data[counter], j)) imagePixels[i+j] = RF_WHITE;
         }
 
         counter++;
@@ -1767,7 +1726,7 @@ RF_API void rf_load_font_default()
     }
 
     rf_image imFont = rf_load_image_ex(imagePixels, imWidth, imHeight);
-    rf_image_format(&imFont, rf_uncompressed_gray_alpha);
+    rf_image_format(&imFont, RF_UNCOMPRESSED_GRAY_ALPHA);
 
     RF_FREE(imagePixels);
 
@@ -1853,7 +1812,7 @@ RF_API rf_font rf_load_font(const char* fileName)
     else
     {
         rf_image image = rf_load_image(fileName);
-        if (image.data != NULL) font = rf_load_font_from_image(image, rf_magenta, rf_default_first_char);
+        if (image.data != NULL) font = rf_load_font_from_image(image, RF_MAGENTA, rf_default_first_char);
         rf_unload_image(image);
     }
 
@@ -1862,7 +1821,7 @@ RF_API rf_font rf_load_font(const char* fileName)
         RF_LOG(RF_LOG_WARNING, "[%s] rf_font could not be loaded, using default font", fileName);
         font = rf_get_font_default();
     }
-    else rf_set_texture_filter(font.texture, rf_filter_point); // By default we set point filter (best performance)
+    else rf_set_texture_filter(font.texture, RF_FILTER_POINT); // By default we set point filter (best performance)
 
     return font;
 }
@@ -1876,7 +1835,7 @@ RF_API rf_font rf_load_font_ex(const char* fileName, int fontSize, int* fontChar
 
     font.base_size = fontSize;
     font.chars_count = (chars_count > 0)? chars_count : 95;
-    font.chars = rf_load_font_data(fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
+    font.chars = rf_load_font_data(fileName, font.base_size, fontChars, font.chars_count, RF_FONT_DEFAULT);
 
     RF_ASSERT(font.chars != NULL);
 
@@ -1902,7 +1861,7 @@ RF_API rf_load_font_async_result rf_load_font_async(const char* fileName, int fo
 
     font.base_size = fontSize;
     font.chars_count = (chars_count > 0)? chars_count : 95;
-    font.chars = rf_load_font_data(fileName, font.base_size, fontChars, font.chars_count, rf_font_default);
+    font.chars = rf_load_font_data(fileName, font.base_size, fontChars, font.chars_count, RF_FONT_DEFAULT);
 
     RF_ASSERT(font.chars != NULL);
 
@@ -1915,7 +1874,7 @@ RF_API rf_load_font_async_result rf_load_font_async(const char* fileName, int fo
         font.chars[i].image = rf_image_from_image(atlas, font.recs[i]);
     }
 
-    return RF_CLITERAL(rf_load_font_async_result) { font, atlas };
+    return RF_CLIT(rf_load_font_async_result) { font, atlas };
 }
 
 RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result fontJobResult)
@@ -2003,10 +1962,10 @@ RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstCh
     RF_LOG(RF_LOG_DEBUG, "rf_font data parsed correctly from image");
 
     // NOTE: We need to remove key color borders from image to avoid weird
-    // artifacts on texture scaling when using rf_filter_bilinear or rf_filter_trilinear
-    for (int i = 0; i < image.height*image.width; i++) if (rf_color_equal(pixels[i], key)) pixels[i] = rf_blank;
+    // artifacts on texture scaling when using RF_FILTER_BILINEAR or RF_FILTER_TRILINEAR
+    for (int i = 0; i < image.height*image.width; i++) if (rf_color_equal(pixels[i], key)) pixels[i] = RF_BLANK;
 
-    // Create a new image with the processed color data (key color replaced by rf_blank)
+    // Create a new image with the processed color data (key color replaced by RF_BLANK)
     rf_image fontClear = rf_load_image_ex(pixels, image.width, image.height);
 
     RF_FREE(pixels); // Free pixels array memory
@@ -2110,11 +2069,11 @@ RF_API rf_char_info* rf_load_font_data(const char* fileName, int fontSize, int* 
         //      stbtt_GetCodepointBitmapBox()        -- how big the bitmap must be
         //      stbtt_MakeCodepointBitmap()          -- renders into bitmap you provide
 
-        if (type != rf_font_sdf) chars[i].image.data = stbtt_GetCodepointBitmap(&fontInfo, scaleFactor, scaleFactor, ch, &chw, &chh, &chars[i].offset_x, &chars[i].offset_y);
+        if (type != RF_FONT_SDF) chars[i].image.data = stbtt_GetCodepointBitmap(&fontInfo, scaleFactor, scaleFactor, ch, &chw, &chh, &chars[i].offset_x, &chars[i].offset_y);
         else if (ch != 32) chars[i].image.data = stbtt_GetCodepointSDF(&fontInfo, scaleFactor, ch, rf_sdf_char_padding, rf_sdf_on_edge_value, rf_sdf_pixel_dist_scale, &chw, &chh, &chars[i].offset_x, &chars[i].offset_y);
         else chars[i].image.data = NULL;
 
-        if (type == rf_font_bitmap)
+        if (type == RF_FONT_BITMAP)
         {
             // Aliased bitmap (black & white) font generation, avoiding anti-aliasing
             // NOTE: For optimum results, bitmap font should be generated at base pixel size
@@ -2129,7 +2088,7 @@ RF_API rf_char_info* rf_load_font_data(const char* fileName, int fontSize, int* 
         chars[i].image.width = chw;
         chars[i].image.height = chh;
         chars[i].image.mipmaps = 1;
-        chars[i].image.format = rf_uncompressed_grayscale;
+        chars[i].image.format = RF_UNCOMPRESSED_GRAYSCALE;
 
         chars[i].offset_y += (int)((float)ascent*scaleFactor);
 
@@ -2179,7 +2138,7 @@ RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle*
     atlas.height = imageSize; // Atlas bitmap height
     atlas.data = (unsigned char*) RF_MALLOC(atlas.width * atlas.height); // Create a bitmap to store characters (8 bpp)
     memset(atlas.data, 0, atlas.width * atlas.height);
-    atlas.format = rf_uncompressed_grayscale;
+    atlas.format = RF_UNCOMPRESSED_GRAYSCALE;
     atlas.mipmaps = 1;
 
     // DEBUG: We can see padding in the generated image setting a gray background...
@@ -2286,7 +2245,7 @@ RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle*
 
     RF_FREE(atlas.data);
     atlas.data = dataGrayAlpha;
-    atlas.format = rf_uncompressed_gray_alpha;
+    atlas.format = RF_UNCOMPRESSED_GRAY_ALPHA;
 
     *charRecs = recs;
 
@@ -2331,7 +2290,7 @@ RF_API void rf_draw_fps(int posX, int posY)
     // NOTE: We have rounding errors every frame, so it oscillates a lot
     char buff[100];
     snprintf(buff, 100, "%2i FPS", fps);
-    rf_draw_text(buff, posX, posY, 20, rf_lime);
+    rf_draw_text(buff, posX, posY, 20, RF_LIME);
 }
 
 // Draw text (using default font)
@@ -2388,10 +2347,10 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vector2 position,
             if (letter != ' ')
             {
                 rf_draw_texture_pro(font.texture, font.recs[index],
-                                    RF_CLITERAL(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                    RF_CLIT(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
-                                            font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
+                                            font.recs[index].height*scaleFactor }, RF_CLIT(rf_vector2){ 0, 0 }, 0.0f, tint);
             }
 
             if (font.chars[index].advance_x == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
@@ -2433,10 +2392,10 @@ RF_API void rf_draw_text_from_buffer(rf_font font, const char* text, int length,
             if (letter != ' ')
             {
                 rf_draw_texture_pro(font.texture, font.recs[index],
-                                    RF_CLITERAL(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                    RF_CLIT(rf_rectangle){ position.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                             position.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                             font.recs[index].width*scaleFactor,
-                                            font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f, tint);
+                                            font.recs[index].height*scaleFactor }, RF_CLIT(rf_vector2){ 0, 0 }, 0.0f, tint);
             }
 
             if (font.chars[index].advance_x == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
@@ -2448,7 +2407,7 @@ RF_API void rf_draw_text_from_buffer(rf_font font, const char* text, int length,
 // Draw text using font inside rectangle limits
 RF_API void rf_draw_text_rec(rf_font font, const char* text, rf_rectangle rec, float fontSize, float spacing, bool wordWrap, rf_color tint)
 {
-    rf_draw_text_rec_ex(font, text, rec, fontSize, spacing, wordWrap, tint, 0, 0, rf_white, rf_white);
+    rf_draw_text_rec_ex(font, text, rec, fontSize, spacing, wordWrap, tint, 0, 0, RF_WHITE, RF_WHITE);
 }
 
 // Draw text using font inside rectangle limits with support for text selection
@@ -2566,10 +2525,10 @@ RF_API void rf_draw_text_rec_ex(rf_font font, const char* text, rf_rectangle rec
                 if ((letter != ' ') && (letter != '\t'))
                 {
                     rf_draw_texture_pro(font.texture, font.recs[index],
-                                        RF_CLITERAL(rf_rectangle){ rec.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
+                                        RF_CLIT(rf_rectangle){ rec.x + textOffsetX + font.chars[index].offset_x*scaleFactor,
                                                 rec.y + textOffsetY + font.chars[index].offset_y*scaleFactor,
                                                 font.recs[index].width*scaleFactor,
-                                                font.recs[index].height*scaleFactor }, RF_CLITERAL(rf_vector2){ 0, 0 }, 0.0f,
+                                                font.recs[index].height*scaleFactor }, RF_CLIT(rf_vector2){ 0, 0 }, 0.0f,
                                         (!isGlyphSelected)? tint : selectText);
                 }
             }
@@ -3016,7 +2975,7 @@ RF_API void rf_begin_mode3d(rf_camera3d camera)
 
     float aspect = (float)_rf_global_context_ptr->current_width/(float)_rf_global_context_ptr->current_height;
 
-    if (camera.type == rf_camera_perspective)
+    if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Setup perspective GL_PROJECTION
         double top = 0.01*tan(camera.fovy*0.5*RF_DEG2RAD);
@@ -3024,7 +2983,7 @@ RF_API void rf_begin_mode3d(rf_camera3d camera)
 
         rf_frustum(-right, right, -top, top, 0.01, 1000.0);
     }
-    else if (camera.type == rf_camera_orthographic)
+    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
         // Setup orthographic GL_PROJECTION
         double top = camera.fovy/2.0;
@@ -3140,12 +3099,12 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, 
 
     rf_matrix matProj = rf_matrix_identity();
 
-    if (camera.type == rf_camera_perspective)
+    if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate GL_PROJECTION matrix from perspective
         matProj = rf_matrix_perspective(camera.fovy*RF_DEG2RAD, ((double)screen_size.width/(double)screen_size.height), 0.01, 1000.0);
     }
-    else if (camera.type == rf_camera_orthographic)
+    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
         float aspect = (float)screen_size.width/(float)screen_size.height;
         double top = camera.fovy/2.0;
@@ -3167,8 +3126,8 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, 
     // Calculate normalized direction vector
     rf_vector3 direction = rf_vector3_normalize(rf_vector3_substract(farPoint, nearPoint));
 
-    if (camera.type == rf_camera_perspective) ray.position = camera.position;
-    else if (camera.type == rf_camera_orthographic) ray.position = cameraPlanePointerPos;
+    if (camera.type == RF_CAMERA_PERSPECTIVE) ray.position = camera.position;
+    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC) ray.position = cameraPlanePointerPos;
 
     // Apply calculated vectors to ray
     ray.direction = direction;
@@ -3216,12 +3175,12 @@ RF_API rf_vector2 rf_get_world_to_screen(rf_sizei screen_size, rf_vector3 positi
     // Calculate GL_PROJECTION matrix (from perspective instead of frustum
     rf_matrix matProj = rf_matrix_identity();
 
-    if (camera.type == rf_camera_perspective)
+    if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate GL_PROJECTION matrix from perspective
         matProj = rf_matrix_perspective(camera.fovy*RF_DEG2RAD, ((double)screen_size.width/(double)screen_size.height), 0.01, 1000.0);
     }
-    else if (camera.type == rf_camera_orthographic)
+    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
         float aspect = (float)screen_size.width/(float)screen_size.height;
         double top = camera.fovy/2.0;
@@ -3258,7 +3217,7 @@ RF_API rf_vector2 rf_get_world_to_screen2d(rf_vector2 position, rf_camera2d came
     rf_matrix matCamera = rf_get_camera_matrix2d(camera);
     rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, matCamera);
 
-    return RF_CLITERAL(rf_vector2){ transform.x, transform.y };
+    return RF_CLIT(rf_vector2){ transform.x, transform.y };
 }
 
 // Returns the world space position for a 2d camera screen space position
@@ -3267,7 +3226,7 @@ RF_API rf_vector2 rf_get_screen_to_world2d(rf_vector2 position, rf_camera2d came
     rf_matrix invMatCamera = rf_matrix_invert(rf_get_camera_matrix2d(camera));
     rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, invMatCamera);
 
-    return RF_CLITERAL(rf_vector2){ transform.x, transform.y };
+    return RF_CLIT(rf_vector2){ transform.x, transform.y };
 }
 
 // Set target FPS (maximum)
@@ -3423,7 +3382,7 @@ RF_API rf_color rf_fade(rf_color color, float alpha)
     if (alpha < 0.0f) alpha = 0.0f;
     else if (alpha > 1.0f) alpha = 1.0f;
 
-    return RF_CLITERAL(rf_color){color.r, color.g, color.b, (unsigned char)(255.0f*alpha)};
+    return RF_CLIT(rf_color){color.r, color.g, color.b, (unsigned char)(255.0f*alpha)};
 }
 
 //endregion
@@ -3494,8 +3453,8 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     RF_ASSERT(width != 0 && height != 0);
     _rf_global_context_ptr = rf_ctx;
 
-    *_rf_global_context_ptr = RF_CLITERAL(rf_context) {0};
-    _rf_global_context_ptr->gl_ctx = RF_CLITERAL(rf_gl_context) {0};
+    *_rf_global_context_ptr = RF_CLIT(rf_context) {0};
+    _rf_global_context_ptr->gl_ctx = RF_CLIT(rf_gl_context) {0};
 
     #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
         _rf_global_context_ptr->gl_ctx.current_matrix_mode = -1;
@@ -3513,7 +3472,7 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     _rf_global_context_ptr->gl_ctx.camera_pan_control_key = 2;
     _rf_global_context_ptr->gl_ctx.camera_alt_control_key = 342;
     _rf_global_context_ptr->gl_ctx.camera_smooth_zoom_control_key = 341;
-    _rf_global_context_ptr->gl_ctx.camera_mode = rf_camera_custom;
+    _rf_global_context_ptr->gl_ctx.camera_mode = RF_CAMERA_CUSTOM;
 
     _rf_global_context_ptr->screen_scaling = rf_matrix_identity(),
     _rf_global_context_ptr->current_width = width,
@@ -3695,7 +3654,7 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     //----------------------------------------------------------
     // Init default white texture
     unsigned char pixels[4] = { 255, 255, 255, 255 };   // 1 pixel RGBA (4 bytes)
-    _rf_global_context_ptr->gl_ctx.default_texture_id = rf_gl_load_texture(pixels, 1, 1, rf_uncompressed_r8g8b8a8, 1);
+    _rf_global_context_ptr->gl_ctx.default_texture_id = rf_gl_load_texture(pixels, 1, 1, RF_UNCOMPRESSED_R8G8B8A8, 1);
 
     if (_rf_global_context_ptr->gl_ctx.default_texture_id != 0) RF_LOG(RF_LOG_INFO, "[TEX ID %i] Base white texture loaded successfully", _rf_global_context_ptr->gl_ctx.default_texture_id);
     else RF_LOG(RF_LOG_WARNING, "Base white texture could not be loaded");
@@ -3711,16 +3670,16 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     _rf_global_context_ptr->gl_ctx.transform_matrix = rf_matrix_identity();
 
     // Init draw calls tracking system
-    _rf_global_context_ptr->gl_ctx.draws = (rf_draw_call *)RF_MALLOC(sizeof(rf_draw_call)*rf_max_drawcall_registered);
+    _rf_global_context_ptr->gl_ctx.draws = (rf_draw_call *)RF_MALLOC(sizeof(rf_draw_call)*RF_MAX_DRAWCALL_REGISTERED);
 
-    for (int i = 0; i < rf_max_drawcall_registered; i++)
+    for (int i = 0; i < RF_MAX_DRAWCALL_REGISTERED; i++)
     {
         _rf_global_context_ptr->gl_ctx.draws[i].mode = GL_QUADS;
         _rf_global_context_ptr->gl_ctx.draws[i].vertex_count = 0;
-        _rf_global_context_ptr->gl_ctx.draws[i].vertexAlignment = 0;
+        _rf_global_context_ptr->gl_ctx.draws[i].vertex_alignment = 0;
         //_rf_global_context_ptr->gl_ctx.draws[i].vao_id = 0;
         //_rf_global_context_ptr->gl_ctx.draws[i].shaderId = 0;
-        _rf_global_context_ptr->gl_ctx.draws[i].textureId = _rf_global_context_ptr->gl_ctx.default_texture_id;
+        _rf_global_context_ptr->gl_ctx.draws[i].texture_id = _rf_global_context_ptr->gl_ctx.default_texture_id;
         //_rf_global_context_ptr->gl_ctx.draws[i].projection = rf_matrix_identity();
         //_rf_global_context_ptr->gl_ctx.draws[i].modelview = rf_matrix_identity();
     }
@@ -3728,7 +3687,7 @@ RF_API void rf_context_init(rf_context* rf_ctx, int width, int height)
     _rf_global_context_ptr->gl_ctx.draws_counter = 1;
 
     // Init internal matrix _rf_global_context_ptr.gl_ctx.stack (emulating OpenGL 1.1)
-    for (int i = 0; i < rf_max_matrix_stack_size; i++) _rf_global_context_ptr->gl_ctx.stack[i] = rf_matrix_identity();
+    for (int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++) _rf_global_context_ptr->gl_ctx.stack[i] = rf_matrix_identity();
 
     // Init internal _rf_global_context_ptr.gl_ctx.projection and _rf_global_context_ptr.gl_ctx.modelview matrices
     _rf_global_context_ptr->gl_ctx.projection = rf_matrix_identity();
@@ -3828,7 +3787,7 @@ RF_API void rf_matrix_mode(int mode)
 // Push the current matrix into _rf_global_context_ptr->gl_ctx.stack
 RF_API void rf_push_matrix()
 {
-    if (_rf_global_context_ptr->gl_ctx.stack_counter >= rf_max_matrix_stack_size) RF_LOG(RF_LOG_ERROR, "rf_matrix _rf_global_context_ptr->gl_ctx.stack overflow");
+    if (_rf_global_context_ptr->gl_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) RF_LOG(RF_LOG_ERROR, "rf_matrix _rf_global_context_ptr->gl_ctx.stack overflow");
 
     if (_rf_global_context_ptr->gl_ctx.current_matrix_mode == GL_MODELVIEW)
     {
@@ -3975,27 +3934,27 @@ RF_API void rf_gl_begin(int mode)
             // It implies adding some extra alignment vertex at the end of the draw,
             // those vertex are not processed but they are considered as an additional offset
             // for the next set of vertex to be drawn
-            if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_LINES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4)? _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count : _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count%4);
-            else if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_TRIANGLES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4)? 1 : (4 - (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count%4)));
+            if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_LINES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4) ? _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count : _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count % 4);
+            else if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_TRIANGLES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4) ? 1 : (4 - (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count % 4)));
 
-            else _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = 0;
+            else _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = 0;
 
-            if (rf_gl_check_buffer_limit(_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment)) rf_gl_draw();
+            if (rf_gl_check_buffer_limit(_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment)) rf_gl_draw();
             else
             {
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
 
                 _rf_global_context_ptr->gl_ctx.draws_counter++;
             }
         }
 
-        if (_rf_global_context_ptr->gl_ctx.draws_counter >= rf_max_drawcall_registered) rf_gl_draw();
+        if (_rf_global_context_ptr->gl_ctx.draws_counter >= RF_MAX_DRAWCALL_REGISTERED) rf_gl_draw();
 
         _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode = mode;
         _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count = 0;
-        _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].textureId = _rf_global_context_ptr->gl_ctx.default_texture_id;
+        _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].texture_id = _rf_global_context_ptr->gl_ctx.default_texture_id;
     }
 }
 
@@ -4006,30 +3965,30 @@ RF_API void rf_gl_end()
     // NOTE: In OpenGL 1.1, one glColor call can be made for all the subsequent glVertex calls
 
     // Make sure colors count match vertex count
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter != _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter)
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter != _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter)
     {
-        int addColors = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter - _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter;
+        int addColors = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter - _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter;
 
         for (int i = 0; i < addColors; i++)
         {
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter - 4];
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 1] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter - 3];
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 2] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter - 2];
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 3] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter - 1];
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter++;
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4 * _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter - 4];
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 1] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4 * _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter - 3];
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 2] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4 * _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter - 2];
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 3] = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4 * _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter - 1];
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter++;
         }
     }
 
     // Make sure texcoords count match vertex count
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter != _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter)
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter != _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter)
     {
-        int addTexCoords = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter - _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter;
+        int addTexCoords = _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter - _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter;
 
         for (int i = 0; i < addTexCoords; i++)
         {
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter] = 0.0f;
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter + 1] = 0.0f;
-            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter++;
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter] = 0.0f;
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter + 1] = 0.0f;
+            _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter++;
         }
     }
 
@@ -4042,7 +4001,7 @@ RF_API void rf_gl_end()
 
     // Verify internal buffers limits
     // NOTE: This check is combined with usage of rf_gl_check_buffer_limit()
-    if ((_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter) >= (rf_max_batch_elements*4 - 4))
+    if ((_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter) >= (RF_MAX_BATCH_ELEMENTS * 4 - 4))
     {
         // WARNING: If we are between rf_push_matrix() and rf_pop_matrix() and we need to force a rf_gl_draw(),
         // we need to call rf_pop_matrix() before to recover *_rf_global_context_ptr->gl_ctx.current_matrix (_rf_global_context_ptr->gl_ctx.modelview) for the next forced draw call!
@@ -4062,12 +4021,12 @@ RF_API void rf_gl_vertex3f(float x, float y, float z)
     if (_rf_global_context_ptr->gl_ctx.use_transform_matrix) vec = rf_vector3_transform(vec, _rf_global_context_ptr->gl_ctx.transform_matrix);
 
     // Verify that rf_max_batch_elements limit not reached
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter < (rf_max_batch_elements*4))
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter < (RF_MAX_BATCH_ELEMENTS * 4))
     {
-        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter] = vec.x;
-        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter + 1] = vec.y;
-        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter + 2] = vec.z;
-        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter++;
+        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter] = vec.x;
+        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter + 1] = vec.y;
+        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices[3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter + 2] = vec.z;
+        _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter++;
 
         _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count++;
     }
@@ -4090,9 +4049,9 @@ RF_API void rf_gl_vertex2i(int x, int y)
 // NOTE: rf_texture coordinates are limited to QUADS only
 RF_API void rf_gl_tex_coord2f(float x, float y)
 {
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter] = x;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter + 1] = y;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter++;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter] = x;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords[2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter + 1] = y;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter++;
 }
 
 // Define one vertex (normal)
@@ -4105,11 +4064,11 @@ RF_API void rf_gl_normal3f(float x, float y, float z)
 // Define one vertex (color)
 RF_API void rf_gl_color4ub(rf_byte x, rf_byte y, rf_byte z, rf_byte w)
 {
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter] = x;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 1] = y;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 2] = z;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter + 3] = w;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter++;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter] = x;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 1] = y;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 2] = z;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors[4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter + 3] = w;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter++;
 }
 
 // Define one vertex (color)
@@ -4139,7 +4098,7 @@ RF_API void rf_gl_enable_texture(unsigned int id)
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].textureId != id)
+    if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].texture_id != id)
     {
         if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count > 0)
         {
@@ -4148,25 +4107,25 @@ RF_API void rf_gl_enable_texture(unsigned int id)
             // It implies adding some extra alignment vertex at the end of the draw,
             // those vertex are not processed but they are considered as an additional offset
             // for the next set of vertex to be drawn
-            if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_LINES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4)? _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count : _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count%4);
-            else if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_TRIANGLES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4)? 1 : (4 - (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count%4)));
+            if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_LINES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4) ? _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count : _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count % 4);
+            else if (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].mode == GL_TRIANGLES) _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = ((_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count < 4) ? 1 : (4 - (_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count % 4)));
 
-            else _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment = 0;
+            else _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment = 0;
 
-            if (rf_gl_check_buffer_limit(_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment)) rf_gl_draw();
+            if (rf_gl_check_buffer_limit(_rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment)) rf_gl_draw();
             else
             {
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
-                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertexAlignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
+                _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter += _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_alignment;
 
                 _rf_global_context_ptr->gl_ctx.draws_counter++;
             }
         }
 
-        if (_rf_global_context_ptr->gl_ctx.draws_counter >= rf_max_drawcall_registered) rf_gl_draw();
+        if (_rf_global_context_ptr->gl_ctx.draws_counter >= RF_MAX_DRAWCALL_REGISTERED) rf_gl_draw();
 
-        _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].textureId = id;
+        _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].texture_id = id;
         _rf_global_context_ptr->gl_ctx.draws[_rf_global_context_ptr->gl_ctx.draws_counter - 1].vertex_count = 0;
     }
 #endif
@@ -4181,7 +4140,7 @@ RF_API void rf_gl_disable_texture()
 #else
     // NOTE: If quads batch limit is reached,
     // we force a draw call and next batch starts
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter >= (rf_max_batch_elements*4)) rf_gl_draw();
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter >= (RF_MAX_BATCH_ELEMENTS * 4)) rf_gl_draw();
 #endif
 }
 
@@ -4396,7 +4355,7 @@ RF_API void rf_gl_draw()
 {
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
     // Only process data if we have data to process
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter > 0)
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter > 0)
     {
         _rf_update_buffers_default();
         _rf_draw_buffers_default();       // NOTE: Stereo rendering is checked inside
@@ -4409,7 +4368,7 @@ RF_API bool rf_gl_check_buffer_limit(int vCount)
 {
     bool overflow = false;
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    if ((_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter + vCount) >= (rf_max_batch_elements*4)) overflow = true;
+    if ((_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter + vCount) >= (RF_MAX_BATCH_ELEMENTS * 4)) overflow = true;
 #endif
     return overflow;
 }
@@ -4454,38 +4413,38 @@ RF_API unsigned int rf_gl_load_texture(void* data, int width, int height, int fo
 
     // Check texture format support by OpenGL 1.1 (compressed textures not supported)
 #if defined(RF_GRAPHICS_API_OPENGL_11)
-    if (format >= rf_compressed_dxt1_rgb)
+    if (format >= RF_COMPRESSED_DXT1_RGB)
     {
         RF_LOG(RF_LOG_WARNING, "OpenGL 1.1 does not support GPU compressed texture formats");
         return id;
     }
 #else
-    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) && ((format == rf_compressed_dxt1_rgb) || (format == rf_compressed_dxt1_rgba) ||
-                                                     (format == rf_compressed_dxt3_rgba) || (format == rf_compressed_dxt5_rgba)))
+    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) && ((format == RF_COMPRESSED_DXT1_RGB) || (format == RF_COMPRESSED_DXT1_RGBA) ||
+                                                                     (format == RF_COMPRESSED_DXT3_RGBA) || (format == RF_COMPRESSED_DXT5_RGBA)))
     {
         RF_LOG(RF_LOG_WARNING, "DXT compressed texture format not supported");
         return id;
     }
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_etc1_supported) && (format == rf_compressed_etc1_rgb))
+    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_etc1_supported) && (format == RF_COMPRESSED_ETC1_RGB))
     {
         RF_LOG(RF_LOG_WARNING, "ETC1 compressed texture format not supported");
         return id;
     }
 
-    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) && ((format == rf_compressed_etc2_rgb) || (format == rf_compressed_etc2_eac_rgba)))
+    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) && ((format == RF_COMPRESSED_ETC2_RGB) || (format == RF_COMPRESSED_ETC2_EAC_RGBA)))
     {
         RF_LOG(RF_LOG_WARNING, "ETC2 compressed texture format not supported");
         return id;
     }
 
-    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) && ((format == rf_compressed_pvrt_rgb) || (format == rf_compressed_pvrt_rgba)))
+    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) && ((format == RF_COMPRESSED_PVRT_RGB) || (format == RF_COMPRESSED_PVRT_RGBA)))
     {
         RF_LOG(RF_LOG_WARNING, "PVRT compressed texture format not supported");
         return id;
     }
 
-    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) && ((format == rf_compressed_astc_4x4_rgba) || (format == rf_compressed_astc_8x8_rgba)))
+    if ((!_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) && ((format == RF_COMPRESSED_ASTC_4x4_RGBA) || (format == RF_COMPRESSED_ASTC_8x8_RGBA)))
     {
         RF_LOG(RF_LOG_WARNING, "ASTC compressed texture format not supported");
         return id;
@@ -4521,18 +4480,18 @@ RF_API unsigned int rf_gl_load_texture(void* data, int width, int height, int fo
 
         if (glInternalFormat != -1)
         {
-            if (format < rf_compressed_dxt1_rgb) glTexImage2D(GL_TEXTURE_2D, i, glInternalFormat, mipWidth, mipHeight, 0, glFormat, glType, (unsigned char* )data + mipOffset);
+            if (format < RF_COMPRESSED_DXT1_RGB) glTexImage2D(GL_TEXTURE_2D, i, glInternalFormat, mipWidth, mipHeight, 0, glFormat, glType, (unsigned char* )data + mipOffset);
 #if !defined(RF_GRAPHICS_API_OPENGL_11)
             else glCompressedTexImage2D(GL_TEXTURE_2D, i, glInternalFormat, mipWidth, mipHeight, 0, mipSize, (unsigned char* )data + mipOffset);
 #endif
 
 #if defined(RF_GRAPHICS_API_OPENGL_33)
-            if (format == rf_uncompressed_grayscale)
+            if (format == RF_UNCOMPRESSED_GRAYSCALE)
             {
                 GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                 glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
             }
-            else if (format == rf_uncompressed_gray_alpha)
+            else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
             {
 #if defined(RF_GRAPHICS_API_OPENGL_21)
                 GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ALPHA };
@@ -4676,17 +4635,17 @@ RF_API unsigned int rf_gl_load_texture_cubemap(void* data, int size, int format)
         // Load cubemap faces
         for (unsigned int i = 0; i < 6; i++)
         {
-            if (format < rf_compressed_dxt1_rgb) glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, glFormat, glType, (unsigned char* )data + i*dataSize);
+            if (format < RF_COMPRESSED_DXT1_RGB) glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, glFormat, glType, (unsigned char* )data + i * dataSize);
 #if !defined(RF_GRAPHICS_API_OPENGL_11)
             else glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, dataSize, (unsigned char* )data + i*dataSize);
 #endif
 #if defined(RF_GRAPHICS_API_OPENGL_33)
-            if (format == rf_uncompressed_grayscale)
+            if (format == RF_UNCOMPRESSED_GRAYSCALE)
             {
                 GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                 glTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
             }
-            else if (format == rf_uncompressed_gray_alpha)
+            else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
             {
 #if defined(RF_GRAPHICS_API_OPENGL_21)
                 GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ALPHA };
@@ -4723,7 +4682,7 @@ RF_API void rf_gl_update_texture(unsigned int id, int width, int height, int for
     unsigned int glInternalFormat, glFormat, glType;
     rf_gl_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
 
-    if ((glInternalFormat != -1) && (format < rf_compressed_dxt1_rgb))
+    if ((glInternalFormat != -1) && (format < RF_COMPRESSED_DXT1_RGB))
     {
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glFormat, glType, (unsigned char* )data);
     }
@@ -4741,42 +4700,42 @@ RF_API void rf_gl_get_gl_texture_formats(int format, unsigned int* glInternalFor
     {
 #if defined(RF_GRAPHICS_API_OPENGL_11) || defined(RF_GRAPHICS_API_OPENGL_21) || defined(RF_GRAPHICS_API_OPENGL_ES2)
         // NOTE: on OpenGL ES 2.0 (WebGL), internalFormat must match format and options allowed are: GL_LUMINANCE, GL_RGB, GL_RGBA
-        case rf_uncompressed_grayscale: *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_gray_alpha: *glInternalFormat = GL_LUMINANCE_ALPHA; *glFormat = GL_LUMINANCE_ALPHA; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_r5g6b5: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
-        case rf_uncompressed_r8g8b8: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_r5g5b5a1: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case rf_uncompressed_r4g4b4a4: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case rf_uncompressed_r8g8b8a8: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_LUMINANCE_ALPHA; *glFormat = GL_LUMINANCE_ALPHA; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G6B5: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
+        case RF_UNCOMPRESSED_R8G8B8: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G5B5A1: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case RF_UNCOMPRESSED_R4G4B4A4: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case RF_UNCOMPRESSED_R8G8B8A8: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
 #if !defined(RF_GRAPHICS_API_OPENGL_11)
-        case rf_uncompressed_r32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
-        case rf_uncompressed_r32g32b32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
-        case rf_uncompressed_r32g32b32a32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_R32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_R32G32B32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_R32G32B32A32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
 #endif
 #elif defined(RF_GRAPHICS_API_OPENGL_33)
-        case rf_uncompressed_grayscale: *glInternalFormat = GL_R8; *glFormat = GL_RED; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_gray_alpha: *glInternalFormat = GL_RG8; *glFormat = GL_RG; *glType = GL_UNSIGNED_BYTE; break;
-            //case rf_uncompressed_r5g6b5: *glInternalFormat = GL_RGB565; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
-        case rf_uncompressed_r8g8b8: *glInternalFormat = GL_RGB8; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_r5g5b5a1: *glInternalFormat = GL_RGB5_A1; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case rf_uncompressed_r4g4b4a4: *glInternalFormat = GL_RGBA4; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case rf_uncompressed_r8g8b8a8: *glInternalFormat = GL_RGBA8; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
-        case rf_uncompressed_r32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_R32F; *glFormat = GL_RED; *glType = GL_FLOAT; break;
-        case rf_uncompressed_r32g32b32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGB32F; *glFormat = GL_RGB; *glType = GL_FLOAT; break;
-        case rf_uncompressed_r32g32b32a32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGBA32F; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_R8; *glFormat = GL_RED; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_RG8; *glFormat = GL_RG; *glType = GL_UNSIGNED_BYTE; break;
+            //case RF_UNCOMPRESSED_R5G6B5: *glInternalFormat = GL_RGB565; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
+        case RF_UNCOMPRESSED_R8G8B8: *glInternalFormat = GL_RGB8; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G5B5A1: *glInternalFormat = GL_RGB5_A1; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case RF_UNCOMPRESSED_R4G4B4A4: *glInternalFormat = GL_RGBA4; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case RF_UNCOMPRESSED_R8G8B8A8: *glInternalFormat = GL_RGBA8; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_R32F; *glFormat = GL_RED; *glType = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_R32G32B32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGB32F; *glFormat = GL_RGB; *glType = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_R32G32B32A32: if (_rf_global_context_ptr->gl_ctx.tex_float_supported) *glInternalFormat = GL_RGBA32F; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;
 #endif
 #if !defined(RF_GRAPHICS_API_OPENGL_11)
-        case rf_compressed_dxt1_rgb: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT; break;
-        case rf_compressed_dxt1_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-        case rf_compressed_dxt3_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-        case rf_compressed_dxt5_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
-        case rf_compressed_etc1_rgb: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc1_supported) *glInternalFormat = GL_ETC1_RGB8_OES; break;                      // NOTE: Requires OpenGL ES 2.0 or OpenGL 4.3
-        case rf_compressed_etc2_rgb: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) *glInternalFormat = GL_COMPRESSED_RGB8_ETC2; break;               // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
-        case rf_compressed_etc2_eac_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) *glInternalFormat = GL_COMPRESSED_RGBA8_ETC2_EAC; break;     // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
-        case rf_compressed_pvrt_rgb: if (_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) *glInternalFormat = GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG; break;    // NOTE: Requires PowerVR GPU
-        case rf_compressed_pvrt_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG; break;  // NOTE: Requires PowerVR GPU
-        case rf_compressed_astc_4x4_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) *glInternalFormat = GL_COMPRESSED_RGBA_ASTC_4x4_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
-        case rf_compressed_astc_8x8_rgba: if (_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) *glInternalFormat = GL_COMPRESSED_RGBA_ASTC_8x8_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+        case RF_COMPRESSED_DXT1_RGB: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT; break;
+        case RF_COMPRESSED_DXT1_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+        case RF_COMPRESSED_DXT3_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+        case RF_COMPRESSED_DXT5_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_dxt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+        case RF_COMPRESSED_ETC1_RGB: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc1_supported) *glInternalFormat = GL_ETC1_RGB8_OES; break;                      // NOTE: Requires OpenGL ES 2.0 or OpenGL 4.3
+        case RF_COMPRESSED_ETC2_RGB: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) *glInternalFormat = GL_COMPRESSED_RGB8_ETC2; break;               // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case RF_COMPRESSED_ETC2_EAC_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_etc2_supported) *glInternalFormat = GL_COMPRESSED_RGBA8_ETC2_EAC; break;     // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case RF_COMPRESSED_PVRT_RGB: if (_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) *glInternalFormat = GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG; break;    // NOTE: Requires PowerVR GPU
+        case RF_COMPRESSED_PVRT_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_pvrt_supported) *glInternalFormat = GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG; break;  // NOTE: Requires PowerVR GPU
+        case RF_COMPRESSED_ASTC_4x4_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) *glInternalFormat = GL_COMPRESSED_RGBA_ASTC_4x4_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+        case RF_COMPRESSED_ASTC_8x8_RGBA: if (_rf_global_context_ptr->gl_ctx.tex_comp_astc_supported) *glInternalFormat = GL_COMPRESSED_RGBA_ASTC_8x8_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
 #endif
         default: RF_LOG(RF_LOG_WARNING, "rf_texture format not supported"); break;
     }
@@ -4803,7 +4762,7 @@ RF_API rf_render_texture2d rf_gl_load_render_texture(int width, int height, int 
 
     // Create fbo color texture attachment
     //-----------------------------------------------------------------------------------------------------
-    if ((format != -1) && (format < rf_compressed_dxt1_rgb))
+    if ((format != -1) && (format < RF_COMPRESSED_DXT1_RGB))
     {
         // WARNING: Some texture formats are not supported for fbo color attachment
         target.texture.id = rf_gl_load_texture(NULL, width, height, format, 1);
@@ -4908,7 +4867,7 @@ RF_API void rf_gl_generate_mipmaps(rf_texture2d* texture)
     if (texIsPOT)
     {
         // WARNING: Manual mipmap generation only works for RGBA 32bit textures!
-        if (texture->format == rf_uncompressed_r8g8b8a8)
+        if (texture->format == RF_UNCOMPRESSED_R8G8B8A8)
         {
             // Retrieve texture data from VRAM
             void* data = rf_gl_read_texture_pixels(*texture);
@@ -5020,7 +4979,7 @@ RF_API void rf_gl_load_mesh(rf_mesh* mesh, bool dynamic)
     }
     else
     {
-        // Default color vertex attribute set to rf_white
+        // Default color vertex attribute set to RF_WHITE
         glVertexAttrib3f(2, 1.0f, 1.0f, 1.0f);
         glDisableVertexAttribArray(2);
     }
@@ -5036,7 +4995,7 @@ RF_API void rf_gl_load_mesh(rf_mesh* mesh, bool dynamic)
     }
     else
     {
-        // Default color vertex attribute set to rf_white
+        // Default color vertex attribute set to RF_WHITE
         glVertexAttrib4f(3, 1.0f, 1.0f, 1.0f, 1.0f);
         glDisableVertexAttribArray(3);
     }
@@ -5208,7 +5167,7 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
 {
 #if defined(RF_GRAPHICS_API_OPENGL_11)
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, material.maps[rf_map_diffuse].texture.id);
+    glBindTexture(GL_TEXTURE_2D, material.maps[RF_MAP_DIFFUSE].texture.id);
 
     // NOTE: On OpenGL 1.1 we use Vertex Arrays to draw model
     glEnableClientState(GL_VERTEX_ARRAY);                   // Enable vertex array
@@ -5223,7 +5182,7 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
 
     rf_push_matrix();
         rf_mult_matrixf(rf_matrix_to_floatv(transform).v);
-        rf_gl_color4ub(material.maps[rf_map_diffuse].color.r, material.maps[rf_map_diffuse].color.g, material.maps[rf_map_diffuse].color.b, material.maps[rf_map_diffuse].color.a);
+        rf_gl_color4ub(material.maps[RF_MAP_DIFFUSE].color.r, material.maps[RF_MAP_DIFFUSE].color.g, material.maps[RF_MAP_DIFFUSE].color.b, material.maps[RF_MAP_DIFFUSE].color.a);
 
         if (mesh.indices != NULL) glDrawElements(GL_TRIANGLES, mesh.triangle_count*3, GL_UNSIGNED_SHORT, mesh.indices);
         else glDrawArrays(GL_TRIANGLES, 0, mesh.vertex_count);
@@ -5245,24 +5204,24 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
     // Matrices and other values required by shader
     //-----------------------------------------------------
     // Calculate and send to shader model matrix (used by PBR shader)
-    if (material.shader.locs[rf_loc_matrix_model] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[rf_loc_matrix_model], transform);
+    if (material.shader.locs[RF_LOC_MATRIX_MODEL] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_MODEL], transform);
 
     // Upload to shader material.colDiffuse
-    if (material.shader.locs[rf_loc_color_diffuse] != -1)
-        glUniform4f(material.shader.locs[rf_loc_color_diffuse], (float)material.maps[rf_map_diffuse].color.r/255.0f,
-                    (float)material.maps[rf_map_diffuse].color.g/255.0f,
-                    (float)material.maps[rf_map_diffuse].color.b/255.0f,
-                    (float)material.maps[rf_map_diffuse].color.a/255.0f);
+    if (material.shader.locs[RF_LOC_COLOR_DIFFUSE] != -1)
+        glUniform4f(material.shader.locs[RF_LOC_COLOR_DIFFUSE], (float)material.maps[RF_MAP_DIFFUSE].color.r / 255.0f,
+                    (float)material.maps[RF_MAP_DIFFUSE].color.g / 255.0f,
+                    (float)material.maps[RF_MAP_DIFFUSE].color.b / 255.0f,
+                    (float)material.maps[RF_MAP_DIFFUSE].color.a / 255.0f);
 
     // Upload to shader material.colSpecular (if available)
     if (material.shader.locs[rf_loc_color_specular] != -1)
-        glUniform4f(material.shader.locs[rf_loc_color_specular], (float)material.maps[rf_map_specular].color.r/255.0f,
-                    (float)material.maps[rf_map_specular].color.g/255.0f,
-                    (float)material.maps[rf_map_specular].color.b/255.0f,
-                    (float)material.maps[rf_map_specular].color.a/255.0f);
+        glUniform4f(material.shader.locs[rf_loc_color_specular], (float)material.maps[RF_MAP_SPECULAR].color.r / 255.0f,
+                    (float)material.maps[RF_MAP_SPECULAR].color.g / 255.0f,
+                    (float)material.maps[RF_MAP_SPECULAR].color.b / 255.0f,
+                    (float)material.maps[RF_MAP_SPECULAR].color.a / 255.0f);
 
-    if (material.shader.locs[rf_loc_matrix_view] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[rf_loc_matrix_view], _rf_global_context_ptr->gl_ctx.modelview);
-    if (material.shader.locs[rf_loc_matrix_projection] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[rf_loc_matrix_projection], _rf_global_context_ptr->gl_ctx.projection);
+    if (material.shader.locs[RF_LOC_MATRIX_VIEW] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_VIEW], _rf_global_context_ptr->gl_ctx.modelview);
+    if (material.shader.locs[RF_LOC_MATRIX_PROJECTION] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_PROJECTION], _rf_global_context_ptr->gl_ctx.projection);
 
     // At this point the _rf_global_context_ptr->gl_ctx.modelview matrix just contains the view matrix (camera)
     // That's because rf_begin_mode3d() sets it an no model-drawing function modifies it, all use rf_push_matrix() and rf_pop_matrix()
@@ -5279,15 +5238,15 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
     //-----------------------------------------------------
 
     // Bind active texture maps (if available)
-    for (int i = 0; i < rf_max_material_maps; i++)
+    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         if (material.maps[i].texture.id > 0)
         {
             glActiveTexture(GL_TEXTURE0 + i);
-            if ((i == rf_map_irradiance) || (i == rf_map_prefilter) || (i == rf_map_cubemap)) glBindTexture(GL_TEXTURE_CUBE_MAP, material.maps[i].texture.id);
+            if ((i == RF_MAP_IRRADIANCE) || (i == RF_MAP_PREFILTER) || (i == RF_MAP_CUBEMAP)) glBindTexture(GL_TEXTURE_CUBE_MAP, material.maps[i].texture.id);
             else glBindTexture(GL_TEXTURE_2D, material.maps[i].texture.id);
 
-            glUniform1i(material.shader.locs[rf_loc_map_diffuse + i], i);
+            glUniform1i(material.shader.locs[RF_LOC_MAP_DIFFUSE + i], i);
         }
     }
 
@@ -5297,54 +5256,54 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
     {
         // Bind mesh VBO data: vertex position (shader-location = 0)
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[0]);
-        glVertexAttribPointer(material.shader.locs[rf_loc_vertex_position], 3, GL_FLOAT, 0, 0, 0);
-        glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_position]);
+        glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_POSITION], 3, GL_FLOAT, 0, 0, 0);
+        glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_POSITION]);
 
         // Bind mesh VBO data: vertex texcoords (shader-location = 1)
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[1]);
-        glVertexAttribPointer(material.shader.locs[rf_loc_vertex_texcoord01], 2, GL_FLOAT, 0, 0, 0);
-        glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_texcoord01]);
+        glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_TEXCOORD01], 2, GL_FLOAT, 0, 0, 0);
+        glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_TEXCOORD01]);
 
         // Bind mesh VBO data: vertex normals (shader-location = 2, if available)
-        if (material.shader.locs[rf_loc_vertex_normal] != -1)
+        if (material.shader.locs[RF_LOC_VERTEX_NORMAL] != -1)
         {
             glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[2]);
-            glVertexAttribPointer(material.shader.locs[rf_loc_vertex_normal], 3, GL_FLOAT, 0, 0, 0);
-            glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_normal]);
+            glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_NORMAL], 3, GL_FLOAT, 0, 0, 0);
+            glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_NORMAL]);
         }
 
         // Bind mesh VBO data: vertex colors (shader-location = 3, if available)
-        if (material.shader.locs[rf_loc_vertex_color] != -1)
+        if (material.shader.locs[RF_LOC_VERTEX_COLOR] != -1)
         {
             if (mesh.vbo_id[3] != 0)
             {
                 glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[3]);
-                glVertexAttribPointer(material.shader.locs[rf_loc_vertex_color], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
-                glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_color]);
+                glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+                glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_COLOR]);
             }
             else
             {
                 // Set default value for unused attribute
                 // NOTE: Required when using default shader and no VAO support
-                glVertexAttrib4f(material.shader.locs[rf_loc_vertex_color], 1.0f, 1.0f, 1.0f, 1.0f);
-                glDisableVertexAttribArray(material.shader.locs[rf_loc_vertex_color]);
+                glVertexAttrib4f(material.shader.locs[RF_LOC_VERTEX_COLOR], 1.0f, 1.0f, 1.0f, 1.0f);
+                glDisableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_COLOR]);
             }
         }
 
         // Bind mesh VBO data: vertex tangents (shader-location = 4, if available)
-        if (material.shader.locs[rf_loc_vertex_tangent] != -1)
+        if (material.shader.locs[RF_LOC_VERTEX_TANGENT] != -1)
         {
             glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[4]);
-            glVertexAttribPointer(material.shader.locs[rf_loc_vertex_tangent], 4, GL_FLOAT, 0, 0, 0);
-            glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_tangent]);
+            glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_TANGENT], 4, GL_FLOAT, 0, 0, 0);
+            glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_TANGENT]);
         }
 
         // Bind mesh VBO data: vertex texcoords2 (shader-location = 5, if available)
-        if (material.shader.locs[rf_loc_vertex_texcoord02] != -1)
+        if (material.shader.locs[RF_LOC_VERTEX_TEXCOORD02] != -1)
         {
             glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo_id[5]);
-            glVertexAttribPointer(material.shader.locs[rf_loc_vertex_texcoord02], 2, GL_FLOAT, 0, 0, 0);
-            glEnableVertexAttribArray(material.shader.locs[rf_loc_vertex_texcoord02]);
+            glVertexAttribPointer(material.shader.locs[RF_LOC_VERTEX_TEXCOORD02], 2, GL_FLOAT, 0, 0, 0);
+            glEnableVertexAttribArray(material.shader.locs[RF_LOC_VERTEX_TEXCOORD02]);
         }
 
         if (mesh.indices != NULL) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.vbo_id[6]);
@@ -5360,7 +5319,7 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
         rf_matrix matMVP = rf_matrix_multiply(_rf_global_context_ptr->gl_ctx.modelview, _rf_global_context_ptr->gl_ctx.projection); // rf_transform to screen-space coordinates
 
         // Send combined model-view-_rf_global_context_ptr->gl_ctx.projection matrix to shader
-        glUniformMatrix4fv(material.shader.locs[rf_loc_matrix_mvp], 1, false, rf_matrix_to_floatv(matMVP).v);
+        glUniformMatrix4fv(material.shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_matrix_to_floatv(matMVP).v);
 
         // Draw call!
         if (mesh.indices != NULL) glDrawElements(GL_TRIANGLES, mesh.triangle_count*3, GL_UNSIGNED_SHORT, 0); // Indexed vertices draw
@@ -5368,10 +5327,10 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
     }
 
     // Unbind all binded texture maps
-    for (int i = 0; i < rf_max_material_maps; i++)
+    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         glActiveTexture(GL_TEXTURE0 + i);       // Set shader active texture
-        if ((i == rf_map_irradiance) || (i == rf_map_prefilter) || (i == rf_map_cubemap)) glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+        if ((i == RF_MAP_IRRADIANCE) || (i == RF_MAP_PREFILTER) || (i == RF_MAP_CUBEMAP)) glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
         else glBindTexture(GL_TEXTURE_2D, 0);   // Unbind current active texture
     }
 
@@ -5475,7 +5434,7 @@ RF_API void* rf_gl_read_texture_pixels(rf_texture2d texture)
     rf_gl_get_gl_texture_formats(texture.format, &glInternalFormat, &glFormat, &glType);
     unsigned int size = rf_get_pixel_data_size(texture.width, texture.height, texture.format);
 
-    if ((glInternalFormat != -1) && (texture.format < rf_compressed_dxt1_rgb))
+    if ((glInternalFormat != -1) && (texture.format < RF_COMPRESSED_DXT1_RGB))
     {
         pixels = (unsigned char* )RF_MALLOC(size);
         glGetTexImage(GL_TEXTURE_2D, 0, glFormat, glType, pixels);
@@ -5493,7 +5452,7 @@ RF_API void* rf_gl_read_texture_pixels(rf_texture2d texture)
     // 2 - Create an fbo, activate it, render quad with texture, glReadPixels()
     // We are using Option 1, just need to care for texture format on retrieval
     // NOTE: This behaviour could be conditioned by graphic driver...
-    rf_render_texture2d fbo = rf_gl_load_render_texture(texture.width, texture.height, rf_uncompressed_r8g8b8a8, 16, false);
+    rf_render_texture2d fbo = rf_gl_load_render_texture(texture.width, texture.height, RF_UNCOMPRESSED_R8G8B8A8, 16, false);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo.id);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -5503,7 +5462,7 @@ RF_API void* rf_gl_read_texture_pixels(rf_texture2d texture)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.id, 0);
 
     // We read data as RGBA because FBO texture is configured as RGBA, despite binding another texture format
-    pixels = (unsigned char* )RF_MALLOC(rf_get_pixel_data_size(texture.width, texture.height, rf_uncompressed_r8g8b8a8));
+    pixels = (unsigned char* )RF_MALLOC(rf_get_pixel_data_size(texture.width, texture.height, RF_UNCOMPRESSED_R8G8B8A8));
     glReadPixels(0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Re-attach internal FBO color texture before deleting it
@@ -5532,7 +5491,7 @@ RF_API rf_texture2d rf_get_texture_default()
     texture.width = 1;
     texture.height = 1;
     texture.mipmaps = 1;
-    texture.format = rf_uncompressed_r8g8b8a8;
+    texture.format = RF_UNCOMPRESSED_R8G8B8A8;
 #endif
     return texture;
 }
@@ -5608,11 +5567,11 @@ RF_API rf_shader rf_load_shader(const char* vsFileName, const char* fsFileName)
 RF_API rf_shader rf_load_shader_code(const char* vsCode, const char* fsCode)
 {
     rf_shader shader = { 0 };
-    shader.locs = (int*)RF_MALLOC(rf_max_shader_locations * sizeof(int));
-    memset(shader.locs, 0, rf_max_shader_locations * sizeof(int));
+    shader.locs = (int*)RF_MALLOC(RF_MAX_SHADER_LOCATIONS * sizeof(int));
+    memset(shader.locs, 0, RF_MAX_SHADER_LOCATIONS * sizeof(int));
 
     // NOTE: All locations must be reseted to -1 (no location)
-    for (int i = 0; i < rf_max_shader_locations; i++) shader.locs[i] = -1;
+    for (int i = 0; i < RF_MAX_SHADER_LOCATIONS; i++) shader.locs[i] = -1;
 
 #if defined(RF_GRAPHICS_API_OPENGL_33) || defined(RF_GRAPHICS_API_OPENGL_ES2)
     unsigned int vertexShaderId = _rf_global_context_ptr->gl_ctx.default_vertex_shader_id;
@@ -5726,15 +5685,15 @@ RF_API void rf_set_shader_value_v(rf_shader shader, int uniformLoc, const void* 
 
     switch (uniformType)
     {
-        case rf_uniform_float: glUniform1fv(uniformLoc, count, (float* )value); break;
-        case rf_uniform_vec2: glUniform2fv(uniformLoc, count, (float* )value); break;
-        case rf_uniform_vec3: glUniform3fv(uniformLoc, count, (float* )value); break;
-        case rf_uniform_vec4: glUniform4fv(uniformLoc, count, (float* )value); break;
-        case rf_uniform_int: glUniform1iv(uniformLoc, count, (int* )value); break;
-        case rf_uniform_ivec2: glUniform2iv(uniformLoc, count, (int* )value); break;
-        case rf_uniform_ivec3: glUniform3iv(uniformLoc, count, (int* )value); break;
-        case rf_uniform_ivec4: glUniform4iv(uniformLoc, count, (int* )value); break;
-        case rf_uniform_sampler2d: glUniform1iv(uniformLoc, count, (int* )value); break;
+        case RF_UNIFORM_FLOAT: glUniform1fv(uniformLoc, count, (float* )value); break;
+        case RF_UNIFORM_VEC2: glUniform2fv(uniformLoc, count, (float* )value); break;
+        case RF_UNIFORM_VEC3: glUniform3fv(uniformLoc, count, (float* )value); break;
+        case RF_UNIFORM_VEC4: glUniform4fv(uniformLoc, count, (float* )value); break;
+        case RF_UNIFORM_INT: glUniform1iv(uniformLoc, count, (int* )value); break;
+        case RF_UNIFORM_IVEC2: glUniform2iv(uniformLoc, count, (int* )value); break;
+        case RF_UNIFORM_IVEC3: glUniform3iv(uniformLoc, count, (int* )value); break;
+        case RF_UNIFORM_IVEC4: glUniform4iv(uniformLoc, count, (int* )value); break;
+        case RF_UNIFORM_SAMPLER2D: glUniform1iv(uniformLoc, count, (int* )value); break;
         default: RF_LOG(RF_LOG_WARNING, "rf_shader uniform could not be set data type not recognized");
     }
 
@@ -5879,7 +5838,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d skyHDR
     glUseProgram(shader.id);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, skyHDR.id);
-    rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_projection], fboProjection);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fboProjection);
 
     // Note: don't forget to configure the viewport to the capture dimensions
     glViewport(0, 0, size, size);
@@ -5887,7 +5846,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d skyHDR
 
     for (int i = 0; i < 6; i++)
     {
-        rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_view], fboViews[i]);
+        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fboViews[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap.id, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         _rf_gen_draw_cube();
@@ -5904,7 +5863,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d skyHDR
     cubemap.width = size;
     cubemap.height = size;
     cubemap.mipmaps = 1;
-    cubemap.format = rf_uncompressed_r32g32b32;
+    cubemap.format = RF_UNCOMPRESSED_R32G32B32;
 #endif
     return cubemap;
 }
@@ -5957,7 +5916,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     glUseProgram(shader.id);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
-    rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_projection], fboProjection);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fboProjection);
 
     // Note: don't forget to configure the viewport to the capture dimensions
     glViewport(0, 0, size, size);
@@ -5965,7 +5924,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
 
     for (int i = 0; i < 6; i++)
     {
-        rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_view], fboViews[i]);
+        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fboViews[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance.id, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         _rf_gen_draw_cube();
@@ -6038,7 +5997,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     glUseProgram(shader.id);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
-    rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_projection], fboProjection);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fboProjection);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
@@ -6059,7 +6018,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 
         for (int i = 0; i < 6; i++)
         {
-            rf_set_shader_value_matrix(shader, shader.locs[rf_loc_matrix_view], fboViews[i]);
+            rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fboViews[i]);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilter.id, mip);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             _rf_gen_draw_cube();
@@ -6132,7 +6091,7 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size)
     brdf.width = size;
     brdf.height = size;
     brdf.mipmaps = 1;
-    brdf.format = rf_uncompressed_r32g32b32;
+    brdf.format = RF_UNCOMPRESSED_R32G32B32;
 #endif
     return brdf;
 }
@@ -6147,9 +6106,9 @@ RF_API void rf_begin_blend_mode(int mode)
 
         switch (mode)
         {
-            case rf_blend_alpha: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); break;
-            case rf_blend_additive: glBlendFunc(GL_SRC_ALPHA, GL_ONE); break; // Alternative: glBlendFunc(GL_ONE, GL_ONE);
-            case rf_blend_multiplied: glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA); break;
+            case RF_BLEND_ALPHA: glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); break;
+            case RF_BLEND_ADDITIVE: glBlendFunc(GL_SRC_ALPHA, GL_ONE); break; // Alternative: glBlendFunc(GL_ONE, GL_ONE);
+            case RF_BLEND_MULTIPLIED: glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA); break;
             default: break;
         }
 
@@ -6160,7 +6119,7 @@ RF_API void rf_begin_blend_mode(int mode)
 // End blending mode (reset to default: alpha blending)
 RF_API void rf_end_blend_mode()
 {
-    rf_begin_blend_mode(rf_blend_alpha);
+    rf_begin_blend_mode(RF_BLEND_ALPHA);
 }
 
 //----------------------------------------------------------------------------------
@@ -6217,12 +6176,12 @@ RF_INTERNAL unsigned int _rf_load_shader_program(unsigned int vShaderId, unsigne
     glAttachShader(program, fShaderId);
 
     // NOTE: Default attribute shader locations must be binded before linking
-    glBindAttribLocation(program, 0, DEFAULT_ATTRIB_POSITION_NAME);
-    glBindAttribLocation(program, 1, DEFAULT_ATTRIB_TEXCOORD_NAME);
-    glBindAttribLocation(program, 2, DEFAULT_ATTRIB_NORMAL_NAME);
-    glBindAttribLocation(program, 3, DEFAULT_ATTRIB_COLOR_NAME);
-    glBindAttribLocation(program, 4, DEFAULT_ATTRIB_TANGENT_NAME);
-    glBindAttribLocation(program, 5, DEFAULT_ATTRIB_TEXCOORD2_NAME);
+    glBindAttribLocation(program, 0, RF_DEFAULT_ATTRIB_POSITION_NAME);
+    glBindAttribLocation(program, 1, RF_DEFAULT_ATTRIB_TEXCOORD_NAME);
+    glBindAttribLocation(program, 2, RF_DEFAULT_ATTRIB_NORMAL_NAME);
+    glBindAttribLocation(program, 3, RF_DEFAULT_ATTRIB_COLOR_NAME);
+    glBindAttribLocation(program, 4, RF_DEFAULT_ATTRIB_TANGENT_NAME);
+    glBindAttribLocation(program, 5, RF_DEFAULT_ATTRIB_TEXCOORD2_NAME);
 
     // NOTE: If some attrib name is no found on the shader, it locations becomes -1
 
@@ -6268,11 +6227,11 @@ RF_INTERNAL unsigned int _rf_load_shader_program(unsigned int vShaderId, unsigne
 RF_INTERNAL rf_shader _rf_load_shader_default()
 {
     rf_shader shader = { 0 };
-    shader.locs = (int*)RF_MALLOC(rf_max_shader_locations * sizeof(int));
-    memset(shader.locs, 0, rf_max_shader_locations * sizeof(int));
+    shader.locs = (int*)RF_MALLOC(RF_MAX_SHADER_LOCATIONS * sizeof(int));
+    memset(shader.locs, 0, RF_MAX_SHADER_LOCATIONS * sizeof(int));
 
     // NOTE: All locations must be reseted to -1 (no location)
-    for (int i = 0; i < rf_max_shader_locations; i++) shader.locs[i] = -1;
+    for (int i = 0; i < RF_MAX_SHADER_LOCATIONS; i++) shader.locs[i] = -1;
 
     // Vertex shader directly defined, no external file required
     const char* defaultVShaderStr =
@@ -6344,16 +6303,16 @@ RF_INTERNAL rf_shader _rf_load_shader_default()
         RF_LOG(RF_LOG_INFO, "[SHDR ID %i] Default shader loaded successfully", shader.id);
 
         // Set default shader locations: attributes locations
-        shader.locs[rf_loc_vertex_position] = glGetAttribLocation(shader.id, "vertexPosition");
-        shader.locs[rf_loc_vertex_texcoord01] = glGetAttribLocation(shader.id, "vertexTexCoord");
-        shader.locs[rf_loc_vertex_color] = glGetAttribLocation(shader.id, "vertexColor");
+        shader.locs[RF_LOC_VERTEX_POSITION] = glGetAttribLocation(shader.id, "vertexPosition");
+        shader.locs[RF_LOC_VERTEX_TEXCOORD01] = glGetAttribLocation(shader.id, "vertexTexCoord");
+        shader.locs[RF_LOC_VERTEX_COLOR] = glGetAttribLocation(shader.id, "vertexColor");
 
         // Set default shader locations: uniform locations
-        shader.locs[rf_loc_matrix_mvp]  = glGetUniformLocation(shader.id, "mvp");
-        shader.locs[rf_loc_color_diffuse] = glGetUniformLocation(shader.id, "colDiffuse");
-        shader.locs[rf_loc_map_diffuse] = glGetUniformLocation(shader.id, "texture0");
+        shader.locs[RF_LOC_MATRIX_MVP]  = glGetUniformLocation(shader.id, "mvp");
+        shader.locs[RF_LOC_COLOR_DIFFUSE] = glGetUniformLocation(shader.id, "colDiffuse");
+        shader.locs[RF_LOC_MAP_DIFFUSE] = glGetUniformLocation(shader.id, "texture0");
 
-        // NOTE: We could also use below function but in case DEFAULT_ATTRIB_* points are
+        // NOTE: We could also use below function but in case RF_DEFAULT_ATTRIB_* points are
         // changed for external custom shaders, we just use direct bindings above
         //_rf_set_shader_default_locations(&shader);
     }
@@ -6375,22 +6334,22 @@ RF_INTERNAL void _rf_set_shader_default_locations(rf_shader* shader)
     //          vertex texcoord2 location   = 5
 
     // Get handles to GLSL input attibute locations
-    shader->locs[rf_loc_vertex_position] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_POSITION_NAME);
-    shader->locs[rf_loc_vertex_texcoord01] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_TEXCOORD_NAME);
-    shader->locs[rf_loc_vertex_texcoord02] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_TEXCOORD2_NAME);
-    shader->locs[rf_loc_vertex_normal] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_NORMAL_NAME);
-    shader->locs[rf_loc_vertex_tangent] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_TANGENT_NAME);
-    shader->locs[rf_loc_vertex_color] = glGetAttribLocation(shader->id, DEFAULT_ATTRIB_COLOR_NAME);
+    shader->locs[RF_LOC_VERTEX_POSITION] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_POSITION_NAME);
+    shader->locs[RF_LOC_VERTEX_TEXCOORD01] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_TEXCOORD_NAME);
+    shader->locs[RF_LOC_VERTEX_TEXCOORD02] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_TEXCOORD2_NAME);
+    shader->locs[RF_LOC_VERTEX_NORMAL] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_NORMAL_NAME);
+    shader->locs[RF_LOC_VERTEX_TANGENT] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_TANGENT_NAME);
+    shader->locs[RF_LOC_VERTEX_COLOR] = glGetAttribLocation(shader->id, RF_DEFAULT_ATTRIB_COLOR_NAME);
 
     // Get handles to GLSL uniform locations (vertex shader)
-    shader->locs[rf_loc_matrix_mvp]  = glGetUniformLocation(shader->id, "mvp");
-    shader->locs[rf_loc_matrix_projection]  = glGetUniformLocation(shader->id, "_rf_global_context_ptr->gl_ctx.projection");
-    shader->locs[rf_loc_matrix_view]  = glGetUniformLocation(shader->id, "view");
+    shader->locs[RF_LOC_MATRIX_MVP]  = glGetUniformLocation(shader->id, "mvp");
+    shader->locs[RF_LOC_MATRIX_PROJECTION]  = glGetUniformLocation(shader->id, "_rf_global_context_ptr->gl_ctx.projection");
+    shader->locs[RF_LOC_MATRIX_VIEW]  = glGetUniformLocation(shader->id, "view");
 
     // Get handles to GLSL uniform locations (fragment shader)
-    shader->locs[rf_loc_color_diffuse] = glGetUniformLocation(shader->id, "colDiffuse");
-    shader->locs[rf_loc_map_diffuse] = glGetUniformLocation(shader->id, "texture0");
-    shader->locs[rf_loc_map_specular] = glGetUniformLocation(shader->id, "texture1");
+    shader->locs[RF_LOC_COLOR_DIFFUSE] = glGetUniformLocation(shader->id, "colDiffuse");
+    shader->locs[RF_LOC_MAP_DIFFUSE] = glGetUniformLocation(shader->id, "texture0");
+    shader->locs[RF_LOC_MAP_SPECULAR] = glGetUniformLocation(shader->id, "texture1");
     shader->locs[rf_loc_map_normal] = glGetUniformLocation(shader->id, "texture2");
 }
 
@@ -6412,25 +6371,25 @@ RF_INTERNAL void _rf_load_buffers_default()
 {
     // Initialize CPU (RAM) arrays (vertex position, texcoord, color data and indexes)
     //--------------------------------------------------------------------------------------------
-    for (int i = 0; i < rf_max_batch_buffering; i++)
+    for (int i = 0; i < RF_MAX_BATCH_BUFFERING; i++)
     {
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices = (float* )RF_MALLOC(sizeof(float)*3*4*rf_max_batch_elements);        // 3 float by vertex, 4 vertex by quad
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords = (float* )RF_MALLOC(sizeof(float)*2*4*rf_max_batch_elements);       // 2 float by texcoord, 4 texcoord by quad
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].colors = (unsigned char* )RF_MALLOC(sizeof(unsigned char)*4*4*rf_max_batch_elements);  // 4 float by color, 4 colors by quad
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices = (float* )RF_MALLOC(sizeof(float) * 3 * 4 * RF_MAX_BATCH_ELEMENTS);        // 3 float by vertex, 4 vertex by quad
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords = (float* )RF_MALLOC(sizeof(float) * 2 * 4 * RF_MAX_BATCH_ELEMENTS);       // 2 float by texcoord, 4 texcoord by quad
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].colors = (unsigned char* )RF_MALLOC(sizeof(unsigned char) * 4 * 4 * RF_MAX_BATCH_ELEMENTS);  // 4 float by color, 4 colors by quad
 #if defined(RF_GRAPHICS_API_OPENGL_33)
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].indices = (unsigned int* )RF_MALLOC(sizeof(unsigned int)*6*rf_max_batch_elements);      // 6 int by quad (indices)
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].indices = (unsigned int* )RF_MALLOC(sizeof(unsigned int) * 6 * RF_MAX_BATCH_ELEMENTS);      // 6 int by quad (indices)
 #elif defined(RF_GRAPHICS_API_OPENGL_ES2)
         _rf_global_context_ptr->gl_ctx.vertex_data[i].indices = (unsigned short *)RF_MALLOC(sizeof(unsigned short)*6*rf_max_batch_elements);  // 6 int by quad (indices)
 #endif
 
-        for (int j = 0; j < (3*4*rf_max_batch_elements); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices[j] = 0.0f;
-        for (int j = 0; j < (2*4*rf_max_batch_elements); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords[j] = 0.0f;
-        for (int j = 0; j < (4*4*rf_max_batch_elements); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].colors[j] = 0;
+        for (int j = 0; j < (3 * 4 * RF_MAX_BATCH_ELEMENTS); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices[j] = 0.0f;
+        for (int j = 0; j < (2 * 4 * RF_MAX_BATCH_ELEMENTS); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords[j] = 0.0f;
+        for (int j = 0; j < (4 * 4 * RF_MAX_BATCH_ELEMENTS); j++) _rf_global_context_ptr->gl_ctx.vertex_data[i].colors[j] = 0;
 
         int k = 0;
 
         // Indices can be initialized right now
-        for (int j = 0; j < (6*rf_max_batch_elements); j += 6)
+        for (int j = 0; j < (6 * RF_MAX_BATCH_ELEMENTS); j += 6)
         {
             _rf_global_context_ptr->gl_ctx.vertex_data[i].indices[j] = 4*k;
             _rf_global_context_ptr->gl_ctx.vertex_data[i].indices[j + 1] = 4*k + 1;
@@ -6442,9 +6401,9 @@ RF_INTERNAL void _rf_load_buffers_default()
             k++;
         }
 
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].vCounter = 0;
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].tcCounter = 0;
-        _rf_global_context_ptr->gl_ctx.vertex_data[i].cCounter = 0;
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].v_counter = 0;
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].tc_counter = 0;
+        _rf_global_context_ptr->gl_ctx.vertex_data[i].c_counter = 0;
     }
 
     RF_LOG(RF_LOG_INFO, "Internal buffers initialized successfully (CPU)");
@@ -6452,7 +6411,7 @@ RF_INTERNAL void _rf_load_buffers_default()
 
     // Upload to GPU (VRAM) vertex data and initialize VAOs/VBOs
     //--------------------------------------------------------------------------------------------
-    for (int i = 0; i < rf_max_batch_buffering; i++)
+    for (int i = 0; i < RF_MAX_BATCH_BUFFERING; i++)
     {
         if (_rf_global_context_ptr->gl_ctx.vao_supported)
         {
@@ -6465,29 +6424,29 @@ RF_INTERNAL void _rf_load_buffers_default()
         // Vertex position buffer (shader-location = 0)
         glGenBuffers(1, &_rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[0]);
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[0]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices, GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_position]);
-        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_position], 3, GL_FLOAT, 0, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * 4 * RF_MAX_BATCH_ELEMENTS, _rf_global_context_ptr->gl_ctx.vertex_data[i].vertices, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_POSITION]);
+        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_POSITION], 3, GL_FLOAT, 0, 0, 0);
 
         // Vertex texcoord buffer (shader-location = 1)
         glGenBuffers(1, &_rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[1]);
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords, GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_texcoord01]);
-        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_texcoord01], 2, GL_FLOAT, 0, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * 4 * RF_MAX_BATCH_ELEMENTS, _rf_global_context_ptr->gl_ctx.vertex_data[i].texcoords, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_TEXCOORD01]);
+        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_TEXCOORD01], 2, GL_FLOAT, 0, 0, 0);
 
         // Vertex color buffer (shader-location = 3)
         glGenBuffers(1, &_rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[2]);
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[2]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned char)*4*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[i].colors, GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_color]);
-        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_color], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned char) * 4 * 4 * RF_MAX_BATCH_ELEMENTS, _rf_global_context_ptr->gl_ctx.vertex_data[i].colors, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_COLOR]);
+        glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
 
         // Fill index buffer
         glGenBuffers(1, &_rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[3]);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[3]);
 #if defined(RF_GRAPHICS_API_OPENGL_33)
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int)*6*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[i].indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * 6 * RF_MAX_BATCH_ELEMENTS, _rf_global_context_ptr->gl_ctx.vertex_data[i].indices, GL_STATIC_DRAW);
 #elif defined(RF_GRAPHICS_API_OPENGL_ES2)
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short)*6*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[i].indices, GL_STATIC_DRAW);
 #endif
@@ -6506,24 +6465,24 @@ RF_INTERNAL void _rf_load_buffers_default()
 RF_INTERNAL void _rf_update_buffers_default()
 {
     // Update vertex buffers data
-    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter > 0)
+    if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter > 0)
     {
         // Activate elements VAO
         if (_rf_global_context_ptr->gl_ctx.vao_supported) glBindVertexArray(_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vao_id);
 
         // Vertex positions buffer
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[0]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*3*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices);
         //glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vertices, GL_DYNAMIC_DRAW);  // Update all buffer
 
         // rf_texture coordinates buffer
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[1]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float)*2*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords);
         //glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].texcoords, GL_DYNAMIC_DRAW); // Update all buffer
 
         // Colors buffer
         glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[2]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(unsigned char)*4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(unsigned char)*4*_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors);
         //glBufferData(GL_ARRAY_BUFFER, sizeof(float)*4*4*rf_max_batch_elements, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].colors, GL_DYNAMIC_DRAW);    // Update all buffer
 
         // NOTE: glMapBuffer() causes sync issue.
@@ -6557,7 +6516,7 @@ RF_INTERNAL void _rf_draw_buffers_default()
     for (int eye = 0; eye < eyesCount; eye++)
     {
         // Draw buffers
-        if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter > 0)
+        if (_rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter > 0)
         {
             // Set current shader and upload current MVP matrix
             glUseProgram(_rf_global_context_ptr->gl_ctx.current_shader.id);
@@ -6565,12 +6524,12 @@ RF_INTERNAL void _rf_draw_buffers_default()
             // Create _rf_global_context_ptr->gl_ctx.modelview-_rf_global_context_ptr->gl_ctx.projection matrix
             rf_matrix matMVP = rf_matrix_multiply(_rf_global_context_ptr->gl_ctx.modelview, _rf_global_context_ptr->gl_ctx.projection);
 
-            glUniformMatrix4fv(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_matrix_mvp], 1, false, rf_matrix_to_floatv(matMVP).v);
-            glUniform4f(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_color_diffuse], 1.0f, 1.0f, 1.0f, 1.0f);
-            glUniform1i(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_map_diffuse], 0);    // Provided value refers to the texture unit (active)
+            glUniformMatrix4fv(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_matrix_to_floatv(matMVP).v);
+            glUniform4f(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_COLOR_DIFFUSE], 1.0f, 1.0f, 1.0f, 1.0f);
+            glUniform1i(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_MAP_DIFFUSE], 0);    // Provided value refers to the texture unit (active)
 
             // TODO: Support additional texture units on custom shader
-            //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[rf_loc_map_specular] > 0) glUniform1i(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_map_specular], 1);
+            //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) glUniform1i(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_MAP_SPECULAR], 1);
             //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[rf_loc_map_normal] > 0) glUniform1i(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_map_normal], 2);
 
             // NOTE: Right now additional map textures not considered for default buffers drawing
@@ -6582,18 +6541,18 @@ RF_INTERNAL void _rf_draw_buffers_default()
             {
                 // Bind vertex attrib: position (shader-location = 0)
                 glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[0]);
-                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_position], 3, GL_FLOAT, 0, 0, 0);
-                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_position]);
+                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_POSITION], 3, GL_FLOAT, 0, 0, 0);
+                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_POSITION]);
 
                 // Bind vertex attrib: texcoord (shader-location = 1)
                 glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[1]);
-                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_texcoord01], 2, GL_FLOAT, 0, 0, 0);
-                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_texcoord01]);
+                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_TEXCOORD01], 2, GL_FLOAT, 0, 0, 0);
+                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_TEXCOORD01]);
 
                 // Bind vertex attrib: color (shader-location = 3)
                 glBindBuffer(GL_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[2]);
-                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_color], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
-                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[rf_loc_vertex_color]);
+                glVertexAttribPointer(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+                glEnableVertexAttribArray(_rf_global_context_ptr->gl_ctx.current_shader.locs[RF_LOC_VERTEX_COLOR]);
 
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vbo_id[3]);
             }
@@ -6602,11 +6561,11 @@ RF_INTERNAL void _rf_draw_buffers_default()
 
             for (int i = 0; i < _rf_global_context_ptr->gl_ctx.draws_counter; i++)
             {
-                glBindTexture(GL_TEXTURE_2D, _rf_global_context_ptr->gl_ctx.draws[i].textureId);
+                glBindTexture(GL_TEXTURE_2D, _rf_global_context_ptr->gl_ctx.draws[i].texture_id);
 
                 // TODO: Find some way to bind additional textures --> Use global texture IDs? Register them on draw[i]?
-                //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[rf_loc_map_specular] > 0) { glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, textureUnit1_id); }
-                //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[rf_loc_map_specular] > 0) { glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, textureUnit2_id); }
+                //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, textureUnit1_id); }
+                //if (_rf_global_context_ptr->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, textureUnit2_id); }
 
                 if ((_rf_global_context_ptr->gl_ctx.draws[i].mode == GL_LINES) || (_rf_global_context_ptr->gl_ctx.draws[i].mode == GL_TRIANGLES)) glDrawArrays(_rf_global_context_ptr->gl_ctx.draws[i].mode, vertexOffset, _rf_global_context_ptr->gl_ctx.draws[i].vertex_count);
                 else
@@ -6621,7 +6580,7 @@ RF_INTERNAL void _rf_draw_buffers_default()
                     #endif
                 }
 
-                vertexOffset += (_rf_global_context_ptr->gl_ctx.draws[i].vertex_count + _rf_global_context_ptr->gl_ctx.draws[i].vertexAlignment);
+                vertexOffset += (_rf_global_context_ptr->gl_ctx.draws[i].vertex_count + _rf_global_context_ptr->gl_ctx.draws[i].vertex_alignment);
             }
 
             if (!_rf_global_context_ptr->gl_ctx.vao_supported)
@@ -6639,9 +6598,9 @@ RF_INTERNAL void _rf_draw_buffers_default()
     }
 
     // Reset vertex counters for next frame
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].vCounter = 0;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tcCounter = 0;
-    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].cCounter = 0;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].v_counter = 0;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].tc_counter = 0;
+    _rf_global_context_ptr->gl_ctx.vertex_data[_rf_global_context_ptr->gl_ctx.current_buffer].c_counter = 0;
 
     // Reset depth for next draw
     _rf_global_context_ptr->gl_ctx.current_depth = -1.0f;
@@ -6651,18 +6610,18 @@ RF_INTERNAL void _rf_draw_buffers_default()
     _rf_global_context_ptr->gl_ctx.modelview = matModelView;
 
     // Reset _rf_global_context_ptr->gl_ctx.draws array
-    for (int i = 0; i < rf_max_drawcall_registered; i++)
+    for (int i = 0; i < RF_MAX_DRAWCALL_REGISTERED; i++)
     {
         _rf_global_context_ptr->gl_ctx.draws[i].mode = GL_QUADS;
         _rf_global_context_ptr->gl_ctx.draws[i].vertex_count = 0;
-        _rf_global_context_ptr->gl_ctx.draws[i].textureId = _rf_global_context_ptr->gl_ctx.default_texture_id;
+        _rf_global_context_ptr->gl_ctx.draws[i].texture_id = _rf_global_context_ptr->gl_ctx.default_texture_id;
     }
 
     _rf_global_context_ptr->gl_ctx.draws_counter = 1;
 
     // Change to next buffer in the list
     _rf_global_context_ptr->gl_ctx.current_buffer++;
-    if (_rf_global_context_ptr->gl_ctx.current_buffer >= rf_max_batch_buffering) _rf_global_context_ptr->gl_ctx.current_buffer = 0;
+    if (_rf_global_context_ptr->gl_ctx.current_buffer >= RF_MAX_BATCH_BUFFERING) _rf_global_context_ptr->gl_ctx.current_buffer = 0;
 }
 
 // Unload default internal buffers vertex data from CPU and GPU
@@ -6677,7 +6636,7 @@ RF_INTERNAL void _rf_unload_buffers_default()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    for (int i = 0; i < rf_max_batch_buffering; i++)
+    for (int i = 0; i < RF_MAX_BATCH_BUFFERING; i++)
     {
         // Delete VBOs from GPU (VRAM)
         glDeleteBuffers(1, &_rf_global_context_ptr->gl_ctx.vertex_data[i].vbo_id[0]);
@@ -7010,8 +6969,8 @@ RF_API void rf_set_camera_mode(rf_camera3d camera, int mode)
     _rf_global_context_ptr->gl_ctx.player_eyes_position = camera.position.y;
 
     // Lock cursor for first person and third person cameras
-//    if ((mode == rf_camera_first_person) || (mode == rf_camera_third_person)) DisableCursor();
-//    else EnableCursor();
+    //    if ((mode == RF_CAMERA_FIRST_PERSON) || (mode == RF_CAMERA_THIRD_PERSON)) DisableCursor();
+    //    else EnableCursor();
 
     _rf_global_context_ptr->gl_ctx.camera_mode = mode;
 }
@@ -7049,7 +7008,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
 
     // TODO: Consider touch inputs for camera
 
-    if (_rf_global_context_ptr->gl_ctx.camera_mode != rf_camera_custom)
+    if (_rf_global_context_ptr->gl_ctx.camera_mode != RF_CAMERA_CUSTOM)
     {
         mousePositionDelta.x = mouse_position.x - previousMousePosition.x;
         mousePositionDelta.y = mouse_position.y - previousMousePosition.y;
@@ -7060,7 +7019,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
     // Support for multiple automatic camera modes
     switch (_rf_global_context_ptr->gl_ctx.camera_mode)
     {
-        case rf_camera_free:
+        case RF_CAMERA_FREE:
         {
             // rf_camera3d zoom
             if ((_rf_global_context_ptr->gl_ctx.camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
@@ -7148,7 +7107,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
             camera->position.z = cosf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*_rf_global_context_ptr->gl_ctx.camera_target_distance*cosf(_rf_global_context_ptr->gl_ctx.camera_angle.y) + camera->target.z;
 
         } break;
-        case rf_camera_orbital:
+        case RF_CAMERA_ORBITAL:
         {
             _rf_global_context_ptr->gl_ctx.camera_angle.x += rf_camera_orbital_speed; // rf_camera3d orbit angle
             _rf_global_context_ptr->gl_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity); // rf_camera3d zoom
@@ -7162,7 +7121,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
             camera->position.z = cosf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*_rf_global_context_ptr->gl_ctx.camera_target_distance*cosf(_rf_global_context_ptr->gl_ctx.camera_angle.y) + camera->target.z;
 
         } break;
-        case rf_camera_first_person:
+        case RF_CAMERA_FIRST_PERSON:
         {
             camera->position.x += (sinf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*direction[rf_move_back] -
                                    sinf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*direction[rf_move_front] -
@@ -7198,7 +7157,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
             if (isMoving) swingCounter++;
 
             // rf_camera3d position update
-            // NOTE: On rf_camera_first_person player Y-movement is limited to player 'eyes position'
+            // NOTE: On RF_CAMERA_FIRST_PERSON player Y-movement is limited to player 'eyes position'
             camera->position.y = _rf_global_context_ptr->gl_ctx.player_eyes_position - sinf(swingCounter/rf_camera_first_person_step_trigonometric_divider)/rf_camera_first_person_step_divider;
 
             camera->up.x = sinf(swingCounter/(rf_camera_first_person_step_trigonometric_divider*2))/rf_camera_first_person_waving_divider;
@@ -7206,7 +7165,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, const rf_input_state_for_upd
 
 
         } break;
-        case rf_camera_third_person:
+        case RF_CAMERA_THIRD_PERSON:
         {
             camera->position.x += (sinf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*direction[rf_move_back] -
                                    sinf(_rf_global_context_ptr->gl_ctx.camera_angle.x)*direction[rf_move_front] -
@@ -8008,16 +7967,16 @@ RF_API rf_material* rf_load_materials(const char* fileName, int* material_count)
 RF_API rf_material rf_load_material_default()
 {
     rf_material material = { 0 };
-    material.maps = (rf_material_map *)RF_MALLOC(rf_max_material_maps * sizeof(rf_material_map));
-    memset(material.maps, 0, rf_max_material_maps * sizeof(rf_material_map));
+    material.maps = (rf_material_map *)RF_MALLOC(RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
+    memset(material.maps, 0, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
 
     material.shader = rf_get_shader_default();
-    material.maps[rf_map_diffuse].texture = rf_get_texture_default(); // White texture (1x1 pixel)
-    //material.maps[rf_map_normal].texture;         // NOTE: By default, not set
-    //material.maps[rf_map_specular].texture;       // NOTE: By default, not set
+    material.maps[RF_MAP_DIFFUSE].texture = rf_get_texture_default(); // White texture (1x1 pixel)
+    //material.maps[RF_MAP_NORMAL].texture;         // NOTE: By default, not set
+    //material.maps[RF_MAP_SPECULAR].texture;       // NOTE: By default, not set
 
-    material.maps[rf_map_diffuse].color = rf_white; // Diffuse color
-    material.maps[rf_map_specular].color = rf_white; // Specular color
+    material.maps[RF_MAP_DIFFUSE].color = RF_WHITE; // Diffuse color
+    material.maps[RF_MAP_SPECULAR].color = RF_WHITE; // Specular color
 
     return material;
 }
@@ -8029,7 +7988,7 @@ RF_API void rf_unload_material(rf_material material)
     if (material.shader.id != rf_get_shader_default().id) rf_unload_shader(material.shader);
 
     // Unload loaded texture maps (avoid unloading default texture, managed by raylib)
-    for (int i = 0; i < rf_max_material_maps; i++)
+    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         if (material.maps[i].texture.id != rf_get_texture_default().id) rf_gl_delete_textures(material.maps[i].texture.id);
     }
@@ -8037,7 +7996,7 @@ RF_API void rf_unload_material(rf_material material)
     RF_FREE(material.maps);
 }
 
-// Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+// Set texture for a material map type (RF_MAP_DIFFUSE, RF_MAP_SPECULAR...)
 // NOTE: Previous texture should be manually unloaded
 RF_API void rf_set_material_texture(rf_material* material, int mapType, rf_texture2d texture)
 {
@@ -8387,7 +8346,7 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius)
 
     // TexCoords definition
     rf_vector2 *texcoords = (rf_vector2 *)RF_MALLOC(vertex_count*sizeof(rf_vector2));
-    for (int n = 0; n < vertex_count; n++) texcoords[n] = RF_CLITERAL(rf_vector2){ 0.0f, 0.0f };
+    for (int n = 0; n < vertex_count; n++) texcoords[n] = RF_CLIT(rf_vector2){ 0.0f, 0.0f };
 
     mesh.vertex_count = vertex_count;
     mesh.triangle_count = sides;
@@ -8765,7 +8724,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int radSeg, int sides)
 // NOTE: Vertex data is uploaded to GPU
 RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
 {
-#define rf_gray_value(c) ((c.r+c.g+c.b)/3)
+#define RF_GRAY_value(c) ((c.r+c.g+c.b)/3)
 
     rf_mesh mesh = { 0 };
     mesh.vbo_id = (unsigned int* )RF_MALLOC(rf_max_mesh_vbo * sizeof(unsigned int));
@@ -8803,15 +8762,15 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
 
             // one triangle - 3 vertex
             mesh.vertices[vertex_pos_counter] = (float)x*scaleFactor.x;
-            mesh.vertices[vertex_pos_counter + 1] = (float)rf_gray_value(pixels[x + z*mapX])*scaleFactor.y;
+            mesh.vertices[vertex_pos_counter + 1] = (float)RF_GRAY_value(pixels[x + z*mapX])*scaleFactor.y;
             mesh.vertices[vertex_pos_counter + 2] = (float)z*scaleFactor.z;
 
             mesh.vertices[vertex_pos_counter + 3] = (float)x*scaleFactor.x;
-            mesh.vertices[vertex_pos_counter + 4] = (float)rf_gray_value(pixels[x + (z + 1)*mapX])*scaleFactor.y;
+            mesh.vertices[vertex_pos_counter + 4] = (float)RF_GRAY_value(pixels[x + (z + 1)*mapX])*scaleFactor.y;
             mesh.vertices[vertex_pos_counter + 5] = (float)(z + 1)*scaleFactor.z;
 
             mesh.vertices[vertex_pos_counter + 6] = (float)(x + 1)*scaleFactor.x;
-            mesh.vertices[vertex_pos_counter + 7] = (float)rf_gray_value(pixels[(x + 1) + z*mapX])*scaleFactor.y;
+            mesh.vertices[vertex_pos_counter + 7] = (float)RF_GRAY_value(pixels[(x + 1) + z*mapX])*scaleFactor.y;
             mesh.vertices[vertex_pos_counter + 8] = (float)z*scaleFactor.z;
 
             // another triangle - 3 vertex
@@ -8824,7 +8783,7 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
             mesh.vertices[vertex_pos_counter + 14] = mesh.vertices[vertex_pos_counter + 5];
 
             mesh.vertices[vertex_pos_counter + 15] = (float)(x + 1)*scaleFactor.x;
-            mesh.vertices[vertex_pos_counter + 16] = (float)rf_gray_value(pixels[(x + 1) + (z + 1)*mapX])*scaleFactor.y;
+            mesh.vertices[vertex_pos_counter + 16] = (float)RF_GRAY_value(pixels[(x + 1) + (z + 1)*mapX])*scaleFactor.y;
             mesh.vertices[vertex_pos_counter + 17] = (float)(z + 1)*scaleFactor.z;
             vertex_pos_counter += 18; // 6 vertex, 18 floats
 
@@ -8940,7 +8899,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
             rf_vector3 v7 = { w*(x - 0.5f), 0, h*(z + 0.5f) };
             rf_vector3 v8 = { w*(x + 0.5f), 0, h*(z + 0.5f) };
 
-            // We check pixel color to be rf_white, we will full cubes
+            // We check pixel color to be RF_WHITE, we will full cubes
             if ((cubicmapPixels[z*cubicmap.width + x].r == 255) &&
                 (cubicmapPixels[z*cubicmap.width + x].g == 255) &&
                 (cubicmapPixels[z*cubicmap.width + x].b == 255))
@@ -8965,12 +8924,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -8990,12 +8949,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 if (((z < cubicmap.height - 1) &&
@@ -9021,12 +8980,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n6;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9053,12 +9012,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n5;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9085,12 +9044,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n1;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -9117,16 +9076,16 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n2;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ leftTexUV.x, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
             }
-                // We check pixel color to be rf_black, we will only draw floor and roof
+                // We check pixel color to be RF_BLACK, we will only draw floor and roof
             else if ((cubicmapPixels[z*cubicmap.width + x].r == 0) &&
                      (cubicmapPixels[z*cubicmap.width + x].g == 0) &&
                      (cubicmapPixels[z*cubicmap.width + x].b == 0))
@@ -9148,12 +9107,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -9173,12 +9132,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLITERAL(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLITERAL(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
                 vertex_texcoord_counter += 6;
             }
         }
@@ -9334,7 +9293,7 @@ RF_API void rf_mesh_tangents(rf_mesh* mesh)
     RF_FREE(tan2);
 
     // Load a new tangent attributes buffer
-    mesh->vbo_id[rf_loc_vertex_tangent] = rf_gl_load_attrib_buffer(mesh->vao_id, rf_loc_vertex_tangent, mesh->tangents, mesh->vertex_count*4*sizeof(float), false);
+    mesh->vbo_id[RF_LOC_VERTEX_TANGENT] = rf_gl_load_attrib_buffer(mesh->vao_id, RF_LOC_VERTEX_TANGENT, mesh->tangents, mesh->vertex_count*4*sizeof(float), false);
 
     RF_LOG(RF_LOG_INFO, "Tangents computed for mesh");
 }
@@ -9379,17 +9338,17 @@ RF_API void rf_draw_model_ex(rf_model model, rf_vector3 position, rf_vector3 rot
     for (int i = 0; i < model.mesh_count; i++)
     {
         // TODO: Review color + tint premultiplication mechanism
-        rf_color color = model.materials[model.mesh_material[i]].maps[rf_map_diffuse].color;
+        rf_color color = model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color;
 
-        rf_color colorTint = rf_white;
+        rf_color colorTint = RF_WHITE;
         colorTint.r = (((float)color.r/255.0)*((float)tint.r/255.0))*255;
         colorTint.g = (((float)color.g/255.0)*((float)tint.g/255.0))*255;
         colorTint.b = (((float)color.b/255.0)*((float)tint.b/255.0))*255;
         colorTint.a = (((float)color.a/255.0)*((float)tint.a/255.0))*255;
 
-        model.materials[model.mesh_material[i]].maps[rf_map_diffuse].color = colorTint;
+        model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color = colorTint;
         rf_gl_draw_mesh(model.meshes[i], model.materials[model.mesh_material[i]], model.transform);
-        model.materials[model.mesh_material[i]].maps[rf_map_diffuse].color = color;
+        model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color = color;
     }
 }
 
@@ -9880,7 +9839,7 @@ RF_INTERNAL rf_model _rf_load_obj(const char* fileName)
         for (int m = 0; m < material_count; m++)
         {
             // Init material to default
-            // NOTE: Uses default shader, only rf_map_diffuse supported
+            // NOTE: Uses default shader, only RF_MAP_DIFFUSE supported
             model.materials[m] = rf_load_material_default();
 
             /*
@@ -9906,23 +9865,23 @@ RF_INTERNAL rf_model _rf_load_obj(const char* fileName)
                 char* alpha_texname;              // map_d
             } tinyobj_material_t;
             */
-            model.materials[m].maps[rf_map_diffuse].texture = rf_get_texture_default(); // Get default texture, in case no texture is defined
+            model.materials[m].maps[RF_MAP_DIFFUSE].texture = rf_get_texture_default(); // Get default texture, in case no texture is defined
 
-            if (materials[m].diffuse_texname != NULL) model.materials[m].maps[rf_map_diffuse].texture = rf_load_texture(materials[m].diffuse_texname); //char* diffuse_texname; // map_Kd
-            model.materials[m].maps[rf_map_diffuse].color = RF_CLITERAL(rf_color){ (float)(materials[m].diffuse[0]*255.0f), (float)(materials[m].diffuse[1]*255.0f), (float)(materials[m].diffuse[2]*255.0f), 255 }; //float diffuse[3];
-            model.materials[m].maps[rf_map_diffuse].value = 0.0f;
+            if (materials[m].diffuse_texname != NULL) model.materials[m].maps[RF_MAP_DIFFUSE].texture = rf_load_texture(materials[m].diffuse_texname); //char* diffuse_texname; // map_Kd
+            model.materials[m].maps[RF_MAP_DIFFUSE].color = RF_CLIT(rf_color){(float)(materials[m].diffuse[0] * 255.0f), (float)(materials[m].diffuse[1] * 255.0f), (float)(materials[m].diffuse[2] * 255.0f), 255 }; //float diffuse[3];
+            model.materials[m].maps[RF_MAP_DIFFUSE].value = 0.0f;
 
-            if (materials[m].specular_texname != NULL) model.materials[m].maps[rf_map_specular].texture = rf_load_texture(materials[m].specular_texname); //char* specular_texname; // map_Ks
-            model.materials[m].maps[rf_map_specular].color = RF_CLITERAL(rf_color){ (float)(materials[m].specular[0]*255.0f), (float)(materials[m].specular[1]*255.0f), (float)(materials[m].specular[2]*255.0f), 255 }; //float specular[3];
-            model.materials[m].maps[rf_map_specular].value = 0.0f;
+            if (materials[m].specular_texname != NULL) model.materials[m].maps[RF_MAP_SPECULAR].texture = rf_load_texture(materials[m].specular_texname); //char* specular_texname; // map_Ks
+            model.materials[m].maps[RF_MAP_SPECULAR].color = RF_CLIT(rf_color){(float)(materials[m].specular[0] * 255.0f), (float)(materials[m].specular[1] * 255.0f), (float)(materials[m].specular[2] * 255.0f), 255 }; //float specular[3];
+            model.materials[m].maps[RF_MAP_SPECULAR].value = 0.0f;
 
-            if (materials[m].bump_texname != NULL) model.materials[m].maps[rf_map_normal].texture = rf_load_texture(materials[m].bump_texname); //char* bump_texname; // map_bump, bump
-            model.materials[m].maps[rf_map_normal].color = rf_white;
-            model.materials[m].maps[rf_map_normal].value = materials[m].shininess;
+            if (materials[m].bump_texname != NULL) model.materials[m].maps[RF_MAP_NORMAL].texture = rf_load_texture(materials[m].bump_texname); //char* bump_texname; // map_bump, bump
+            model.materials[m].maps[RF_MAP_NORMAL].color = RF_WHITE;
+            model.materials[m].maps[RF_MAP_NORMAL].value = materials[m].shininess;
 
-            model.materials[m].maps[rf_map_emission].color = RF_CLITERAL(rf_color){ (float)(materials[m].emission[0]*255.0f), (float)(materials[m].emission[1]*255.0f), (float)(materials[m].emission[2]*255.0f), 255 }; //float emission[3];
+            model.materials[m].maps[RF_MAP_EMISSION].color = RF_CLIT(rf_color){(float)(materials[m].emission[0] * 255.0f), (float)(materials[m].emission[1] * 255.0f), (float)(materials[m].emission[2] * 255.0f), 255 }; //float emission[3];
 
-            if (materials[m].displacement_texname != NULL) model.materials[m].maps[rf_map_height].texture = rf_load_texture(materials[m].displacement_texname); //char* displacement_texname; // disp
+            if (materials[m].displacement_texname != NULL) model.materials[m].maps[RF_MAP_HEIGHT].texture = rf_load_texture(materials[m].displacement_texname); //char* displacement_texname; // disp
         }
 
         tinyobj_attrib_free(&attrib);
@@ -10365,9 +10324,9 @@ RF_INTERNAL unsigned char* _rf_decode_base64(char* input, int* size)
 }
 
 // Load texture from cgltf_image
-RF_INTERNAL rf_texture _rf_load_texture_from_cgltf_image(cgltf_image *image, const char* texPath, rf_color tint)
+RF_INTERNAL rf_texture2d _rf_load_texture_from_cgltf_image(cgltf_image *image, const char* texPath, rf_color tint)
 {
-    rf_texture texture = { 0 };
+    rf_texture2d texture = { 0 };
 
     if (image->uri)
     {
@@ -10394,7 +10353,7 @@ RF_INTERNAL rf_texture _rf_load_texture_from_cgltf_image(cgltf_image *image, con
                 int w, h;
                 unsigned char* raw = stbi_load_from_memory(data, size, &w, &h, NULL, 4);
 
-                rf_image rimage = rf_load_image_pro(raw, w, h, rf_uncompressed_r8g8b8a8);
+                rf_image rimage = rf_load_image_pro(raw, w, h, RF_UNCOMPRESSED_R8G8B8A8);
 
                 // TODO: Tint shouldn't be applied here!
                 rf_image_color_tint(&rimage, tint);
@@ -10430,7 +10389,7 @@ RF_INTERNAL rf_texture _rf_load_texture_from_cgltf_image(cgltf_image *image, con
         unsigned char* raw = stbi_load_from_memory(data, image->buffer_view->size, &w, &h, NULL, 4);
         free(data);
 
-        rf_image rimage = rf_load_image_pro(raw, w, h, rf_uncompressed_r8g8b8a8);
+        rf_image rimage = rf_load_image_pro(raw, w, h, RF_UNCOMPRESSED_R8G8B8A8);
         free(raw);
 
         // TODO: Tint shouldn't be applied here!
@@ -10535,7 +10494,7 @@ RF_INTERNAL rf_model _rf_load_gltf(const char* fileName)
         for (int i = 0; i < model.material_count - 1; i++)
         {
             model.materials[i] = rf_load_material_default();
-            rf_color tint = RF_CLITERAL(rf_color){ 255, 255, 255, 255 };
+            rf_color tint = RF_CLIT(rf_color){ 255, 255, 255, 255 };
             const char* texPath = _rf_get_directory_path(fileName);
 
             //Ensure material follows raylib support for PBR (metallic/roughness flow)
@@ -10553,32 +10512,32 @@ RF_INTERNAL rf_model _rf_load_gltf(const char* fileName)
                 tint.b = (unsigned char)(data->materials[i].pbr_metallic_roughness.base_color_factor[2]*255);
                 tint.a = (unsigned char)(data->materials[i].pbr_metallic_roughness.base_color_factor[3]*255);
 
-                model.materials[i].maps[rf_map_roughness].color = tint;
+                model.materials[i].maps[RF_MAP_ROUGHNESS].color = tint;
 
                 if (data->materials[i].pbr_metallic_roughness.base_color_texture.texture)
                 {
-                    model.materials[i].maps[rf_map_albedo].texture = _rf_load_texture_from_cgltf_image(data->materials[i].pbr_metallic_roughness.base_color_texture.texture->image, texPath, tint);
+                    model.materials[i].maps[RF_MAP_ALBEDO].texture = _rf_load_texture_from_cgltf_image(data->materials[i].pbr_metallic_roughness.base_color_texture.texture->image, texPath, tint);
                 }
 
                 // NOTE: Tint isn't need for other textures.. pass null or clear?
                 // Just set as white, multiplying by white has no effect
-                tint = rf_white;
+                tint = RF_WHITE;
 
                 if (data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture)
                 {
-                    model.materials[i].maps[rf_map_roughness].texture = _rf_load_texture_from_cgltf_image(data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture->image, texPath, tint);
+                    model.materials[i].maps[RF_MAP_ROUGHNESS].texture = _rf_load_texture_from_cgltf_image(data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture->image, texPath, tint);
                 }
-                model.materials[i].maps[rf_map_roughness].value = roughness;
-                model.materials[i].maps[rf_map_metalness].value = metallic;
+                model.materials[i].maps[RF_MAP_ROUGHNESS].value = roughness;
+                model.materials[i].maps[RF_MAP_METALNESS].value = metallic;
 
                 if (data->materials[i].normal_texture.texture)
                 {
-                    model.materials[i].maps[rf_map_normal].texture = _rf_load_texture_from_cgltf_image(data->materials[i].normal_texture.texture->image, texPath, tint);
+                    model.materials[i].maps[RF_MAP_NORMAL].texture = _rf_load_texture_from_cgltf_image(data->materials[i].normal_texture.texture->image, texPath, tint);
                 }
 
                 if (data->materials[i].occlusion_texture.texture)
                 {
-                    model.materials[i].maps[rf_map_occlusion].texture = _rf_load_texture_from_cgltf_image(data->materials[i].occlusion_texture.texture->image, texPath, tint);
+                    model.materials[i].maps[RF_MAP_OCCLUSION].texture = _rf_load_texture_from_cgltf_image(data->materials[i].occlusion_texture.texture->image, texPath, tint);
                 }
             }
         }
@@ -11110,20 +11069,20 @@ RF_API void rf_draw_ring_lines(rf_vector2 center, float innerRadius, float outer
 // Draw a color-filled rectangle
 RF_API void rf_draw_rectangle(int posX, int posY, int width, int height, rf_color color)
 {
-    rf_draw_rectangle_v((rf_vector2){ (float)posX, (float)posY }, RF_CLITERAL(rf_vector2){ (float)width, (float)height }, color);
+    rf_draw_rectangle_v((rf_vector2){ (float)posX, (float)posY }, RF_CLIT(rf_vector2){ (float)width, (float)height }, color);
 }
 
 // Draw a color-filled rectangle (Vector version)
 // NOTE: On OpenGL 3.3 and ES2 we use QUADS to avoid drawing order issues (view rf_gl_draw)
 RF_API void rf_draw_rectangle_v(rf_vector2 position, rf_vector2 size, rf_color color)
 {
-    rf_draw_rectangle_pro((rf_rectangle){ position.x, position.y, size.x, size.y }, RF_CLITERAL(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
+    rf_draw_rectangle_pro((rf_rectangle){ position.x, position.y, size.x, size.y }, RF_CLIT(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle
 RF_API void rf_draw_rectangle_rec(rf_rectangle rec, rf_color color)
 {
-    rf_draw_rectangle_pro(rec, RF_CLITERAL(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
+    rf_draw_rectangle_pro(rec, RF_CLIT(rf_vector2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle with pro parameters
@@ -11677,7 +11636,7 @@ RF_INTERNAL rf_texture2d _rf_get_shapes_texture()
     if (_rf_global_context_ptr->gl_ctx.tex_shapes.id == 0)
     {
         _rf_global_context_ptr->gl_ctx.tex_shapes = rf_get_texture_default(); // Use default white texture
-        _rf_global_context_ptr->gl_ctx.rec_tex_shapes = RF_CLITERAL(rf_rectangle){ 0.0f, 0.0f, 1.0f, 1.0f };
+        _rf_global_context_ptr->gl_ctx.rec_tex_shapes = RF_CLIT(rf_rectangle){ 0.0f, 0.0f, 1.0f, 1.0f };
     }
 
     return _rf_global_context_ptr->gl_ctx.tex_shapes;
@@ -11720,10 +11679,10 @@ RF_API rf_image rf_load_image(const char* fileName)
             image.height = imgHeight;
             image.mipmaps = 1;
 
-            if (imgBpp == 1) image.format = rf_uncompressed_grayscale;
-            else if (imgBpp == 2) image.format = rf_uncompressed_gray_alpha;
-            else if (imgBpp == 3) image.format = rf_uncompressed_r8g8b8;
-            else if (imgBpp == 4) image.format = rf_uncompressed_r8g8b8a8;
+            if (imgBpp == 1) image.format = RF_UNCOMPRESSED_GRAYSCALE;
+            else if (imgBpp == 2) image.format = RF_UNCOMPRESSED_GRAY_ALPHA;
+            else if (imgBpp == 3) image.format = RF_UNCOMPRESSED_R8G8B8;
+            else if (imgBpp == 4) image.format = RF_UNCOMPRESSED_R8G8B8A8;
         }
 
         RF_FREE(image_file_buffer);
@@ -11745,7 +11704,7 @@ RF_API rf_image rf_load_image_ex(rf_color* pixels, int width, int height)
     image.width = width;
     image.height = height;
     image.mipmaps = 1;
-    image.format = rf_uncompressed_r8g8b8a8;
+    image.format = RF_UNCOMPRESSED_R8G8B8A8;
 
     int k = 0;
 
@@ -11865,7 +11824,7 @@ RF_API rf_texture2d rf_load_texture_from_image(rf_image image)
 // NOTE: Render texture is loaded by default with RGBA color attachment and depth RenderBuffer
 RF_API rf_render_texture2d rf_load_render_texture(int width, int height)
 {
-    rf_render_texture2d target = rf_gl_load_render_texture(width, height, rf_uncompressed_r8g8b8a8, 24, false);
+    rf_render_texture2d target = rf_gl_load_render_texture(width, height, RF_UNCOMPRESSED_R8G8B8A8, 24, false);
 
     return target;
 }
@@ -11901,18 +11860,18 @@ RF_API rf_color* rf_get_image_data(rf_image image)
 
     if (pixels == NULL) return pixels;
 
-    if (image.format >= rf_compressed_dxt1_rgb) RF_LOG(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
+    if (image.format >= RF_COMPRESSED_DXT1_RGB) RF_LOG(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
     else
     {
-        if ((image.format == rf_uncompressed_r32) ||
-            (image.format == rf_uncompressed_r32g32b32) ||
-            (image.format == rf_uncompressed_r32g32b32a32)) RF_LOG(RF_LOG_WARNING, "32bit pixel format converted to 8bit per channel");
+        if ((image.format == RF_UNCOMPRESSED_R32) ||
+            (image.format == RF_UNCOMPRESSED_R32G32B32) ||
+            (image.format == RF_UNCOMPRESSED_R32G32B32A32)) RF_LOG(RF_LOG_WARNING, "32bit pixel format converted to 8bit per channel");
 
         for (int i = 0, k = 0; i < image.width*image.height; i++)
         {
             switch (image.format)
             {
-                case rf_uncompressed_grayscale:
+                case RF_UNCOMPRESSED_GRAYSCALE:
                 {
                     pixels[i].r = ((unsigned char* )image.data)[i];
                     pixels[i].g = ((unsigned char* )image.data)[i];
@@ -11920,7 +11879,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
                     pixels[i].a = 255;
 
                 } break;
-                case rf_uncompressed_gray_alpha:
+                case RF_UNCOMPRESSED_GRAY_ALPHA:
                 {
                     pixels[i].r = ((unsigned char* )image.data)[k];
                     pixels[i].g = ((unsigned char* )image.data)[k];
@@ -11929,7 +11888,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
 
                     k += 2;
                 } break;
-                case rf_uncompressed_r5g5b5a1:
+                case RF_UNCOMPRESSED_R5G5B5A1:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -11939,7 +11898,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
                     pixels[i].a = (unsigned char)((pixel & 0b0000000000000001)*255);
 
                 } break;
-                case rf_uncompressed_r5g6b5:
+                case RF_UNCOMPRESSED_R5G6B5:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -11949,7 +11908,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
                     pixels[i].a = 255;
 
                 } break;
-                case rf_uncompressed_r4g4b4a4:
+                case RF_UNCOMPRESSED_R4G4B4A4:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -11959,7 +11918,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
                     pixels[i].a = (unsigned char)((float)(pixel & 0b0000000000001111)*(255/15));
 
                 } break;
-                case rf_uncompressed_r8g8b8a8:
+                case RF_UNCOMPRESSED_R8G8B8A8:
                 {
                     pixels[i].r = ((unsigned char* )image.data)[k];
                     pixels[i].g = ((unsigned char* )image.data)[k + 1];
@@ -11968,7 +11927,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
 
                     k += 4;
                 } break;
-                case rf_uncompressed_r8g8b8:
+                case RF_UNCOMPRESSED_R8G8B8:
                 {
                     pixels[i].r = (unsigned char)((unsigned char* )image.data)[k];
                     pixels[i].g = (unsigned char)((unsigned char* )image.data)[k + 1];
@@ -11977,7 +11936,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
 
                     k += 3;
                 } break;
-                case rf_uncompressed_r32:
+                case RF_UNCOMPRESSED_R32:
                 {
                     pixels[i].r = (unsigned char)(((float* )image.data)[k]*255.0f);
                     pixels[i].g = 0;
@@ -11985,7 +11944,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
                     pixels[i].a = 255;
 
                 } break;
-                case rf_uncompressed_r32g32b32:
+                case RF_UNCOMPRESSED_R32G32B32:
                 {
                     pixels[i].r = (unsigned char)(((float* )image.data)[k]*255.0f);
                     pixels[i].g = (unsigned char)(((float* )image.data)[k + 1]*255.0f);
@@ -11994,7 +11953,7 @@ RF_API rf_color* rf_get_image_data(rf_image image)
 
                     k += 3;
                 } break;
-                case rf_uncompressed_r32g32b32a32:
+                case RF_UNCOMPRESSED_R32G32B32A32:
                 {
                     pixels[i].r = (unsigned char)(((float* )image.data)[k]*255.0f);
                     pixels[i].g = (unsigned char)(((float* )image.data)[k]*255.0f);
@@ -12016,14 +11975,14 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 {
     rf_vector4* pixels = (rf_vector4* )RF_MALLOC(image.width*image.height*sizeof(rf_vector4));
 
-    if (image.format >= rf_compressed_dxt1_rgb) RF_LOG(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
+    if (image.format >= RF_COMPRESSED_DXT1_RGB) RF_LOG(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
     else
     {
         for (int i = 0, k = 0; i < image.width*image.height; i++)
         {
             switch (image.format)
             {
-                case rf_uncompressed_grayscale:
+                case RF_UNCOMPRESSED_GRAYSCALE:
                 {
                     pixels[i].x = (float)((unsigned char* )image.data)[i]/255.0f;
                     pixels[i].y = (float)((unsigned char* )image.data)[i]/255.0f;
@@ -12031,7 +11990,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
                     pixels[i].w = 1.0f;
 
                 } break;
-                case rf_uncompressed_gray_alpha:
+                case RF_UNCOMPRESSED_GRAY_ALPHA:
                 {
                     pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
                     pixels[i].y = (float)((unsigned char* )image.data)[k]/255.0f;
@@ -12040,7 +11999,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 
                     k += 2;
                 } break;
-                case rf_uncompressed_r5g5b5a1:
+                case RF_UNCOMPRESSED_R5G5B5A1:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -12050,7 +12009,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
                     pixels[i].w = ((pixel & 0b0000000000000001) == 0)? 0.0f : 1.0f;
 
                 } break;
-                case rf_uncompressed_r5g6b5:
+                case RF_UNCOMPRESSED_R5G6B5:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -12060,7 +12019,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
                     pixels[i].w = 1.0f;
 
                 } break;
-                case rf_uncompressed_r4g4b4a4:
+                case RF_UNCOMPRESSED_R4G4B4A4:
                 {
                     unsigned short pixel = ((unsigned short *)image.data)[i];
 
@@ -12070,7 +12029,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
                     pixels[i].w = (float)(pixel & 0b0000000000001111)*(1.0f/15);
 
                 } break;
-                case rf_uncompressed_r8g8b8a8:
+                case RF_UNCOMPRESSED_R8G8B8A8:
                 {
                     pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
                     pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
@@ -12079,7 +12038,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 
                     k += 4;
                 } break;
-                case rf_uncompressed_r8g8b8:
+                case RF_UNCOMPRESSED_R8G8B8:
                 {
                     pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
                     pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
@@ -12088,7 +12047,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 
                     k += 3;
                 } break;
-                case rf_uncompressed_r32:
+                case RF_UNCOMPRESSED_R32:
                 {
                     pixels[i].x = ((float* )image.data)[k];
                     pixels[i].y = 0.0f;
@@ -12096,7 +12055,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
                     pixels[i].w = 1.0f;
 
                 } break;
-                case rf_uncompressed_r32g32b32:
+                case RF_UNCOMPRESSED_R32G32B32:
                 {
                     pixels[i].x = ((float* )image.data)[k];
                     pixels[i].y = ((float* )image.data)[k + 1];
@@ -12105,7 +12064,7 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 
                     k += 3;
                 } break;
-                case rf_uncompressed_r32g32b32a32:
+                case RF_UNCOMPRESSED_R32G32B32A32:
                 {
                     pixels[i].x = ((float* )image.data)[k];
                     pixels[i].y = ((float* )image.data)[k + 1];
@@ -12150,7 +12109,7 @@ RF_API rf_rectangle rf_get_image_alpha_border(rf_image image, float threshold)
             }
         }
 
-        crop = RF_CLITERAL(rf_rectangle){ xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
+        crop = RF_CLIT(rf_rectangle){ xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
 
         RF_FREE(pixels);
     }
@@ -12167,27 +12126,27 @@ RF_API int rf_get_pixel_data_size(int width, int height, int format)
 
     switch (format)
     {
-        case rf_uncompressed_grayscale: bpp = 8; break;
-        case rf_uncompressed_gray_alpha:
-        case rf_uncompressed_r5g6b5:
-        case rf_uncompressed_r5g5b5a1:
-        case rf_uncompressed_r4g4b4a4: bpp = 16; break;
-        case rf_uncompressed_r8g8b8a8: bpp = 32; break;
-        case rf_uncompressed_r8g8b8: bpp = 24; break;
-        case rf_uncompressed_r32: bpp = 32; break;
-        case rf_uncompressed_r32g32b32: bpp = 32*3; break;
-        case rf_uncompressed_r32g32b32a32: bpp = 32*4; break;
-        case rf_compressed_dxt1_rgb:
-        case rf_compressed_dxt1_rgba:
-        case rf_compressed_etc1_rgb:
-        case rf_compressed_etc2_rgb:
-        case rf_compressed_pvrt_rgb:
-        case rf_compressed_pvrt_rgba: bpp = 4; break;
-        case rf_compressed_dxt3_rgba:
-        case rf_compressed_dxt5_rgba:
-        case rf_compressed_etc2_eac_rgba:
-        case rf_compressed_astc_4x4_rgba: bpp = 8; break;
-        case rf_compressed_astc_8x8_rgba: bpp = 2; break;
+        case RF_UNCOMPRESSED_GRAYSCALE: bpp = 8; break;
+        case RF_UNCOMPRESSED_GRAY_ALPHA:
+        case RF_UNCOMPRESSED_R5G6B5:
+        case RF_UNCOMPRESSED_R5G5B5A1:
+        case RF_UNCOMPRESSED_R4G4B4A4: bpp = 16; break;
+        case RF_UNCOMPRESSED_R8G8B8A8: bpp = 32; break;
+        case RF_UNCOMPRESSED_R8G8B8: bpp = 24; break;
+        case RF_UNCOMPRESSED_R32: bpp = 32; break;
+        case RF_UNCOMPRESSED_R32G32B32: bpp = 32 * 3; break;
+        case RF_UNCOMPRESSED_R32G32B32A32: bpp = 32 * 4; break;
+        case RF_COMPRESSED_DXT1_RGB:
+        case RF_COMPRESSED_DXT1_RGBA:
+        case RF_COMPRESSED_ETC1_RGB:
+        case RF_COMPRESSED_ETC2_RGB:
+        case RF_COMPRESSED_PVRT_RGB:
+        case RF_COMPRESSED_PVRT_RGBA: bpp = 4; break;
+        case RF_COMPRESSED_DXT3_RGBA:
+        case RF_COMPRESSED_DXT5_RGBA:
+        case RF_COMPRESSED_ETC2_EAC_RGBA:
+        case RF_COMPRESSED_ASTC_4x4_RGBA: bpp = 8; break;
+        case RF_COMPRESSED_ASTC_8x8_RGBA: bpp = 2; break;
         default: break;
     }
 
@@ -12216,7 +12175,7 @@ RF_API rf_image rf_get_texture_data(rf_texture2d texture)
             // NOTE: Data retrieved on OpenGL ES 2.0 should be RGBA
             // coming from FBO color buffer, but it seems original
             // texture format is retrieved on RPI... weird...
-            //image.format = rf_uncompressed_r8g8b8a8;
+            //image.format = RF_UNCOMPRESSED_R8G8B8A8;
 
             RF_LOG(RF_LOG_INFO, "rf_texture pixel data obtained successfully");
         }
@@ -12235,7 +12194,7 @@ RF_API rf_image rf_get_screen_data()
     image.width = _rf_global_context_ptr->screen_width;
     image.height = _rf_global_context_ptr->screen_height;
     image.mipmaps = 1;
-    image.format = rf_uncompressed_r8g8b8a8;
+    image.format = RF_UNCOMPRESSED_R8G8B8A8;
     image.data = rf_gl_read_screen_pixels(image.width, image.height);
 
     return image;
@@ -12377,7 +12336,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
 
     if ((newFormat != 0) && (image->format != newFormat))
     {
-        if ((image->format < rf_compressed_dxt1_rgb) && (newFormat < rf_compressed_dxt1_rgb))
+        if ((image->format < RF_COMPRESSED_DXT1_RGB) && (newFormat < RF_COMPRESSED_DXT1_RGB))
         {
             rf_vector4* pixels = rf_get_image_data_normalized(*image); // Supports 8 to 32 bit per channel
 
@@ -12389,7 +12348,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
 
             switch (image->format)
             {
-                case rf_uncompressed_grayscale:
+                case RF_UNCOMPRESSED_GRAYSCALE:
                 {
                     image->data = (unsigned char* )RF_MALLOC(image->width*image->height*sizeof(unsigned char));
 
@@ -12399,7 +12358,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                     }
 
                 } break;
-                case rf_uncompressed_gray_alpha:
+                case RF_UNCOMPRESSED_GRAY_ALPHA:
                 {
                     image->data = (unsigned char* )RF_MALLOC(image->width*image->height*2*sizeof(unsigned char));
 
@@ -12410,7 +12369,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                     }
 
                 } break;
-                case rf_uncompressed_r5g6b5:
+                case RF_UNCOMPRESSED_R5G6B5:
                 {
                     image->data = (unsigned short *)RF_MALLOC(image->width*image->height*sizeof(unsigned short));
 
@@ -12428,7 +12387,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                     }
 
                 } break;
-                case rf_uncompressed_r8g8b8:
+                case RF_UNCOMPRESSED_R8G8B8:
                 {
                     image->data = (unsigned char* )RF_MALLOC(image->width*image->height*3*sizeof(unsigned char));
 
@@ -12439,7 +12398,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                         ((unsigned char* )image->data)[i + 2] = (unsigned char)(pixels[kk].z * 255.0f);
                     }
                 } break;
-                case rf_uncompressed_r5g5b5a1:
+                case RF_UNCOMPRESSED_R5G5B5A1:
                 {
                     int ALPHA_THRESHOLD = 50;
 
@@ -12461,7 +12420,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                     }
 
                 } break;
-                case rf_uncompressed_r4g4b4a4:
+                case RF_UNCOMPRESSED_R4G4B4A4:
                 {
                     image->data = (unsigned short *)RF_MALLOC(image->width*image->height*sizeof(unsigned short));
 
@@ -12481,7 +12440,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                     }
 
                 } break;
-                case rf_uncompressed_r8g8b8a8:
+                case RF_UNCOMPRESSED_R8G8B8A8:
                 {
                     image->data = (unsigned char* )RF_MALLOC(image->width*image->height*4*sizeof(unsigned char));
 
@@ -12493,7 +12452,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                         ((unsigned char* )image->data)[i + 3] = (unsigned char)(pixels[kk].w * 255.0f);
                     }
                 } break;
-                case rf_uncompressed_r32:
+                case RF_UNCOMPRESSED_R32:
                 {
                     // WARNING: rf_image is converted to GRAYSCALE eqeuivalent 32bit
 
@@ -12504,7 +12463,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                         ((float* )image->data)[i] = (float)(pixels[i].x*0.299f + pixels[i].y*0.587f + pixels[i].z*0.114f);
                     }
                 } break;
-                case rf_uncompressed_r32g32b32:
+                case RF_UNCOMPRESSED_R32G32B32:
                 {
                     image->data = (float* )RF_MALLOC(image->width*image->height*3*sizeof(float));
 
@@ -12515,7 +12474,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
                         ((float* )image->data)[i + 2] = pixels[kk].z;
                     }
                 } break;
-                case rf_uncompressed_r32g32b32a32:
+                case RF_UNCOMPRESSED_R32G32B32A32:
                 {
                     image->data = (float* )RF_MALLOC(image->width*image->height*4*sizeof(float));
 
@@ -12556,7 +12515,7 @@ RF_API void rf_image_alpha_mask(rf_image* image, rf_image alphaMask)
     {
         RF_LOG(RF_LOG_WARNING, "Alpha mask must be same size as image");
     }
-    else if (image->format >= rf_compressed_dxt1_rgb)
+    else if (image->format >= RF_COMPRESSED_DXT1_RGB)
     {
         RF_LOG(RF_LOG_WARNING, "Alpha mask can not be applied to compressed data formats");
     }
@@ -12564,10 +12523,10 @@ RF_API void rf_image_alpha_mask(rf_image* image, rf_image alphaMask)
     {
         // Force mask to be Grayscale
         rf_image mask = rf_image_copy(alphaMask);
-        if (mask.format != rf_uncompressed_grayscale) rf_image_format(&mask, rf_uncompressed_grayscale);
+        if (mask.format != RF_UNCOMPRESSED_GRAYSCALE) rf_image_format(&mask, RF_UNCOMPRESSED_GRAYSCALE);
 
         // In case image is only grayscale, we just add alpha channel
-        if (image->format == rf_uncompressed_grayscale)
+        if (image->format == RF_UNCOMPRESSED_GRAYSCALE)
         {
             unsigned char* data = (unsigned char* )RF_MALLOC(image->width*image->height*2);
 
@@ -12580,12 +12539,12 @@ RF_API void rf_image_alpha_mask(rf_image* image, rf_image alphaMask)
 
             RF_FREE(image->data);
             image->data = data;
-            image->format = rf_uncompressed_gray_alpha;
+            image->format = RF_UNCOMPRESSED_GRAY_ALPHA;
         }
         else
         {
             // Convert image to RGBA
-            if (image->format != rf_uncompressed_r8g8b8a8) rf_image_format(image, rf_uncompressed_r8g8b8a8);
+            if (image->format != RF_UNCOMPRESSED_R8G8B8A8) rf_image_format(image, RF_UNCOMPRESSED_R8G8B8A8);
 
             // Apply alpha mask to alpha channel
             for (int i = 0, k = 3; (i < mask.width*mask.height) || (i < image->width*image->height); i++, k += 4)
@@ -12647,46 +12606,46 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap(rf_image image, int layoutType
 {
     rf_texture_cubemap cubemap = { 0 };
 
-    if (layoutType == rf_cubemap_auto_detect) // Try to automatically guess layout type
+    if (layoutType == RF_CUBEMAP_AUTO_DETECT) // Try to automatically guess layout type
     {
         // Check image width/height to determine the type of cubemap provided
         if (image.width > image.height)
         {
-            if ((image.width/6) == image.height) { layoutType = rf_cubemap_line_horizontal; cubemap.width = image.width/6; }
-            else if ((image.width/4) == (image.height/3)) { layoutType = rf_cubemap_cross_four_by_three; cubemap.width = image.width/4; }
-            else if (image.width >= (int)((float)image.height*1.85f)) { layoutType = rf_cubemap_panorama; cubemap.width = image.width/4; }
+            if ((image.width/6) == image.height) { layoutType = RF_CUBEMAP_LINE_HORIZONTAL; cubemap.width = image.width / 6; }
+            else if ((image.width/4) == (image.height/3)) { layoutType = RF_CUBEMAP_CROSS_FOUR_BY_TREE; cubemap.width = image.width / 4; }
+            else if (image.width >= (int)((float)image.height*1.85f)) { layoutType = RF_CUBEMAP_PANORAMA; cubemap.width = image.width / 4; }
         }
         else if (image.height > image.width)
         {
-            if ((image.height/6) == image.width) { layoutType = rf_cubemap_line_vertical; cubemap.width = image.height/6; }
-            else if ((image.width/3) == (image.height/4)) { layoutType = rf_cubemap_cross_three_by_four; cubemap.width = image.width/3; }
+            if ((image.height/6) == image.width) { layoutType = RF_CUBEMAP_LINE_VERTICAL; cubemap.width = image.height / 6; }
+            else if ((image.width/3) == (image.height/4)) { layoutType = RF_CUBEMAP_CROSS_THREE_BY_FOUR; cubemap.width = image.width / 3; }
         }
 
         cubemap.height = cubemap.width;
     }
 
-    if (layoutType != rf_cubemap_auto_detect)
+    if (layoutType != RF_CUBEMAP_AUTO_DETECT)
     {
         int size = cubemap.width;
 
         rf_image faces = { 0 }; // Vertical column image
         rf_rectangle faceRecs[6] = { 0 }; // Face source rectangles
-        for (int i = 0; i < 6; i++) faceRecs[i] = RF_CLITERAL(rf_rectangle){ 0, 0, size, size };
+        for (int i = 0; i < 6; i++) faceRecs[i] = RF_CLIT(rf_rectangle){ 0, 0, size, size };
 
-        if (layoutType == rf_cubemap_line_vertical)
+        if (layoutType == RF_CUBEMAP_LINE_VERTICAL)
         {
             faces = image;
             for (int i = 0; i < 6; i++) faceRecs[i].y = size*i;
         }
-        else if (layoutType == rf_cubemap_panorama)
+        else if (layoutType == RF_CUBEMAP_PANORAMA)
         {
             // TODO: Convert panorama image to square faces...
             // Ref: https://github.com/denivip/panorama/blob/master/panorama.cpp
         }
         else
         {
-            if (layoutType == rf_cubemap_line_horizontal) for (int i = 0; i < 6; i++) faceRecs[i].x = size*i;
-            else if (layoutType == rf_cubemap_cross_three_by_four)
+            if (layoutType == RF_CUBEMAP_LINE_HORIZONTAL) for (int i = 0; i < 6; i++) faceRecs[i].x = size * i;
+            else if (layoutType == RF_CUBEMAP_CROSS_THREE_BY_FOUR)
             {
                 faceRecs[0].x = size; faceRecs[0].y = size;
                 faceRecs[1].x = size; faceRecs[1].y = 3*size;
@@ -12695,7 +12654,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap(rf_image image, int layoutType
                 faceRecs[4].x = 0; faceRecs[4].y = size;
                 faceRecs[5].x = 2*size; faceRecs[5].y = size;
             }
-            else if (layoutType == rf_cubemap_cross_four_by_three)
+            else if (layoutType == RF_CUBEMAP_CROSS_FOUR_BY_TREE)
             {
                 faceRecs[0].x = 2*size; faceRecs[0].y = size;
                 faceRecs[1].x = 0; faceRecs[1].y = size;
@@ -12706,13 +12665,13 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap(rf_image image, int layoutType
             }
 
             // Convert image data to 6 faces in a vertical column, that's the optimum layout for loading
-            faces = rf_gen_image_color(size, size*6, rf_magenta);
+            faces = rf_gen_image_color(size, size*6, RF_MAGENTA);
             rf_image_format(&faces, image.format);
 
             // TODO: rf_image formating does not work with compressed textures!
         }
 
-        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], RF_CLITERAL(rf_rectangle){ 0, size*i, size, size }, rf_white);
+        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], RF_CLIT(rf_rectangle){ 0, size*i, size, size }, RF_WHITE);
 
         cubemap.id = rf_gl_load_texture_cubemap(faces.data, size, faces.format);
         if (cubemap.id == 0) RF_LOG(RF_LOG_WARNING, "Cubemap image could not be loaded.");
@@ -12877,23 +12836,23 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
         // Support offsets out of canvas new size -> original image is cropped
         if (offset_x < 0)
         {
-            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { -offset_x, 0, image->width + offset_x, image->height });
+            rf_image_crop(image, RF_CLIT(rf_rectangle) { -offset_x, 0, image->width + offset_x, image->height });
             offset_x = 0;
         }
         else if (offset_x > (newWidth - image->width))
         {
-            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
+            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
             offset_x = newWidth - image->width;
         }
 
         if (offset_y < 0)
         {
-            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, -offset_y, image->width, image->height + offset_y });
+            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, -offset_y, image->width, image->height + offset_y });
             offset_y = 0;
         }
         else if (offset_y > (newHeight - image->height))
         {
-            rf_image_crop(image, RF_CLITERAL(rf_rectangle) { 0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
+            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
             offset_y = newHeight - image->height;
         }
 
@@ -12904,7 +12863,7 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
             rf_rectangle srcRec = { 0.0f, 0.0f, (float)image->width, (float)image->height };
             rf_rectangle dstRec = { (float)offset_x, (float)offset_y, srcRec.width, srcRec.height };
 
-            rf_image_draw(&imTemp, *image, srcRec, dstRec, rf_white);
+            rf_image_draw(&imTemp, *image, srcRec, dstRec, RF_WHITE);
             rf_image_format(&imTemp, image->format);
             rf_unload_image(*image);
             *image = imTemp;
@@ -12935,7 +12894,7 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
                 dstRec.y = 0.0f;
             }
 
-            rf_image_draw(&imTemp, *image, srcRec, dstRec, rf_white);
+            rf_image_draw(&imTemp, *image, srcRec, dstRec, RF_WHITE);
             rf_image_format(&imTemp, image->format);
             rf_unload_image(*image);
             *image = imTemp;
@@ -13029,7 +12988,7 @@ RF_API void rf_image_dither(rf_image* image, int rBpp, int gBpp, int bBpp, int a
     // Security check to avoid program crash
     if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
 
-    if (image->format >= rf_compressed_dxt1_rgb)
+    if (image->format >= RF_COMPRESSED_DXT1_RGB)
     {
         RF_LOG(RF_LOG_WARNING, "Compressed data formats can not be dithered");
         return;
@@ -13045,15 +13004,15 @@ RF_API void rf_image_dither(rf_image* image, int rBpp, int gBpp, int bBpp, int a
 
         RF_FREE(image->data); // free old image data
 
-        if ((image->format != rf_uncompressed_r8g8b8) && (image->format != rf_uncompressed_r8g8b8a8))
+        if ((image->format != RF_UNCOMPRESSED_R8G8B8) && (image->format != RF_UNCOMPRESSED_R8G8B8A8))
         {
             RF_LOG(RF_LOG_WARNING, "rf_image format is already 16bpp or lower, dithering could have no effect");
         }
 
         // Define new image format, check if desired bpp match internal known format
-        if ((rBpp == 5) && (gBpp == 6) && (bBpp == 5) && (aBpp == 0)) image->format = rf_uncompressed_r5g6b5;
-        else if ((rBpp == 5) && (gBpp == 5) && (bBpp == 5) && (aBpp == 1)) image->format = rf_uncompressed_r5g5b5a1;
-        else if ((rBpp == 4) && (gBpp == 4) && (bBpp == 4) && (aBpp == 4)) image->format = rf_uncompressed_r4g4b4a4;
+        if ((rBpp == 5) && (gBpp == 6) && (bBpp == 5) && (aBpp == 0)) image->format = RF_UNCOMPRESSED_R5G6B5;
+        else if ((rBpp == 5) && (gBpp == 5) && (bBpp == 5) && (aBpp == 1)) image->format = RF_UNCOMPRESSED_R5G5B5A1;
+        else if ((rBpp == 4) && (gBpp == 4) && (bBpp == 4) && (aBpp == 4)) image->format = RF_UNCOMPRESSED_R4G4B4A4;
         else
         {
             image->format = 0;
@@ -13063,8 +13022,8 @@ RF_API void rf_image_dither(rf_image* image, int rBpp, int gBpp, int bBpp, int a
         // NOTE: We will store the dithered data as unsigned short (16bpp)
         image->data = (unsigned short *)RF_MALLOC(image->width*image->height*sizeof(unsigned short));
 
-        rf_color oldPixel = rf_white;
-        rf_color newPixel = rf_white;
+        rf_color oldPixel = RF_WHITE;
+        rf_color newPixel = RF_WHITE;
 
         int rError, gError, bError;
         unsigned short rPixel, gPixel, bPixel, aPixel; // Used for 16bit pixel composition
@@ -13145,7 +13104,7 @@ RF_API rf_color* rf_image_extract_palette(rf_image image, int maxPaletteSize, in
     rf_color* palette = (rf_color* )RF_MALLOC(maxPaletteSize*sizeof(rf_color));
 
     int palCount = 0;
-    for (int i = 0; i < maxPaletteSize; i++) palette[i] = rf_blank; // Set all colors to rf_blank
+    for (int i = 0; i < maxPaletteSize; i++) palette[i] = RF_BLANK; // Set all colors to RF_BLANK
 
     for (int i = 0; i < image.width*image.height; i++)
     {
@@ -13226,27 +13185,27 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
     // Allow negative position within destination with cropping
     if (dstRec.x < 0)
     {
-        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { -dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { -dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
         dstRec.width = dstRec.width + dstRec.x;
         dstRec.x = 0;
     }
 
     if ((dstRec.x + dstRec.width) > dst->width)
     {
-        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, 0, dst->width - dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, 0, dst->width - dstRec.x, dstRec.height });
         dstRec.width = dst->width - dstRec.x;
     }
 
     if (dstRec.y < 0)
     {
-        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
         dstRec.height = dstRec.height + dstRec.y;
         dstRec.y = 0;
     }
 
     if ((dstRec.y + dstRec.height) > dst->height)
     {
-        rf_image_crop(&srcCopy, RF_CLITERAL(rf_rectangle) { 0, 0, dstRec.width, dst->height - dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, 0, dstRec.width, dst->height - dstRec.y });
         dstRec.height = dst->height - dstRec.y;
     }
 
@@ -13288,7 +13247,7 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
                 fout.z = (fsrc.z*fsrc.w + fdst.z*fdst.w*(1 - fsrc.w))/fout.w;
             }
 
-            dstPixels[j*(int)dst->width + i] = RF_CLITERAL(rf_color){ (unsigned char)(fout.x*255.0f),
+            dstPixels[j*(int)dst->width + i] = RF_CLIT(rf_color){ (unsigned char)(fout.x*255.0f),
                     (unsigned char)(fout.y*255.0f),
                     (unsigned char)(fout.z*255.0f),
                     (unsigned char)(fout.w*255.0f) };
@@ -13331,7 +13290,7 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, float fontSize,
     rf_vector2 imSize = rf_measure_text_ex(font, text, (float)font.base_size, spacing);
 
     // Create image to store text
-    rf_image imText = rf_gen_image_color((int)imSize.x, (int)imSize.y, rf_blank);
+    rf_image imText = rf_gen_image_color((int)imSize.x, (int)imSize.y, RF_BLANK);
 
     for (int i = 0; i < length; i++)
     {
@@ -13350,8 +13309,8 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, float fontSize,
         {
             if (letter != ' ')
             {
-                rf_image_draw(&imText, font.chars[index].image, RF_CLITERAL(rf_rectangle){ 0, 0, font.chars[index].image.width, font.chars[index].image.height },
-                              RF_CLITERAL(rf_rectangle){ (float)(positionX + font.chars[index].offset_x),(float)font.chars[index].offset_y,
+                rf_image_draw(&imText, font.chars[index].image, RF_CLIT(rf_rectangle){ 0, 0, font.chars[index].image.width, font.chars[index].image.height },
+                              RF_CLIT(rf_rectangle){ (float)(positionX + font.chars[index].offset_x),(float)font.chars[index].offset_y,
                                       font.chars[index].image.width, font.chars[index].image.height }, tint);
             }
 
@@ -13381,17 +13340,17 @@ RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rectangle rec, rf_color co
     if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0)) return;
 
     rf_image imRec = rf_gen_image_color((int)rec.width, (int)rec.height, color);
-    rf_image_draw(dst, imRec, RF_CLITERAL(rf_rectangle){ 0, 0, rec.width, rec.height }, rec, rf_white);
+    rf_image_draw(dst, imRec, RF_CLIT(rf_rectangle){ 0, 0, rec.width, rec.height }, rec, RF_WHITE);
     rf_unload_image(imRec);
 }
 
 // Draw rectangle lines within an image
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rectangle rec, int thick, rf_color color)
 {
-    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y, rec.width, thick }, color);
-    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, RF_CLITERAL(rf_rectangle){ rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y + thick, thick, rec.height - thick*2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick*2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
 }
 
 // Draw text (default font) within an image (destination)
@@ -13409,7 +13368,7 @@ RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vector2 position, rf_font fo
     rf_rectangle srcRec = { 0.0f, 0.0f, (float)imText.width, (float)imText.height };
     rf_rectangle dstRec = { position.x, position.y, (float)imText.width, (float)imText.height };
 
-    rf_image_draw(dst, imText, srcRec, dstRec, rf_white);
+    rf_image_draw(dst, imText, srcRec, dstRec, RF_WHITE);
 
     rf_unload_image(imText);
 }
@@ -13593,7 +13552,7 @@ RF_API void rf_image_color_invert(rf_image* image)
 // Modify image color: grayscale
 RF_API void rf_image_color_grayscale(rf_image* image)
 {
-    rf_image_format(image, rf_uncompressed_grayscale);
+    rf_image_format(image, RF_UNCOMPRESSED_GRAYSCALE);
 }
 
 // Modify image color: contrast
@@ -13849,8 +13808,8 @@ RF_API rf_image rf_gen_image_white_noise(int width, int height, float factor)
 
     for (int i = 0; i < width*height; i++)
     {
-        if (rf_get_random_value(0, 99) < (int)(factor*100.0f)) pixels[i] = rf_white;
-        else pixels[i] = rf_black;
+        if (rf_get_random_value(0, 99) < (int)(factor*100.0f)) pixels[i] = RF_WHITE;
+        else pixels[i] = RF_BLACK;
     }
 
     rf_image image = rf_load_image_ex(pixels, width, height);
@@ -13880,7 +13839,7 @@ RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, i
             float p = (stb_perlin_fbm_noise3(nx, ny, 1.0f, 2.0f, 0.5f, 6) + 1.0f)/2.0f;
 
             int intensity = (int)(p*255.0f);
-            pixels[y*width + x] = RF_CLITERAL(rf_color){intensity, intensity, intensity, 255};
+            pixels[y*width + x] = RF_CLIT(rf_color){intensity, intensity, intensity, 255};
         }
     }
 
@@ -13905,7 +13864,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
     {
         int y = (i/seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
         int x = (i%seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
-        seeds[i] = RF_CLITERAL(rf_vector2){ (float)x, (float)y};
+        seeds[i] = RF_CLIT(rf_vector2){ (float)x, (float)y};
     }
 
     for (int y = 0; y < height; y++)
@@ -13938,7 +13897,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
             int intensity = (int)(minDistance*256.0f/tileSize);
             if (intensity > 255) intensity = 255;
 
-            pixels[y*width + x] = RF_CLITERAL(rf_color){ intensity, intensity, intensity, 255 };
+            pixels[y*width + x] = RF_CLIT(rf_color){ intensity, intensity, intensity, 255 };
         }
     }
 
@@ -13963,7 +13922,7 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode)
 {
     switch (filterMode)
     {
-        case rf_filter_point:
+        case RF_FILTER_POINT:
         {
             if (texture.mipmaps > 1)
             {
@@ -13980,7 +13939,7 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode)
                 rf_gl_texture_parameters(texture.id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
         } break;
-        case rf_filter_bilinear:
+        case RF_FILTER_BILINEAR:
         {
             if (texture.mipmaps > 1)
             {
@@ -13998,7 +13957,7 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode)
                 rf_gl_texture_parameters(texture.id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
         } break;
-        case rf_filter_trilinear:
+        case RF_FILTER_TRILINEAR:
         {
             if (texture.mipmaps > 1)
             {
@@ -14017,9 +13976,9 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode)
                 rf_gl_texture_parameters(texture.id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
         } break;
-        case rf_filter_anisotropic_4x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 4); break;
-        case rf_filter_anisotropic_8x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 8); break;
-        case rf_filter_anisotropic_16x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 16); break;
+        case RF_FILTER_ANISOTROPIC_4x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 4); break;
+        case RF_FILTER_ANISOTROPIC_8x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 8); break;
+        case RF_FILTER_ANISOTROPIC_16x: rf_gl_texture_parameters(texture.id, GL_TEXTURE_ANISOTROPIC_FILTER, 16); break;
         default: break;
     }
 }
@@ -14029,22 +13988,22 @@ RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode)
 {
     switch (wrapMode)
     {
-        case rf_wrap_repeat:
+        case RF_WRAP_REPEAT:
         {
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_S, GL_REPEAT);
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_T, GL_REPEAT);
         } break;
-        case rf_wrap_clamp:
+        case RF_WRAP_CLAMP:
         {
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         } break;
-        case rf_wrap_mirror_repeat:
+        case RF_WRAP_MIRROR_REPEAT:
         {
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
         } break;
-        case rf_wrap_mirror_clamp:
+        case RF_WRAP_MIRROR_CLAMP:
         {
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_EXT);
             rf_gl_texture_parameters(texture.id, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_EXT);
@@ -14056,7 +14015,7 @@ RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode)
 // Draw a rf_texture2d
 RF_API void rf_draw_texture(rf_texture2d texture, int posX, int posY, rf_color tint)
 {
-    rf_draw_texture_ex(texture, RF_CLITERAL(rf_vector2){ (float)posX, (float)posY }, 0.0f, 1.0f, tint);
+    rf_draw_texture_ex(texture, RF_CLIT(rf_vector2){ (float)posX, (float)posY }, 0.0f, 1.0f, tint);
 }
 
 // Draw a rf_texture2d with position defined as rf_vector2
@@ -14160,8 +14119,8 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
 
         if (nPatchInfo.source_rec.width < 0) nPatchInfo.source_rec.x -= nPatchInfo.source_rec.width;
         if (nPatchInfo.source_rec.height < 0) nPatchInfo.source_rec.y -= nPatchInfo.source_rec.height;
-        if (nPatchInfo.type == rf_npt_3patch_horizontal) patchHeight = nPatchInfo.source_rec.height;
-        if (nPatchInfo.type == rf_npt_3patch_vertical) patchWidth = nPatchInfo.source_rec.width;
+        if (nPatchInfo.type == RF_NPT_3PATCH_HORIZONTAL) patchHeight = nPatchInfo.source_rec.height;
+        if (nPatchInfo.type == RF_NPT_3PATCH_VERTICAL) patchWidth = nPatchInfo.source_rec.width;
 
         bool drawCenter = true;
         bool drawMiddle = true;
@@ -14171,14 +14130,14 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
         float bottomBorder = (float)nPatchInfo.bottom;
 
         // adjust the lateral (left and right) border widths in case patchWidth < texture.width
-        if (patchWidth <= (leftBorder + rightBorder) && nPatchInfo.type != rf_npt_3patch_vertical)
+        if (patchWidth <= (leftBorder + rightBorder) && nPatchInfo.type != RF_NPT_3PATCH_VERTICAL)
         {
             drawCenter = false;
             leftBorder = (leftBorder / (leftBorder + rightBorder)) * patchWidth;
             rightBorder = patchWidth - leftBorder;
         }
         // adjust the lateral (top and bottom) border heights in case patchHeight < texture.height
-        if (patchHeight <= (topBorder + bottomBorder) && nPatchInfo.type != rf_npt_3patch_horizontal)
+        if (patchHeight <= (topBorder + bottomBorder) && nPatchInfo.type != RF_NPT_3PATCH_HORIZONTAL)
         {
             drawMiddle = false;
             topBorder = (topBorder / (topBorder + bottomBorder)) * patchHeight;
@@ -14216,7 +14175,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
         rf_gl_color4ub(tint.r, tint.g, tint.b, tint.a);
         rf_gl_normal3f(0.0f, 0.0f, 1.0f); // Normal vector pointing towards viewer
 
-        if (nPatchInfo.type == rf_npt_9patch)
+        if (nPatchInfo.type == RF_NPT_9PATCH)
         {
             // ------------------------------------------------------------
             // TOP-LEFT QUAD
@@ -14282,7 +14241,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
             rf_gl_tex_coord2f(coordD.x, coordC.y); rf_gl_vertex2f(vertD.x, vertC.y); // Top-right corner for texture and quad
             rf_gl_tex_coord2f(coordC.x, coordC.y); rf_gl_vertex2f(vertC.x, vertC.y); // Top-left corner for texture and quad
         }
-        else if (nPatchInfo.type == rf_npt_3patch_vertical)
+        else if (nPatchInfo.type == RF_NPT_3PATCH_VERTICAL)
         {
             // TOP QUAD
             // -----------------------------------------------------------
@@ -14309,7 +14268,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
             rf_gl_tex_coord2f(coordD.x, coordC.y); rf_gl_vertex2f(vertD.x, vertC.y); // Top-right corner for texture and quad
             rf_gl_tex_coord2f(coordA.x, coordC.y); rf_gl_vertex2f(vertA.x, vertC.y); // Top-left corner for texture and quad
         }
-        else if (nPatchInfo.type == rf_npt_3patch_horizontal)
+        else if (nPatchInfo.type == RF_NPT_3PATCH_HORIZONTAL)
         {
             // LEFT QUAD
             // -----------------------------------------------------------
@@ -14379,7 +14338,7 @@ RF_INTERNAL rf_image _rf_load_animated_gif(const char* fileName, int* frames, in
         image.data = stbi_load_gif_from_memory(buffer, size, delays, &image.width, &image.height, frames, &comp, 4);
 
         image.mipmaps = 1;
-        image.format = rf_uncompressed_r8g8b8a8;
+        image.format = RF_UNCOMPRESSED_R8G8B8A8;
 
         free(buffer);
     }

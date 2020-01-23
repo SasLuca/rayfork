@@ -24,17 +24,6 @@
 *       jar_xm.h     - XM module file loading
 *       jar_mod.h    - MOD audio file loading
 **********************************************************************************************/
-
-//For development purposes, these defines are only seen by CLion and are used to enable all the code in the IDE and check for errors
-#ifdef __JETBRAINS_IDE__
-#define RF_AUDIO_IMPL
-#define RF_SUPPORT_FILEFORMAT_OGG
-#define RF_SUPPORT_FILEFORMAT_XM
-#define RF_SUPPORT_FILEFORMAT_MOD
-#define RF_SUPPORT_FILEFORMAT_FLAC
-#define RF_SUPPORT_FILEFORMAT_MP3
-#endif
-
 //region interface
 
 #ifndef RF_AUDIO_H

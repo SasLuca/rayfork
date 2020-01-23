@@ -22,7 +22,7 @@ void on_init(void)
     camera.target   = (rf_vector3) { 0.0f, 0.0f, 0.0f };
     camera.up       = (rf_vector3) { 0.0f, 1.0f, 0.0f };
     camera.fovy     = 45.0f;
-    camera.type     = rf_camera_perspective;
+    camera.type     = RF_CAMERA_PERSPECTIVE;
 }
 
 void on_frame(void)

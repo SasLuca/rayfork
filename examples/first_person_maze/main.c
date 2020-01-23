@@ -71,7 +71,7 @@ int main()
 
     // NOTE: By default each cube is mapped to one part of texture atlas
     rf_texture2d texture = rf_load_texture("../../../examples/assets/cubicmap_atlas.png"); // Load map texture
-    model.materials[0].maps[rf_map_diffuse].texture = texture; // Set map diffuse texture
+    model.materials[0].maps[RF_MAP_DIFFUSE].texture = texture; // Set map diffuse texture
 
     rf_color*mapPixels = rf_get_image_data(imMap);
     rf_unload_image(imMap); // Unload image from RAM
@@ -79,7 +79,7 @@ int main()
     rf_vector3 mapPosition = { -16.0f, 0.0f, -8.0f };  // Set model position
     rf_vector3 playerPosition = camera.position;
 
-    rf_set_camera_mode(camera, rf_camera_first_person);
+    rf_set_camera_mode(camera, RF_CAMERA_FIRST_PERSON);
 
     while (!glfwWindowShouldClose(window))
     {
