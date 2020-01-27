@@ -1156,8 +1156,6 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize); // G
 
 #define RF_MAX_MESH_VBO 7 // Maximum number of vbo per mesh
 
-#define RF_SIZE_OF_ARRAY_IN_STRUCT(struct_name, array_name) (sizeof(((struct_name*)0)->array_name))
-
 #define GL_SHADING_LANGUAGE_VERSION         0x8B8C
 #define GL_COMPRESSED_RGB_S3TC_DXT1_EXT     0x83F0
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT    0x83F1
