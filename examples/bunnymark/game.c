@@ -7,7 +7,7 @@
 #include "rayfork_renderer.h"
 #include "game.h"
 
-rf_context rf_ctx;
+rf_renderer_context rf_ctx;
 
 #define MAX_BUNNIES 50000  // 50K bunnies limit
 
@@ -16,8 +16,8 @@ rf_context rf_ctx;
 typedef struct bunny bunny;
 struct bunny
 {
-    rf_vector2 position;
-    rf_vector2 speed;
+    rf_vec2 position;
+    rf_vec2 speed;
     rf_color color;
 };
 
@@ -62,7 +62,7 @@ void on_frame(const input_data input)
         {
             if (bunnies_count < MAX_BUNNIES)
             {
-                bunnies[bunnies_count].position = (rf_vector2) { (float) input.mouse_x, (float) input.mouse_y };
+                bunnies[bunnies_count].position = (rf_vec2) {(float) input.mouse_x, (float) input.mouse_y };
                 bunnies[bunnies_count].speed.x = (float) random_value_in_range(-250, 250) / 60.0f;
                 bunnies[bunnies_count].speed.y = (float) random_value_in_range(-250, 250) / 60.0f;
                 bunnies[bunnies_count].color = (rf_color) { random_value_in_range(50, 240),random_value_in_range(80, 240), random_value_in_range(100, 240), 255 };

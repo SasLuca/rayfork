@@ -104,7 +104,7 @@
 #endif
 
 #define RF_MAX_BATCH_BUFFERING          1    // Max number of buffers for batching (multi-buffering)
-#define RF_MAX_MATRIX_STACK_SIZE        32   // Max size of rf_matrix _rf_ctx->gl_ctx.stack
+#define RF_MAX_MATRIX_STACK_SIZE        32   // Max size of rf_mat _rf_ctx->gl_ctx.stack
 #define RF_MAX_DRAWCALL_REGISTERED      256  // Max _rf_ctx->gl_ctx.draws by state changes (mode, texture)
 
 // rf_shader and material limits
@@ -131,7 +131,7 @@
 #define GL_MIRRORED_REPEAT            0x8370 // GL_MIRRORED_REPEAT
 #define GL_MIRROR_CLAMP_EXT           0x8742 // GL_MIRROR_CLAMP_EXT
 
-// rf_matrix modes (equivalent to OpenGL)
+// rf_mat modes (equivalent to OpenGL)
 #define GL_MODELVIEW                  0x1700 // GL_MODELVIEW
 #define GL_PROJECTION                 0x1701 // GL_PROJECTION
 #define GL_TEXTURE                    0x1702 // GL_TEXTURE
@@ -156,7 +156,7 @@
 typedef struct rf_input_state_for_update_camera rf_input_state_for_update_camera;
 struct rf_input_state_for_update_camera
 {
-    rf_vector2 mouse_position;
+    rf_vec2 mouse_position;
     int        mouse_wheel_move;                  //mouse wheel movement Y
     bool       is_camera_pan_control_key_down;    //MOUSE_MIDDLE_BUTTON
     bool       is_camera_alt_control_key_down;    //KEY_LEFT_ALT
@@ -214,7 +214,7 @@ struct rf_render_texture2d
 typedef struct rf_npatch_info rf_npatch_info;
 struct rf_npatch_info
 {
-    rf_rectangle source_rec; //Region in the texture
+    rf_rec source_rec; //Region in the texture
     int left;            //left border offset
     int top;             //top border offset
     int right;           //right border offset
@@ -240,7 +240,7 @@ struct rf_font
     int base_size;      // Base size (default chars height)
     int chars_count;    // Number of characters
     rf_texture2d texture; // Characters texture atlas
-    rf_rectangle* recs;   // Characters rectangles in texture
+    rf_rec* recs;   // Characters rectangles in texture
     rf_char_info* chars;   // Characters info data
 };
 
@@ -255,9 +255,9 @@ struct rf_load_font_async_result
 typedef struct rf_camera3d rf_camera3d;
 struct rf_camera3d
 {
-    rf_vector3 position; // Camera position
-    rf_vector3 target;   // Camera target it looks-at
-    rf_vector3 up;       // Camera up vector (rotation over its axis)
+    rf_vec3 position; // Camera position
+    rf_vec3 target;   // Camera target it looks-at
+    rf_vec3 up;       // Camera up vector (rotation over its axis)
     float fovy;       // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
     int type;         // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
 };
@@ -266,8 +266,8 @@ struct rf_camera3d
 typedef struct rf_camera2d rf_camera2d;
 struct rf_camera2d
 {
-    rf_vector2 offset; // Camera offset (displacement from target)
-    rf_vector2 target; // Camera target (rotation and zoom origin)
+    rf_vec2 offset; // Camera offset (displacement from target)
+    rf_vec2 target; // Camera target (rotation and zoom origin)
     float rotation; // Camera rotation in degrees
     float zoom;     // Camera zoom (scaling), should be 1.0f by default
 };
@@ -330,9 +330,9 @@ struct rf_material
 typedef struct rf_transform rf_transform;
 struct rf_transform
 {
-    rf_vector3 translation; // Translation
+    rf_vec3 translation; // Translation
     rf_quaternion rotation; // Rotation
-    rf_vector3 scale;       // Scale
+    rf_vec3 scale;       // Scale
 };
 
 // Bone information
@@ -347,7 +347,7 @@ struct rf_bone_info
 typedef struct rf_model rf_model;
 struct rf_model
 {
-    rf_matrix transform; // Local transform matrix
+    rf_mat transform; // Local transform matrix
     int mesh_count;    // Number of meshes
     rf_mesh* meshes;     // Meshes array
 
@@ -375,8 +375,8 @@ struct rf_model_animation
 typedef struct rf_ray rf_ray;
 struct rf_ray
 {
-    rf_vector3 position;  // rf_ray position (origin)
-    rf_vector3 direction; // rf_ray direction
+    rf_vec3 position;  // rf_ray position (origin)
+    rf_vec3 direction; // rf_ray direction
 };
 
 // Raycast hit information
@@ -385,16 +385,16 @@ struct rf_ray_hit_info
 {
     bool hit; // Did the ray hit something?
     float distance; // Distance to nearest hit
-    rf_vector3 position; // Position of nearest hit
-    rf_vector3 normal; // Surface normal of hit
+    rf_vec3 position; // Position of nearest hit
+    rf_vec3 normal; // Surface normal of hit
 };
 
 // Bounding box type
 typedef struct rf_bounding_box rf_bounding_box;
 struct rf_bounding_box
 {
-    rf_vector3 min; // Minimum vertex box-corner
-    rf_vector3 max; // Maximum vertex box-corner
+    rf_vec3 min; // Minimum vertex box-corner
+    rf_vec3 max; // Maximum vertex box-corner
 };
 
 // Dynamic vertex buffers (position + texcoords + colors + indices arrays)
@@ -431,8 +431,8 @@ struct rf_draw_call
     unsigned int texture_id;     // rf_texture id to be used on the draw
     // TODO: Support additional texture units?
 
-    //rf_matrix _rf_ctx->gl_ctx.projection;        // Projection matrix for this draw
-    //rf_matrix _rf_ctx->gl_ctx.modelview;         // Modelview matrix for this draw
+    //rf_mat _rf_ctx->gl_ctx.projection;        // Projection matrix for this draw
+    //rf_mat _rf_ctx->gl_ctx.modelview;         // Modelview matrix for this draw
 };
 
 typedef unsigned char rf_byte;
@@ -440,12 +440,12 @@ typedef unsigned char rf_byte;
 typedef struct rf_gl_context rf_gl_context;
 struct rf_gl_context
 {
-    rf_matrix stack[RF_MAX_MATRIX_STACK_SIZE];
+    rf_mat stack[RF_MAX_MATRIX_STACK_SIZE];
     int stack_counter;
 
-    rf_matrix modelview;
-    rf_matrix projection;
-    rf_matrix* current_matrix;
+    rf_mat modelview;
+    rf_mat projection;
+    rf_mat* current_matrix;
     int current_matrix_mode;
     float current_depth;
 
@@ -455,7 +455,7 @@ struct rf_gl_context
     int current_buffer;
 
     // transform matrix to be used with rlTranslate, rlRotate, rlScale
-    rf_matrix transform_matrix;
+    rf_mat transform_matrix;
     bool use_transform_matrix;
 
     // Default buffers draw calls
@@ -504,7 +504,7 @@ struct rf_gl_context
     int framebuffer_height;           // Default framebuffer height
 
     //@Note(lulu): Camera 3d stuff, might extract into another struct
-    rf_vector2 camera_angle; // rf_camera3d angle in plane XZ
+    rf_vec2 camera_angle; // rf_camera3d angle in plane XZ
     float camera_target_distance; // rf_camera3d distance from position to target
     float player_eyes_position; // Default player eyes position from ground (in meters)
 
@@ -517,11 +517,11 @@ struct rf_gl_context
 
     //@Note(lulu): shapes global data
     rf_texture2d tex_shapes;
-    rf_rectangle rec_tex_shapes;
+    rf_rec rec_tex_shapes;
 };
 
-typedef struct rf_context rf_context;
-struct rf_context
+typedef struct rf_renderer_context rf_renderer_context;
+struct rf_renderer_context
 {
     //Display size
     union
@@ -569,7 +569,7 @@ struct rf_context
 
     int render_offset_x; // Offset X from render area (must be divided by 2)
     int render_offset_y; // Offset Y from render area (must be divided by 2)
-    rf_matrix screen_scaling; // rf_matrix to scale screen (fr
+    rf_mat screen_scaling; // rf_mat to scale screen (fr
     unsigned long long base_time; // Base time measure for hi-res timer
     
     rf_font default_font; // Default font provided by raylib
@@ -752,8 +752,8 @@ typedef enum rf_font_type
 
 //region functions
 
-RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height);
-RF_API void rf_renderer_set_global_context_pointer(rf_context* rf_ctx);
+RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, int width, int height);
+RF_API void rf_renderer_set_global_context_pointer(rf_renderer_context* rf_ctx);
 
 RF_API void rf_load_default_font();   //Load the default font
 RF_API rf_material rf_load_default_material(); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
@@ -766,10 +766,10 @@ RF_API void rf_unload_default_font(); // Unload default font
 
 // rf_color-related functions
 RF_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
-RF_API rf_vector4 rf_color_normalize(rf_color color); // Returns color normalized as float [0..1]
-RF_API rf_color rf_color_from_normalized(rf_vector4 normalized); // Returns color from normalized values [0..1]
-RF_API rf_vector3 rf_color_to_hsv(rf_color color); // Returns HSV values for a rf_color
-RF_API rf_color rf_color_from_hsv(rf_vector3 hsv); // Returns a rf_color from HSV values
+RF_API rf_vec4 rf_color_normalize(rf_color color); // Returns color normalized as float [0..1]
+RF_API rf_color rf_color_from_normalized(rf_vec4 normalized); // Returns color from normalized values [0..1]
+RF_API rf_vec3 rf_color_to_hsv(rf_color color); // Returns HSV values for a rf_color
+RF_API rf_color rf_color_from_hsv(rf_vec3 hsv); // Returns a rf_color from HSV values
 RF_API rf_color rf_color_from_int(int hexValue); // Returns a rf_color struct from hexadecimal value
 RF_API rf_color rf_fade(rf_color color, float alpha); // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
 
@@ -798,42 +798,42 @@ RF_API void rf_begin_blend_mode(int mode); // Begin blending mode (alpha, additi
 RF_API void rf_end_blend_mode(); // End blending mode (reset to default: alpha blending)
 
 // Screen-space-related functions
-RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
-RF_API rf_matrix rf_get_camera_matrix(rf_camera3d camera); // Returns camera transform matrix (view matrix)
-RF_API rf_matrix rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
-RF_API rf_vector2 rf_get_world_to_screen(rf_sizei screen_size, rf_vector3 position, rf_camera3d camera); // Returns the screen space position for a 3d world space position
-RF_API rf_vector2 rf_get_world_to_screen2d(rf_vector2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
-RF_API rf_vector2 rf_get_screen_to_world2d(rf_vector2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
+RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
+RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera); // Returns camera transform matrix (view matrix)
+RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
+RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position for a 3d world space position
+RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
+RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
 
 // Camera System Functions (Module: camera)
 RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_input_state_for_update_camera input_state); // Update camera position for selected mode
 
 // Basic shapes drawing functions
 RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color); // Draw a pixel
-RF_API void rf_draw_line(rf_vector2 start_pos, rf_vector2 end_pos, float thick, rf_color color); // Draw a line defining thickness
-RF_API void rf_draw_line_bezier(rf_vector2 start_pos, rf_vector2 end_pos, float thick, rf_color color); // Draw a line using cubic-bezier curves in-out
-RF_API void rf_draw_line_strip(rf_vector2* points, int numPoints, rf_color color); // Draw lines sequence
+RF_API void rf_draw_line(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color); // Draw a line defining thickness
+RF_API void rf_draw_line_bezier(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color); // Draw a line using cubic-bezier curves in-out
+RF_API void rf_draw_line_strip(rf_vec2* points, int numPoints, rf_color color); // Draw lines sequence
 RF_API void rf_draw_circle(int centerX, int centerY, float radius, rf_color color); // Draw a color-filled circle
-RF_API void rf_draw_circle_sector(rf_vector2 center, float radius, int start_angle, int endAngle, int segments, rf_color color); // Draw a piece of a circle
-RF_API void rf_draw_circle_sector_lines(rf_vector2 center, float radius, int start_angle, int endAngle, int segments, rf_color color); // Draw circle sector outline
+RF_API void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle, int endAngle, int segments, rf_color color); // Draw a piece of a circle
+RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_angle, int endAngle, int segments, rf_color color); // Draw circle sector outline
 RF_API void rf_draw_circle_gradient(int centerX, int centerY, float radius, rf_color color1, rf_color color2); // Draw a gradient-filled circle
 RF_API void rf_draw_circle_lines(int centerX, int centerY, float radius, rf_color color); // Draw circle outline
-RF_API void rf_draw_ring(rf_vector2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color); // Draw ring
-RF_API void rf_draw_ring_lines(rf_vector2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color); // Draw ring outline
-RF_API void rf_draw_rectangle(rf_rectangle rec, rf_vector2 origin, float rotation, rf_color color); // Draw a color-filled rectangle with pro parameters
+RF_API void rf_draw_ring(rf_vec2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color); // Draw ring
+RF_API void rf_draw_ring_lines(rf_vec2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color); // Draw ring outline
+RF_API void rf_draw_rectangle(rf_rec rec, rf_vec2 origin, float rotation, rf_color color); // Draw a color-filled rectangle with pro parameters
 RF_API void rf_draw_rectangle_gradient_v(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2);// Draw a vertical-gradient-filled rectangle
 RF_API void rf_draw_rectangle_gradient_h(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2);// Draw a horizontal-gradient-filled rectangle
-RF_API void rf_draw_rectangle_gradient(rf_rectangle rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4); // Draw a gradient-filled rectangle with custom vertex colors
-RF_API void rf_draw_rectangle_outline(rf_rectangle rec, int lineThick, rf_color color); // Draw rectangle outline with extended parameters
-RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int segments, rf_color color); // Draw rectangle with rounded edges
-RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, int segments, int lineThick, rf_color color); // Draw rectangle with rounded edges outline
-RF_API void rf_draw_triangle(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, rf_color color); // Draw a color-filled triangle (vertex in counter-clockwise order!)
-RF_API void rf_draw_triangle_lines(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, rf_color color); // Draw triangle outline (vertex in counter-clockwise order!)
-RF_API void rf_draw_triangle_fan(rf_vector2* points, int numPoints, rf_color color); // Draw a triangle fan defined by points (first vertex is the center)
-RF_API void rf_draw_triangle_strip(rf_vector2* points, int pointsCount, rf_color color); // Draw a triangle strip defined by points
-RF_API void rf_draw_poly(rf_vector2 center, int sides, float radius, float rotation, rf_color color); // Draw a regular polygon (Vector version)
+RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4); // Draw a gradient-filled rectangle with custom vertex colors
+RF_API void rf_draw_rectangle_outline(rf_rec rec, int lineThick, rf_color color); // Draw rectangle outline with extended parameters
+RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments, rf_color color); // Draw rectangle with rounded edges
+RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int segments, int lineThick, rf_color color); // Draw rectangle with rounded edges outline
+RF_API void rf_draw_triangle(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color); // Draw a color-filled triangle (vertex in counter-clockwise order!)
+RF_API void rf_draw_triangle_lines(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color); // Draw triangle outline (vertex in counter-clockwise order!)
+RF_API void rf_draw_triangle_fan(rf_vec2* points, int numPoints, rf_color color); // Draw a triangle fan defined by points (first vertex is the center)
+RF_API void rf_draw_triangle_strip(rf_vec2* points, int pointsCount, rf_color color); // Draw a triangle strip defined by points
+RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color); // Draw a regular polygon (Vector version)
 
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rectangle source); // Define default texture used to draw shapes
+RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture from image data
 RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, int layout_type); // Load cubemap from image, multiple image cubemap layouts supported
@@ -841,8 +841,8 @@ RF_API rf_render_texture2d rf_load_render_texture(int width, int height); // Loa
 RF_API void rf_unload_texture(rf_texture2d texture); // Unload texture from GPU memory (VRAM)
 RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload render texture from GPU memory (VRAM)
 RF_API rf_color* rf_get_image_data(rf_image image); // Get pixel data from image as a rf_color struct array
-RF_API rf_vector4* rf_get_image_data_normalized(rf_image image); // Get pixel data from image as rf_vector4 array (float normalized)
-RF_API rf_rectangle rf_get_image_alpha_border(rf_image image, float threshold); // Get image alpha border rectangle
+RF_API rf_vec4* rf_get_image_data_normalized(rf_image image); // Get pixel data from image as rf_vec4 array (float normalized)
+RF_API rf_rec rf_get_image_alpha_border(rf_image image, float threshold); // Get image alpha border rectangle
 RF_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format); // Get pixel data size in bytes (image or texture)
 RF_API rf_image rf_get_texture_data(rf_texture2d texture); // Get pixel data from GPU texture and return an rf_image
 RF_API rf_image rf_get_screen_data(); // Get pixel data from screen buffer and return an rf_image (screenshot)
@@ -854,12 +854,12 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode); // Set 
 RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode); // Set texture wrapping mode
 
 // rf_texture2d drawing functions
-RF_API void rf_draw_texture(rf_texture2d texture, rf_rectangle source_rec, rf_rectangle destRec, rf_vector2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
-RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchInfo, rf_rectangle destRec, rf_vector2 origin, float rotation, rf_color tint); // Draws a texture (or part of it) that stretches or shrinks nicely
+RF_API void rf_draw_texture(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
+RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchInfo, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint); // Draws a texture (or part of it) that stretches or shrinks nicely
 
 // Text drawing functions
-RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vector2 position, float font_size, float spacing, rf_color tint); //Draw text using font from text buffer
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rectangle rec, float font_size, float spacing, bool word_wrap, rf_color tint); // Draw text using font inside rectangle limits
+RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vec2 position, float font_size, float spacing, rf_color tint); //Draw text using font from text buffer
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, bool word_wrap, rf_color tint); // Draw text using font inside rectangle limits
 
 // Text misc. functions
 RF_API int rf_get_glyph_index(rf_font font, int character); // Get index position for a unicode character on font
@@ -867,20 +867,20 @@ RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float f
 RF_API rf_sizef rf_measure_wrapped_text(rf_font font, float font_size, const char* text, int length, float container_width);
 
 // Basic geometric 3D shapes drawing functions
-RF_API void rf_draw_line3d(rf_vector3 start_pos, rf_vector3 end_pos, rf_color color); // Draw a line in 3D world space
-RF_API void rf_draw_circle3d(rf_vector3 center, float radius, rf_vector3 rotation_axis, float rotation_angle, rf_color color); // Draw a circle in 3D world space
-RF_API void rf_draw_cube(rf_vector3 position, float width, float height, float length, rf_color color); // Draw cube
-RF_API void rf_draw_cube_wires(rf_vector3 position, float width, float height, float length, rf_color color); // Draw cube wires
-RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vector3 position, float width, float height, float length, rf_color color); // Draw cube textured
-RF_API void rf_draw_sphere(rf_vector3 center_pos, float radius, rf_color color); // Draw sphere
-RF_API void rf_draw_sphere_ex(rf_vector3 center_pos, float radius, int rings, int slices, rf_color color); // Draw sphere with extended parameters
-RF_API void rf_draw_sphere_wires(rf_vector3 center_pos, float radius, int rings, int slices, rf_color color); // Draw sphere wires
-RF_API void rf_draw_cylinder(rf_vector3 position, float radius_top, float radius_bottom, float height, int slices, rf_color color); // Draw a cylinder/cone
-RF_API void rf_draw_cylinder_wires(rf_vector3 position, float radius_top, float radius_bottom, float height, int slices, rf_color color); // Draw a cylinder/cone wires
-RF_API void rf_draw_plane(rf_vector3 center_pos, rf_vector2 size, rf_color color); // Draw a plane XZ
+RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color); // Draw a line in 3D world space
+RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotation_angle, rf_color color); // Draw a circle in 3D world space
+RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color); // Draw cube
+RF_API void rf_draw_cube_wires(rf_vec3 position, float width, float height, float length, rf_color color); // Draw cube wires
+RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float width, float height, float length, rf_color color); // Draw cube textured
+RF_API void rf_draw_sphere(rf_vec3 center_pos, float radius, rf_color color); // Draw sphere
+RF_API void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color); // Draw sphere with extended parameters
+RF_API void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color); // Draw sphere wires
+RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bottom, float height, int slices, rf_color color); // Draw a cylinder/cone
+RF_API void rf_draw_cylinder_wires(rf_vec3 position, float radius_top, float radius_bottom, float height, int slices, rf_color color); // Draw a cylinder/cone wires
+RF_API void rf_draw_plane(rf_vec3 center_pos, rf_vec2 size, rf_color color); // Draw a plane XZ
 RF_API void rf_draw_ray(rf_ray ray, rf_color color); // Draw a ray line
 RF_API void rf_draw_grid(int slices, float spacing); // Draw a grid (centered at (0, 0, 0))
-RF_API void rf_draw_gizmo(rf_vector3 position); // Draw simple gizmo
+RF_API void rf_draw_gizmo(rf_vec3 position); // Draw simple gizmo
 
 // rf_mesh manipulation functions
 RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh); // Compute mesh bounding box limits
@@ -888,21 +888,21 @@ RF_API void rf_mesh_tangents(rf_mesh* mesh); // Compute mesh tangents
 RF_API void rf_mesh_binormals(rf_mesh* mesh); // Compute mesh binormals
 
 // rf_model drawing functions
-RF_API void rf_draw_model(rf_model model, rf_vector3 position, rf_vector3 rotation_axis, float rotation_angle, rf_vector3 scale, rf_color tint); // Draw a model with extended parameters
-RF_API void rf_draw_model_wires(rf_model model, rf_vector3 position, rf_vector3 rotation_axis, float rotation_angle, rf_vector3 scale, rf_color tint); // Draw a model wires (with texture if set) with extended parameters
+RF_API void rf_draw_model(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotation_angle, rf_vec3 scale, rf_color tint); // Draw a model with extended parameters
+RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotation_angle, rf_vec3 scale, rf_color tint); // Draw a model wires (with texture if set) with extended parameters
 RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color); // Draw bounding box (wires)
-RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vector3 center, float size, rf_color tint); // Draw a billboard texture
-RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rectangle source_rec, rf_vector3 center, float size, rf_color tint); // Draw a billboard texture defined by source_rec
+RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint); // Draw a billboard texture
+RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint); // Draw a billboard texture defined by source_rec
 
 // Collision detection functions
-RF_API bool rf_check_collision_spheres(rf_vector3 centerA, float radiusA, rf_vector3 centerB, float radiusB); // Detect collision between two spheres
+RF_API bool rf_check_collision_spheres(rf_vec3 centerA, float radiusA, rf_vec3 centerB, float radiusB); // Detect collision between two spheres
 RF_API bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2); // Detect collision between two bounding boxes
-RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vector3 center, float radius); // Detect collision between box and sphere
-RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vector3 center, float radius); // Detect collision between ray and sphere
-RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vector3 center, float radius, rf_vector3* collisionPoint); // Detect collision between ray and sphere, returns collision point
+RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius); // Detect collision between box and sphere
+RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius); // Detect collision between ray and sphere
+RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3* collisionPoint); // Detect collision between ray and sphere, returns collision point
 RF_API bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box); // Detect collision between ray and box
 RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
-RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vector3 p1, rf_vector3 p2, rf_vector3 p3); // Get collision info between ray and triangle
+RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
 RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float groundHeight); // Get collision info between ray and ground plane (Y-normal plane)
 
 // rf_shader loading/unloading functions
@@ -913,15 +913,15 @@ RF_API void rf_unload_shader(rf_shader shader); // Unload shader from GPU memory
 RF_API int rf_get_shader_location(rf_shader shader, const char* uniformName); // Get shader uniform location
 RF_API void rf_set_shader_value(rf_shader shader, int uniformLoc, const void* value, int uniformType); // Set shader uniform value
 RF_API void rf_set_shader_value_v(rf_shader shader, int uniformLoc, const void* value, int uniformType, int count); // Set shader uniform value vector
-RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniformLoc, rf_matrix mat); // Set shader uniform value (matrix 4x4)
+RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniformLoc, rf_mat mat); // Set shader uniform value (matrix 4x4)
 RF_API void rf_set_shader_value_texture(rf_shader shader, int uniformLoc, rf_texture2d texture); // Set shader uniform value for texture
-RF_API void rf_set_matrix_projection(rf_matrix proj); // Set a custom GL_PROJECTION matrix (replaces internal GL_PROJECTION matrix)
-RF_API void rf_set_matrix_modelview(rf_matrix view); // Set a custom rf_global_model_view matrix (replaces internal rf_global_model_view matrix)
-RF_API rf_matrix rf_get_matrix_modelview(); // Get internal rf_global_model_view matrix
-RF_API rf_matrix rf_get_matrix_projection(); // Get internal GL_PROJECTION matrix
+RF_API void rf_set_matrix_projection(rf_mat proj); // Set a custom GL_PROJECTION matrix (replaces internal GL_PROJECTION matrix)
+RF_API void rf_set_matrix_modelview(rf_mat view); // Set a custom rf_global_model_view matrix (replaces internal rf_global_model_view matrix)
+RF_API rf_mat rf_get_matrix_modelview(); // Get internal rf_global_model_view matrix
+RF_API rf_mat rf_get_matrix_projection(); // Get internal GL_PROJECTION matrix
 
 //rlgl
-// Functions Declaration - rf_matrix operations
+// Functions Declaration - rf_mat operations
 RF_API void rf_gl_matrix_mode(int mode); // Choose the current matrix to be transformed
 RF_API void rf_gl_push_matrix(); // Push the current matrix to rf_global_gl_stack
 RF_API void rf_gl_pop_matrix(); // Pop lattest inserted matrix from rf_global_gl_stack
@@ -975,7 +975,7 @@ RF_API void rf_gl_draw(); // Update and draw default internal buffers
 
 RF_API bool rf_gl_check_buffer_limit(int vCount); // Check internal buffer overflow for a given number of vertex
 RF_API void rf_gl_set_debug_marker(const char* text); // Set debug marker for analysis
-RF_API rf_vector3 rf_gl_unproject(rf_vector3 source, rf_matrix proj, rf_matrix view); // Get world coordinates from screen coordinates
+RF_API rf_vec3 rf_gl_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
 
 // Textures data management
 RF_API unsigned int rf_gl_load_texture(void* data, int width, int height, int format, int mipmapCount); // Load texture in GPU
@@ -998,7 +998,7 @@ RF_API bool rf_gl_render_texture_complete(rf_render_texture target); // Verify r
 RF_API void rf_gl_load_mesh(rf_mesh* mesh, bool dynamic); // Upload vertex data into GPU and provided VAO/VBO ids
 RF_API void rf_gl_update_mesh(rf_mesh mesh, int buffer, int num); // Update vertex or index data on GPU (upload new data to one buffer)
 RF_API void rf_gl_update_mesh_at(rf_mesh mesh, int buffer, int num, int index); // Update vertex or index data on GPU, at index
-RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transform); // Draw a 3d mesh with material and transform
+RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
 RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GPU
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1017,7 +1017,7 @@ RF_API rf_font rf_load_ttf_font_from_async_result(rf_load_font_async_result font
 RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int first_char); // Load font from rf_image (XNA style)
 
 RF_API rf_char_info* rf_load_font_data(const char* ttf_data, int ttf_data_size, int font_size, int* font_chars, int chars_count, int type); // Load font data for further use
-RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle** recs, int chars_count, int font_size, int padding, int packMethod); // Generate image font atlas using chars info
+RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** recs, int chars_count, int font_size, int padding, int packMethod); // Generate image font atlas using chars info
 RF_API void rf_unload_font(rf_font font); // Unload rf_font from GPU memory (VRAM)
 
 // rf_model loading/unloading functions
@@ -1053,8 +1053,8 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices); // 
 RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices); // Generate cylinder mesh
 RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int radSeg, int sides); // Generate torus mesh
 RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int radSeg, int sides); // Generate trefoil knot mesh
-RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size); // Generate heightmap mesh from image data
-RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize); // Generate cubes-based map mesh from image data
+RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size); // Generate heightmap mesh from image data
+RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cubeSize); // Generate cubes-based map mesh from image data
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1069,14 +1069,14 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size);
 
 RF_API rf_image rf_image_copy(rf_image image); // Create an image duplicate (useful for transformations)
-RF_API rf_image rf_image_from_image(rf_image image, rf_rectangle rec); // Create an image from another image piece
+RF_API rf_image rf_image_from_image(rf_image image, rf_rec rec); // Create an image from another image piece
 RF_API void rf_image_to_pot(rf_image* image, rf_color fillColor); // Convert image to POT (power-of-two)
 RF_API void rf_image_format(rf_image* image, int newFormat); // Convert image data to desired format
 RF_API void rf_image_alpha_mask(rf_image* image, rf_image alphaMask); // Apply alpha mask to image
 RF_API void rf_image_alpha_clear(rf_image* image, rf_color color, float threshold); // Clear alpha channel to desired color
 RF_API void rf_image_alpha_crop(rf_image* image, float threshold); // Crop image depending on alpha value
 RF_API void rf_image_alpha_premultiply(rf_image* image); // Premultiply alpha channel
-RF_API void rf_image_crop(rf_image* image, rf_rectangle crop); // Crop an image to a defined rectangle
+RF_API void rf_image_crop(rf_image* image, rf_rec crop); // Crop an image to a defined rectangle
 RF_API void rf_image_resize(rf_image* image, int newWidth, int newHeight); // Resize image (Bicubic scaling algorithm)
 RF_API void rf_image_resize_nn(rf_image* image, int newWidth,int newHeight); // Resize image (Nearest-Neighbor scaling algorithm)
 RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight, int offset_x, int offset_y, rf_color color); // Resize canvas and fill with color
@@ -1085,11 +1085,11 @@ RF_API void rf_image_dither(rf_image* image, int rBpp, int gBpp, int bBpp, int a
 RF_API rf_color* rf_image_extract_palette(rf_image image, int maxPaletteSize, int* extractCount); // Extract color palette from image to maximum size (memory should be freed)
 RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color); // Create an image from text (default font)
 RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color tint); // Create an image from text (custom sprite font)
-RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_rectangle dstRec, rf_color tint); // Draw a source image within a destination image (tint applied to source)
-RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rectangle rec, rf_color color); // Draw rectangle within an image
-RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rectangle rec, int thick, rf_color color); // Draw rectangle lines within an image
-RF_API void rf_image_draw_text(rf_image* dst, rf_vector2 position, const char* text, int text_len, int font_size, rf_color color); // Draw text (default font) within an image (destination)
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vector2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color); // Draw text (custom sprite font) within an image (destination)
+RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec srcRec, rf_rec dstRec, rf_color tint); // Draw a source image within a destination image (tint applied to source)
+RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color); // Draw rectangle within an image
+RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color); // Draw rectangle lines within an image
+RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color); // Draw text (default font) within an image (destination)
+RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color); // Draw text (custom sprite font) within an image (destination)
 RF_API void rf_image_flip_vertical(rf_image* image); // Flip image vertically
 RF_API void rf_image_flip_horizontal(rf_image* image); // Flip image horizontally
 RF_API void rf_image_rotate_cw(rf_image* image); // Rotate image clockwise 90deg
@@ -1187,7 +1187,7 @@ RF_INTERNAL const unsigned char _rf_base64_table[] = {
 
 //endregion
 
-rf_context* _rf_ctx;
+rf_renderer_context* _rf_ctx;
 
 //region implementation includes
 
@@ -1437,7 +1437,7 @@ RF_INTERNAL void _rf_setup_frame_buffer(int width, int height)
 
         // Screen scaling required
         float scaleRatio = (float)_rf_ctx->render_width/(float)_rf_ctx->screen_width;
-        _rf_ctx->screen_scaling = rf_matrix_scale(scaleRatio, scaleRatio, 1.0f);
+        _rf_ctx->screen_scaling = rf_mat_scale(scaleRatio, scaleRatio, 1.0f);
 
         // NOTE: We render to full global_display resolution!
         // We just need to calculate above parameters for downscale matrix and offsets
@@ -1500,7 +1500,7 @@ RF_INTERNAL rf_texture2d _rf_get_shapes_texture()
     if (_rf_ctx->gl_ctx.tex_shapes.id == 0)
     {
         _rf_ctx->gl_ctx.tex_shapes = rf_get_default_texture(); // Use default white texture
-        _rf_ctx->gl_ctx.rec_tex_shapes = RF_CLIT(rf_rectangle){ 0.0f, 0.0f, 1.0f, 1.0f };
+        _rf_ctx->gl_ctx.rec_tex_shapes = RF_CLIT(rf_rec){0.0f, 0.0f, 1.0f, 1.0f };
     }
 
     return _rf_ctx->gl_ctx.tex_shapes;
@@ -1927,8 +1927,8 @@ RF_INTERNAL void _rf_update_buffers_default()
 // Draw default internal buffers vertex data
 RF_INTERNAL void _rf_draw_buffers_default()
 {
-    rf_matrix matProjection = _rf_ctx->gl_ctx.projection;
-    rf_matrix matModelView = _rf_ctx->gl_ctx.modelview;
+    rf_mat matProjection = _rf_ctx->gl_ctx.projection;
+    rf_mat matModelView = _rf_ctx->gl_ctx.modelview;
 
     int eyesCount = 1;
 
@@ -1941,9 +1941,9 @@ RF_INTERNAL void _rf_draw_buffers_default()
             glUseProgram(_rf_ctx->gl_ctx.current_shader.id);
 
             // Create _rf_ctx->gl_ctx.modelview-_rf_ctx->gl_ctx.projection matrix
-            rf_matrix matMVP = rf_matrix_multiply(_rf_ctx->gl_ctx.modelview, _rf_ctx->gl_ctx.projection);
+            rf_mat matMVP = rf_mat_mul(_rf_ctx->gl_ctx.modelview, _rf_ctx->gl_ctx.projection);
 
-            glUniformMatrix4fv(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_matrix_to_floatv(matMVP).v);
+            glUniformMatrix4fv(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MATRIX_MVP], 1, false, matMVP.v);
             glUniform4f(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_COLOR_DIFFUSE], 1.0f, 1.0f, 1.0f, 1.0f);
             glUniform1i(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MAP_DIFFUSE], 0);    // Provided value refers to the texture unit (active)
 
@@ -2188,7 +2188,7 @@ RF_INTERNAL void _rf_gen_draw_cube(void)
 RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model)
 {
     // Make sure model transform is set to identity matrix!
-    model.transform = rf_matrix_identity();
+    model.transform = rf_mat_identity();
 
     if (model.mesh_count == 0)
     {
@@ -2439,12 +2439,12 @@ RF_INTERNAL rf_texture2d _rf_load_texture_from_cgltf_image(cgltf_image *image, c
 //region interface implementation
 
 // Initialize rlgl: OpenGL extensions, default buffers/shaders/textures, OpenGL states
-RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height)
+RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, int width, int height)
 {
     RF_ASSERT(width != 0 && height != 0);
     _rf_ctx = rf_ctx;
 
-    *_rf_ctx = RF_CLIT(rf_context) {0};
+    *_rf_ctx = RF_CLIT(rf_renderer_context) {0};
 
     _rf_ctx->gl_ctx.current_matrix_mode = -1;
     _rf_ctx->gl_ctx.current_depth = -1.0f;
@@ -2463,7 +2463,7 @@ RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height)
     _rf_ctx->gl_ctx.camera_smooth_zoom_control_key = 341;
     _rf_ctx->gl_ctx.camera_mode = RF_CAMERA_CUSTOM;
 
-    _rf_ctx->screen_scaling = rf_matrix_identity();
+    _rf_ctx->screen_scaling = rf_mat_identity();
     _rf_ctx->current_width = width;
     _rf_ctx->current_height = height;
 
@@ -2551,7 +2551,7 @@ RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height)
     _rf_load_buffers_default();
 
     // Init transformations matrix accumulator
-    _rf_ctx->gl_ctx.transform_matrix = rf_matrix_identity();
+    _rf_ctx->gl_ctx.transform_matrix = rf_mat_identity();
 
     // Init draw calls tracking system
     _rf_ctx->gl_ctx.draws = (rf_draw_call *)RF_MALLOC(sizeof(rf_draw_call)*RF_MAX_DRAWCALL_REGISTERED);
@@ -2564,18 +2564,18 @@ RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height)
         //_rf_ctx->gl_ctx.draws[i].vao_id = 0;
         //_rf_ctx->gl_ctx.draws[i].shaderId = 0;
         _rf_ctx->gl_ctx.draws[i].texture_id = _rf_ctx->gl_ctx.default_texture_id;
-        //_rf_ctx->gl_ctx.draws[i].projection = rf_matrix_identity();
-        //_rf_ctx->gl_ctx.draws[i].modelview = rf_matrix_identity();
+        //_rf_ctx->gl_ctx.draws[i].projection = rf_mat_identity();
+        //_rf_ctx->gl_ctx.draws[i].modelview = rf_mat_identity();
     }
 
     _rf_ctx->gl_ctx.draws_counter = 1;
 
     // Init internal matrix _rf_ctx.gl_ctx.stack (emulating OpenGL 1.1)
-    for (int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++) _rf_ctx->gl_ctx.stack[i] = rf_matrix_identity();
+    for (int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++) _rf_ctx->gl_ctx.stack[i] = rf_mat_identity();
 
     // Init internal _rf_ctx.gl_ctx.projection and _rf_ctx.gl_ctx.modelview matrices
-    _rf_ctx->gl_ctx.projection = rf_matrix_identity();
-    _rf_ctx->gl_ctx.modelview = rf_matrix_identity();
+    _rf_ctx->gl_ctx.projection = rf_mat_identity();
+    _rf_ctx->gl_ctx.modelview = rf_mat_identity();
     _rf_ctx->gl_ctx.current_matrix = &_rf_ctx->gl_ctx.modelview;
 
     // Initialize OpenGL default states
@@ -2615,7 +2615,7 @@ RF_API void rf_renderer_init_context(rf_context* rf_ctx, int width, int height)
     _rf_setup_viewport(width, height);
 }
 
-RF_API void rf_renderer_set_global_context_pointer(rf_context* rf_ctx)
+RF_API void rf_renderer_set_global_context_pointer(rf_renderer_context* rf_ctx)
 {
     _rf_ctx = rf_ctx;
 }
@@ -2725,7 +2725,7 @@ RF_API void rf_load_default_font()
     // Allocate space for our characters info data
     // NOTE: This memory should be freed at end! --> CloseWindow()
     _rf_ctx->default_font.chars = (rf_char_info*) RF_MALLOC(_rf_ctx->default_font.chars_count * sizeof(rf_char_info));
-    _rf_ctx->default_font.recs  = (rf_rectangle*) RF_MALLOC(_rf_ctx->default_font.chars_count * sizeof(rf_rectangle));
+    _rf_ctx->default_font.recs  = (rf_rec*) RF_MALLOC(_rf_ctx->default_font.chars_count * sizeof(rf_rec));
 
     int current_line  = 0;
     int current_pos_x = chars_divisor;
@@ -2826,9 +2826,9 @@ RF_API int rf_color_to_int(rf_color color)
 }
 
 // Returns color normalized as float [0..1]
-RF_API rf_vector4 rf_color_normalize(rf_color color)
+RF_API rf_vec4 rf_color_normalize(rf_color color)
 {
-    rf_vector4 result;
+    rf_vec4 result;
 
     result.x = (float)color.r/255.0f;
     result.y = (float)color.g/255.0f;
@@ -2839,7 +2839,7 @@ RF_API rf_vector4 rf_color_normalize(rf_color color)
 }
 
 // Returns color from normalized values [0..1]
-RF_API rf_color rf_color_from_normalized(rf_vector4 normalized)
+RF_API rf_color rf_color_from_normalized(rf_vec4 normalized)
 {
     rf_color result;
 
@@ -2853,10 +2853,10 @@ RF_API rf_color rf_color_from_normalized(rf_vector4 normalized)
 
 // Returns HSV values for a rf_color
 // NOTE: Hue is returned as degrees [0..360]
-RF_API rf_vector3 rf_color_to_hsv(rf_color color)
+RF_API rf_vec3 rf_color_to_hsv(rf_color color)
 {
-    rf_vector3 rgb = { (float)color.r/255.0f, (float)color.g/255.0f, (float)color.b/255.0f };
-    rf_vector3 hsv = { 0.0f, 0.0f, 0.0f };
+    rf_vec3 rgb = {(float)color.r / 255.0f, (float)color.g / 255.0f, (float)color.b / 255.0f };
+    rf_vec3 hsv = {0.0f, 0.0f, 0.0f };
     float min, max, delta;
 
     min = rgb.x < rgb.y? rgb.x : rgb.y;
@@ -2906,7 +2906,7 @@ RF_API rf_vector3 rf_color_to_hsv(rf_color color)
 // Returns a rf_color from HSV values
 // Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
 // NOTE: rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors
-RF_API rf_color rf_color_from_hsv(rf_vector3 hsv)
+RF_API rf_color rf_color_from_hsv(rf_vec3 hsv)
 {
     rf_color color = { 0, 0, 0, 255 };
     float h = hsv.x, s = hsv.y, v = hsv.z;
@@ -2971,7 +2971,7 @@ RF_API void rf_clear(rf_color color)
 RF_API void rf_begin()
 {
     rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
-    rf_gl_mult_matrixf(rf_matrix_to_float(_rf_ctx->screen_scaling)); // Apply screen scaling
+    rf_gl_mult_matrixf(_rf_ctx->screen_scaling.v); // Apply screen scaling
 
     //rf_gl_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1
     // NOTE: Not required with OpenGL 3.3+
@@ -2993,10 +2993,10 @@ RF_API void rf_begin_2d(rf_camera2d camera)
     rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
 
     // Apply screen scaling if required
-    rf_gl_mult_matrixf(rf_matrix_to_float(_rf_ctx->screen_scaling));
+    rf_gl_mult_matrixf(_rf_ctx->screen_scaling.v);
 
     // Apply 2d camera transformation to rf_global_model_view
-    rf_gl_mult_matrixf(rf_matrix_to_float(rf_get_camera_matrix2d(camera)));
+    rf_gl_mult_matrixf(rf_get_camera_matrix2d(camera).v);
 }
 
 // Ends 2D mode with custom camera
@@ -3005,7 +3005,7 @@ RF_API void rf_end_2d()
     rf_gl_draw(); // Draw Buffers (Only OpenGL 3+ and ES2)
 
     rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
-    rf_gl_mult_matrixf(rf_matrix_to_float(_rf_ctx->screen_scaling)); // Apply screen scaling if required
+    rf_gl_mult_matrixf(_rf_ctx->screen_scaling.v); // Apply screen scaling if required
 }
 
 // Initializes 3D mode with custom camera (3D)
@@ -3042,8 +3042,8 @@ RF_API void rf_begin_3d(rf_camera3d camera)
     rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
 
     // Setup rf_camera3d view
-    rf_matrix matView = rf_matrix_look_at(camera.position, camera.target, camera.up);
-    rf_gl_mult_matrixf(rf_matrix_to_float(matView)); // Multiply MODELVIEW matrix by view matrix (camera)
+    rf_mat matView = rf_mat_look_at(camera.position, camera.target, camera.up);
+    rf_gl_mult_matrixf(matView.v); // Multiply MODELVIEW matrix by view matrix (camera)
 
     rf_gl_enable_depth_test(); // Enable DEPTH_TEST for 3D
 }
@@ -3059,7 +3059,7 @@ RF_API void rf_end_3d()
     rf_gl_matrix_mode(GL_MODELVIEW); // Get back to rf_global_model_view matrix
     rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
 
-    rf_gl_mult_matrixf(rf_matrix_to_float(_rf_ctx->screen_scaling)); // Apply screen scaling if required
+    rf_gl_mult_matrixf(_rf_ctx->screen_scaling.v); // Apply screen scaling if required
 
     rf_gl_disable_depth_test(); // Disable DEPTH_TEST for 2D
 }
@@ -3167,7 +3167,7 @@ RF_API void rf_end_blend_mode()
 }
 
 // Returns a ray trace from mouse position
-RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, rf_camera3d camera)
+RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera)
 {
     rf_ray ray;
 
@@ -3178,17 +3178,18 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, 
     float z = 1.0f;
 
     // Store values in a vector
-    rf_vector3 deviceCoords = { x, y, z };
+    rf_vec3 deviceCoords = {x, y, z };
 
     // Calculate view matrix from camera look at
-    rf_matrix matView = rf_matrix_look_at(camera.position, camera.target, camera.up);
+    rf_mat matView = rf_mat_look_at(camera.position, camera.target, camera.up);
 
-    rf_matrix matProj = rf_matrix_identity();
+    rf_mat matProj = rf_mat_identity();
 
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate GL_PROJECTION matrix from perspective
-        matProj = rf_matrix_perspective(camera.fovy*RF_DEG2RAD, ((double)screen_size.width/(double)screen_size.height), 0.01, 1000.0);
+        matProj = rf_mat_perspective(camera.fovy * RF_DEG2RAD,
+                                     ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
     else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
@@ -3197,20 +3198,20 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, 
         double right = top*aspect;
 
         // Calculate GL_PROJECTION matrix from orthographic
-        matProj = rf_matrix_ortho(-right, right, -top, top, 0.01, 1000.0);
+        matProj = rf_mat_ortho(-right, right, -top, top, 0.01, 1000.0);
     }
 
     // Unproject far/near points
-    rf_vector3 nearPoint = rf_gl_unproject((rf_vector3){ deviceCoords.x, deviceCoords.y, 0.0f }, matProj, matView);
-    rf_vector3 farPoint = rf_gl_unproject((rf_vector3){ deviceCoords.x, deviceCoords.y, 1.0f }, matProj, matView);
+    rf_vec3 nearPoint = rf_gl_unproject((rf_vec3){deviceCoords.x, deviceCoords.y, 0.0f }, matProj, matView);
+    rf_vec3 farPoint = rf_gl_unproject((rf_vec3){deviceCoords.x, deviceCoords.y, 1.0f }, matProj, matView);
 
     // Unproject the mouse cursor in the near plane.
     // We need this as the source position because orthographic projects, compared to perspect doesn't have a
     // convergence point, meaning that the "eye" of the camera is more like a plane than a point.
-    rf_vector3 cameraPlanePointerPos = rf_gl_unproject((rf_vector3){ deviceCoords.x, deviceCoords.y, -1.0f }, matProj, matView);
+    rf_vec3 cameraPlanePointerPos = rf_gl_unproject((rf_vec3){deviceCoords.x, deviceCoords.y, -1.0f }, matProj, matView);
 
     // Calculate normalized direction vector
-    rf_vector3 direction = rf_vector3_normalize(rf_vector3_substract(farPoint, nearPoint));
+    rf_vec3 direction = rf_vec3_normalize(rf_vec3_sub(farPoint, nearPoint));
 
     if (camera.type == RF_CAMERA_PERSPECTIVE) ray.position = camera.position;
     else if (camera.type == RF_CAMERA_ORTHOGRAPHIC) ray.position = cameraPlanePointerPos;
@@ -3222,15 +3223,15 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vector2 mouse_position, 
 }
 
 // Get transform matrix for camera
-RF_API rf_matrix rf_get_camera_matrix(rf_camera3d camera)
+RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera)
 {
-    return rf_matrix_look_at(camera.position, camera.target, camera.up);
+    return rf_mat_look_at(camera.position, camera.target, camera.up);
 }
 
 // Returns camera 2d transform matrix
-RF_API rf_matrix rf_get_camera_matrix2d(rf_camera2d camera)
+RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 {
-    rf_matrix matTransform = { 0 };
+    rf_mat matTransform = {0 };
     // The camera in world-space is set by
     //   1. Move it to target
     //   2. Rotate by -rotation and scale by (1/zoom)
@@ -3245,26 +3246,27 @@ RF_API rf_matrix rf_get_camera_matrix2d(rf_camera2d camera)
     //   1. Move to offset
     //   2. Rotate and Scale
     //   3. Move by -target
-    rf_matrix matOrigin = rf_matrix_translate(-camera.target.x, -camera.target.y, 0.0f);
-    rf_matrix matRotation = rf_matrix_rotate((rf_vector3){ 0.0f, 0.0f, 1.0f }, camera.rotation*RF_DEG2RAD);
-    rf_matrix matScale = rf_matrix_scale(camera.zoom, camera.zoom, 1.0f);
-    rf_matrix matTranslation = rf_matrix_translate(camera.offset.x, camera.offset.y, 0.0f);
+    rf_mat matOrigin = rf_mat_translate(-camera.target.x, -camera.target.y, 0.0f);
+    rf_mat matRotation = rf_mat_rotate((rf_vec3) {0.0f, 0.0f, 1.0f}, camera.rotation * RF_DEG2RAD);
+    rf_mat matScale = rf_mat_scale(camera.zoom, camera.zoom, 1.0f);
+    rf_mat matTranslation = rf_mat_translate(camera.offset.x, camera.offset.y, 0.0f);
 
-    matTransform = rf_matrix_multiply(rf_matrix_multiply(matOrigin, rf_matrix_multiply(matScale, matRotation)), matTranslation);
+    matTransform = rf_mat_mul(rf_mat_mul(matOrigin, rf_mat_mul(matScale, matRotation)), matTranslation);
 
     return matTransform;
 }
 
 // Returns the screen space position from a 3d world space position
-RF_API rf_vector2 rf_get_world_to_screen(rf_sizei screen_size, rf_vector3 position, rf_camera3d camera)
+RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera)
 {
     // Calculate GL_PROJECTION matrix (from perspective instead of frustum
-    rf_matrix matProj = rf_matrix_identity();
+    rf_mat matProj = rf_mat_identity();
 
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate GL_PROJECTION matrix from perspective
-        matProj = rf_matrix_perspective(camera.fovy*RF_DEG2RAD, ((double)screen_size.width/(double)screen_size.height), 0.01, 1000.0);
+        matProj = rf_mat_perspective(camera.fovy * RF_DEG2RAD,
+                                     ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
     else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
@@ -3273,11 +3275,11 @@ RF_API rf_vector2 rf_get_world_to_screen(rf_sizei screen_size, rf_vector3 positi
         double right = top*aspect;
 
         // Calculate GL_PROJECTION matrix from orthographic
-        matProj = rf_matrix_ortho(-right, right, -top, top, 0.01, 1000.0);
+        matProj = rf_mat_ortho(-right, right, -top, top, 0.01, 1000.0);
     }
 
     // Calculate view matrix from camera look at (and transpose it)
-    rf_matrix matView = rf_matrix_look_at(camera.position, camera.target, camera.up);
+    rf_mat matView = rf_mat_look_at(camera.position, camera.target, camera.up);
 
     // Convert world position vector to quaternion
     rf_quaternion worldPos = { position.x, position.y, position.z, 1.0f };
@@ -3289,30 +3291,30 @@ RF_API rf_vector2 rf_get_world_to_screen(rf_sizei screen_size, rf_vector3 positi
     worldPos = rf_quaternion_transform(worldPos, matProj);
 
     // Calculate normalized device coordinates (inverted y)
-    rf_vector3 ndcPos = { worldPos.x/worldPos.w, -worldPos.y/worldPos.w, worldPos.z/worldPos.w };
+    rf_vec3 ndcPos = {worldPos.x / worldPos.w, -worldPos.y / worldPos.w, worldPos.z / worldPos.w };
 
     // Calculate 2d screen position vector
-    rf_vector2 screenPosition = { (ndcPos.x + 1.0f)/2.0f*(float)screen_size.width, (ndcPos.y + 1.0f)/2.0f*(float)screen_size.height };
+    rf_vec2 screenPosition = {(ndcPos.x + 1.0f) / 2.0f * (float)screen_size.width, (ndcPos.y + 1.0f) / 2.0f * (float)screen_size.height };
 
     return screenPosition;
 }
 
 // Returns the screen space position for a 2d camera world space position
-RF_API rf_vector2 rf_get_world_to_screen2d(rf_vector2 position, rf_camera2d camera)
+RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
 {
-    rf_matrix matCamera = rf_get_camera_matrix2d(camera);
-    rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, matCamera);
+    rf_mat matCamera = rf_get_camera_matrix2d(camera);
+    rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, matCamera);
 
-    return RF_CLIT(rf_vector2){ transform.x, transform.y };
+    return RF_CLIT(rf_vec2){transform.x, transform.y };
 }
 
 // Returns the world space position for a 2d camera screen space position
-RF_API rf_vector2 rf_get_screen_to_world2d(rf_vector2 position, rf_camera2d camera)
+RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
 {
-    rf_matrix invMatCamera = rf_matrix_invert(rf_get_camera_matrix2d(camera));
-    rf_vector3 transform = rf_vector3_transform((rf_vector3){ position.x, position.y, 0 }, invMatCamera);
+    rf_mat invMatCamera = rf_mat_invert(rf_get_camera_matrix2d(camera));
+    rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, invMatCamera);
 
-    return RF_CLIT(rf_vector2){ transform.x, transform.y };
+    return RF_CLIT(rf_vec2){transform.x, transform.y };
 }
 
 // Update camera depending on selected mode
@@ -3371,13 +3373,13 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
     } rf_camera_move;
 
     static int swingCounter = 0; // Used for 1st person swinging movement
-    static rf_vector2 previousMousePosition = { 0.0f, 0.0f };
+    static rf_vec2 previousMousePosition = {0.0f, 0.0f };
 
     // TODO: Compute _rf_ctx->gl_ctx.camera_target_distance and _rf_ctx->gl_ctx.camera_angle here
 
     // Mouse movement detection
-    rf_vector2 mousePositionDelta = { 0.0f, 0.0f };
-    rf_vector2 mouse_position = input_state.mouse_position;
+    rf_vec2 mousePositionDelta = {0.0f, 0.0f };
+    rf_vec2 mouse_position = input_state.mouse_position;
     int mouse_wheel_move = input_state.mouse_wheel_move;
 
     // Keys input detection
@@ -3604,11 +3606,11 @@ RF_API void rf_draw_pixel(int pos_x, int posY, rf_color color)
 }
 
 // Draw a line defining thickness
-RF_API void rf_draw_line(rf_vector2 startPos, rf_vector2 endPos, float thick, rf_color color)
+RF_API void rf_draw_line(rf_vec2 startPos, rf_vec2 endPos, float thick, rf_color color)
 {
     if (startPos.x > endPos.x)
     {
-        rf_vector2 tempPos = startPos;
+        rf_vec2 tempPos = startPos;
         startPos = endPos;
         endPos = tempPos;
     }
@@ -3648,12 +3650,12 @@ RF_API void rf_draw_line(rf_vector2 startPos, rf_vector2 endPos, float thick, rf
 }
 
 // Draw line using cubic-bezier curves in-out
-RF_API void rf_draw_line_bezier(rf_vector2 startPos, rf_vector2 endPos, float thick, rf_color color)
+RF_API void rf_draw_line_bezier(rf_vec2 startPos, rf_vec2 endPos, float thick, rf_color color)
 {
     #define RF_LINE_DIVISIONS 24 // Bezier line divisions
 
-    rf_vector2 previous = startPos;
-    rf_vector2 current;
+    rf_vec2 previous = startPos;
+    rf_vec2 current;
 
     for (int i = 1; i <= RF_LINE_DIVISIONS; i++)
     {
@@ -3669,7 +3671,7 @@ RF_API void rf_draw_line_bezier(rf_vector2 startPos, rf_vector2 endPos, float th
 }
 
 // Draw lines sequence
-RF_API void rf_draw_line_strip(rf_vector2 *points, int pointsCount, rf_color color)
+RF_API void rf_draw_line_strip(rf_vec2 *points, int pointsCount, rf_color color)
 {
     if (pointsCount >= 2)
     {
@@ -3690,11 +3692,11 @@ RF_API void rf_draw_line_strip(rf_vector2 *points, int pointsCount, rf_color col
 // Draw a color-filled circle
 RF_API void rf_draw_circle(int centerX, int centerY, float radius, rf_color color)
 {
-    rf_draw_circle_sector((rf_vector2) { centerX, centerY }, radius, 0, 360, 36, color);
+    rf_draw_circle_sector((rf_vec2) {centerX, centerY }, radius, 0, 360, 36, color);
 }
 
 // Draw a piece of a circle
-RF_API void rf_draw_circle_sector(rf_vector2 center, float radius, int start_angle, int endAngle, int segments, rf_color color)
+RF_API void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle, int endAngle, int segments, rf_color color)
 {
     if (radius <= 0.0f) radius = 0.1f; // Avoid div by zero
 
@@ -3738,7 +3740,7 @@ RF_API void rf_draw_circle_sector(rf_vector2 center, float radius, int start_ang
 
 }
 
-RF_API void rf_draw_circle_sector_lines(rf_vector2 center, float radius, int start_angle, int endAngle, int segments, rf_color color)
+RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_angle, int endAngle, int segments, rf_color color)
 {
     if (radius <= 0.0f) radius = 0.1f; // Avoid div by zero issue
 
@@ -3838,7 +3840,7 @@ RF_API void rf_draw_circle_lines(int centerX, int centerY, float radius, rf_colo
     rf_gl_end();
 }
 
-RF_API void rf_draw_ring(rf_vector2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color)
+RF_API void rf_draw_ring(rf_vec2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color)
 {
     if (start_angle == endAngle) return;
 
@@ -3905,7 +3907,7 @@ RF_API void rf_draw_ring(rf_vector2 center, float innerRadius, float outerRadius
 
 }
 
-RF_API void rf_draw_ring_lines(rf_vector2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color)
+RF_API void rf_draw_ring_lines(rf_vec2 center, float innerRadius, float outerRadius, int start_angle, int endAngle, int segments, rf_color color)
 {
     if (start_angle == endAngle) return;
 
@@ -3987,7 +3989,7 @@ RF_API void rf_draw_ring_lines(rf_vector2 center, float innerRadius, float outer
 }
 
 // Draw a color-filled rectangle with pro parameters
-RF_API void rf_draw_rectangle(rf_rectangle rec, rf_vector2 origin, float rotation, rf_color color)
+RF_API void rf_draw_rectangle(rf_rec rec, rf_vec2 origin, float rotation, rf_color color)
 {
     rf_gl_enable_texture(_rf_get_shapes_texture().id);
 
@@ -4021,19 +4023,19 @@ RF_API void rf_draw_rectangle(rf_rectangle rec, rf_vector2 origin, float rotatio
 // NOTE: Gradient goes from bottom (color1) to top (color2)
 RF_API void rf_draw_rectangle_gradient_v(int pos_x, int posY, int width, int height, rf_color color1, rf_color color2)
 {
-    rf_draw_rectangle_gradient((rf_rectangle){ (float)pos_x, (float)posY, (float)width, (float)height }, color1, color2, color2, color1);
+    rf_draw_rectangle_gradient((rf_rec){(float)pos_x, (float)posY, (float)width, (float)height }, color1, color2, color2, color1);
 }
 
 // Draw a horizontal-gradient-filled rectangle
 // NOTE: Gradient goes from bottom (color1) to top (color2)
 RF_API void rf_draw_rectangle_gradient_h(int pos_x, int posY, int width, int height, rf_color color1, rf_color color2)
 {
-    rf_draw_rectangle_gradient((rf_rectangle){ (float)pos_x, (float)posY, (float)width, (float)height }, color1, color1, color2, color2);
+    rf_draw_rectangle_gradient((rf_rec){(float)pos_x, (float)posY, (float)width, (float)height }, color1, color1, color2, color2);
 }
 
 // Draw a gradient-filled rectangle
 // NOTE: Colors refer to corners, starting at top-lef corner and counter-clockwise
-RF_API void rf_draw_rectangle_gradient(rf_rectangle rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4)
+RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4)
 {
     rf_gl_enable_texture(_rf_get_shapes_texture().id);
 
@@ -4064,7 +4066,7 @@ RF_API void rf_draw_rectangle_gradient(rf_rectangle rec, rf_color col1, rf_color
 }
 
 // Draw rectangle outline with extended parameters
-RF_API void rf_draw_rectangle_outline(rf_rectangle rec, int lineThick, rf_color color)
+RF_API void rf_draw_rectangle_outline(rf_rec rec, int lineThick, rf_color color)
 {
     if (lineThick > rec.width || lineThick > rec.height)
     {
@@ -4072,19 +4074,19 @@ RF_API void rf_draw_rectangle_outline(rf_rectangle rec, int lineThick, rf_color 
         else if (rec.width < rec.height) lineThick = (int)rec.width/2;
     }
 
-    rf_draw_rectangle((rf_rectangle) { (int)rec.x, (int)rec.y, (int)rec.width, lineThick }, (rf_vector2){0.0f, 0.0f}, 0.0f, color);
-    rf_draw_rectangle((rf_rectangle) { (int)(rec.x - lineThick + rec.width), (int)(rec.y + lineThick), lineThick, (int)(rec.height - lineThick*2.0f) }, (rf_vector2){0.0f, 0.0f}, 0.0f, color);
-    rf_draw_rectangle((rf_rectangle) { (int)rec.x, (int)(rec.y + rec.height - lineThick), (int)rec.width, lineThick }, (rf_vector2){0.0f, 0.0f}, 0.0f, color);
-    rf_draw_rectangle((rf_rectangle) { (int)rec.x, (int)(rec.y + lineThick), lineThick, (int)(rec.height - lineThick*2) }, (rf_vector2) { 0.0f, 0.0f }, 0.0f, color);
+    rf_draw_rectangle((rf_rec) {(int)rec.x, (int)rec.y, (int)rec.width, lineThick }, (rf_vec2){0.0f, 0.0f}, 0.0f, color);
+    rf_draw_rectangle((rf_rec) {(int)(rec.x - lineThick + rec.width), (int)(rec.y + lineThick), lineThick, (int)(rec.height - lineThick * 2.0f) }, (rf_vec2){0.0f, 0.0f}, 0.0f, color);
+    rf_draw_rectangle((rf_rec) {(int)rec.x, (int)(rec.y + rec.height - lineThick), (int)rec.width, lineThick }, (rf_vec2){0.0f, 0.0f}, 0.0f, color);
+    rf_draw_rectangle((rf_rec) {(int)rec.x, (int)(rec.y + lineThick), lineThick, (int)(rec.height - lineThick * 2) }, (rf_vec2) {0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw rectangle with rounded edges
-RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int segments, rf_color color)
+RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments, rf_color color)
 {
     // Not a rounded rectangle
     if ((roundness <= 0.0f) || (rec.width < 1) || (rec.height < 1 ))
     {
-        rf_draw_rectangle(rec, (rf_vector2){0.0f, 0.0f}, 0.0f, color);
+        rf_draw_rectangle(rec, (rf_vec2){0.0f, 0.0f}, 0.0f, color);
         return;
     }
 
@@ -4126,7 +4128,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
      *     P5                    P4
      */
 
-    const rf_vector2 point[12] = { // coordinates of the 12 points that define the rounded rect (the idea here is to make things easier)
+    const rf_vec2 point[12] = { // coordinates of the 12 points that define the rounded rect (the idea here is to make things easier)
             {(float)rec.x + radius, rec.y}, {(float)(rec.x + rec.width) - radius, rec.y}, { rec.x + rec.width, (float)rec.y + radius }, // PO, P1, P2
             {rec.x + rec.width, (float)(rec.y + rec.height) - radius}, {(float)(rec.x + rec.width) - radius, rec.y + rec.height}, // P3, P4
             {(float)rec.x + radius, rec.y + rec.height}, { rec.x, (float)(rec.y + rec.height) - radius}, {rec.x, (float)rec.y + radius}, // P5, P6, P7
@@ -4134,7 +4136,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
             {(float)(rec.x + rec.width) - radius, (float)(rec.y + rec.height) - radius}, {(float)rec.x + radius, (float)(rec.y + rec.height) - radius} // P10, P11
     };
 
-    const rf_vector2 centers[4] = { point[8], point[9], point[10], point[11] };
+    const rf_vec2 centers[4] = {point[8], point[9], point[10], point[11] };
     const float angles[4] = { 180.0f, 90.0f, 0.0f, 270.0f };
     if (rf_gl_check_buffer_limit(12*segments + 5*6)) rf_gl_draw(); // 4 corners with 3 vertices per segment + 5 rectangles with 6 vertices each
 
@@ -4143,7 +4145,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
     for (int k = 0; k < 4; ++k) // Hope the compiler is smart enough to unroll this loop
     {
         float angle = angles[k];
-        const rf_vector2 center = centers[k];
+        const rf_vec2 center = centers[k];
         for (int i = 0; i < segments; i++)
         {
             rf_gl_color4ub(color.r, color.g, color.b, color.a);
@@ -4154,7 +4156,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
         }
     }
 
-    // [2] Upper rf_rectangle
+    // [2] Upper rf_rec
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
     rf_gl_vertex2f(point[0].x, point[0].y);
     rf_gl_vertex2f(point[8].x, point[8].y);
@@ -4163,7 +4165,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
     rf_gl_vertex2f(point[0].x, point[0].y);
     rf_gl_vertex2f(point[9].x, point[9].y);
 
-    // [4] Right rf_rectangle
+    // [4] Right rf_rec
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
     rf_gl_vertex2f(point[9].x, point[9].y);
     rf_gl_vertex2f(point[10].x, point[10].y);
@@ -4172,7 +4174,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
     rf_gl_vertex2f(point[9].x, point[9].y);
     rf_gl_vertex2f(point[3].x, point[3].y);
 
-    // [6] Bottom rf_rectangle
+    // [6] Bottom rf_rec
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
     rf_gl_vertex2f(point[11].x, point[11].y);
     rf_gl_vertex2f(point[5].x, point[5].y);
@@ -4181,7 +4183,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
     rf_gl_vertex2f(point[11].x, point[11].y);
     rf_gl_vertex2f(point[4].x, point[4].y);
 
-    // [8] Left rf_rectangle
+    // [8] Left rf_rec
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
     rf_gl_vertex2f(point[7].x, point[7].y);
     rf_gl_vertex2f(point[6].x, point[6].y);
@@ -4190,7 +4192,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
     rf_gl_vertex2f(point[7].x, point[7].y);
     rf_gl_vertex2f(point[11].x, point[11].y);
 
-    // [9] Middle rf_rectangle
+    // [9] Middle rf_rec
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
     rf_gl_vertex2f(point[8].x, point[8].y);
     rf_gl_vertex2f(point[11].x, point[11].y);
@@ -4203,14 +4205,14 @@ RF_API void rf_draw_rectangle_rounded(rf_rectangle rec, float roundness, int seg
 }
 
 // Draw rectangle with rounded edges outline
-RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, int segments, int lineThick, rf_color color)
+RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int segments, int lineThick, rf_color color)
 {
     if (lineThick < 0) lineThick = 0;
 
     // Not a rounded rectangle
     if (roundness <= 0.0f)
     {
-        rf_draw_rectangle_outline((rf_rectangle){rec.x-lineThick, rec.y-lineThick, rec.width+2*lineThick, rec.height+2*lineThick}, lineThick, color);
+        rf_draw_rectangle_outline((rf_rec){rec.x - lineThick, rec.y - lineThick, rec.width + 2 * lineThick, rec.height + 2 * lineThick}, lineThick, color);
         return;
     }
 
@@ -4254,7 +4256,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, i
      *     P5                     P4
 
      */
-    const rf_vector2 point[16] =
+    const rf_vec2 point[16] =
             {
                     {(float)rec.x + innerRadius, rec.y - lineThick}, {(float)(rec.x + rec.width) - innerRadius, rec.y - lineThick}, { rec.x + rec.width + lineThick, (float)rec.y + innerRadius }, // PO, P1, P2
                     {rec.x + rec.width + lineThick, (float)(rec.y + rec.height) - innerRadius}, {(float)(rec.x + rec.width) - innerRadius, rec.y + rec.height + lineThick}, // P3, P4
@@ -4265,7 +4267,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, i
                     { rec.x, (float)(rec.y + rec.height) - innerRadius}, {rec.x, (float)rec.y + innerRadius} // P14, P15
             };
 
-    const rf_vector2 centers[4] =
+    const rf_vec2 centers[4] =
             {
                     {(float)rec.x + innerRadius, (float)rec.y + innerRadius}, {(float)(rec.x + rec.width) - innerRadius, (float)rec.y + innerRadius}, // P16, P17
                     {(float)(rec.x + rec.width) - innerRadius, (float)(rec.y + rec.height) - innerRadius}, {(float)rec.x + innerRadius, (float)(rec.y + rec.height) - innerRadius} // P18, P19
@@ -4283,7 +4285,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, i
         for (int k = 0; k < 4; ++k) // Hope the compiler is smart enough to unroll this loop
         {
             float angle = angles[k];
-            const rf_vector2 center = centers[k];
+            const rf_vec2 center = centers[k];
 
             for (int i = 0; i < segments; i++)
             {
@@ -4350,7 +4352,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, i
         for (int k = 0; k < 4; ++k) // Hope the compiler is smart enough to unroll this loop
         {
             float angle = angles[k];
-            const rf_vector2 center = centers[k];
+            const rf_vec2 center = centers[k];
 
             for (int i = 0; i < segments; i++)
             {
@@ -4373,7 +4375,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rectangle rec, float roundness, i
 
 // Draw a triangle
 // NOTE: Vertex must be provided in counter-clockwise order
-RF_API void rf_draw_triangle(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, rf_color color)
+RF_API void rf_draw_triangle(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
 {
     if (rf_gl_check_buffer_limit(4)) rf_gl_draw();
     rf_gl_begin(GL_TRIANGLES);
@@ -4387,7 +4389,7 @@ RF_API void rf_draw_triangle(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, rf_col
 
 // Draw a triangle using lines
 // NOTE: Vertex must be provided in counter-clockwise order
-RF_API void rf_draw_triangle_lines(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, rf_color color)
+RF_API void rf_draw_triangle_lines(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
 {
     if (rf_gl_check_buffer_limit(6)) rf_gl_draw();
 
@@ -4406,7 +4408,7 @@ RF_API void rf_draw_triangle_lines(rf_vector2 v1, rf_vector2 v2, rf_vector2 v3, 
 
 // Draw a triangle fan defined by points
 // NOTE: First vertex provided is the center, shared by all triangles
-RF_API void rf_draw_triangle_fan(rf_vector2 *points, int pointsCount, rf_color color)
+RF_API void rf_draw_triangle_fan(rf_vec2 *points, int pointsCount, rf_color color)
 {
     if (pointsCount >= 3)
     {
@@ -4437,7 +4439,7 @@ RF_API void rf_draw_triangle_fan(rf_vector2 *points, int pointsCount, rf_color c
 
 // Draw a triangle strip defined by points
 // NOTE: Every new vertex connects with previous two
-RF_API void rf_draw_triangle_strip(rf_vector2 *points, int pointsCount, rf_color color)
+RF_API void rf_draw_triangle_strip(rf_vec2 *points, int pointsCount, rf_color color)
 {
     if (pointsCount >= 3)
     {
@@ -4466,7 +4468,7 @@ RF_API void rf_draw_triangle_strip(rf_vector2 *points, int pointsCount, rf_color
 }
 
 // Draw a regular polygon of n sides (Vector version)
-RF_API void rf_draw_poly(rf_vector2 center, int sides, float radius, float rotation, rf_color color)
+RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color)
 {
     if (sides < 3) sides = 3;
     float centralAngle = 0.0f;
@@ -4493,7 +4495,7 @@ RF_API void rf_draw_poly(rf_vector2 center, int sides, float radius, float rotat
 }
 
 // Define default texture used to draw shapes
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rectangle source)
+RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
 {
     _rf_ctx->gl_ctx.tex_shapes = texture;
     _rf_ctx->gl_ctx.rec_tex_shapes = source;
@@ -4547,8 +4549,8 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, int
         int size = cubemap.width;
 
         rf_image faces = { 0 }; // Vertical column image
-        rf_rectangle faceRecs[6] = { 0 }; // Face source rectangles
-        for (int i = 0; i < 6; i++) faceRecs[i] = RF_CLIT(rf_rectangle){ 0, 0, size, size };
+        rf_rec faceRecs[6] = {0 }; // Face source rectangles
+        for (int i = 0; i < 6; i++) faceRecs[i] = RF_CLIT(rf_rec){0, 0, size, size };
 
         if (layout_type == RF_CUBEMAP_LINE_VERTICAL)
         {
@@ -4589,7 +4591,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, int
             // TODO: rf_image formating does not work with compressed textures!
         }
 
-        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], RF_CLIT(rf_rectangle){ 0, size*i, size, size }, RF_WHITE);
+        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, faceRecs[i], RF_CLIT(rf_rec){0, size * i, size, size }, RF_WHITE);
 
         cubemap.id = rf_gl_load_texture_cubemap(faces.data, size, faces.format);
         if (cubemap.id == 0) RF_LOG(RF_LOG_WARNING, "Cubemap image could not be loaded.");
@@ -4745,10 +4747,10 @@ RF_API rf_color* rf_get_image_data(rf_image image)
     return pixels;
 }
 
-// Get pixel data from image as rf_vector4 array (float normalized)
-RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
+// Get pixel data from image as rf_vec4 array (float normalized)
+RF_API rf_vec4* rf_get_image_data_normalized(rf_image image)
 {
-    rf_vector4* pixels = (rf_vector4* )RF_MALLOC(image.width*image.height*sizeof(rf_vector4));
+    rf_vec4* pixels = (rf_vec4* )RF_MALLOC(image.width * image.height * sizeof(rf_vec4));
 
     if (image.format >= RF_COMPRESSED_DXT1_RGB) RF_LOG(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
     else
@@ -4857,9 +4859,9 @@ RF_API rf_vector4* rf_get_image_data_normalized(rf_image image)
 }
 
 // Get image alpha border rectangle
-RF_API rf_rectangle rf_get_image_alpha_border(rf_image image, float threshold)
+RF_API rf_rec rf_get_image_alpha_border(rf_image image, float threshold)
 {
-    rf_rectangle crop = { 0 };
+    rf_rec crop = {0 };
 
     rf_color* pixels = rf_get_image_data(image);
 
@@ -4884,7 +4886,7 @@ RF_API rf_rectangle rf_get_image_alpha_border(rf_image image, float threshold)
             }
         }
 
-        crop = RF_CLIT(rf_rectangle){ xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
+        crop = RF_CLIT(rf_rec){xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
 
         RF_FREE(pixels);
     }
@@ -5087,7 +5089,7 @@ RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode)
 
 // Draw a part of a texture (defined by a rectangle) with 'pro' parameters
 // NOTE: origin is relative to destination rectangle size
-RF_API void rf_draw_texture(rf_texture2d texture, rf_rectangle source_rec, rf_rectangle destRec, rf_vector2 origin, float rotation, rf_color tint)
+RF_API void rf_draw_texture(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint)
 {
     // Check if texture is valid
     if (texture.id > 0)
@@ -5138,7 +5140,7 @@ RF_API void rf_draw_texture(rf_texture2d texture, rf_rectangle source_rec, rf_re
 }
 
 // Draws a texture (or part of it) that stretches or shrinks nicely using n-patch info
-RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchInfo, rf_rectangle destRec, rf_vector2 origin, float rotation, rf_color tint)
+RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchInfo, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint)
 {
     if (texture.id > 0)
     {
@@ -5175,7 +5177,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
             bottomBorder = patchHeight - topBorder;
         }
 
-        rf_vector2 vertA, vertB, vertC, vertD;
+        rf_vec2 vertA, vertB, vertC, vertD;
         vertA.x = 0.0f; // outer left
         vertA.y = 0.0f; // outer top
         vertB.x = leftBorder; // inner left
@@ -5185,7 +5187,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
         vertD.x = patchWidth; // outer right
         vertD.y = patchHeight; // outer bottom
 
-        rf_vector2 coordA, coordB, coordC, coordD;
+        rf_vec2 coordA, coordB, coordC, coordD;
         coordA.x = nPatchInfo.source_rec.x / width;
         coordA.y = nPatchInfo.source_rec.y / height;
         coordB.x = (nPatchInfo.source_rec.x + leftBorder) / width;
@@ -5334,7 +5336,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchIn
     }
 }
 
-RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vector2 position, float font_size, float spacing, rf_color tint)
+RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vec2 position, float font_size, float spacing, rf_color tint)
 {
     int text_offset_y = 0; // Required for line break!
     float text_offset_x = 0.0f; // Offset between characters
@@ -5367,10 +5369,10 @@ RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vector2 
             if (letter != ' ')
             {
                 rf_draw_texture(font.texture, font.recs[index],
-                                RF_CLIT(rf_rectangle){ position.x + text_offset_x + font.chars[index].offset_x*scale_factor,
+                                RF_CLIT(rf_rec){position.x + text_offset_x + font.chars[index].offset_x * scale_factor,
                                                            position.y + text_offset_y + font.chars[index].offset_y*scale_factor,
                                                            font.recs[index].width*scale_factor,
-                                                           font.recs[index].height*scale_factor }, RF_CLIT(rf_vector2){ 0, 0 }, 0.0f, tint);
+                                                           font.recs[index].height*scale_factor }, RF_CLIT(rf_vec2){0, 0 }, 0.0f, tint);
             }
 
             if (font.chars[index].advance_x == 0) text_offset_x += ((float)font.recs[index].width*scale_factor + spacing);
@@ -5380,7 +5382,7 @@ RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vector2 
 }
 
 // Draw text using font inside rectangle limits
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rectangle rec, float font_size, float spacing, bool word_wrap, rf_color tint)
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, bool word_wrap, rf_color tint)
 {
     int length = strlen(text);
     int text_offset_x = 0; // Offset between characters
@@ -5486,11 +5488,11 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
                 if ((letter != ' ') && (letter != '\t'))
                 {
                     rf_draw_texture(font.texture, font.recs[index],
-                                RF_CLIT(rf_rectangle){ rec.x + text_offset_x + font.chars[index].offset_x*scale_factor,
+                                    RF_CLIT(rf_rec){rec.x + text_offset_x + font.chars[index].offset_x * scale_factor,
                                 rec.y + text_offset_y + font.chars[index].offset_y*scale_factor,
                                 font.recs[index].width*scale_factor,
-                                font.recs[index].height*scale_factor }, RF_CLIT(rf_vector2){ 0, 0 }, 0.0f,
-                                tint);
+                                font.recs[index].height*scale_factor }, RF_CLIT(rf_vec2){0, 0 }, 0.0f,
+                                    tint);
                 }
             }
 
@@ -5527,7 +5529,7 @@ RF_API float _rf_measure_height_of_text_in_container(rf_font font, float font_si
         return unwrapped_string_size.y;
     }
 
-    rf_rectangle rec = { 0, 0, container_width, FLT_MAX };
+    rf_rec rec = { 0, 0, container_width, FLT_MAX };
     int text_offset_x = 0; // Offset between characters
     int text_offset_y = 0; // Required for line break!
     float scale_factor = 0.0f;
@@ -5682,7 +5684,7 @@ RF_API rf_sizef rf_measure_wrapped_text(rf_font font, float font_size, const cha
     return RF_CLIT(rf_sizef){};
 }
 
-RF_API void rf_draw_line3d(rf_vector3 startPos, rf_vector3 endPos, rf_color color)
+RF_API void rf_draw_line3d(rf_vec3 startPos, rf_vec3 endPos, rf_color color)
 {
     rf_gl_begin(GL_LINES);
     rf_gl_color4ub(color.r, color.g, color.b, color.a);
@@ -5692,7 +5694,7 @@ RF_API void rf_draw_line3d(rf_vector3 startPos, rf_vector3 endPos, rf_color colo
 }
 
 // Draw a circle in 3D world space
-RF_API void rf_draw_circle3d(rf_vector3 center, float radius, rf_vector3 rotationAxis, float rotationAngle, rf_color color)
+RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotationAxis, float rotationAngle, rf_color color)
 {
     if (rf_gl_check_buffer_limit(2*36)) rf_gl_draw();
 
@@ -5714,7 +5716,7 @@ RF_API void rf_draw_circle3d(rf_vector3 center, float radius, rf_vector3 rotatio
 
 // Draw cube
 // NOTE: Cube position is the center position
-RF_API void rf_draw_cube(rf_vector3 position, float width, float height, float length, rf_color color)
+RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -5789,7 +5791,7 @@ RF_API void rf_draw_cube(rf_vector3 position, float width, float height, float l
 }
 
 // Draw cube wires
-RF_API void rf_draw_cube_wires(rf_vector3 position, float width, float height, float length, rf_color color)
+RF_API void rf_draw_cube_wires(rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -5860,7 +5862,7 @@ RF_API void rf_draw_cube_wires(rf_vector3 position, float width, float height, f
 
 // Draw cube
 // NOTE: Cube position is the center position
-RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vector3 position, float width, float height, float length, rf_color color)
+RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = position.x;
     float y = position.y;
@@ -5921,13 +5923,13 @@ RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vector3 position, floa
 }
 
 // Draw sphere
-RF_API void rf_draw_sphere(rf_vector3 centerPos, float radius, rf_color color)
+RF_API void rf_draw_sphere(rf_vec3 centerPos, float radius, rf_color color)
 {
     rf_draw_sphere_ex(centerPos, radius, 16, 16, color);
 }
 
 // Draw sphere with extended parameters
-RF_API void rf_draw_sphere_ex(rf_vector3 centerPos, float radius, int rings, int slices, rf_color color)
+RF_API void rf_draw_sphere_ex(rf_vec3 centerPos, float radius, int rings, int slices, rf_color color)
 {
     int numVertex = (rings + 2)*slices*6;
     if (rf_gl_check_buffer_limit(numVertex)) rf_gl_draw();
@@ -5970,7 +5972,7 @@ RF_API void rf_draw_sphere_ex(rf_vector3 centerPos, float radius, int rings, int
 }
 
 // Draw sphere wires
-RF_API void rf_draw_sphere_wires(rf_vector3 centerPos, float radius, int rings, int slices, rf_color color)
+RF_API void rf_draw_sphere_wires(rf_vec3 centerPos, float radius, int rings, int slices, rf_color color)
 {
     int numVertex = (rings + 2)*slices*6;
     if (rf_gl_check_buffer_limit(numVertex)) rf_gl_draw();
@@ -6017,7 +6019,7 @@ RF_API void rf_draw_sphere_wires(rf_vector3 centerPos, float radius, int rings, 
 
 // Draw a cylinder
 // NOTE: It could be also used for pyramid and cone
-RF_API void rf_draw_cylinder(rf_vector3 position, float radiusTop, float radiusBottom, float height, int sides, rf_color color)
+RF_API void rf_draw_cylinder(rf_vec3 position, float radiusTop, float radiusBottom, float height, int sides, rf_color color)
 {
     if (sides < 3) sides = 3;
 
@@ -6077,7 +6079,7 @@ RF_API void rf_draw_cylinder(rf_vector3 position, float radiusTop, float radiusB
 
 // Draw a wired cylinder
 // NOTE: It could be also used for pyramid and cone
-RF_API void rf_draw_cylinder_wires(rf_vector3 position, float radiusTop, float radiusBottom, float height, int sides, rf_color color)
+RF_API void rf_draw_cylinder_wires(rf_vec3 position, float radiusTop, float radiusBottom, float height, int sides, rf_color color)
 {
     if (sides < 3) sides = 3;
 
@@ -6109,7 +6111,7 @@ RF_API void rf_draw_cylinder_wires(rf_vector3 position, float radiusTop, float r
 }
 
 // Draw a plane
-RF_API void rf_draw_plane(rf_vector3 centerPos, rf_vector2 size, rf_color color)
+RF_API void rf_draw_plane(rf_vec3 centerPos, rf_vec2 size, rf_color color)
 {
     if (rf_gl_check_buffer_limit(4)) rf_gl_draw();
 
@@ -6179,7 +6181,7 @@ RF_API void rf_draw_grid(int slices, float spacing)
 }
 
 // Draw gizmo
-RF_API void rf_draw_gizmo(rf_vector3 position)
+RF_API void rf_draw_gizmo(rf_vec3 position)
 {
     // NOTE: RGB = XYZ
     float length = 1.0f;
@@ -6206,18 +6208,20 @@ RF_API void rf_draw_gizmo(rf_vector3 position)
 RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
 {
     // Get min and max vertex to construct bounds (AABB)
-    rf_vector3 minVertex = { 0 };
-    rf_vector3 maxVertex = { 0 };
+    rf_vec3 minVertex = {0 };
+    rf_vec3 maxVertex = {0 };
 
     if (mesh.vertices != NULL)
     {
-        minVertex = (rf_vector3){ mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
-        maxVertex = (rf_vector3){ mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
+        minVertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
+        maxVertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
 
         for (int i = 1; i < mesh.vertex_count; i++)
         {
-            minVertex = rf_vector3_min(minVertex, (rf_vector3){ mesh.vertices[i*3], mesh.vertices[i*3 + 1], mesh.vertices[i*3 + 2] });
-            maxVertex = rf_vector3_max(maxVertex, (rf_vector3){ mesh.vertices[i*3], mesh.vertices[i*3 + 1], mesh.vertices[i*3 + 2] });
+            minVertex = rf_vec3_min(minVertex, (rf_vec3) {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1],
+                                                          mesh.vertices[i * 3 + 2]});
+            maxVertex = rf_vec3_max(maxVertex, (rf_vec3) {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1],
+                                                          mesh.vertices[i * 3 + 2]});
         }
     }
 
@@ -6237,20 +6241,20 @@ RF_API void rf_mesh_tangents(rf_mesh* mesh)
     if (mesh->tangents == NULL) mesh->tangents = (float* )RF_MALLOC(mesh->vertex_count*4*sizeof(float));
     else RF_LOG(RF_LOG_WARNING, "rf_mesh tangents already exist");
 
-    rf_vector3* tan1 = (rf_vector3* )RF_MALLOC(mesh->vertex_count*sizeof(rf_vector3));
-    rf_vector3* tan2 = (rf_vector3* )RF_MALLOC(mesh->vertex_count*sizeof(rf_vector3));
+    rf_vec3* tan1 = (rf_vec3* )RF_MALLOC(mesh->vertex_count * sizeof(rf_vec3));
+    rf_vec3* tan2 = (rf_vec3* )RF_MALLOC(mesh->vertex_count * sizeof(rf_vec3));
 
     for (int i = 0; i < mesh->vertex_count; i += 3)
     {
         // Get triangle vertices
-        rf_vector3 v1 = { mesh->vertices[(i + 0)*3 + 0], mesh->vertices[(i + 0)*3 + 1], mesh->vertices[(i + 0)*3 + 2] };
-        rf_vector3 v2 = { mesh->vertices[(i + 1)*3 + 0], mesh->vertices[(i + 1)*3 + 1], mesh->vertices[(i + 1)*3 + 2] };
-        rf_vector3 v3 = { mesh->vertices[(i + 2)*3 + 0], mesh->vertices[(i + 2)*3 + 1], mesh->vertices[(i + 2)*3 + 2] };
+        rf_vec3 v1 = {mesh->vertices[(i + 0) * 3 + 0], mesh->vertices[(i + 0) * 3 + 1], mesh->vertices[(i + 0) * 3 + 2] };
+        rf_vec3 v2 = {mesh->vertices[(i + 1) * 3 + 0], mesh->vertices[(i + 1) * 3 + 1], mesh->vertices[(i + 1) * 3 + 2] };
+        rf_vec3 v3 = {mesh->vertices[(i + 2) * 3 + 0], mesh->vertices[(i + 2) * 3 + 1], mesh->vertices[(i + 2) * 3 + 2] };
 
         // Get triangle texcoords
-        rf_vector2 uv1 = { mesh->texcoords[(i + 0)*2 + 0], mesh->texcoords[(i + 0)*2 + 1] };
-        rf_vector2 uv2 = { mesh->texcoords[(i + 1)*2 + 0], mesh->texcoords[(i + 1)*2 + 1] };
-        rf_vector2 uv3 = { mesh->texcoords[(i + 2)*2 + 0], mesh->texcoords[(i + 2)*2 + 1] };
+        rf_vec2 uv1 = {mesh->texcoords[(i + 0) * 2 + 0], mesh->texcoords[(i + 0) * 2 + 1] };
+        rf_vec2 uv2 = {mesh->texcoords[(i + 1) * 2 + 0], mesh->texcoords[(i + 1) * 2 + 1] };
+        rf_vec2 uv3 = {mesh->texcoords[(i + 2) * 2 + 0], mesh->texcoords[(i + 2) * 2 + 1] };
 
         float x1 = v2.x - v1.x;
         float y1 = v2.y - v1.y;
@@ -6267,8 +6271,8 @@ RF_API void rf_mesh_tangents(rf_mesh* mesh)
         float div = s1*t2 - s2*t1;
         float r = (div == 0.0f)? 0.0f : 1.0f/div;
 
-        rf_vector3 sdir = { (t2*x1 - t1*x2)*r, (t2*y1 - t1*y2)*r, (t2*z1 - t1*z2)*r };
-        rf_vector3 tdir = { (s1*x2 - s2*x1)*r, (s1*y2 - s2*y1)*r, (s1*z2 - s2*z1)*r };
+        rf_vec3 sdir = {(t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r };
+        rf_vec3 tdir = {(s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r };
 
         tan1[i + 0] = sdir;
         tan1[i + 1] = sdir;
@@ -6282,15 +6286,15 @@ RF_API void rf_mesh_tangents(rf_mesh* mesh)
     // Compute tangents considering normals
     for (int i = 0; i < mesh->vertex_count; ++i)
     {
-        rf_vector3 normal = { mesh->normals[i*3 + 0], mesh->normals[i*3 + 1], mesh->normals[i*3 + 2] };
-        rf_vector3 tangent = tan1[i];
+        rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
+        rf_vec3 tangent = tan1[i];
 
         // TODO: Review, not sure if tangent computation is right, just used reference proposed maths...
-        rf_vector3_ortho_normalize(&normal, &tangent);
+        rf_vec3_ortho_normalize(&normal, &tangent);
         mesh->tangents[i*4 + 0] = tangent.x;
         mesh->tangents[i*4 + 1] = tangent.y;
         mesh->tangents[i*4 + 2] = tangent.z;
-        mesh->tangents[i*4 + 3] = (rf_vector3_dot_product(rf_vector3_cross_product(normal, tangent), tan2[i]) < 0.0f)? -1.0f : 1.0f;
+        mesh->tangents[i*4 + 3] = (rf_vec3_dot_product(rf_vec3_cross_product(normal, tangent), tan2[i]) < 0.0f) ? -1.0f : 1.0f;
 
     }
 
@@ -6308,28 +6312,28 @@ RF_API void rf_mesh_binormals(rf_mesh* mesh)
 {
     for (int i = 0; i < mesh->vertex_count; i++)
     {
-        rf_vector3 normal = { mesh->normals[i*3 + 0], mesh->normals[i*3 + 1], mesh->normals[i*3 + 2] };
-        rf_vector3 tangent = { mesh->tangents[i*4 + 0], mesh->tangents[i*4 + 1], mesh->tangents[i*4 + 2] };
+        rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
+        rf_vec3 tangent = {mesh->tangents[i * 4 + 0], mesh->tangents[i * 4 + 1], mesh->tangents[i * 4 + 2] };
         float tangentW = mesh->tangents[i*4 + 3];
 
         // TODO: Register computed binormal in mesh->binormal?
-        // rf_vector3 binormal = rf_vector3_multiply(rf_vector3_cross_product(normal, tangent), tangentW);
+        // rf_vec3 binormal = rf_vec3_mul(rf_vec3_cross_product(normal, tangent), tangentW);
     }
 }
 
 // Draw a model with extended parameters
-RF_API void rf_draw_model(rf_model model, rf_vector3 position, rf_vector3 rotationAxis, float rotationAngle, rf_vector3 scale, rf_color tint)
+RF_API void rf_draw_model(rf_model model, rf_vec3 position, rf_vec3 rotationAxis, float rotationAngle, rf_vec3 scale, rf_color tint)
 {
     // Calculate transformation matrix from function parameters
     // Get transform matrix (rotation -> scale -> translation)
-    rf_matrix matScale = rf_matrix_scale(scale.x, scale.y, scale.z);
-    rf_matrix matRotation = rf_matrix_rotate(rotationAxis, rotationAngle*RF_DEG2RAD);
-    rf_matrix matTranslation = rf_matrix_translate(position.x, position.y, position.z);
+    rf_mat matScale = rf_mat_scale(scale.x, scale.y, scale.z);
+    rf_mat matRotation = rf_mat_rotate(rotationAxis, rotationAngle * RF_DEG2RAD);
+    rf_mat matTranslation = rf_mat_translate(position.x, position.y, position.z);
 
-    rf_matrix matTransform = rf_matrix_multiply(rf_matrix_multiply(matScale, matRotation), matTranslation);
+    rf_mat matTransform = rf_mat_mul(rf_mat_mul(matScale, matRotation), matTranslation);
 
     // Combine model transformation matrix (model.transform) with matrix generated by function parameters (matTransform)
-    model.transform = rf_matrix_multiply(model.transform, matTransform);
+    model.transform = rf_mat_mul(model.transform, matTransform);
 
     for (int i = 0; i < model.mesh_count; i++)
     {
@@ -6349,7 +6353,7 @@ RF_API void rf_draw_model(rf_model model, rf_vector3 position, rf_vector3 rotati
 }
 
 // Draw a model wires (with texture if set) with extended parameters
-RF_API void rf_draw_model_wires(rf_model model, rf_vector3 position, rf_vector3 rotationAxis, float rotationAngle, rf_vector3 scale, rf_color tint)
+RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotationAxis, float rotationAngle, rf_vec3 scale, rf_color tint)
 {
     rf_gl_enable_wire_mode();
 
@@ -6361,38 +6365,38 @@ RF_API void rf_draw_model_wires(rf_model model, rf_vector3 position, rf_vector3 
 // Draw a bounding box with wires
 RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color)
 {
-    rf_vector3 size;
+    rf_vec3 size;
 
     size.x = (float)fabs(box.max.x - box.min.x);
     size.y = (float)fabs(box.max.y - box.min.y);
     size.z = (float)fabs(box.max.z - box.min.z);
 
-    rf_vector3 center = { box.min.x + size.x/2.0f, box.min.y + size.y/2.0f, box.min.z + size.z/2.0f };
+    rf_vec3 center = {box.min.x + size.x / 2.0f, box.min.y + size.y / 2.0f, box.min.z + size.z / 2.0f };
 
     rf_draw_cube_wires(center, size.x, size.y, size.z, color);
 }
 
 // Draw a billboard
-RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vector3 center, float size, rf_color tint)
+RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint)
 {
-    rf_rectangle source_rec = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
+    rf_rec source_rec = {0.0f, 0.0f, (float)texture.width, (float)texture.height };
 
     rf_draw_billboard_rec(camera, texture, source_rec, center, size, tint);
 }
 
 // Draw a billboard (part of a texture defined by a rectangle)
-RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rectangle source_rec, rf_vector3 center, float size, rf_color tint)
+RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint)
 {
     // NOTE: Billboard size will maintain source_rec aspect ratio, size will represent billboard width
-    rf_vector2 sizeRatio = { size, size*(float)source_rec.height/source_rec.width };
+    rf_vec2 sizeRatio = {size, size * (float)source_rec.height / source_rec.width };
 
-    rf_matrix matView = rf_matrix_look_at(camera.position, camera.target, camera.up);
+    rf_mat matView = rf_mat_look_at(camera.position, camera.target, camera.up);
 
-    rf_vector3 right = { matView.m0, matView.m4, matView.m8 };
-    //rf_vector3 up = { matView.m1, matView.m5, matView.m9 };
+    rf_vec3 right = {matView.m0, matView.m4, matView.m8 };
+    //rf_vec3 up = { matView.m1, matView.m5, matView.m9 };
 
     // NOTE: Billboard locked on axis-Y
-    rf_vector3 up = { 0.0f, 1.0f, 0.0f };
+    rf_vec3 up = {0.0f, 1.0f, 0.0f };
     /*
         a-------b
         |       |
@@ -6400,16 +6404,16 @@ RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_r
         |       |
         d-------c
     */
-    right = rf_vector3_scale(right, sizeRatio.x/2);
-    up = rf_vector3_scale(up, sizeRatio.y/2);
+    right = rf_vec3_scale(right, sizeRatio.x / 2);
+    up = rf_vec3_scale(up, sizeRatio.y / 2);
 
-    rf_vector3 p1 = rf_vector3_add(right, up);
-    rf_vector3 p2 = rf_vector3_substract(right, up);
+    rf_vec3 p1 = rf_vec3_add(right, up);
+    rf_vec3 p2 = rf_vec3_sub(right, up);
 
-    rf_vector3 a = rf_vector3_substract(center, p2);
-    rf_vector3 b = rf_vector3_add(center, p1);
-    rf_vector3 c = rf_vector3_add(center, p2);
-    rf_vector3 d = rf_vector3_substract(center, p1);
+    rf_vec3 a = rf_vec3_sub(center, p2);
+    rf_vec3 b = rf_vec3_add(center, p1);
+    rf_vec3 c = rf_vec3_add(center, p2);
+    rf_vec3 d = rf_vec3_sub(center, p1);
 
     if (rf_gl_check_buffer_limit(4)) rf_gl_draw();
 
@@ -6439,7 +6443,7 @@ RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_r
 }
 
 // Detect collision between two spheres
-RF_API bool rf_check_collision_spheres(rf_vector3 centerA, float radiusA, rf_vector3 centerB, float radiusB)
+RF_API bool rf_check_collision_spheres(rf_vec3 centerA, float radiusA, rf_vec3 centerB, float radiusB)
 {
     bool collision = false;
 
@@ -6455,7 +6459,7 @@ RF_API bool rf_check_collision_spheres(rf_vector3 centerA, float radiusA, rf_vec
     if (distance <= (radiusA + radiusB)) collision = true;
     */
     // Check for distances squared to avoid sqrtf()
-    if (rf_vector3_dot_product(rf_vector3_substract(centerB, centerA), rf_vector3_substract(centerB, centerA)) <= (radiusA + radiusB)*(radiusA + radiusB)) collision = true;
+    if (rf_vec3_dot_product(rf_vec3_sub(centerB, centerA), rf_vec3_sub(centerB, centerA)) <= (radiusA + radiusB) * (radiusA + radiusB)) collision = true;
 
     return collision;
 }
@@ -6477,7 +6481,7 @@ RF_API bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2)
 }
 
 // Detect collision between box and sphere
-RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vector3 center, float radius)
+RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius)
 {
     bool collision = false;
 
@@ -6498,13 +6502,13 @@ RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vector3 center
 }
 
 // Detect collision between ray and sphere
-RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vector3 center, float radius)
+RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius)
 {
     bool collision = false;
 
-    rf_vector3 raySpherePos = rf_vector3_substract(center, ray.position);
-    float distance = rf_vector3_length(raySpherePos);
-    float vector = rf_vector3_dot_product(raySpherePos, ray.direction);
+    rf_vec3 raySpherePos = rf_vec3_sub(center, ray.position);
+    float distance = rf_vec3_len(raySpherePos);
+    float vector = rf_vec3_dot_product(raySpherePos, ray.direction);
     float d = radius*radius - (distance*distance - vector*vector);
 
     if (d >= 0.0f) collision = true;
@@ -6513,13 +6517,13 @@ RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vector3 center, float r
 }
 
 // Detect collision between ray and sphere with extended parameters and collision point detection
-RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vector3 center, float radius, rf_vector3* collisionPoint)
+RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3* collisionPoint)
 {
     bool collision = false;
 
-    rf_vector3 raySpherePos = rf_vector3_substract(center, ray.position);
-    float distance = rf_vector3_length(raySpherePos);
-    float vector = rf_vector3_dot_product(raySpherePos, ray.direction);
+    rf_vec3 raySpherePos = rf_vec3_sub(center, ray.position);
+    float distance = rf_vec3_len(raySpherePos);
+    float vector = rf_vec3_dot_product(raySpherePos, ray.direction);
     float d = radius*radius - (distance*distance - vector*vector);
 
     if (d >= 0.0f) collision = true;
@@ -6531,7 +6535,7 @@ RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vector3 center, floa
     else collisionDistance = vector - sqrtf(d);
 
     // Calculate collision point
-    rf_vector3 cPoint = rf_vector3_add(ray.position, rf_vector3_scale(ray.direction, collisionDistance));
+    rf_vec3 cPoint = rf_vec3_add(ray.position, rf_vec3_scale(ray.direction, collisionDistance));
 
     collisionPoint->x = cPoint.x;
     collisionPoint->y = cPoint.y;
@@ -6576,8 +6580,8 @@ RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model)
             // Test against all triangles in mesh
             for (int i = 0; i < triangle_count; i++)
             {
-                rf_vector3 a, b, c;
-                rf_vector3* vertdata = (rf_vector3* )model.meshes[m].vertices;
+                rf_vec3 a, b, c;
+                rf_vec3* vertdata = (rf_vec3* )model.meshes[m].vertices;
 
                 if (model.meshes[m].indices)
                 {
@@ -6592,9 +6596,9 @@ RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model)
                     c = vertdata[i*3 + 2];
                 }
 
-                a = rf_vector3_transform(a, model.transform);
-                b = rf_vector3_transform(b, model.transform);
-                c = rf_vector3_transform(c, model.transform);
+                a = rf_vec3_transform(a, model.transform);
+                b = rf_vec3_transform(b, model.transform);
+                c = rf_vec3_transform(c, model.transform);
 
                 rf_ray_hit_info triHitInfo = rf_get_collision_ray_triangle(ray, a, b, c);
 
@@ -6612,24 +6616,24 @@ RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model)
 
 // Get collision info between ray and triangle
 // NOTE: Based on https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vector3 p1, rf_vector3 p2, rf_vector3 p3)
+RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3)
 {
 #define rf_epsilon 0.000001 // A small number
 
-    rf_vector3 edge1, edge2;
-    rf_vector3 p, q, tv;
+    rf_vec3 edge1, edge2;
+    rf_vec3 p, q, tv;
     float det, invDet, u, v, t;
     rf_ray_hit_info result = {0};
 
     // Find vectors for two edges sharing V1
-    edge1 = rf_vector3_substract(p2, p1);
-    edge2 = rf_vector3_substract(p3, p1);
+    edge1 = rf_vec3_sub(p2, p1);
+    edge2 = rf_vec3_sub(p3, p1);
 
     // Begin calculating determinant - also used to calculate u parameter
-    p = rf_vector3_cross_product(ray.direction, edge2);
+    p = rf_vec3_cross_product(ray.direction, edge2);
 
     // If determinant is near zero, ray lies in plane of triangle or ray is parallel to plane of triangle
-    det = rf_vector3_dot_product(edge1, p);
+    det = rf_vec3_dot_product(edge1, p);
 
     // Avoid culling!
     if ((det > -rf_epsilon) && (det < rf_epsilon)) return result;
@@ -6637,24 +6641,24 @@ RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vector3 p1, 
     invDet = 1.0f/det;
 
     // Calculate distance from V1 to ray origin
-    tv = rf_vector3_substract(ray.position, p1);
+    tv = rf_vec3_sub(ray.position, p1);
 
     // Calculate u parameter and test bound
-    u = rf_vector3_dot_product(tv, p)*invDet;
+    u = rf_vec3_dot_product(tv, p) * invDet;
 
     // The intersection lies outside of the triangle
     if ((u < 0.0f) || (u > 1.0f)) return result;
 
     // Prepare to test v parameter
-    q = rf_vector3_cross_product(tv, edge1);
+    q = rf_vec3_cross_product(tv, edge1);
 
     // Calculate V parameter and test bound
-    v = rf_vector3_dot_product(ray.direction, q)*invDet;
+    v = rf_vec3_dot_product(ray.direction, q) * invDet;
 
     // The intersection lies outside of the triangle
     if ((v < 0.0f) || ((u + v) > 1.0f)) return result;
 
-    t = rf_vector3_dot_product(edge2, q)*invDet;
+    t = rf_vec3_dot_product(edge2, q) * invDet;
 
     if (t > rf_epsilon)
     {
@@ -6662,8 +6666,8 @@ RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vector3 p1, 
         result.hit = true;
         result.distance = t;
         result.hit = true;
-        result.normal = rf_vector3_normalize(rf_vector3_cross_product(edge1, edge2));
-        result.position = rf_vector3_add(ray.position, rf_vector3_scale(ray.direction, t));
+        result.normal = rf_vec3_normalize(rf_vec3_cross_product(edge1, edge2));
+        result.position = rf_vec3_add(ray.position, rf_vec3_scale(ray.direction, t));
     }
 
     return result;
@@ -6684,8 +6688,8 @@ RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float groundHeigh
         {
             result.hit = true;
             result.distance = distance;
-            result.normal = (rf_vector3){ 0.0, 1.0, 0.0 };
-            result.position = rf_vector3_add(ray.position, rf_vector3_scale(ray.direction, distance));
+            result.normal = (rf_vec3){0.0, 1.0, 0.0 };
+            result.position = rf_vec3_add(ray.position, rf_vec3_scale(ray.direction, distance));
         }
     }
 
@@ -6807,11 +6811,11 @@ RF_API void rf_set_shader_value_v(rf_shader shader, int uniformLoc, const void* 
 }
 
 // Set shader uniform value (matrix 4x4)
-RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniformLoc, rf_matrix mat)
+RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniformLoc, rf_mat mat)
 {
     glUseProgram(shader.id);
 
-    glUniformMatrix4fv(uniformLoc, 1, false, rf_matrix_to_floatv(mat).v);
+    glUniformMatrix4fv(uniformLoc, 1, false, mat.v);
 
     //glUseProgram(0);
 }
@@ -6827,26 +6831,26 @@ RF_API void rf_set_shader_value_texture(rf_shader shader, int uniformLoc, rf_tex
 }
 
 // Return internal _rf_ctx->gl_ctx.projection matrix
-RF_API rf_matrix rf_get_matrix_projection() {
+RF_API rf_mat rf_get_matrix_projection() {
     return _rf_ctx->gl_ctx.projection;
 }
 
 // Return internal _rf_ctx->gl_ctx.modelview matrix
-RF_API rf_matrix rf_get_matrix_modelview()
+RF_API rf_mat rf_get_matrix_modelview()
 {
-    rf_matrix matrix = rf_matrix_identity();
+    rf_mat matrix = rf_mat_identity();
     matrix = _rf_ctx->gl_ctx.modelview;
     return matrix;
 }
 
 // Set a custom projection matrix (replaces internal _rf_ctx->gl_ctx.projection matrix)
-RF_API void rf_set_matrix_projection(rf_matrix proj)
+RF_API void rf_set_matrix_projection(rf_mat proj)
 {
     _rf_ctx->gl_ctx.projection = proj;
 }
 
 // Set a custom _rf_ctx->gl_ctx.modelview matrix (replaces internal _rf_ctx->gl_ctx.modelview matrix)
-RF_API void rf_set_matrix_modelview(rf_matrix view)
+RF_API void rf_set_matrix_modelview(rf_mat view)
 {
     _rf_ctx->gl_ctx.modelview = view;
 }
@@ -6864,7 +6868,7 @@ RF_API void rf_gl_matrix_mode(int mode)
 // Push the current matrix into _rf_ctx->gl_ctx.stack
 RF_API void rf_gl_push_matrix()
 {
-    if (_rf_ctx->gl_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) RF_LOG(RF_LOG_ERROR, "rf_matrix _rf_ctx->gl_ctx.stack overflow");
+    if (_rf_ctx->gl_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) RF_LOG(RF_LOG_ERROR, "rf_mat _rf_ctx->gl_ctx.stack overflow");
 
     if (_rf_ctx->gl_ctx.current_matrix_mode == GL_MODELVIEW)
     {
@@ -6881,7 +6885,7 @@ RF_API void rf_gl_pop_matrix()
 {
     if (_rf_ctx->gl_ctx.stack_counter > 0)
     {
-        rf_matrix mat = _rf_ctx->gl_ctx.stack[_rf_ctx->gl_ctx.stack_counter - 1];
+        rf_mat mat = _rf_ctx->gl_ctx.stack[_rf_ctx->gl_ctx.stack_counter - 1];
         *_rf_ctx->gl_ctx.current_matrix = mat;
         _rf_ctx->gl_ctx.stack_counter--;
     }
@@ -6896,65 +6900,65 @@ RF_API void rf_gl_pop_matrix()
 // Reset current matrix to identity matrix
 RF_API void rf_gl_load_identity()
 {
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_identity();
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_identity();
 }
 
 // Multiply the current matrix by a translation matrix
 RF_API void rf_gl_translatef(float x, float y, float z)
 {
-    rf_matrix matTranslation = rf_matrix_translate(x, y, z);
+    rf_mat matTranslation = rf_mat_translate(x, y, z);
 
     // NOTE: We transpose matrix with multiplication order
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(matTranslation, *_rf_ctx->gl_ctx.current_matrix);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(matTranslation, *_rf_ctx->gl_ctx.current_matrix);
 }
 
 // Multiply the current matrix by a rotation matrix
 RF_API void rf_gl_rotatef(float angleDeg, float x, float y, float z)
 {
-    rf_matrix matRotation = rf_matrix_identity();
+    rf_mat matRotation = rf_mat_identity();
 
-    rf_vector3 axis = (rf_vector3){ x, y, z };
-    matRotation = rf_matrix_rotate(rf_vector3_normalize(axis), angleDeg*RF_DEG2RAD);
+    rf_vec3 axis = (rf_vec3){x, y, z };
+    matRotation = rf_mat_rotate(rf_vec3_normalize(axis), angleDeg * RF_DEG2RAD);
 
     // NOTE: We transpose matrix with multiplication order
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(matRotation, *_rf_ctx->gl_ctx.current_matrix);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(matRotation, *_rf_ctx->gl_ctx.current_matrix);
 }
 
 // Multiply the current matrix by a scaling matrix
 RF_API void rf_gl_scalef(float x, float y, float z)
 {
-    rf_matrix matScale = rf_matrix_scale(x, y, z);
+    rf_mat matScale = rf_mat_scale(x, y, z);
 
     // NOTE: We transpose matrix with multiplication order
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(matScale, *_rf_ctx->gl_ctx.current_matrix);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(matScale, *_rf_ctx->gl_ctx.current_matrix);
 }
 
 // Multiply the current matrix by another matrix
 RF_API void rf_gl_mult_matrixf(float* matf)
 {
-    // rf_matrix creation from array
-    rf_matrix mat = { matf[0], matf[4], matf[8], matf[12],
-                      matf[1], matf[5], matf[9], matf[13],
-                      matf[2], matf[6], matf[10], matf[14],
-                      matf[3], matf[7], matf[11], matf[15] };
+    // rf_mat creation from array
+    rf_mat mat = {matf[0], matf[4], matf[8], matf[12],
+                  matf[1], matf[5], matf[9], matf[13],
+                  matf[2], matf[6], matf[10], matf[14],
+                  matf[3], matf[7], matf[11], matf[15] };
 
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(*_rf_ctx->gl_ctx.current_matrix, mat);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(*_rf_ctx->gl_ctx.current_matrix, mat);
 }
 
 // Multiply the current matrix by a perspective matrix generated by parameters
 RF_API void rf_gl_frustum(double left, double right, double bottom, double top, double znear, double zfar)
 {
-    rf_matrix matPerps = rf_matrix_frustum(left, right, bottom, top, znear, zfar);
+    rf_mat matPerps = rf_mat_frustum(left, right, bottom, top, znear, zfar);
 
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(*_rf_ctx->gl_ctx.current_matrix, matPerps);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(*_rf_ctx->gl_ctx.current_matrix, matPerps);
 }
 
 // Multiply the current matrix by an orthographic matrix generated by parameters
 RF_API void rf_gl_ortho(double left, double right, double bottom, double top, double znear, double zfar)
 {
-    rf_matrix matOrtho = rf_matrix_ortho(left, right, bottom, top, znear, zfar);
+    rf_mat matOrtho = rf_mat_ortho(left, right, bottom, top, znear, zfar);
 
-    *_rf_ctx->gl_ctx.current_matrix = rf_matrix_multiply(*_rf_ctx->gl_ctx.current_matrix, matOrtho);
+    *_rf_ctx->gl_ctx.current_matrix = rf_mat_mul(*_rf_ctx->gl_ctx.current_matrix, matOrtho);
 }
 
 // Set the viewport area (transformation from normalized device coordinates to window coordinates)
@@ -7071,10 +7075,10 @@ RF_API void rf_gl_vertex2f(float x, float y)
 // NOTE: Vertex position data is the basic information required for drawing
 RF_API void rf_gl_vertex3f(float x, float y, float z)
 {
-    rf_vector3 vec = { x, y, z };
+    rf_vec3 vec = {x, y, z };
 
     // rf_transform provided vector if required
-    if (_rf_ctx->gl_ctx.use_transform_matrix) vec = rf_vector3_transform(vec, _rf_ctx->gl_ctx.transform_matrix);
+    if (_rf_ctx->gl_ctx.use_transform_matrix) vec = rf_vec3_transform(vec, _rf_ctx->gl_ctx.transform_matrix);
 
     // Verify that rf_max_batch_elements limit not reached
     if (_rf_ctx->gl_ctx.vertex_data[_rf_ctx->gl_ctx.current_buffer].v_counter < (RF_MAX_BATCH_ELEMENTS * 4))
@@ -7418,13 +7422,13 @@ RF_API void rf_gl_set_debug_marker(const char* text)
 }
 
 // Get world coordinates from screen coordinates
-RF_API rf_vector3 rf_gl_unproject(rf_vector3 source, rf_matrix proj, rf_matrix view)
+RF_API rf_vec3 rf_gl_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 {
-    rf_vector3 result = { 0.0f, 0.0f, 0.0f };
+    rf_vec3 result = {0.0f, 0.0f, 0.0f };
 
     // Calculate unproject matrix (multiply view patrix by _rf_ctx->gl_ctx.projection matrix) and invert it
-    rf_matrix matViewProj = rf_matrix_multiply(view, proj);
-    matViewProj = rf_matrix_invert(matViewProj);
+    rf_mat matViewProj = rf_mat_mul(view, proj);
+    matViewProj = rf_mat_invert(matViewProj);
 
     // Create quaternion from source point
     rf_quaternion quat = { source.x, source.y, source.z, 1.0f };
@@ -8180,7 +8184,7 @@ RF_API void rf_gl_update_mesh_at(rf_mesh mesh, int buffer, int num, int index)
 }
 
 // Draw a 3d mesh with material and transform
-RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transform)
+RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform)
 {
     // Bind shader program
     glUseProgram(material.shader.id);
@@ -8209,16 +8213,16 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
 
     // At this point the _rf_ctx->gl_ctx.modelview matrix just contains the view matrix (camera)
     // That's because rf_begin_mode3d() sets it an no model-drawing function modifies it, all use rf_gl_push_matrix() and rf_gl_pop_matrix()
-    rf_matrix matView = _rf_ctx->gl_ctx.modelview;         // View matrix (camera)
-    rf_matrix matProjection = _rf_ctx->gl_ctx.projection;  // Projection matrix (perspective)
+    rf_mat matView = _rf_ctx->gl_ctx.modelview;         // View matrix (camera)
+    rf_mat matProjection = _rf_ctx->gl_ctx.projection;  // Projection matrix (perspective)
 
     // TODO: Consider possible transform matrices in the _rf_ctx->gl_ctx.stack
     // Is this the right order? or should we start with the first stored matrix instead of the last one?
-    //rf_matrix matStackTransform = rf_matrix_identity();
-    //for (int i = _rf_ctx->gl_ctx.stack_counter; i > 0; i--) matStackTransform = rf_matrix_multiply(_rf_ctx->gl_ctx.stack[i], matStackTransform);
+    //rf_mat matStackTransform = rf_mat_identity();
+    //for (int i = _rf_ctx->gl_ctx.stack_counter; i > 0; i--) matStackTransform = rf_mat_mul(_rf_ctx->gl_ctx.stack[i], matStackTransform);
 
     // rf_transform to camera-space coordinates
-    rf_matrix matModelView = rf_matrix_multiply(transform, rf_matrix_multiply(_rf_ctx->gl_ctx.transform_matrix, matView));
+    rf_mat matModelView = rf_mat_mul(transform, rf_mat_mul(_rf_ctx->gl_ctx.transform_matrix, matView));
     //-----------------------------------------------------
 
     // Bind active texture maps (if available)
@@ -8300,10 +8304,10 @@ RF_API void rf_gl_draw_mesh(rf_mesh mesh, rf_material material, rf_matrix transf
         if (eyesCount == 1) _rf_ctx->gl_ctx.modelview = matModelView;
 
         // Calculate model-view-_rf_ctx->gl_ctx.projection matrix (MVP)
-        rf_matrix matMVP = rf_matrix_multiply(_rf_ctx->gl_ctx.modelview, _rf_ctx->gl_ctx.projection); // rf_transform to screen-space coordinates
+        rf_mat matMVP = rf_mat_mul(_rf_ctx->gl_ctx.modelview, _rf_ctx->gl_ctx.projection); // rf_transform to screen-space coordinates
 
         // Send combined model-view-_rf_ctx->gl_ctx.projection matrix to shader
-        glUniformMatrix4fv(material.shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_matrix_to_floatv(matMVP).v);
+        glUniformMatrix4fv(material.shader.locs[RF_LOC_MATRIX_MVP], 1, false, matMVP.v);
 
         // Draw call!
         if (mesh.indices != NULL) glDrawElements(GL_TRIANGLES, mesh.triangle_count*3, GL_UNSIGNED_SHORT, 0); // Indexed vertices draw
@@ -8482,7 +8486,7 @@ RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstCh
     // We allocate a temporal arrays for chars data measures,
     // once we get the actual number of chars, we copy data to a sized arrays
     int tempCharValues[rf_max_fontchars];
-    rf_rectangle tempCharRecs[rf_max_fontchars];
+    rf_rec tempCharRecs[rf_max_fontchars];
 
     rf_color* pixels = rf_get_image_data(image);
 
@@ -8559,7 +8563,7 @@ RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstCh
     // We got tempCharValues and tempCharsRecs populated with chars data
     // Now we move temp data to sized charValues and charRecs arrays
     spriteFont.chars = (rf_char_info* )RF_MALLOC(spriteFont.chars_count*sizeof(rf_char_info));
-    spriteFont.recs = (rf_rectangle *)RF_MALLOC(spriteFont.chars_count*sizeof(rf_rectangle));
+    spriteFont.recs = (rf_rec *)RF_MALLOC(spriteFont.chars_count * sizeof(rf_rec));
 
     for (int i = 0; i < spriteFont.chars_count; i++)
     {
@@ -8687,7 +8691,7 @@ RF_API rf_char_info* rf_load_font_data(const char* ttf_data, int ttf_data_size, 
 
 // Generate image font atlas using chars info
 // NOTE: Packing method: 0-Default, 1-Skyline
-RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle** charRecs, int chars_count, int font_size, int padding, int packMethod)
+RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** charRecs, int chars_count, int font_size, int padding, int packMethod)
 {
     rf_image atlas = { 0 };
 
@@ -8697,7 +8701,7 @@ RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rectangle*
     chars_count = (chars_count > 0)? chars_count : 95;
 
     // NOTE: Rectangles memory is loaded here!
-    rf_rectangle *recs = (rf_rectangle *)RF_MALLOC(chars_count*sizeof(rf_rectangle));
+    rf_rec *recs = (rf_rec *)RF_MALLOC(chars_count * sizeof(rf_rec));
 
     // Calculate image size based on required pixel area
     // NOTE 1: rf_image is forced to be squared and POT... very conservative!
@@ -9319,10 +9323,14 @@ RF_API rf_model rf_load_model_from_iqm(const char* data, int data_size)
     {
         if (model.bones[i].parent >= 0)
         {
-            model.bind_pose[i].rotation = rf_quaternion_multiply(model.bind_pose[model.bones[i].parent].rotation, model.bind_pose[i].rotation);
-            model.bind_pose[i].translation = rf_vector3_rotate_by_quaternion(model.bind_pose[i].translation, model.bind_pose[model.bones[i].parent].rotation);
-            model.bind_pose[i].translation = rf_vector3_add(model.bind_pose[i].translation, model.bind_pose[model.bones[i].parent].translation);
-            model.bind_pose[i].scale = rf_vector3_multiply_v(model.bind_pose[i].scale, model.bind_pose[model.bones[i].parent].scale);
+            model.bind_pose[i].rotation = rf_quaternion_mul(model.bind_pose[model.bones[i].parent].rotation,
+                                                            model.bind_pose[i].rotation);
+            model.bind_pose[i].translation = rf_vec3_rotate_by_quaternion(model.bind_pose[i].translation,
+                                                                          model.bind_pose[model.bones[i].parent].rotation);
+            model.bind_pose[i].translation = rf_vec3_add(model.bind_pose[i].translation,
+                                                         model.bind_pose[model.bones[i].parent].translation);
+            model.bind_pose[i].scale = rf_vec3_mul_v(model.bind_pose[i].scale,
+                                                     model.bind_pose[model.bones[i].parent].scale);
         }
     }
 
@@ -9558,7 +9566,7 @@ RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh)
 {
     rf_model model = { 0 };
 
-    model.transform = rf_matrix_identity();
+    model.transform = rf_mat_identity();
 
     model.mesh_count = 1;
     model.meshes = (rf_mesh* )RF_MALLOC(model.mesh_count * sizeof(rf_mesh));
@@ -9882,10 +9890,10 @@ RF_API rf_model_animation* rf_load_model_animations_from_iqm(const char* data, i
             {
                 if (animations[a].bones[i].parent >= 0)
                 {
-                    animations[a].frame_poses[frame][i].rotation = rf_quaternion_multiply(animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation, animations[a].frame_poses[frame][i].rotation);
-                    animations[a].frame_poses[frame][i].translation = rf_vector3_rotate_by_quaternion(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation);
-                    animations[a].frame_poses[frame][i].translation = rf_vector3_add(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].translation);
-                    animations[a].frame_poses[frame][i].scale = rf_vector3_multiply_v(animations[a].frame_poses[frame][i].scale, animations[a].frame_poses[frame][animations[a].bones[i].parent].scale);
+                    animations[a].frame_poses[frame][i].rotation = rf_quaternion_mul(animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation, animations[a].frame_poses[frame][i].rotation);
+                    animations[a].frame_poses[frame][i].translation = rf_vec3_rotate_by_quaternion(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation);
+                    animations[a].frame_poses[frame][i].translation = rf_vec3_add(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].translation);
+                    animations[a].frame_poses[frame][i].scale = rf_vec3_mul_v(animations[a].frame_poses[frame][i].scale, animations[a].frame_poses[frame][animations[a].bones[i].parent].scale);
                 }
             }
         }
@@ -9911,16 +9919,16 @@ RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, i
 
         for (int m = 0; m < model.mesh_count; m++)
         {
-            rf_vector3 animVertex = { 0 };
-            rf_vector3 animNormal = { 0 };
+            rf_vec3 animVertex = {0 };
+            rf_vec3 animNormal = {0 };
 
-            rf_vector3 inTranslation = { 0 };
+            rf_vec3 inTranslation = {0 };
             rf_quaternion inRotation = { 0 };
-            rf_vector3 inScale = { 0 };
+            rf_vec3 inScale = {0 };
 
-            rf_vector3 outTranslation = { 0 };
+            rf_vec3 outTranslation = {0 };
             rf_quaternion outRotation = { 0 };
-            rf_vector3 outScale = { 0 };
+            rf_vec3 outScale = {0 };
 
             int vertex_pos_counter = 0;
             int boneCounter = 0;
@@ -9938,19 +9946,23 @@ RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, i
 
                 // Vertices processing
                 // NOTE: We use meshes.vertices (default vertex position) to calculate meshes.anim_vertices (animated vertex position)
-                animVertex = (rf_vector3){ model.meshes[m].vertices[vertex_pos_counter], model.meshes[m].vertices[vertex_pos_counter + 1], model.meshes[m].vertices[vertex_pos_counter + 2] };
-                animVertex = rf_vector3_multiply_v(animVertex, outScale);
-                animVertex = rf_vector3_substract(animVertex, inTranslation);
-                animVertex = rf_vector3_rotate_by_quaternion(animVertex, rf_quaternion_multiply(outRotation, rf_quaternion_invert(inRotation)));
-                animVertex = rf_vector3_add(animVertex, outTranslation);
+                animVertex = (rf_vec3){model.meshes[m].vertices[vertex_pos_counter], model.meshes[m].vertices[vertex_pos_counter + 1], model.meshes[m].vertices[vertex_pos_counter + 2] };
+                animVertex = rf_vec3_mul_v(animVertex, outScale);
+                animVertex = rf_vec3_sub(animVertex, inTranslation);
+                animVertex = rf_vec3_rotate_by_quaternion(animVertex, rf_quaternion_mul(outRotation,
+                                                                                        rf_quaternion_invert(
+                                                                                                inRotation)));
+                animVertex = rf_vec3_add(animVertex, outTranslation);
                 model.meshes[m].anim_vertices[vertex_pos_counter] = animVertex.x;
                 model.meshes[m].anim_vertices[vertex_pos_counter + 1] = animVertex.y;
                 model.meshes[m].anim_vertices[vertex_pos_counter + 2] = animVertex.z;
 
                 // Normals processing
                 // NOTE: We use meshes.baseNormals (default normal) to calculate meshes.normals (animated normals)
-                animNormal = (rf_vector3){ model.meshes[m].normals[vertex_pos_counter], model.meshes[m].normals[vertex_pos_counter + 1], model.meshes[m].normals[vertex_pos_counter + 2] };
-                animNormal = rf_vector3_rotate_by_quaternion(animNormal, rf_quaternion_multiply(outRotation, rf_quaternion_invert(inRotation)));
+                animNormal = (rf_vec3){model.meshes[m].normals[vertex_pos_counter], model.meshes[m].normals[vertex_pos_counter + 1], model.meshes[m].normals[vertex_pos_counter + 2] };
+                animNormal = rf_vec3_rotate_by_quaternion(animNormal, rf_quaternion_mul(outRotation,
+                                                                                        rf_quaternion_invert(
+                                                                                                inRotation)));
                 model.meshes[m].anim_normals[vertex_pos_counter] = animNormal.x;
                 model.meshes[m].anim_normals[vertex_pos_counter + 1] = animNormal.y;
                 model.meshes[m].anim_normals[vertex_pos_counter + 2] = animNormal.z;
@@ -10002,21 +10014,21 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius)
     int vertex_count = sides*3;
 
     // Vertices definition
-    rf_vector3* vertices = (rf_vector3* )RF_MALLOC(vertex_count*sizeof(rf_vector3));
+    rf_vec3* vertices = (rf_vec3* )RF_MALLOC(vertex_count * sizeof(rf_vec3));
     for (int i = 0, v = 0; i < 360; i += 360/sides, v += 3)
     {
-        vertices[v] = (rf_vector3){ 0.0f, 0.0f, 0.0f };
-        vertices[v + 1] = (rf_vector3){ sinf(RF_DEG2RAD*i)*radius, 0.0f, cosf(RF_DEG2RAD*i)*radius };
-        vertices[v + 2] = (rf_vector3){ sinf(RF_DEG2RAD*(i + 360/sides))*radius, 0.0f, cosf(RF_DEG2RAD*(i + 360/sides))*radius };
+        vertices[v] = (rf_vec3){0.0f, 0.0f, 0.0f };
+        vertices[v + 1] = (rf_vec3){sinf(RF_DEG2RAD * i) * radius, 0.0f, cosf(RF_DEG2RAD * i) * radius };
+        vertices[v + 2] = (rf_vec3){sinf(RF_DEG2RAD * (i + 360 / sides)) * radius, 0.0f, cosf(RF_DEG2RAD * (i + 360 / sides)) * radius };
     }
 
     // Normals definition
-    rf_vector3* normals = (rf_vector3* )RF_MALLOC(vertex_count*sizeof(rf_vector3));
-    for (int n = 0; n < vertex_count; n++) normals[n] = (rf_vector3){ 0.0f, 1.0f, 0.0f }; // rf_vector3.up;
+    rf_vec3* normals = (rf_vec3* )RF_MALLOC(vertex_count * sizeof(rf_vec3));
+    for (int n = 0; n < vertex_count; n++) normals[n] = (rf_vec3){0.0f, 1.0f, 0.0f }; // rf_vec3.up;
 
     // TexCoords definition
-    rf_vector2 *texcoords = (rf_vector2 *)RF_MALLOC(vertex_count*sizeof(rf_vector2));
-    for (int n = 0; n < vertex_count; n++) texcoords[n] = RF_CLIT(rf_vector2){ 0.0f, 0.0f };
+    rf_vec2 *texcoords = (rf_vec2 *)RF_MALLOC(vertex_count * sizeof(rf_vec2));
+    for (int n = 0; n < vertex_count; n++) texcoords[n] = RF_CLIT(rf_vec2){0.0f, 0.0f };
 
     mesh.vertex_count = vertex_count;
     mesh.triangle_count = sides;
@@ -10392,7 +10404,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int radSeg, int sides)
 
 // Generate a mesh from heightmap
 // NOTE: Vertex data is uploaded to GPU
-RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
+RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size)
 {
 #define RF_GRAY_value(c) ((c.r+c.g+c.b)/3)
 
@@ -10421,7 +10433,7 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
 
     int trisCounter = 0;
 
-    rf_vector3 scale_factor = { size.x/mapX, size.y/255.0f, size.z/mapZ };
+    rf_vec3 scale_factor = {size.x / mapX, size.y / 255.0f, size.z / mapZ };
 
     for (int z = 0; z < mapZ-1; z++)
     {
@@ -10504,7 +10516,7 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vector3 size)
 
 // Generate a cubes mesh from pixel data
 // NOTE: Vertex data is uploaded to GPU
-RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
+RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cubeSize)
 {
     rf_mesh mesh = { 0 };
     mesh.vbo_id = (unsigned int*)RF_MALLOC(RF_MAX_MESH_VBO * sizeof(unsigned int));
@@ -10526,17 +10538,17 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
     float h = cubeSize.z;
     float h2 = cubeSize.y;
 
-    rf_vector3* mapVertices = (rf_vector3* )RF_MALLOC(maxTriangles*3*sizeof(rf_vector3));
-    rf_vector2 *mapTexcoords = (rf_vector2 *)RF_MALLOC(maxTriangles*3*sizeof(rf_vector2));
-    rf_vector3* mapNormals = (rf_vector3* )RF_MALLOC(maxTriangles*3*sizeof(rf_vector3));
+    rf_vec3* mapVertices = (rf_vec3* )RF_MALLOC(maxTriangles * 3 * sizeof(rf_vec3));
+    rf_vec2 *mapTexcoords = (rf_vec2 *)RF_MALLOC(maxTriangles * 3 * sizeof(rf_vec2));
+    rf_vec3* mapNormals = (rf_vec3* )RF_MALLOC(maxTriangles * 3 * sizeof(rf_vec3));
 
     // Define the 6 normals of the cube, we will combine them accordingly later...
-    rf_vector3 n1 = { 1.0f, 0.0f, 0.0f };
-    rf_vector3 n2 = { -1.0f, 0.0f, 0.0f };
-    rf_vector3 n3 = { 0.0f, 1.0f, 0.0f };
-    rf_vector3 n4 = { 0.0f, -1.0f, 0.0f };
-    rf_vector3 n5 = { 0.0f, 0.0f, 1.0f };
-    rf_vector3 n6 = { 0.0f, 0.0f, -1.0f };
+    rf_vec3 n1 = {1.0f, 0.0f, 0.0f };
+    rf_vec3 n2 = {-1.0f, 0.0f, 0.0f };
+    rf_vec3 n3 = {0.0f, 1.0f, 0.0f };
+    rf_vec3 n4 = {0.0f, -1.0f, 0.0f };
+    rf_vec3 n5 = {0.0f, 0.0f, 1.0f };
+    rf_vec3 n6 = {0.0f, 0.0f, -1.0f };
 
     // NOTE: We use texture rectangles to define different textures for top-bottom-front-back-right-left (6)
     typedef struct rf_rectanglef rf_rectanglef;
@@ -10560,14 +10572,14 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
         for (int x = 0; x < mapWidth; ++x)
         {
             // Define the 8 vertex of the cube, we will combine them accordingly later...
-            rf_vector3 v1 = { w*(x - 0.5f), h2, h*(z - 0.5f) };
-            rf_vector3 v2 = { w*(x - 0.5f), h2, h*(z + 0.5f) };
-            rf_vector3 v3 = { w*(x + 0.5f), h2, h*(z + 0.5f) };
-            rf_vector3 v4 = { w*(x + 0.5f), h2, h*(z - 0.5f) };
-            rf_vector3 v5 = { w*(x + 0.5f), 0, h*(z - 0.5f) };
-            rf_vector3 v6 = { w*(x - 0.5f), 0, h*(z - 0.5f) };
-            rf_vector3 v7 = { w*(x - 0.5f), 0, h*(z + 0.5f) };
-            rf_vector3 v8 = { w*(x + 0.5f), 0, h*(z + 0.5f) };
+            rf_vec3 v1 = {w * (x - 0.5f), h2, h * (z - 0.5f) };
+            rf_vec3 v2 = {w * (x - 0.5f), h2, h * (z + 0.5f) };
+            rf_vec3 v3 = {w * (x + 0.5f), h2, h * (z + 0.5f) };
+            rf_vec3 v4 = {w * (x + 0.5f), h2, h * (z - 0.5f) };
+            rf_vec3 v5 = {w * (x + 0.5f), 0, h * (z - 0.5f) };
+            rf_vec3 v6 = {w * (x - 0.5f), 0, h * (z - 0.5f) };
+            rf_vec3 v7 = {w * (x - 0.5f), 0, h * (z + 0.5f) };
+            rf_vec3 v8 = {w * (x + 0.5f), 0, h * (z + 0.5f) };
 
             // We check pixel color to be RF_WHITE, we will full cubes
             if ((cubicmapPixels[z*cubicmap.width + x].r == 255) &&
@@ -10594,12 +10606,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -10619,12 +10631,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 if (((z < cubicmap.height - 1) &&
@@ -10650,12 +10662,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n6;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ frontTexUV.x, frontTexUV.y + frontTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){frontTexUV.x, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){frontTexUV.x + frontTexUV.width, frontTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){frontTexUV.x, frontTexUV.y + frontTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){frontTexUV.x + frontTexUV.width, frontTexUV.y + frontTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -10682,12 +10694,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n5;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ backTexUV.x + backTexUV.width, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){backTexUV.x, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){backTexUV.x + backTexUV.width, backTexUV.y + backTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){backTexUV.x + backTexUV.width, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){backTexUV.x, backTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){backTexUV.x, backTexUV.y + backTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -10714,12 +10726,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n1;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ rightTexUV.x, rightTexUV.y + rightTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){rightTexUV.x, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){rightTexUV.x + rightTexUV.width, rightTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){rightTexUV.x, rightTexUV.y + rightTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){rightTexUV.x + rightTexUV.width, rightTexUV.y + rightTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
 
@@ -10746,12 +10758,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                     mapNormals[nCounter + 5] = n2;
                     nCounter += 6;
 
-                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y };
-                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ leftTexUV.x, leftTexUV.y + leftTexUV.height };
-                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){leftTexUV.x + leftTexUV.width, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){leftTexUV.x, leftTexUV.y };
+                    mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){leftTexUV.x, leftTexUV.y + leftTexUV.height };
+                    mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){leftTexUV.x + leftTexUV.width, leftTexUV.y + leftTexUV.height };
                     vertex_texcoord_counter += 6;
                 }
             }
@@ -10777,12 +10789,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n4;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y + topTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ topTexUV.x, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y + topTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){topTexUV.x, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){topTexUV.x + topTexUV.width, topTexUV.y + topTexUV.height };
                 vertex_texcoord_counter += 6;
 
                 // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
@@ -10802,12 +10814,12 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
                 mapNormals[nCounter + 5] = n3;
                 nCounter += 6;
 
-                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vector2){ bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
-                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
-                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vector2){ bottomTexUV.x, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 1] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 2] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 3] = RF_CLIT(rf_vec2){bottomTexUV.x + bottomTexUV.width, bottomTexUV.y };
+                mapTexcoords[vertex_texcoord_counter + 4] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y + bottomTexUV.height };
+                mapTexcoords[vertex_texcoord_counter + 5] = RF_CLIT(rf_vec2){bottomTexUV.x, bottomTexUV.y };
                 vertex_texcoord_counter += 6;
             }
         }
@@ -10871,7 +10883,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vector3 cubeSize)
 RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d skyHDR, int size)
 {
     rf_texture2d cubemap = { 0 };
-    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_matrix in shader
+    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_mat in shader
     // Other locations should be setup externally in shader before calling the function
 
     // Set up depth face culling and cubemap seamless
@@ -10915,14 +10927,14 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d skyHDR
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Create _rf_ctx->gl_ctx.projection and different views for each face
-    rf_matrix fboProjection = rf_matrix_perspective(90.0*RF_DEG2RAD, 1.0, 0.01, 1000.0);
-    rf_matrix fboViews[6] = {
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ -1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f })
+    rf_mat fboProjection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fboViews[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
     };
 
     // Convert HDR equirectangular environment map to cubemap equivalent
@@ -10966,7 +10978,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     rf_texture2d irradiance = { 0 };
 
     #if defined(RF_GRAPHICS_API_OPENGL_33) // || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_matrix in shader
+    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_mat in shader
     // Other locations should be setup externally in shader before calling the function
 
     // Setup framebuffer
@@ -10993,14 +11005,14 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Create _rf_ctx->gl_ctx.projection (transposed) and different views for each face
-    rf_matrix fboProjection = rf_matrix_perspective(90.0*RF_DEG2RAD, 1.0, 0.01, 1000.0);
-    rf_matrix fboViews[6] = {
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ -1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f })
+    rf_mat fboProjection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fboViews[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
     };
 
     // Solve diffuse integral by convolution to create an irradiance cubemap
@@ -11042,7 +11054,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     rf_texture2d prefilter = { 0 };
 
     #if defined(RF_GRAPHICS_API_OPENGL_33) // || defined(RF_GRAPHICS_API_OPENGL_ES2)
-    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_matrix in shader
+    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_mat in shader
     // Other locations should be setup externally in shader before calling the function
     // TODO: Locations should be taken out of this function... too shader dependant...
     int roughnessLoc = rf_get_shader_location(shader, "roughness");
@@ -11074,14 +11086,14 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     // Create _rf_ctx->gl_ctx.projection (transposed) and different views for each face
-    rf_matrix fboProjection = rf_matrix_perspective(90.0*RF_DEG2RAD, 1.0, 0.01, 1000.0);
-    rf_matrix fboViews[6] = {
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ -1.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, 1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f }),
-            rf_matrix_look_at((rf_vector3){ 0.0f, 0.0f, 0.0f }, (rf_vector3){ 0.0f, 0.0f, -1.0f }, (rf_vector3){ 0.0f, -1.0f, 0.0f })
+    rf_mat fboProjection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fboViews[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
     };
 
     // Prefilter HDR and store data into mipmap levels
@@ -11224,7 +11236,7 @@ RF_API rf_image rf_image_copy(rf_image image)
 }
 
 // Create an image from another image piece
-RF_API rf_image rf_image_from_image(rf_image image, rf_rectangle rec)
+RF_API rf_image rf_image_from_image(rf_image image, rf_rec rec)
 {
     rf_image result = rf_image_copy(image);
 
@@ -11290,7 +11302,7 @@ RF_API void rf_image_format(rf_image* image, int newFormat)
     {
         if ((image->format < RF_COMPRESSED_DXT1_RGB) && (newFormat < RF_COMPRESSED_DXT1_RGB))
         {
-            rf_vector4* pixels = rf_get_image_data_normalized(*image); // Supports 8 to 32 bit per channel
+            rf_vec4* pixels = rf_get_image_data_normalized(*image); // Supports 8 to 32 bit per channel
 
             RF_FREE(image->data); // WARNING! We loose mipmaps data --> Regenerated at the end...
             image->data = NULL;
@@ -11555,7 +11567,7 @@ RF_API void rf_image_alpha_premultiply(rf_image* image)
 
 // Crop an image to area defined by a rectangle
 // NOTE: Security checks are performed in case rectangle goes out of bounds
-RF_API void rf_image_crop(rf_image* image, rf_rectangle crop)
+RF_API void rf_image_crop(rf_image* image, rf_rec crop)
 {
     // Security check to avoid program crash
     if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
@@ -11623,7 +11635,7 @@ RF_API void rf_image_alpha_crop(rf_image* image, float threshold)
         }
     }
 
-    rf_rectangle crop = { xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
+    rf_rec crop = {xMin, yMin, (xMax + 1) - xMin, (yMax + 1) - yMin };
 
     RF_FREE(pixels);
 
@@ -11706,23 +11718,23 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
         // Support offsets out of canvas new size -> original image is cropped
         if (offset_x < 0)
         {
-            rf_image_crop(image, RF_CLIT(rf_rectangle) { -offset_x, 0, image->width + offset_x, image->height });
+            rf_image_crop(image, RF_CLIT(rf_rec) {-offset_x, 0, image->width + offset_x, image->height });
             offset_x = 0;
         }
         else if (offset_x > (newWidth - image->width))
         {
-            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
+            rf_image_crop(image, RF_CLIT(rf_rec) {0, 0, image->width - (offset_x - (newWidth - image->width)), image->height });
             offset_x = newWidth - image->width;
         }
 
         if (offset_y < 0)
         {
-            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, -offset_y, image->width, image->height + offset_y });
+            rf_image_crop(image, RF_CLIT(rf_rec) {0, -offset_y, image->width, image->height + offset_y });
             offset_y = 0;
         }
         else if (offset_y > (newHeight - image->height))
         {
-            rf_image_crop(image, RF_CLIT(rf_rectangle) { 0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
+            rf_image_crop(image, RF_CLIT(rf_rec) {0, 0, image->width, image->height - (offset_y - (newHeight - image->height)) });
             offset_y = newHeight - image->height;
         }
 
@@ -11730,8 +11742,8 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
         {
             rf_image imTemp = rf_gen_image_color(newWidth, newHeight, color);
 
-            rf_rectangle srcRec = { 0.0f, 0.0f, (float)image->width, (float)image->height };
-            rf_rectangle dstRec = { (float)offset_x, (float)offset_y, srcRec.width, srcRec.height };
+            rf_rec srcRec = {0.0f, 0.0f, (float)image->width, (float)image->height };
+            rf_rec dstRec = {(float)offset_x, (float)offset_y, srcRec.width, srcRec.height };
 
             rf_image_draw(&imTemp, *image, srcRec, dstRec, RF_WHITE);
             rf_image_format(&imTemp, image->format);
@@ -11740,15 +11752,15 @@ RF_API void rf_image_resize_canvas(rf_image* image, int newWidth, int newHeight,
         }
         else if ((newWidth < image->width) && (newHeight < image->height))
         {
-            rf_rectangle crop = { (float)offset_x, (float)offset_y, (float)newWidth, (float)newHeight };
+            rf_rec crop = {(float)offset_x, (float)offset_y, (float)newWidth, (float)newHeight };
             rf_image_crop(image, crop);
         }
         else // One side is bigger and the other is smaller
         {
             rf_image imTemp = rf_gen_image_color(newWidth, newHeight, color);
 
-            rf_rectangle srcRec = { 0.0f, 0.0f, (float)image->width, (float)image->height };
-            rf_rectangle dstRec = { (float)offset_x, (float)offset_y, (float)image->width, (float)image->height };
+            rf_rec srcRec = {0.0f, 0.0f, (float)image->width, (float)image->height };
+            rf_rec dstRec = {(float)offset_x, (float)offset_y, (float)image->width, (float)image->height };
 
             if (newWidth < image->width)
             {
@@ -12018,7 +12030,7 @@ RF_API rf_color* rf_image_extract_palette(rf_image image, int maxPaletteSize, in
 
 // Draw an image (source) within an image (destination)
 // NOTE: rf_color tint is applied to source image
-RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_rectangle dstRec, rf_color tint)
+RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec srcRec, rf_rec dstRec, rf_color tint)
 {
     // Security check to avoid program crash
     if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0) ||
@@ -12056,27 +12068,27 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
     // Allow negative position within destination with cropping
     if (dstRec.x < 0)
     {
-        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { -dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rec) {-dstRec.x, 0, dstRec.width + dstRec.x, dstRec.height });
         dstRec.width = dstRec.width + dstRec.x;
         dstRec.x = 0;
     }
 
     if ((dstRec.x + dstRec.width) > dst->width)
     {
-        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, 0, dst->width - dstRec.x, dstRec.height });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rec) {0, 0, dst->width - dstRec.x, dstRec.height });
         dstRec.width = dst->width - dstRec.x;
     }
 
     if (dstRec.y < 0)
     {
-        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rec) {0, -dstRec.y, dstRec.width, dstRec.height + dstRec.y });
         dstRec.height = dstRec.height + dstRec.y;
         dstRec.y = 0;
     }
 
     if ((dstRec.y + dstRec.height) > dst->height)
     {
-        rf_image_crop(&srcCopy, RF_CLIT(rf_rectangle) { 0, 0, dstRec.width, dst->height - dstRec.y });
+        rf_image_crop(&srcCopy, RF_CLIT(rf_rec) {0, 0, dstRec.width, dst->height - dstRec.y });
         dstRec.height = dst->height - dstRec.y;
     }
 
@@ -12086,8 +12098,8 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rectangle srcRec, rf_r
 
     RF_FREE(srcCopy.data); // Source copy not required any more
 
-    rf_vector4 fsrc, fdst, fout; // Normalized pixel data (ready for operation)
-    rf_vector4 ftint = rf_color_normalize(tint); // Normalized color tint
+    rf_vec4 fsrc, fdst, fout; // Normalized pixel data (ready for operation)
+    rf_vec4 ftint = rf_color_normalize(tint); // Normalized color tint
 
     // Blit pixels, copy source image into destination
     // TODO: Maybe out-of-bounds blitting could be considered here instead of so much cropping
@@ -12180,9 +12192,9 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
         {
             if (letter != ' ')
             {
-                rf_image_draw(&im_text, font.chars[index].image, RF_CLIT(rf_rectangle){ 0, 0, font.chars[index].image.width, font.chars[index].image.height },
-                              RF_CLIT(rf_rectangle){ (float)(positionX + font.chars[index].offset_x),(float)font.chars[index].offset_y,
-                                      font.chars[index].image.width, font.chars[index].image.height }, tint);
+                rf_image_draw(&im_text, font.chars[index].image, RF_CLIT(rf_rec){0, 0, font.chars[index].image.width, font.chars[index].image.height },
+                              RF_CLIT(rf_rec){(float)(positionX + font.chars[index].offset_x), (float)font.chars[index].offset_y,
+                                              font.chars[index].image.width, font.chars[index].image.height }, tint);
             }
 
             if (font.chars[index].advance_x == 0) positionX += (int)(font.recs[index].width + spacing);
@@ -12205,39 +12217,39 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
 }
 
 // Draw rectangle within an image
-RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rectangle rec, rf_color color)
+RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color)
 {
     // Security check to avoid program crash
     if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0)) return;
 
     rf_image imRec = rf_gen_image_color((int)rec.width, (int)rec.height, color);
-    rf_image_draw(dst, imRec, RF_CLIT(rf_rectangle){ 0, 0, rec.width, rec.height }, rec, RF_WHITE);
+    rf_image_draw(dst, imRec, RF_CLIT(rf_rec){0, 0, rec.width, rec.height }, rec, RF_WHITE);
     RF_FREE(imRec.data);
 }
 
 // Draw rectangle lines within an image
-RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rectangle rec, int thick, rf_color color)
+RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color)
 {
-    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y, rec.width, thick }, color);
-    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick*2 }, color);
-    rf_image_draw_rectangle(dst, RF_CLIT(rf_rectangle){ rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rec){rec.x, rec.y, rec.width, thick }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rec){rec.x, rec.y + thick, thick, rec.height - thick * 2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rec){rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick * 2 }, color);
+    rf_image_draw_rectangle(dst, RF_CLIT(rf_rec){rec.x, rec.y + rec.height - thick, rec.width, thick }, color);
 }
 
 // Draw text (default font) within an image (destination)
-RF_API void rf_image_draw_text(rf_image* dst, rf_vector2 position, const char* text, int text_len, int font_size, rf_color color)
+RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color)
 {
     // NOTE: For default font, sapcing is set to desired font size / default font size (10)
     rf_image_draw_text_ex(dst, position, rf_get_default_font(), text, text_len, (float)font_size, (float)font_size/10, color);
 }
 
 // Draw text (custom sprite font) within an image (destination)
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vector2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color)
+RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color)
 {
     rf_image im_text = rf_image_text_ex(font, text, text_len, font_size, spacing, color);
 
-    rf_rectangle srcRec = { 0.0f, 0.0f, (float)im_text.width, (float)im_text.height };
-    rf_rectangle dstRec = { position.x, position.y, (float)im_text.width, (float)im_text.height };
+    rf_rec srcRec = {0.0f, 0.0f, (float)im_text.width, (float)im_text.height };
+    rf_rec dstRec = {position.x, position.y, (float)im_text.width, (float)im_text.height };
 
     rf_image_draw(dst, im_text, srcRec, dstRec, RF_WHITE);
 
@@ -12729,13 +12741,13 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
     int seedsPerCol = height/tileSize;
     int seedsCount = seedsPerRow * seedsPerCol;
 
-    rf_vector2 *seeds = (rf_vector2 *)RF_MALLOC(seedsCount*sizeof(rf_vector2));
+    rf_vec2 *seeds = (rf_vec2 *)RF_MALLOC(seedsCount * sizeof(rf_vec2));
 
     for (int i = 0; i < seedsCount; i++)
     {
         int y = (i/seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
         int x = (i%seedsPerRow)*tileSize + rf_get_random_value(0, tileSize - 1);
-        seeds[i] = RF_CLIT(rf_vector2){ (float)x, (float)y};
+        seeds[i] = RF_CLIT(rf_vec2){(float)x, (float)y};
     }
 
     for (int y = 0; y < height; y++)
@@ -12757,7 +12769,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tileSize)
                 {
                     if ((tileY + j < 0) || (tileY + j >= seedsPerCol)) continue;
 
-                    rf_vector2 neighborSeed = seeds[(tileY + j)*seedsPerRow + tileX + i];
+                    rf_vec2 neighborSeed = seeds[(tileY + j) * seedsPerRow + tileX + i];
 
                     float dist = (float)hypot(x - (int)neighborSeed.x, y - (int)neighborSeed.y);
                     minDistance = (float)fmin(minDistance, dist);

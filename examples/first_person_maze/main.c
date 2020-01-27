@@ -55,7 +55,7 @@ int main()
 
     //Rayfork and game init
     //Initialise rayfork and load the default font
-    rf_context rf_ctx;
+    rf_renderer_context rf_ctx;
     rf_context_init(&rf_ctx, screen_width, screen_height);
     rf_set_target_fps(60);
     rf_load_font_default();
@@ -63,10 +63,10 @@ int main()
     //Load stuff
     rf_image imMap        = rf_load_image("../../../examples/assets/cubicmap.png"); // Load cubicmap image (RAM)
     rf_texture2d cubicmap = rf_load_texture_from_image(imMap); // Convert image to texture to display (VRAM)
-    rf_mesh mesh          = rf_gen_mesh_cubicmap(imMap, (rf_vector3){ 1.0f, 1.0f, 1.0f });
+    rf_mesh mesh          = rf_gen_mesh_cubicmap(imMap, (rf_vec3){1.0f, 1.0f, 1.0f });
     rf_model model        = rf_load_model_from_mesh(mesh);
 
-    rf_vector2 ball_position = { (float) screen_width / 2, (float) screen_height / 2 };
+    rf_vec2 ball_position = {(float) screen_width / 2, (float) screen_height / 2 };
     rf_camera3d camera = { { 0.2f, 0.4f, 0.2f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 45.0f, 0 };
 
     // NOTE: By default each cube is mapped to one part of texture atlas
@@ -76,8 +76,8 @@ int main()
     rf_color*mapPixels = rf_get_image_data(imMap);
     rf_unload_image(imMap); // Unload image from RAM
 
-    rf_vector3 mapPosition = { -16.0f, 0.0f, -8.0f };  // Set model position
-    rf_vector3 playerPosition = camera.position;
+    rf_vec3 mapPosition = {-16.0f, 0.0f, -8.0f };  // Set model position
+    rf_vec3 playerPosition = camera.position;
 
     rf_set_camera_mode(camera, RF_CAMERA_FIRST_PERSON);
 
@@ -92,12 +92,12 @@ int main()
             input.mouse_position.y = (int) ypos;
         }
 
-        rf_vector3 oldCamPos = camera.position; // Store old camera position
+        rf_vec3 oldCamPos = camera.position; // Store old camera position
 
         rf_update_camera3d(&camera, input); // Update camera
 
         // Check player collision (we simplify to 2D collision detection)
-        rf_vector2 playerPos = { camera.position.x, camera.position.z };
+        rf_vec2 playerPos = {camera.position.x, camera.position.z };
         float playerRadius = 0.1f;  // Collision radius (player is modelled as a cilinder for collision)
 
         int playerCellX = (int)(playerPos.x - mapPosition.x + 0.5f);
@@ -117,7 +117,7 @@ int main()
             for (int x = 0; x < cubicmap.width; x++)
             {
                 if ((mapPixels[y*cubicmap.width + x].r == 255) && // Collision: white pixel, only check R channel
-                    (rf_check_collision_circle_rec(playerPos, playerRadius,(rf_rectangle){ mapPosition.x - 0.5f + x * 1.0f, mapPosition.z - 0.5f + y * 1.0f, 1.0f, 1.0f })))
+                    (rf_check_collision_circle_rec(playerPos, playerRadius,(rf_rec){mapPosition.x - 0.5f + x * 1.0f, mapPosition.z - 0.5f + y * 1.0f, 1.0f, 1.0f })))
                 {
                     // Collision detected, reset camera position
                     camera.position = oldCamPos;
@@ -137,7 +137,7 @@ int main()
 
         rf_end_mode3d();
 
-        rf_draw_texture_ex(cubicmap, (rf_vector2) { screen_width - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, rf_white);
+        rf_draw_texture_ex(cubicmap, (rf_vec2) {screen_width - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, rf_white);
         rf_draw_rectangle_lines(screen_width - cubicmap.width * 4 - 20, 20, cubicmap.width * 4, cubicmap.height * 4, rf_green);
 
         // Draw player position radar

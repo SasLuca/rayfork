@@ -17,16 +17,16 @@
 #define screen_width 800
 #define screen_height 450
 
-rf_context rf_ctx;
+rf_renderer_context rf_ctx;
 rf_audio_stream stream;
 short* data;
 short* write_buffer;
-rf_vector2 mouse_pos = { -100.0f, -100.0f };  // Position read in to determine next frequency
+rf_vec2 mouse_pos = {-100.0f, -100.0f };  // Position read in to determine next frequency
 float frequency;
 float old_frequency;
 int read_cursor;
 int wave_length;
-rf_vector2 position;
+rf_vec2 position;
 bool is_left_button_down;
 
 // With rayfork_audio the context struct must be in the same translation unit as the rayfork_audio implementation.
@@ -155,7 +155,7 @@ void on_event(const sapp_event* event)
 {
     if (event->type == SAPP_EVENTTYPE_MOUSE_MOVE)
     {
-        mouse_pos = (rf_vector2) { event->mouse_x, event->mouse_y };
+        mouse_pos = (rf_vec2) {event->mouse_x, event->mouse_y };
     }
 
     if (event->type == SAPP_EVENTTYPE_MOUSE_DOWN && event->mouse_button == SAPP_MOUSEBUTTON_LEFT)

@@ -57,11 +57,11 @@ extern void game_update(void)
         rf_draw_rectangle_lines(screen_width / 4 * 2 - 40, 320, 80, 60, rf_orange);  // NOTE: Uses QUADS internally, not lines
         rf_draw_rectangle_gradient_h(screen_width / 4 * 2 - 90, 170, 180, 130, rf_maroon, rf_gold);
 
-        rf_draw_triangle((rf_vector2){(float) screen_width / 4 * 3, 80},
-                         (rf_vector2){(float) screen_width / 4 * 3 - 60, 150},
-                         (rf_vector2){(float) screen_width / 4 * 3 + 60, 150}, rf_violet);
+        rf_draw_triangle((rf_vec2){(float) screen_width / 4 * 3, 80},
+                         (rf_vec2){(float) screen_width / 4 * 3 - 60, 150},
+                         (rf_vec2){(float) screen_width / 4 * 3 + 60, 150}, rf_violet);
 
-        rf_draw_poly((rf_vector2){(float)screen_width / 4.0f * 3.0f, 320}, 6, 80, 0, rf_brown);
+        rf_draw_poly((rf_vec2){(float)screen_width / 4.0f * 3.0f, 320}, 6, 80, 0, rf_brown);
 
         rf_draw_circle_gradient(screen_width / 4, 220, 60, rf_green, rf_skyblue);
 
@@ -70,9 +70,9 @@ extern void game_update(void)
         rf_draw_line(18, 42, screen_width - 18, 42, rf_black);
         rf_draw_circle_lines(screen_width / 4, 340, 80, rf_darkblue);
         rf_draw_triangle_lines(
-                               (rf_vector2){(float)screen_width / 4 * 3, 160},
-                               (rf_vector2){(float)screen_width / 4 * 3 - 20, 230},
-                               (rf_vector2){(float)screen_width / 4 * 3 + 20, 230}, rf_darkblue);
+                (rf_vec2){(float)screen_width / 4 * 3, 160},
+                (rf_vec2){(float)screen_width / 4 * 3 - 20, 230},
+                (rf_vec2){(float)screen_width / 4 * 3 + 20, 230}, rf_darkblue);
 
     rf_end_drawing();
 }

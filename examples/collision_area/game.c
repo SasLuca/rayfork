@@ -7,7 +7,7 @@
 #include "rayfork_renderer.h"
 #include "stdio.h"
 
-rf_context rf_ctx;
+rf_renderer_context rf_ctx;
 #define SCREEN_WIDTH 800
 #define screen_height 450
 
@@ -15,14 +15,14 @@ float mouse_x;
 float mouse_y;
 
 // Box A: Moving box
-rf_rectangle box_a = { 10, (float) screen_height / 2 - 50, 200, 100 };
+rf_rec box_a = {10, (float) screen_height / 2 - 50, 200, 100 };
 int box_a_speed_x = 4;
 
 // Box B: Mouse moved box
-rf_rectangle box_b = {(float) SCREEN_WIDTH / 2 - 30, (float) screen_height / 2 - 30, 60, 60 };
+rf_rec box_b = {(float) SCREEN_WIDTH / 2 - 30, (float) screen_height / 2 - 30, 60, 60 };
 
 // Collision rectangle
-rf_rectangle box_collision = { 0 };
+rf_rec box_collision = {0 };
 
 // Top menu limits
 const int screen_upper_limit = 40;
@@ -64,7 +64,7 @@ void on_frame(void)
     else if (box_b.y <= screen_upper_limit) box_b.y = screen_upper_limit;
 
     // Check boxes collision
-    collision = rf_check_collision_recs(box_a, box_b);
+    collision = rf_check_collision_rec(box_a, box_b);
 
     // Get collision rectangle (only on collision)
     if (collision) box_collision = rf_get_collision_rec(box_a, box_b);
