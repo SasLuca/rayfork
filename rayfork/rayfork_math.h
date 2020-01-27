@@ -28,7 +28,7 @@
 #define RF_VEC2_ZERO (RF_CLIT(rf_vec2) { 0.0f, 0.0f })
 #define RF_VEC2_ONE  (RF_CLIT(rf_vec2) { 1.0f, 1.0f })
 
-#define RF_VEC3_ZERO (RF_CLIT(rf_vec3) { 0.0f, 0.0f, 1.0f })
+#define RF_VEC3_ZERO (RF_CLIT(rf_vec3) { 0.0f, 0.0f, 0.0f })
 #define RF_VEC3_ONE  (RF_CLIT(rf_vec3) { 1.0f, 1.0f, 1.0f })
 
 //region structs
@@ -88,19 +88,19 @@ struct rf_vec4
 };
 
 //rf_mat type (OpenGL style 4x4 - right handed, column major)
-typedef union rf_mat rf_mat;
-union rf_mat
+typedef struct rf_mat rf_mat;
+struct rf_mat
 {
-    float m[4][4];
-    float v[4 * 4];
+    float m0, m4, m8, m12;
+    float m1, m5, m9, m13;
+    float m2, m6, m10, m14;
+    float m3, m7, m11, m15;
+};
 
-    struct
-    {
-        float m0, m4, m8, m12;
-        float m1, m5, m9, m13;
-        float m2, m6, m10, m14;
-        float m3, m7, m11, m15;
-    };
+typedef struct rf_float16 rf_float16;
+struct rf_float16
+{
+    float v[16];
 };
 
 typedef struct rf_rec rf_rec;
@@ -192,6 +192,7 @@ RF_API rf_mat rf_mat_frustum(double left, double right, double bottom, double to
 RF_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val); // Returns perspective GL_PROJECTION matrix. NOTE: Angle should be provided in radians
 RF_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val); // Returns orthographic GL_PROJECTION matrix
 RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up); // Returns camera look-at matrix (view matrix)
+RF_API rf_float16 rf_mat_to_float16(rf_mat mat); // Returns the matrix as an array of 16 floats
 
 RF_API rf_quaternion rf_quaternion_identity(void); // Returns identity quaternion
 RF_API float rf_quaternion_len(rf_quaternion q); // Computes the length of a quaternion
@@ -1058,6 +1059,30 @@ RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
     result = rf_mat_invert(result);
 
     return result;
+}
+
+RF_API rf_float16 rf_mat_to_float16(rf_mat mat)
+{
+    rf_float16 buffer = { 0 };
+
+    buffer.v[0] = mat.m0;
+    buffer.v[1] = mat.m1;
+    buffer.v[2] = mat.m2;
+    buffer.v[3] = mat.m3;
+    buffer.v[4] = mat.m4;
+    buffer.v[5] = mat.m5;
+    buffer.v[6] = mat.m6;
+    buffer.v[7] = mat.m7;
+    buffer.v[8] = mat.m8;
+    buffer.v[9] = mat.m9;
+    buffer.v[10] = mat.m10;
+    buffer.v[11] = mat.m11;
+    buffer.v[12] = mat.m12;
+    buffer.v[13] = mat.m13;
+    buffer.v[14] = mat.m14;
+    buffer.v[15] = mat.m15;
+
+    return buffer;
 }
 
 // Returns identity quaternion
