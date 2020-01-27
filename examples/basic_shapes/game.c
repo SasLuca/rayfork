@@ -16,41 +16,40 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, screen_width, screen_height);
-    rf_set_target_fps(60);
-    rf_load_font_default();
+    rf_renderer_init_context(&rf_ctx, screen_width, screen_height);
+    rf_load_default_font();
 }
 
 void on_frame(void)
 {
-    rf_begin_drawing();
+    rf_begin();
 
-        rf_clear_background(rf_raywhite);
+        rf_clear(RF_RAYWHITE);
 
-        rf_draw_text("some basic shapes available on raylib", 20, 20, 20, rf_darkgray);
+        rf_draw_text(rf_get_default_font(), "some basic shapes available on raylib", sizeof("some basic shapes available on raylib"), (rf_vector2) { 20, 20 }, 20, 1, RF_DARKGRAY);
 
-        rf_draw_circle(screen_width / 4, 120, 35, rf_darkblue);
+        rf_draw_circle(screen_width / 4, 120, 35, RF_DARKBLUE);
 
-        rf_draw_rectangle(screen_width / 4 * 2 - 60, 100, 120, 60, rf_red);
-        rf_draw_rectangle_lines(screen_width / 4 * 2 - 40, 320, 80, 60, rf_orange);  // NOTE: Uses QUADS internally, not lines
-        rf_draw_rectangle_gradient_h(screen_width / 4 * 2 - 90, 170, 180, 130, rf_maroon, rf_gold);
+        rf_draw_rectangle((rf_rectangle) { screen_width / 4 * 2 - 60, 100, 120, 60 }, (rf_vector2) { 0.f, 0.f }, 0, RF_RED);
+        rf_draw_rectangle_outline((rf_rectangle) { screen_width / 4 * 2 - 40, 320, 80, 60 }, 0, RF_ORANGE);  // NOTE: Uses QUADS internally, not lines
+        rf_draw_rectangle_gradient_h(screen_width / 4 * 2 - 90, 170, 180, 130, RF_MAROON, RF_GOLD);
 
         rf_draw_triangle((rf_vector2){(float) screen_width / 4 * 3, 80},
                          (rf_vector2){(float) screen_width / 4 * 3 - 60, 150},
-                         (rf_vector2){(float) screen_width / 4 * 3 + 60, 150}, rf_violet);
+                         (rf_vector2){(float) screen_width / 4 * 3 + 60, 150}, RF_VIOLET);
 
-        rf_draw_poly((rf_vector2){(float)screen_width / 4.0f * 3.0f, 320}, 6, 80, 0, rf_brown);
+        rf_draw_poly((rf_vector2){(float)screen_width / 4.0f * 3.0f, 320}, 6, 80, 0, RF_BROWN);
 
-        rf_draw_circle_gradient(screen_width / 4, 220, 60, rf_green, rf_skyblue);
+        rf_draw_circle_gradient(screen_width / 4, 220, 60, RF_GREEN, RF_SKYBLUE);
 
         // NOTE: We draw all LINES based shapes together to optimize internal drawing,
         // this way, all LINES are rendered in a single draw pass
-        rf_draw_line(18, 42, screen_width - 18, 42, rf_black);
-        rf_draw_circle_lines(screen_width / 4, 340, 80, rf_darkblue);
+        rf_draw_line((rf_vector2) { 18, 42 }, (rf_vector2) { screen_width - 18, 42 }, 3, RF_BLACK);
+        rf_draw_circle_lines(screen_width / 4, 340, 80, RF_DARKBLUE);
         rf_draw_triangle_lines(
                                (rf_vector2){(float)screen_width / 4 * 3, 160},
                                (rf_vector2){(float)screen_width / 4 * 3 - 20, 230},
-                               (rf_vector2){(float)screen_width / 4 * 3 + 20, 230}, rf_darkblue);
+                               (rf_vector2){(float)screen_width / 4 * 3 + 20, 230}, RF_DARKBLUE);
 
-    rf_end_drawing();
+    rf_end();
 }
