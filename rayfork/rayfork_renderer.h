@@ -882,7 +882,7 @@ RF_API void rf_draw_text_cstr(rf_font font, const char* text, rf_vec2 position, 
 
 // Text misc. functions
 RF_API int rf_get_glyph_index(rf_font font, int character); // Get index position for a unicode character on font
-RF_API float _rf_measure_height_of_text_in_container(rf_font font, float font_size, const char* text, int length, float container_width);
+RF_API float _rf_measure_height_of_wrapped_text(rf_font font, float font_size, const char* text, int length, float container_width);
 RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing);
 RF_API rf_sizef rf_measure_wrapped_text(rf_font font, float font_size, const char* text, int length, float container_width);
 
@@ -5588,7 +5588,7 @@ RF_API int rf_get_glyph_index(rf_font font, int character)
 // Measure string width for default font
 // Note(lulu): Merge with rf_measure_text
 // @Deprecated
-RF_API float _rf_measure_height_of_text_in_container(rf_font font, float font_size, const char* text, int length, float container_width)
+RF_API float _rf_measure_height_of_wrapped_text(rf_font font, float font_size, const char* text, int length, float container_width)
 {
     rf_sizef unwrapped_string_size = rf_measure_text(font, text, length, font_size, 1.0f);
     if (unwrapped_string_size.width <= container_width)

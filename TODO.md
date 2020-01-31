@@ -9,5 +9,5 @@
 - Add a clang format file if that was a thing.
 - Add individual build scripts or make files for every example.
 - Add more assertions.
-- Merge `_rf_measure_height_of_text_in_container` with `rf_measure_text`
+- Merge `_rf_measure_height_of_wrapped_text` with `rf_measure_text`
 - tinyobjloader uses fopen io functions which we dont want, so review that 
