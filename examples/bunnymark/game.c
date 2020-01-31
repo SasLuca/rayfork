@@ -7,8 +7,6 @@
 #include "rayfork_renderer.h"
 #include "game.h"
 
-rf_renderer_context rf_ctx;
-
 #define MAX_BUNNIES 50000  // 50K bunnies limit
 
 // This is the maximum amount of elements (quads) per batch
@@ -21,9 +19,12 @@ struct bunny
     rf_color color;
 };
 
-rf_texture2d bunny_texture;
-bunny*       bunnies;
-int          bunnies_count;
+
+rf_renderer_context rf_ctx;
+rf_renderer_memory  rf_memory;
+rf_texture2d        bunny_texture;
+bunny*              bunnies;
+int                 bunnies_count;
 
 int random_value_in_range(int min, int max)
 {
@@ -37,17 +38,42 @@ int random_value_in_range(int min, int max)
     return (rand() % (abs(max - min) + 1) + min);
 }
 
+int get_file_size(const char* filename)
+{
+    FILE* f = fopen(filename, "rb");
+    fseek(f, 0, SEEK_END);
+    int fsize = (int) ftell(f);
+    fseek(f, 0, SEEK_SET);
+    fclose(f);
+    return fsize;
+}
+
+void* read_file(const char* filename)
+{
+    FILE* f = fopen(filename, "rb");
+    fseek(f, 0, SEEK_END);
+    int fsize = (int) ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    unsigned char* buff = malloc(fsize);
+    fread(buff, 1, fsize, f);
+    fclose(f);
+
+    return buff;
+}
+
 void on_init(void)
 {
     //Load opengl with glad
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, screen_width, screen_height);
-    rf_set_target_fps(60);
-    rf_load_font_default();
+    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
 
-    bunny_texture = rf_load_texture("../../../examples/assets/wabbit_alpha.png");
+    int file_size = get_file_size("../../../examples/assets/wabbit_alpha.png");
+    void* file = read_file("../../../examples/assets/wabbit_alpha.png");
+
+    bunny_texture = rf_load_texture_stb(file, file_size);
 
     bunnies = (bunny*) malloc(MAX_BUNNIES * sizeof(bunny)); // Bunnies array
 }
@@ -84,9 +110,9 @@ void on_frame(const input_data input)
     }
 
     // Draw
-    rf_begin_drawing();
+    rf_begin();
 
-    rf_clear_background(rf_raywhite);
+    rf_clear(RF_RAYWHITE);
 
     for (int i = 0; i < bunnies_count; i++)
     {
@@ -96,18 +122,19 @@ void on_frame(const input_data input)
         // Process of sending data is costly and it could happen that GPU data has not been completely
         // processed for drawing while new data is tried to be sent (updating current in-use buffers)
         // it could generates a stall and consequently a frame drop, limiting the number of drawn bunnies
-        rf_draw_texture(bunny_texture, bunnies[i].position.x, bunnies[i].position.y, bunnies[i].color);
+        rf_draw_texture(bunny_texture, (rf_vec2) { bunnies[i].position.x, bunnies[i].position.y }, 0, 1, bunnies[i].color);
     }
 
-    rf_draw_rectangle(0, 0, screen_width, 40, rf_black);
+    rf_draw_rectangle((rf_rec) { 0, 0, screen_width, 40 }, RF_VEC2_ZERO, 0, RF_BLACK);
 
     char text[1024];
     snprintf(text, sizeof(text), "bunnies: %i", bunnies_count);
-    rf_draw_text(text, 120, 10, 20, rf_green);
+    int text_len = strlen(text);
+    rf_draw_text(rf_get_default_font(), text, text_len, (rf_vec2) { 120, 10 }, 20, 1, RF_GREEN);
+
     snprintf(text, sizeof(text), "batched draw calls: %i", 1 + bunnies_count / RF_MAX_BATCH_ELEMENTS);
-    rf_draw_text(text, 320, 10, 20, rf_maroon);
+    text_len = strlen(text);
+    rf_draw_text(rf_get_default_font(), text, text_len, (rf_vec2) { 320, 10 }, 20, 1, RF_MAROON);
 
-    rf_draw_fps(10, 10);
-
-    rf_end_drawing();
+    rf_end();
 }

@@ -7,9 +7,10 @@
 #include "rayfork_renderer.h"
 
 rf_renderer_context rf_ctx;
+rf_renderer_memory rf_memory;
 
-const int screen_width = 800;
-const int screen_height = 450;
+int screen_width = 800;
+int screen_height = 450;
 
 void on_init(void)
 {
@@ -17,18 +18,28 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, screen_width, screen_height);
-    rf_set_target_fps(60);
-    rf_load_font_default();
+    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
 }
 
 void on_frame(void)
 {
-    rf_begin_drawing();
+    rf_begin();
 
-    rf_clear_background(rf_raywhite);
+    rf_clear(RF_RAYWHITE);
 
-    rf_draw_text("Congrats! You created your first window!", 190, 200, 20, rf_lightgray);
+    const char* text      = "Congrats! You created your first window!";
+    const rf_sizef size   = rf_measure_text(rf_get_default_font(), text, strlen(text), 20, 1);
+    const rf_vec2 pos     = (rf_vec2) { screen_width / 2 - size.width / 2, screen_height / 2 - size.height / 2 }; // Center the text
 
-    rf_end_drawing();
+    rf_draw_text_cstr(rf_get_default_font(), text, pos, 20, 1, RF_LIGHTGRAY);
+
+    rf_end();
+}
+
+void on_resize(int width, int height)
+{
+    screen_width = width;
+    screen_height = height;
+
+    rf_set_viewport(screen_width, screen_height);
 }

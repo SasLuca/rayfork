@@ -53,6 +53,10 @@
 #define RF_TEXTSPLIT_MAX_TEXT_BUFFER_LENGTH 1024 // Size of RF_INTERNAL buffer: _rf_text_split()
 #define RF_TEXTSPLIT_MAX_SUBSTRINGS_COUNT 128 // Size of RF_INTERNAL pointers array: _rf_text_split()
 
+//Note(lulu): Check this number
+#define RF_MAX_FONT_CHARS 256 //Max number of characters in a font
+#define RF_DEFAULT_FONT_CHARS_COUNT 224 //Number of characters in the default font
+
 // Some Basic Colors
 // NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
 #define RF_LIGHTGRAY RF_CLIT(rf_color){ 200, 200, 200, 255 } // Light Gray
@@ -441,6 +445,11 @@ typedef struct rf_renderer_memory rf_renderer_memory;
 struct rf_renderer_memory
 {
     rf_dynamic_buffer vertex_data[RF_MAX_BATCH_BUFFERING];
+    int default_shader_locs[RF_MAX_SHADER_LOCATIONS];
+    rf_draw_call draw_calls[RF_MAX_DRAWCALL_REGISTERED];
+
+    rf_char_info default_font_chars[RF_DEFAULT_FONT_CHARS_COUNT];
+    rf_rec default_font_recs[RF_DEFAULT_FONT_CHARS_COUNT];
 };
 
 typedef struct rf_gl_context rf_gl_context;
@@ -762,14 +771,14 @@ typedef enum rf_font_type
 RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, rf_renderer_memory* memory, int width, int height);
 RF_API void rf_renderer_set_global_context_pointer(rf_renderer_context* rf_ctx);
 
-RF_API void rf_load_default_font();   //Load the default font
-RF_API rf_material rf_load_default_material(); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
+// Note: rf_end_render_to_texture also uses this, we should maybe make a separate function rf_set_screen_size
+RF_API void rf_set_viewport(int width, int height); // Change the viewport
 
 RF_API rf_font rf_get_default_font(); // Get the default font
 RF_API rf_shader rf_get_default_shader(); // Get default shader
 RF_API rf_texture2d rf_get_default_texture(); // Get default texture
 
-RF_API void rf_unload_default_font(); // Unload default font
+RF_API rf_material rf_load_default_material(); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 
 // rf_color-related functions
 RF_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
@@ -842,6 +851,7 @@ RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation
 
 RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 
+RF_API rf_texture2d rf_load_texture_stb(const void* data, int data_len); // Load texture from an image file data using stb
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture from image data
 RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, int layout_type); // Load cubemap from image, multiple image cubemap layouts supported
 RF_API rf_render_texture2d rf_load_render_texture(int width, int height); // Load texture for rendering (framebuffer)
@@ -861,7 +871,8 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, int filterMode); // Set 
 RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode); // Set texture wrapping mode
 
 // rf_texture2d drawing functions
-RF_API void rf_draw_texture(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
+RF_API void rf_draw_texture(rf_texture2d texture, rf_vec2 position, float rotation, float scale, rf_color tint); // Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
 RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info nPatchInfo, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint); // Draws a texture (or part of it) that stretches or shrinks nicely
 
 // Text drawing functions
@@ -1015,7 +1026,9 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GP
 
 // rf_image/rf_texture2d data loading/unloading/saving functions
 RF_API rf_image rf_load_image(const void* data, int width, int height, int format); // Load image from raw data with parameters
-RF_API rf_image rf_load_image_from_pixels(const rf_color* pixels, int width, int height);
+RF_API rf_image rf_load_image_from_pixels(const rf_color* pixels, int width, int height); // Load image from pixels
+RF_API rf_image rf_load_image_stb(const void* data, int data_size); // Loads an image from the following formats using stb: .png .jpg .bmp .tga .gif .pic .psd. The output buffer is allocated by STBI and a o pointer to the output is stored in the resulted rf_image. Override STBI_MALLOC for custom allocator support.
+RF_API rf_image rf_load_image_stb_hdr(const void* data, int data_size); // Loads an hdr image using stb. The output buffer is allocated by STBI and a o pointer to the output is stored in the resulted rf_image. Override STBI_MALLOC for custom allocator support.
 
 // rf_font loading/unloading functions
 RF_API rf_font rf_load_ttf_font(const char* ttf_data, int ttf_data_size, int font_size, int* font_chars, int chars_count); // Load font from file with extended parameters
@@ -1256,12 +1269,13 @@ rf_renderer_context* _rf_ctx;
 
 //region declaration of internal functions
 
+RF_INTERNAL void _rf_load_default_font();
+
 RF_INTERNAL bool _rf_strings_match(const char* a, int a_len, const char* b, int b_len);
 RF_INTERNAL int _rf_get_next_utf8_codepoint(const char* text, int* bytes_processed);
 
 RF_INTERNAL void _rf_set_gl_extension_if_available(const char* gl_ext, int len);
 
-RF_INTERNAL void _rf_setup_viewport(int width, int height);
 RF_INTERNAL void _rf_setup_frame_buffer(int width, int height);
 
 RF_INTERNAL unsigned int _rf_compile_shader(const char* shader_str, int type);
@@ -1294,6 +1308,153 @@ RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model);
 //endregion
 
 //region internal functions implementation
+
+// Load raylib default font
+RF_INTERNAL void _rf_load_default_font()
+{
+    // NOTE: Using UTF8 encoding table for Unicode U+0000..U+00FF Basic Latin + Latin-1 Supplement
+    // http://www.utf8-chartable.de/unicode-utf8-table.pl
+
+    _rf_ctx->default_font.chars_count = 224; // Number of chars included in our default font
+
+    // Default font is directly defined here (data generated from a sprite font image)
+    // This way, we reconstruct rf_font without creating large global variables
+    // This data is automatically allocated to Stack and automatically deallocated at the end of this function
+    unsigned int default_font_data[512] =
+            {
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200020, 0x0001b000, 0x00000000, 0x00000000, 0x8ef92520, 0x00020a00, 0x7dbe8000, 0x1f7df45f,
+                    0x4a2bf2a0, 0x0852091e, 0x41224000, 0x10041450, 0x2e292020, 0x08220812, 0x41222000, 0x10041450, 0x10f92020, 0x3efa084c, 0x7d22103c, 0x107df7de,
+                    0xe8a12020, 0x08220832, 0x05220800, 0x10450410, 0xa4a3f000, 0x08520832, 0x05220400, 0x10450410, 0xe2f92020, 0x0002085e, 0x7d3e0281, 0x107df41f,
+                    0x00200000, 0x8001b000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xc0000fbe, 0xfbf7e00f, 0x5fbf7e7d, 0x0050bee8, 0x440808a2, 0x0a142fe8, 0x50810285, 0x0050a048,
+                    0x49e428a2, 0x0a142828, 0x40810284, 0x0048a048, 0x10020fbe, 0x09f7ebaf, 0xd89f3e84, 0x0047a04f, 0x09e48822, 0x0a142aa1, 0x50810284, 0x0048a048,
+                    0x04082822, 0x0a142fa0, 0x50810285, 0x0050a248, 0x00008fbe, 0xfbf42021, 0x5f817e7d, 0x07d09ce8, 0x00008000, 0x00000fe0, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x000c0180,
+                    0xdfbf4282, 0x0bfbf7ef, 0x42850505, 0x004804bf, 0x50a142c6, 0x08401428, 0x42852505, 0x00a808a0, 0x50a146aa, 0x08401428, 0x42852505, 0x00081090,
+                    0x5fa14a92, 0x0843f7e8, 0x7e792505, 0x00082088, 0x40a15282, 0x08420128, 0x40852489, 0x00084084, 0x40a16282, 0x0842022a, 0x40852451, 0x00088082,
+                    0xc0bf4282, 0xf843f42f, 0x7e85fc21, 0x3e0900bf, 0x00000000, 0x00000004, 0x00000000, 0x000c0180, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x04000402, 0x41482000, 0x00000000, 0x00000800,
+                    0x04000404, 0x4100203c, 0x00000000, 0x00000800, 0xf7df7df0, 0x514bef85, 0xbefbefbe, 0x04513bef, 0x14414500, 0x494a2885, 0xa28a28aa, 0x04510820,
+                    0xf44145f0, 0x474a289d, 0xa28a28aa, 0x04510be0, 0x14414510, 0x494a2884, 0xa28a28aa, 0x02910a00, 0xf7df7df0, 0xd14a2f85, 0xbefbe8aa, 0x011f7be0,
+                    0x00000000, 0x00400804, 0x20080000, 0x00000000, 0x00000000, 0x00600f84, 0x20080000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0xac000000, 0x00000f01, 0x00000000, 0x00000000, 0x24000000, 0x00000f01, 0x00000000, 0x06000000, 0x24000000, 0x00000f01, 0x00000000, 0x09108000,
+                    0x24fa28a2, 0x00000f01, 0x00000000, 0x013e0000, 0x2242252a, 0x00000f52, 0x00000000, 0x038a8000, 0x2422222a, 0x00000f29, 0x00000000, 0x010a8000,
+                    0x2412252a, 0x00000f01, 0x00000000, 0x010a8000, 0x24fbe8be, 0x00000f01, 0x00000000, 0x0ebe8000, 0xac020000, 0x00000f01, 0x00000000, 0x00048000,
+                    0x0003e000, 0x00000f00, 0x00000000, 0x00008000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000038, 0x8443b80e, 0x00203a03,
+                    0x02bea080, 0xf0000020, 0xc452208a, 0x04202b02, 0xf8029122, 0x07f0003b, 0xe44b388e, 0x02203a02, 0x081e8a1c, 0x0411e92a, 0xf4420be0, 0x01248202,
+                    0xe8140414, 0x05d104ba, 0xe7c3b880, 0x00893a0a, 0x283c0e1c, 0x04500902, 0xc4400080, 0x00448002, 0xe8208422, 0x04500002, 0x80400000, 0x05200002,
+                    0x083e8e00, 0x04100002, 0x804003e0, 0x07000042, 0xf8008400, 0x07f00003, 0x80400000, 0x04000022, 0x00000000, 0x00000000, 0x80400000, 0x04000002,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00800702, 0x1848a0c2, 0x84010000, 0x02920921, 0x01042642, 0x00005121, 0x42023f7f, 0x00291002,
+                    0xefc01422, 0x7efdfbf7, 0xefdfa109, 0x03bbbbf7, 0x28440f12, 0x42850a14, 0x20408109, 0x01111010, 0x28440408, 0x42850a14, 0x2040817f, 0x01111010,
+                    0xefc78204, 0x7efdfbf7, 0xe7cf8109, 0x011111f3, 0x2850a932, 0x42850a14, 0x2040a109, 0x01111010, 0x2850b840, 0x42850a14, 0xefdfbf79, 0x03bbbbf7,
+                    0x001fa020, 0x00000000, 0x00001000, 0x00000000, 0x00002070, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x08022800, 0x00012283, 0x02430802, 0x01010001, 0x8404147c, 0x20000144, 0x80048404, 0x00823f08, 0xdfbf4284, 0x7e03f7ef, 0x142850a1, 0x0000210a,
+                    0x50a14684, 0x528a1428, 0x142850a1, 0x03efa17a, 0x50a14a9e, 0x52521428, 0x142850a1, 0x02081f4a, 0x50a15284, 0x4a221428, 0xf42850a1, 0x03efa14b,
+                    0x50a16284, 0x4a521428, 0x042850a1, 0x0228a17a, 0xdfbf427c, 0x7e8bf7ef, 0xf7efdfbf, 0x03efbd0b, 0x00000000, 0x04000000, 0x00000000, 0x00000008,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200508, 0x00840400, 0x11458122, 0x00014210,
+                    0x00514294, 0x51420800, 0x20a22a94, 0x0050a508, 0x00200000, 0x00000000, 0x00050000, 0x08000000, 0xfefbefbe, 0xfbefbefb, 0xfbeb9114, 0x00fbefbe,
+                    0x20820820, 0x8a28a20a, 0x8a289114, 0x3e8a28a2, 0xfefbefbe, 0xfbefbe0b, 0x8a289114, 0x008a28a2, 0x228a28a2, 0x08208208, 0x8a289114, 0x088a28a2,
+                    0xfefbefbe, 0xfbefbefb, 0xfa2f9114, 0x00fbefbe, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00210100, 0x00000004, 0x00000000, 0x00000000, 0x14508200, 0x00001402, 0x00000000, 0x00000000,
+                    0x00000010, 0x00000020, 0x00000000, 0x00000000, 0xa28a28be, 0x00002228, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000,
+                    0xa28a28aa, 0x000022a8, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000, 0xbefbefbe, 0x00003e2f, 0x00000000, 0x00000000,
+                    0x00000004, 0x00002028, 0x00000000, 0x00000000, 0x80000000, 0x00003e0f, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+            };
+
+    int chars_height  = 10;
+    int chars_divisor = 1; // Every char is separated from the consecutive by a 1 pixel divisor, horizontally and vertically
+
+    int chars_width[224] = {
+            3, 1, 4, 6, 5, 7, 6, 2, 3, 3, 5, 5, 2, 4, 1, 7, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 3, 4, 3, 6,
+            7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 5, 6, 5, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 6, 6, 6, 2, 7, 2, 3, 5,
+            2, 5, 5, 5, 5, 5, 4, 5, 5, 1, 2, 5, 2, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 3, 1, 3, 4, 4,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 5, 5, 5, 7, 1, 5, 3, 7, 3, 5, 4, 1, 7, 4, 3, 5, 3, 3, 2, 5, 6, 1, 2, 2, 3, 5, 6, 6, 6, 6,
+            6, 6, 6, 6, 6, 6, 7, 6, 6, 6, 6, 6, 3, 3, 3, 3, 7, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 4, 6,
+            5, 5, 5, 5, 5, 5, 9, 5, 5, 5, 5, 5, 2, 2, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5
+    };
+
+    // Re-construct image from _rf_ctx->default_font_data and generate OpenGL texture
+    //----------------------------------------------------------------------
+    const int im_width = 128;
+    const int im_height = 128;
+
+    rf_color image_pixels[128 * 128] = {};
+
+    int counter = 0; // rf_font data elements counter
+
+    // Fill imgData with _rf_ctx->default_font_data (convert from bit to pixel!)
+    for (int i = 0; i < im_width * im_height; i += 32)
+    {
+        for (int j = 31; j >= 0; j--)
+        {
+            const int bit_check = (default_font_data[counter]) & (1u << j);
+            if (bit_check) image_pixels[i + j] = RF_WHITE;
+        }
+
+        counter++;
+
+        if (counter > 512) counter = 0; // Security check...
+    }
+
+    rf_image im_font = rf_load_image(image_pixels, im_width, im_height, RF_UNCOMPRESSED_R8G8B8A8);
+    rf_image_format(&im_font, RF_UNCOMPRESSED_GRAY_ALPHA);
+
+    _rf_ctx->default_font.texture = rf_load_texture_from_image(im_font);
+
+    // Reconstruct charSet using chars_width[], chars_height, chars_divisor, chars_count
+    //------------------------------------------------------------------------------
+
+    // Allocate space for our characters info data
+    // NOTE: This memory should be freed at end! --> CloseWindow()
+    _rf_ctx->default_font.chars = _rf_ctx->gl_ctx.memory->default_font_chars;
+    _rf_ctx->default_font.recs  = _rf_ctx->gl_ctx.memory->default_font_recs;
+
+    int current_line  = 0;
+    int current_pos_x = chars_divisor;
+    int test_pos_x    = chars_divisor;
+
+    for (int i = 0; i < _rf_ctx->default_font.chars_count; i++)
+    {
+        _rf_ctx->default_font.chars[i].value = 32 + i; // First char is 32
+
+        _rf_ctx->default_font.recs[i].x      = (float) current_pos_x;
+        _rf_ctx->default_font.recs[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+        _rf_ctx->default_font.recs[i].width  = (float) chars_width[i];
+        _rf_ctx->default_font.recs[i].height = (float) chars_height;
+
+        test_pos_x += (int) (_rf_ctx->default_font.recs[i].width + (float)chars_divisor);
+
+        if (test_pos_x >= _rf_ctx->default_font.texture.width)
+        {
+            current_line++;
+            current_pos_x = 2 * chars_divisor + chars_width[i];
+            test_pos_x = current_pos_x;
+
+            _rf_ctx->default_font.recs[i].x = (float) (chars_divisor);
+            _rf_ctx->default_font.recs[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+        }
+        else current_pos_x = test_pos_x;
+
+        // NOTE: On default font character offsets and xAdvance are not required
+        _rf_ctx->default_font.chars[i].offset_x = 0;
+        _rf_ctx->default_font.chars[i].offset_y = 0;
+        _rf_ctx->default_font.chars[i].advance_x = 0;
+
+        // Fill character image data from fontClear data
+        _rf_ctx->default_font.chars[i].image = rf_image_from_image(im_font, _rf_ctx->default_font.recs[i]);
+    }
+
+    _rf_ctx->default_font.base_size = (int)_rf_ctx->default_font.recs[0].height;
+
+    RF_LOG(RF_LOG_INFO, "[TEX ID %i] Default font loaded successfully", _rf_ctx->default_font.texture.id);
+}
 
 // Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found
 // When a invalid UTF8 rf_byte is encountered we exit as soon as possible and a '?'(0x3f) codepoint is returned
@@ -1414,7 +1575,7 @@ RF_INTERNAL int _rf_get_next_utf8_codepoint(const char* text, int* bytes_process
 }
 
 // Set viewport for a provided width and height
-RF_INTERNAL void _rf_setup_viewport(int width, int height)
+RF_API void rf_setup_viewport(int width, int height)
 {
     _rf_ctx->render_width = width;
     _rf_ctx->render_height = height;
@@ -1662,7 +1823,7 @@ RF_INTERNAL unsigned int _rf_load_shader_program(unsigned int v_shader_id, unsig
 RF_INTERNAL rf_shader _rf_load_default_shader()
 {
     rf_shader shader = { 0 };
-    shader.locs = (int*)RF_MALLOC(RF_MAX_SHADER_LOCATIONS * sizeof(int));
+    shader.locs = _rf_ctx->gl_ctx.memory->default_shader_locs;
     memset(shader.locs, 0, RF_MAX_SHADER_LOCATIONS * sizeof(int));
 
     // NOTE: All locations must be reseted to -1 (no location)
@@ -1670,18 +1831,14 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
 
     // Vertex shader directly defined, no external file required
     const char* defaultVshader_str =
-#if defined(RF_GRAPHICS_API_OPENGL_21)
-            "#version 120                       \n"
-#elif defined(RF_GRAPHICS_API_OPENGL_ES2)
+            #if defined(RF_GRAPHICS_API_OPENGL_ES2)
             "#version 100                       \n"
-#endif
-#if defined(RF_GRAPHICS_API_OPENGL_ES2) || defined(RF_GRAPHICS_API_OPENGL_21)
-    "attribute vec3 vertex_position;     \n"
+            "attribute vec3 vertex_position;     \n"
             "attribute vec2 vertex_tex_coord;     \n"
             "attribute vec4 vertex_color;        \n"
             "varying vec2 fragTexCoord;         \n"
             "varying vec4 fragColor;            \n"
-#elif defined(RF_GRAPHICS_API_OPENGL_33)
+            #elif defined(RF_GRAPHICS_API_OPENGL_33)
             "#version 330                       \n"
             "in vec3 vertex_position;            \n"
             "in vec2 vertex_tex_coord;            \n"
@@ -1699,16 +1856,12 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
 
     // Fragment shader directly defined, no external file required
     const char* defaultFshader_str =
-#if defined(RF_GRAPHICS_API_OPENGL_21)
-            "#version 120                       \n"
-#elif defined(RF_GRAPHICS_API_OPENGL_ES2)
-    "#version 100                       \n"
+            #if defined(RF_GRAPHICS_API_OPENGL_ES2)
+            "#version 100                       \n"
             "precision mediump float;           \n"     // precision required for OpenGL ES2 (WebGL)
-#endif
-#if defined(RF_GRAPHICS_API_OPENGL_ES2) || defined(RF_GRAPHICS_API_OPENGL_21)
-    "varying vec2 fragTexCoord;         \n"
+            "varying vec2 fragTexCoord;         \n"
             "varying vec4 fragColor;            \n"
-#elif defined(RF_GRAPHICS_API_OPENGL_33)
+            #elif defined(RF_GRAPHICS_API_OPENGL_33)
             "#version 330       \n"
             "in vec2 fragTexCoord;              \n"
             "in vec4 fragColor;                 \n"
@@ -1718,7 +1871,7 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
             "uniform vec4 colDiffuse;           \n"
             "void main()                        \n"
             "{                                  \n"
-            #if defined(RF_GRAPHICS_API_OPENGL_ES2) || defined(RF_GRAPHICS_API_OPENGL_21)
+            #if defined(RF_GRAPHICS_API_OPENGL_ES2)
             "    vec4 texelColor = texture2D(texture0, fragTexCoord); \n" // NOTE: texture2D() is deprecated on OpenGL 3.3 and ES 3.0
             "    gl_FragColor = texelColor*colDiffuse*fragColor;      \n"
             #elif defined(RF_GRAPHICS_API_OPENGL_33)
@@ -2220,7 +2373,11 @@ RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model)
         memset(model.materials, 0, model.material_count * sizeof(rf_material));
         model.materials[0] = rf_load_default_material();
 
-        if (model.mesh_material == NULL) model.mesh_material = (int*)RF_MALLOC(model.mesh_count * sizeof(int));
+        if (model.mesh_material == NULL)
+        {
+            model.mesh_material = (int*) RF_MALLOC(model.mesh_count * sizeof(int));
+            memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
+        }
     }
 
     return model;
@@ -2562,7 +2719,7 @@ RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, rf_renderer_me
     _rf_ctx->gl_ctx.transform_matrix = rf_mat_identity();
 
     // Init draw calls tracking system
-    _rf_ctx->gl_ctx.draws = (rf_draw_call *)RF_MALLOC(sizeof(rf_draw_call)*RF_MAX_DRAWCALL_REGISTERED);
+    _rf_ctx->gl_ctx.draws = memory->draw_calls;
 
     for (int i = 0; i < RF_MAX_DRAWCALL_REGISTERED; i++)
     {
@@ -2602,12 +2759,6 @@ RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, rf_renderer_me
     glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
     glEnable(GL_CULL_FACE);                                 // Enable backface culling
 
-#if defined(RF_GRAPHICS_API_OPENGL_11)
-    // Init state: rf_color hints (deprecated in OpenGL 3.0+)
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);      // Improve quality of color and texture coordinate interpolation
-    glShadeModel(GL_SMOOTH);                                // Smooth shading between vertex (vertex colors interpolation)
-#endif
-
     // Init state: rf_color/Depth buffers clear
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);                   // Set clear color (black)
     glClearDepth(1.0f);                                     // Set clear depth value (default)
@@ -2620,7 +2771,9 @@ RF_API void rf_renderer_init_context(rf_renderer_context* rf_ctx, rf_renderer_me
     RF_LOG(RF_LOG_INFO, "OpenGL default states initialized successfully");
 
     // Setup default viewport
-    _rf_setup_viewport(width, height);
+    rf_set_viewport(width, height);
+
+    _rf_load_default_font();
 }
 
 RF_API void rf_renderer_set_global_context_pointer(rf_renderer_context* rf_ctx)
@@ -2628,151 +2781,26 @@ RF_API void rf_renderer_set_global_context_pointer(rf_renderer_context* rf_ctx)
     _rf_ctx = rf_ctx;
 }
 
-// Load raylib default font
-RF_API void rf_load_default_font()
+// Set viewport for a provided width and height
+RF_API void rf_set_viewport(int width, int height)
 {
-    // NOTE: Using UTF8 encoding table for Unicode U+0000..U+00FF Basic Latin + Latin-1 Supplement
-    // http://www.utf8-chartable.de/unicode-utf8-table.pl
+    _rf_ctx->render_width = width;
+    _rf_ctx->render_height = height;
 
-    _rf_ctx->default_font.chars_count = 224; // Number of chars included in our default font
+    // Set viewport width and height
+    // NOTE: We consider render size and offset in case black bars are required and
+    // render area does not match full global_display area (this situation is only applicable on fullscreen mode)
+    rf_gl_viewport(_rf_ctx->render_offset_x/2, _rf_ctx->render_offset_y/2, _rf_ctx->render_width - _rf_ctx->render_offset_x, _rf_ctx->render_height - _rf_ctx->render_offset_y);
 
-    // Default font is directly defined here (data generated from a sprite font image)
-    // This way, we reconstruct rf_font without creating large global variables
-    // This data is automatically allocated to Stack and automatically deallocated at the end of this function
-    unsigned int default_font_data[512] =
-            {
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200020, 0x0001b000, 0x00000000, 0x00000000, 0x8ef92520, 0x00020a00, 0x7dbe8000, 0x1f7df45f,
-                    0x4a2bf2a0, 0x0852091e, 0x41224000, 0x10041450, 0x2e292020, 0x08220812, 0x41222000, 0x10041450, 0x10f92020, 0x3efa084c, 0x7d22103c, 0x107df7de,
-                    0xe8a12020, 0x08220832, 0x05220800, 0x10450410, 0xa4a3f000, 0x08520832, 0x05220400, 0x10450410, 0xe2f92020, 0x0002085e, 0x7d3e0281, 0x107df41f,
-                    0x00200000, 0x8001b000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xc0000fbe, 0xfbf7e00f, 0x5fbf7e7d, 0x0050bee8, 0x440808a2, 0x0a142fe8, 0x50810285, 0x0050a048,
-                    0x49e428a2, 0x0a142828, 0x40810284, 0x0048a048, 0x10020fbe, 0x09f7ebaf, 0xd89f3e84, 0x0047a04f, 0x09e48822, 0x0a142aa1, 0x50810284, 0x0048a048,
-                    0x04082822, 0x0a142fa0, 0x50810285, 0x0050a248, 0x00008fbe, 0xfbf42021, 0x5f817e7d, 0x07d09ce8, 0x00008000, 0x00000fe0, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x000c0180,
-                    0xdfbf4282, 0x0bfbf7ef, 0x42850505, 0x004804bf, 0x50a142c6, 0x08401428, 0x42852505, 0x00a808a0, 0x50a146aa, 0x08401428, 0x42852505, 0x00081090,
-                    0x5fa14a92, 0x0843f7e8, 0x7e792505, 0x00082088, 0x40a15282, 0x08420128, 0x40852489, 0x00084084, 0x40a16282, 0x0842022a, 0x40852451, 0x00088082,
-                    0xc0bf4282, 0xf843f42f, 0x7e85fc21, 0x3e0900bf, 0x00000000, 0x00000004, 0x00000000, 0x000c0180, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x04000402, 0x41482000, 0x00000000, 0x00000800,
-                    0x04000404, 0x4100203c, 0x00000000, 0x00000800, 0xf7df7df0, 0x514bef85, 0xbefbefbe, 0x04513bef, 0x14414500, 0x494a2885, 0xa28a28aa, 0x04510820,
-                    0xf44145f0, 0x474a289d, 0xa28a28aa, 0x04510be0, 0x14414510, 0x494a2884, 0xa28a28aa, 0x02910a00, 0xf7df7df0, 0xd14a2f85, 0xbefbe8aa, 0x011f7be0,
-                    0x00000000, 0x00400804, 0x20080000, 0x00000000, 0x00000000, 0x00600f84, 0x20080000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0xac000000, 0x00000f01, 0x00000000, 0x00000000, 0x24000000, 0x00000f01, 0x00000000, 0x06000000, 0x24000000, 0x00000f01, 0x00000000, 0x09108000,
-                    0x24fa28a2, 0x00000f01, 0x00000000, 0x013e0000, 0x2242252a, 0x00000f52, 0x00000000, 0x038a8000, 0x2422222a, 0x00000f29, 0x00000000, 0x010a8000,
-                    0x2412252a, 0x00000f01, 0x00000000, 0x010a8000, 0x24fbe8be, 0x00000f01, 0x00000000, 0x0ebe8000, 0xac020000, 0x00000f01, 0x00000000, 0x00048000,
-                    0x0003e000, 0x00000f00, 0x00000000, 0x00008000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000038, 0x8443b80e, 0x00203a03,
-                    0x02bea080, 0xf0000020, 0xc452208a, 0x04202b02, 0xf8029122, 0x07f0003b, 0xe44b388e, 0x02203a02, 0x081e8a1c, 0x0411e92a, 0xf4420be0, 0x01248202,
-                    0xe8140414, 0x05d104ba, 0xe7c3b880, 0x00893a0a, 0x283c0e1c, 0x04500902, 0xc4400080, 0x00448002, 0xe8208422, 0x04500002, 0x80400000, 0x05200002,
-                    0x083e8e00, 0x04100002, 0x804003e0, 0x07000042, 0xf8008400, 0x07f00003, 0x80400000, 0x04000022, 0x00000000, 0x00000000, 0x80400000, 0x04000002,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00800702, 0x1848a0c2, 0x84010000, 0x02920921, 0x01042642, 0x00005121, 0x42023f7f, 0x00291002,
-                    0xefc01422, 0x7efdfbf7, 0xefdfa109, 0x03bbbbf7, 0x28440f12, 0x42850a14, 0x20408109, 0x01111010, 0x28440408, 0x42850a14, 0x2040817f, 0x01111010,
-                    0xefc78204, 0x7efdfbf7, 0xe7cf8109, 0x011111f3, 0x2850a932, 0x42850a14, 0x2040a109, 0x01111010, 0x2850b840, 0x42850a14, 0xefdfbf79, 0x03bbbbf7,
-                    0x001fa020, 0x00000000, 0x00001000, 0x00000000, 0x00002070, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x08022800, 0x00012283, 0x02430802, 0x01010001, 0x8404147c, 0x20000144, 0x80048404, 0x00823f08, 0xdfbf4284, 0x7e03f7ef, 0x142850a1, 0x0000210a,
-                    0x50a14684, 0x528a1428, 0x142850a1, 0x03efa17a, 0x50a14a9e, 0x52521428, 0x142850a1, 0x02081f4a, 0x50a15284, 0x4a221428, 0xf42850a1, 0x03efa14b,
-                    0x50a16284, 0x4a521428, 0x042850a1, 0x0228a17a, 0xdfbf427c, 0x7e8bf7ef, 0xf7efdfbf, 0x03efbd0b, 0x00000000, 0x04000000, 0x00000000, 0x00000008,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200508, 0x00840400, 0x11458122, 0x00014210,
-                    0x00514294, 0x51420800, 0x20a22a94, 0x0050a508, 0x00200000, 0x00000000, 0x00050000, 0x08000000, 0xfefbefbe, 0xfbefbefb, 0xfbeb9114, 0x00fbefbe,
-                    0x20820820, 0x8a28a20a, 0x8a289114, 0x3e8a28a2, 0xfefbefbe, 0xfbefbe0b, 0x8a289114, 0x008a28a2, 0x228a28a2, 0x08208208, 0x8a289114, 0x088a28a2,
-                    0xfefbefbe, 0xfbefbefb, 0xfa2f9114, 0x00fbefbe, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00210100, 0x00000004, 0x00000000, 0x00000000, 0x14508200, 0x00001402, 0x00000000, 0x00000000,
-                    0x00000010, 0x00000020, 0x00000000, 0x00000000, 0xa28a28be, 0x00002228, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000,
-                    0xa28a28aa, 0x000022a8, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000, 0xbefbefbe, 0x00003e2f, 0x00000000, 0x00000000,
-                    0x00000004, 0x00002028, 0x00000000, 0x00000000, 0x80000000, 0x00003e0f, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
-            };
+    rf_gl_matrix_mode(GL_PROJECTION); // Switch to PROJECTION matrix
+    rf_gl_load_identity(); // Reset current matrix (PROJECTION)
 
-    int chars_height  = 10;
-    int chars_divisor = 1; // Every char is separated from the consecutive by a 1 pixel divisor, horizontally and vertically
+    // Set orthographic GL_PROJECTION to current framebuffer size
+    // NOTE: Confirf_gl_projectiongured top-left corner as (0, 0)
+    rf_gl_ortho(0, _rf_ctx->render_width, _rf_ctx->render_height, 0, 0.0f, 1.0f);
 
-    int chars_width[224] = {
-            3, 1, 4, 6, 5, 7, 6, 2, 3, 3, 5, 5, 2, 4, 1, 7, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 3, 4, 3, 6,
-            7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 5, 6, 5, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 6, 6, 6, 2, 7, 2, 3, 5,
-            2, 5, 5, 5, 5, 5, 4, 5, 5, 1, 2, 5, 2, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 3, 1, 3, 4, 4,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 5, 5, 5, 7, 1, 5, 3, 7, 3, 5, 4, 1, 7, 4, 3, 5, 3, 3, 2, 5, 6, 1, 2, 2, 3, 5, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 7, 6, 6, 6, 6, 6, 3, 3, 3, 3, 7, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 4, 6,
-            5, 5, 5, 5, 5, 5, 9, 5, 5, 5, 5, 5, 2, 2, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5
-    };
-
-    // Re-construct image from _rf_ctx->default_font_data and generate OpenGL texture
-    //----------------------------------------------------------------------
-    const int im_width = 128;
-    const int im_height = 128;
-
-    rf_color image_pixels[128 * 128] = {};
-
-    int counter = 0; // rf_font data elements counter
-
-    // Fill imgData with _rf_ctx->default_font_data (convert from bit to pixel!)
-    for (int i = 0; i < im_width * im_height; i += 32)
-    {
-        for (int j = 31; j >= 0; j--)
-        {
-            const int bit_check = (default_font_data[counter]) & (1u << j);
-            if (bit_check) image_pixels[i + j] = RF_WHITE;
-        }
-
-        counter++;
-
-        if (counter > 512) counter = 0; // Security check...
-    }
-
-    rf_image im_font = rf_load_image(image_pixels, im_width, im_height, RF_UNCOMPRESSED_R8G8B8A8);
-    rf_image_format(&im_font, RF_UNCOMPRESSED_GRAY_ALPHA);
-
-    _rf_ctx->default_font.texture = rf_load_texture_from_image(im_font);
-
-    // Reconstruct charSet using chars_width[], chars_height, chars_divisor, chars_count
-    //------------------------------------------------------------------------------
-
-    // Allocate space for our characters info data
-    // NOTE: This memory should be freed at end! --> CloseWindow()
-    _rf_ctx->default_font.chars = (rf_char_info*) RF_MALLOC(_rf_ctx->default_font.chars_count * sizeof(rf_char_info));
-    _rf_ctx->default_font.recs  = (rf_rec*) RF_MALLOC(_rf_ctx->default_font.chars_count * sizeof(rf_rec));
-
-    int current_line  = 0;
-    int current_pos_x = chars_divisor;
-    int test_pos_x    = chars_divisor;
-
-    for (int i = 0; i < _rf_ctx->default_font.chars_count; i++)
-    {
-        _rf_ctx->default_font.chars[i].value = 32 + i; // First char is 32
-
-        _rf_ctx->default_font.recs[i].x      = (float) current_pos_x;
-        _rf_ctx->default_font.recs[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
-        _rf_ctx->default_font.recs[i].width  = (float) chars_width[i];
-        _rf_ctx->default_font.recs[i].height = (float) chars_height;
-
-        test_pos_x += (int) (_rf_ctx->default_font.recs[i].width + (float)chars_divisor);
-
-        if (test_pos_x >= _rf_ctx->default_font.texture.width)
-        {
-            current_line++;
-            current_pos_x = 2 * chars_divisor + chars_width[i];
-            test_pos_x = current_pos_x;
-
-            _rf_ctx->default_font.recs[i].x = (float) (chars_divisor);
-            _rf_ctx->default_font.recs[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
-        }
-        else current_pos_x = test_pos_x;
-
-        // NOTE: On default font character offsets and xAdvance are not required
-        _rf_ctx->default_font.chars[i].offset_x = 0;
-        _rf_ctx->default_font.chars[i].offset_y = 0;
-        _rf_ctx->default_font.chars[i].advance_x = 0;
-
-        // Fill character image data from fontClear data
-        _rf_ctx->default_font.chars[i].image = rf_image_from_image(im_font, _rf_ctx->default_font.recs[i]);
-    }
-
-    _rf_ctx->default_font.base_size = (int)_rf_ctx->default_font.recs[0].height;
-
-    RF_LOG(RF_LOG_INFO, "[TEX ID %i] Default font loaded successfully", _rf_ctx->default_font.texture.id);
+    rf_gl_matrix_mode(GL_MODELVIEW); // Switch back to MODELVIEW matrix
+    rf_gl_load_identity(); // Reset current matrix (MODELVIEW)
 }
 
 // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
@@ -3108,7 +3136,7 @@ RF_API void rf_end_render_to_texture()
     rf_gl_disable_render_texture(); // Disable render target
 
     // Set viewport to default framebuffer size
-    _rf_setup_viewport(_rf_ctx->render_width, _rf_ctx->render_height);
+    rf_set_viewport(_rf_ctx->render_width, _rf_ctx->render_height);
 
     // Reset current screen size
     _rf_ctx->current_width = _rf_ctx->screen_width;
@@ -4509,6 +4537,21 @@ RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
     _rf_ctx->gl_ctx.rec_tex_shapes = source;
 }
 
+// Load texture from an image file data using stb
+RF_API rf_texture2d rf_load_texture_stb(const void* data, int data_len)
+{
+    rf_image img = rf_load_image_stb(data, data_len);
+
+    rf_texture2d texture = rf_load_texture_from_image(img);
+
+    // @Issue Note(lulu): I now realise that there are potential problems here. If someone overrides STBI_MALLOC and STBI_FREE
+    // to not be RF_MALLOC and RF_FREE then this will not work (and we do this everywhere to unload images.
+    // In the short term we should make all the stb stuff we do in rayfork private. That is we should check if STB is already loaded and use a #error to tell the user if stb was already loaded and that rayfork uses its own stb version which the user should not include before the raylib impl
+    RF_FREE(img.data);
+
+    return texture;
+}
+
 // Load a texture from image data
 // NOTE: image is not unloaded, it must be done manually
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image)
@@ -5095,9 +5138,19 @@ RF_API void rf_set_texture_wrap(rf_texture2d texture, int wrapMode)
     }
 }
 
+// Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture(rf_texture2d texture, rf_vec2 position, float rotation, float scale, rf_color tint)
+{
+    rf_rec source_rec = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
+    rf_rec destRec = { position.x, position.y, (float)texture.width*scale, (float)texture.height*scale };
+    rf_vec2 origin = { 0.0f, 0.0f };
+
+    rf_draw_texture_region(texture, source_rec, destRec, origin, rotation, tint);
+}
+
 // Draw a part of a texture (defined by a rectangle) with 'pro' parameters
 // NOTE: origin is relative to destination rectangle size
-RF_API void rf_draw_texture(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint)
+RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec destRec, rf_vec2 origin, float rotation, rf_color tint)
 {
     // Check if texture is valid
     if (texture.id > 0)
@@ -5376,7 +5429,7 @@ RF_API void rf_draw_text(rf_font font, const char* text, int length, rf_vec2 pos
         {
             if (letter != ' ')
             {
-                rf_draw_texture(font.texture, font.recs[index],
+                rf_draw_texture_region(font.texture, font.recs[index],
                                 RF_CLIT(rf_rec){position.x + text_offset_x + font.chars[index].offset_x * scale_factor,
                                                            position.y + text_offset_y + font.chars[index].offset_y*scale_factor,
                                                            font.recs[index].width*scale_factor,
@@ -5495,7 +5548,7 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
                 // Draw glyph
                 if ((letter != ' ') && (letter != '\t'))
                 {
-                    rf_draw_texture(font.texture, font.recs[index],
+                    rf_draw_texture_region(font.texture, font.recs[index],
                                     RF_CLIT(rf_rec){rec.x + text_offset_x + font.chars[index].offset_x * scale_factor,
                                 rec.y + text_offset_y + font.chars[index].offset_y*scale_factor,
                                 font.recs[index].width*scale_factor,
@@ -8380,12 +8433,11 @@ RF_API void rf_gl_unload_mesh(rf_mesh mesh)
 }
 
 // Load image from raw data with parameters
-// NOTE: This functions makes a copy of provided data
 RF_API rf_image rf_load_image(const void* data, int width, int height, int format)
 {
     rf_image srcImage = { 0 };
 
-    srcImage.data = (void*) data;
+    srcImage.data = (void*) data; // Safe const_cast
     srcImage.width = width;
     srcImage.height = height;
     srcImage.mipmaps = 1;
@@ -8419,6 +8471,39 @@ RF_API rf_image rf_load_image_from_pixels(const rf_color* pixels, int width, int
         ((unsigned char* )image.data)[i + 3] = pixels[k].a;
         k++;
     }
+
+    return image;
+}
+
+// Loads an image from the following formats using stb: .png .jpg .bmp .tga .gif .pic .psd. The output buffer is allocated by STBI and a o pointer to the output is stored in the resulted rf_image. Override STBI_MALLOC for custom allocator support.
+RF_API rf_image rf_load_image_stb(const void* data, int data_size)
+{
+    rf_image image = {};
+    int bpp = 0;
+
+    image.data = stbi_load_from_memory(data, data_size, &image.width, &image.height, &bpp, 0);
+    image.mipmaps = 1;
+
+    if (bpp == 1) image.format = RF_UNCOMPRESSED_GRAYSCALE;
+    else if (bpp == 2) image.format = RF_UNCOMPRESSED_GRAY_ALPHA;
+    else if (bpp == 3) image.format = RF_UNCOMPRESSED_R8G8B8;
+    else if (bpp == 4) image.format = RF_UNCOMPRESSED_R8G8B8A8;
+
+    return image;
+}
+
+// Loads an hdr image using stb. The output buffer is allocated by STBI and a o pointer to the output is stored in the resulted rf_image. Override STBI_MALLOC for custom allocator support.
+RF_API rf_image rf_load_image_stb_hdr(const void* data, int data_size)
+{
+    rf_image image = {};
+    int bpp = 0;
+
+    image.data = stbi_load_from_memory(data, data_size, &image.width, &image.height, &bpp, 0);
+    image.mipmaps = 1;
+
+    if      (bpp == 1) image.format = RF_UNCOMPRESSED_R32;
+    else if (bpp == 3) image.format = RF_UNCOMPRESSED_R32G32B32;
+    else if (bpp == 4) image.format = RF_UNCOMPRESSED_R32G32B32A32;
 
     return image;
 }
