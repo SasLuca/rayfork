@@ -1225,35 +1225,11 @@ rf_renderer_context* _rf_ctx;
 #include "par_shapes.h" // Shapes 3d parametric generation
 
 //For textures
-#if !defined(STBI_MALLOC)
-    #define STBI_MALLOC RF_MALLOC
-#endif
-
-#if !defined(STBI_FREE)
-    #define STBI_FREE RF_FREE
-#endif
-
-#if !defined(STBI_REALLOC)
-    #define STBI_REALLOC(p, newsz) RF_MALLOC(newsz)
-#endif
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h" // Required for: stbi_load_from_file()
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "stb_rect_pack.h" // Required for: ttf font rectangles packaging
-
-#if !defined(STBTT_malloc)
-    #define STBTT_malloc(x,u) RF_MALLOC(x)
-#endif
-
-#if !defined(STBTT_free)
-    #define STBTT_free(x,u) RF_FREE(x)
-#endif
-
-#if !defined(STBI_REALLOC)
-#define STBI_REALLOC(p, newsz) RF_MALLOC(newsz)
-#endif
 
 #define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION
