@@ -3,7 +3,7 @@ project(rayfork C)
 
 set(CMAKE_C_STANDARD 99)
 
-if (EXAMPLES)
+if (RAYFORK_EXAMPLES)
     include_directories(dependencies)
     include_directories(dependencies/cgltf)
     include_directories(dependencies/dr_libs)

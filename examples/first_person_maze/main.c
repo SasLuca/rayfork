@@ -7,7 +7,7 @@
 
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
-#include "rayfork_renderer.h"
+#include "rayfork.h"
 
 #define screen_width 800*2
 #define screen_height 450*2
@@ -126,26 +126,26 @@ int main()
         }
 
         //Render
-        rf_begin_drawing();
+        rf_begin();
 
-        rf_clear_background(rf_raywhite);
+        rf_clear(RF_RAYWHITE);
 
-        rf_begin_mode3d(camera);
+        rf_begin_3d(camera);
 
-        rf_draw_model(model, mapPosition, 1.0f, rf_white); // Draw maze map
+        rf_draw_model(model, mapPosition, 1.0f, RF_WHITE); // Draw maze map
         //DrawCubeV(playerPosition, (Vector3){ 0.2f, 0.4f, 0.2f }, RED);  // Draw player
 
-        rf_end_mode3d();
+        rf_end_3d();
 
-        rf_draw_texture_ex(cubicmap, (rf_vec2) {screen_width - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, rf_white);
-        rf_draw_rectangle_lines(screen_width - cubicmap.width * 4 - 20, 20, cubicmap.width * 4, cubicmap.height * 4, rf_green);
+        rf_draw_texture_ex(cubicmap, (rf_vec2) {screen_width - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, RF_WHITE);
+        rf_draw_rectangle_lines(screen_width - cubicmap.width * 4 - 20, 20, cubicmap.width * 4, cubicmap.height * 4, RF_GREEN);
 
         // Draw player position radar
-        rf_draw_rectangle(screen_width - cubicmap.width * 4 - 20 + playerCellX * 4, 20 + playerCellY * 4, 4, 4, rf_red);
+        rf_draw_rectangle(screen_width - cubicmap.width * 4 - 20 + playerCellX * 4, 20 + playerCellY * 4, 4, 4, RF_RED);
 
         rf_draw_fps(10, 10);
 
-        rf_end_drawing();
+        rf_end();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

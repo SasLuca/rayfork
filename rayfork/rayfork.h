@@ -5583,7 +5583,6 @@ RF_API float _rf_measure_height_of_wrapped_text(rf_font font, float font_size, c
 
     scale_factor = font_size/font.base_size;
 
-
     enum
     {
         MEASURE_STATE = 0,

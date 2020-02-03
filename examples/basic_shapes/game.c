@@ -4,7 +4,7 @@
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
 #include "sokol_app.h"
-#include "rayfork_renderer.h"
+#include "rayfork.h"
 
 rf_renderer_context rf_ctx;
 rf_renderer_memory rf_memory;

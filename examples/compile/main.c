@@ -2,7 +2,7 @@
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
-#include "rayfork_renderer.h"
+#include "rayfork.h"
 
 int main()
 {
