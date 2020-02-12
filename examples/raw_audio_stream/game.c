@@ -17,7 +17,7 @@
 #define screen_width 800
 #define screen_height 450
 
-rf_renderer_context rf_ctx;
+rf_context rf_ctx;
 rf_audio_stream stream;
 short* data;
 short* write_buffer;

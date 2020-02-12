@@ -20,8 +20,8 @@ struct bunny
 };
 
 
-rf_renderer_context rf_ctx;
-rf_renderer_memory  rf_memory;
+rf_context rf_ctx;
+rf_memory  rf_memory;
 rf_texture2d        bunny_texture;
 bunny*              bunnies;
 int                 bunnies_count;
@@ -38,30 +38,6 @@ int random_value_in_range(int min, int max)
     return (rand() % (abs(max - min) + 1) + min);
 }
 
-int get_file_size(const char* filename)
-{
-    FILE* f = fopen(filename, "rb");
-    fseek(f, 0, SEEK_END);
-    int fsize = (int) ftell(f);
-    fseek(f, 0, SEEK_SET);
-    fclose(f);
-    return fsize;
-}
-
-void* read_file(const char* filename)
-{
-    FILE* f = fopen(filename, "rb");
-    fseek(f, 0, SEEK_END);
-    int fsize = (int) ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    unsigned char* buff = malloc(fsize);
-    fread(buff, 1, fsize, f);
-    fclose(f);
-
-    return buff;
-}
-
 void on_init(void)
 {
     //Load opengl with glad
@@ -69,11 +45,7 @@ void on_init(void)
 
     //Initialise rayfork and load the default font
     rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
-
-    int file_size = get_file_size("../../../examples/assets/wabbit_alpha.png");
-    void* file = read_file("../../../examples/assets/wabbit_alpha.png");
-
-    bunny_texture = rf_load_texture_stb(file, file_size);
+    bunny_texture = rf_load_texture_from_file("../../../examples/assets/wabbit_alpha.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
 
     bunnies = (bunny*) malloc(MAX_BUNNIES * sizeof(bunny)); // Bunnies array
 }

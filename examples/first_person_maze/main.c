@@ -55,10 +55,9 @@ int main()
 
     //Rayfork and game init
     //Initialise rayfork and load the default font
-    rf_renderer_context rf_ctx;
-    rf_context_init(&rf_ctx, screen_width, screen_height);
-    rf_set_target_fps(60);
-    rf_load_font_default();
+    rf_context rf_ctx;
+    rf_memory rf_memory;
+    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
 
     //Load stuff
     rf_image imMap        = rf_load_image("../../../examples/assets/cubicmap.png"); // Load cubicmap image (RAM)
@@ -73,7 +72,7 @@ int main()
     rf_texture2d texture = rf_load_texture("../../../examples/assets/cubicmap_atlas.png"); // Load map texture
     model.materials[0].maps[RF_MAP_DIFFUSE].texture = texture; // Set map diffuse texture
 
-    rf_color*mapPixels = rf_get_image_data(imMap);
+    rf_color* mapPixels = rf_get_image_pixel_data(imMap);
     rf_unload_image(imMap); // Unload image from RAM
 
     rf_vec3 mapPosition = {-16.0f, 0.0f, -8.0f };  // Set model position

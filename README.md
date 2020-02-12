@@ -35,7 +35,7 @@ To use rayfork simply include the header and it's dependencies in your project a
 #include "rayfork_audio.h" //Include rayfork audio (note: it's usually better to include rayfork_audio first)
 #include "rayfork.h" //Include rayfork
 
-rf_renderer_context rf_ctx; //Create a context variable
+rf_context rf_ctx; //Create a context variable
 rf_audio_context rf_audio_ctx; //Create a context variable for rayfork_audio. Note that in the case of rayfork_audio the context struct must be in the same translation unit as the implementation
 
 void init()
@@ -60,7 +60,7 @@ This is a non-exhaustive list of changes and things to be aware of:
 and how it gets loaded heavily depends on your platform layer. There can also be multiple mutually exclusive ways to load OpenGL on just one platform.
 - Async loading functions were added for certain asset types, we plan to support async loading for all asset types.
 - The naming convention was changed to `rf_function_name` for public functions and `_rf_function_name` for private functions.
-- All global variables were moved into a struct called `rf_renderer_context` which must be allocated and initialised by the user. The functions use a global pointer to the `rf_renderer_context` struct that can be set by the user.
+- All global variables were moved into a struct called `rf_context` which must be allocated and initialised by the user. The functions use a global pointer to the `rf_context` struct that can be set by the user.
 - The user must provide the implementation for a couple of simple functions that rely on hosted functionality (eg: IO functions, time query functions, logging)
 - Most text handling functions were removed.
 - More functions now ask for the size of buffers.
@@ -71,7 +71,7 @@ and how it gets loaded heavily depends on your platform layer. There can also be
 If you wrote a project in Raylib and want to move it over to Rayfork there are several things you might need to change:
 
 1. You must provide your own platform layer which handle window creation and opengl loading. Examples of these include: sokol_app with glad, SDL, GLFW.
-2. You must create a `rf_renderer_context` struct and use it to initialise the library.
+2. You must create a `rf_context` struct and use it to initialise the library.
 3. You must change the names of the functions to match the Rayfork naming convention.
 4. You must replace any functions from Raylib that were removed in Rayfork (eg: the text manipulation functions).
 

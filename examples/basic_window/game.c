@@ -6,8 +6,8 @@
 #include "sokol_app.h"
 #include "rayfork.h"
 
-rf_renderer_context rf_ctx;
-rf_renderer_memory rf_memory;
+rf_context rf_ctx;
+rf_memory rf_memory;
 
 int screen_width = 800;
 int screen_height = 450;

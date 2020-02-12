@@ -1,13 +1,15 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
-#define RF_RENDERER_IMPL
-#define RF_GRAPHICS_API_OPENGL_33
+#define RAYFORK_IMPLEMENTATION
+#define RAYFORK_GRAPHICS_BACKEND_OPENGL_33
+#define RAYFORK_MATH_IMPLEMENTATION
 #include "glad/glad.h"
 #include "sokol_app.h"
 #include "rayfork.h"
 
-rf_renderer_context rf_ctx;
-rf_renderer_memory rf_memory;
+rf_context rf_ctx;
+rf_memory  rf_mem;
+
 const int screen_width = 800;
 const int screen_height = 450;
 
@@ -17,8 +19,7 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
-    rf_load_default_font();
+    rf_renderer_init_context(&rf_ctx, &rf_mem, screen_width, screen_height);
 }
 
 void on_frame(void)
@@ -45,7 +46,7 @@ void on_frame(void)
 
         // NOTE: We draw all LINES based shapes together to optimize internal drawing,
         // this way, all LINES are rendered in a single draw pass
-        rf_draw_line((rf_vec2) {18, 42 }, (rf_vec2) {screen_width - 18, 42 }, 3, RF_BLACK);
+        rf_draw_line((rf_vec2) { 18, 42 }, (rf_vec2) {screen_width - 18, 42 }, 3, RF_BLACK);
 
         rf_draw_circle_lines(screen_width / 4, 340, 80, RF_DARKBLUE);
 

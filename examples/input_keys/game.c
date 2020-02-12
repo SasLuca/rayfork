@@ -6,7 +6,7 @@
 #include "rayfork.h"
 #include "game.h"
 
-rf_renderer_context rf_ctx;
+rf_context rf_ctx;
 
 rf_vec2 ball_position = {(float) screen_width / 2, (float) screen_height / 2 };
 

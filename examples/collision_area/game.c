@@ -7,7 +7,7 @@
 #include "rayfork.h"
 #include "stdio.h"
 
-rf_renderer_context rf_ctx;
+rf_context rf_ctx;
 #define SCREEN_WIDTH 800
 #define screen_height 450
 

@@ -6,7 +6,7 @@
 #include "sokol_app.h"
 #include "rayfork.h"
 
-rf_renderer_context rf_ctx;
+rf_context rf_ctx;
 rf_camera3d camera;
 
 void on_init(void)
