@@ -4,8 +4,8 @@
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
-#include "rayfork_audio.h"
-#include "rayfork.h"
+#include "../../rayfork_audio/include/rayfork_audio.h"
+#include "include/old_rayfork.h"
 #include "sokol_app.h"
 
 #include <math.h>

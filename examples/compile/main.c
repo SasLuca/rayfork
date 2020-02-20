@@ -2,7 +2,7 @@
 #define RAYFORK_IMPLEMENTATION
 #define RAYFORK_GRAPHICS_BACKEND_OPENGL_33
 #include "glad/glad.h"
-#include "rayfork.h"
+#include "include/old_rayfork.h"
 
 int main()
 {

@@ -3,7 +3,7 @@
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
 #include "glad/glad.h"
-#include "rayfork.h"
+#include "include/old_rayfork.h"
 #include "game.h"
 
 rf_context rf_ctx;

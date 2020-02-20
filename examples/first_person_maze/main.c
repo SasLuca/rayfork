@@ -7,7 +7,7 @@
 
 #define RF_RENDERER_IMPL
 #define RF_GRAPHICS_API_OPENGL_33
-#include "rayfork.h"
+#include "include/old_rayfork.h"
 
 #define screen_width 800*2
 #define screen_height 450*2

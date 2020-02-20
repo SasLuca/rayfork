@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(rayfork C)
 
-set(CMAKE_C_STANDARD 99)
-
 if (RAYFORK_EXAMPLES)
     include_directories(dependencies)
     include_directories(dependencies/cgltf)
@@ -37,15 +35,20 @@ if (RAYFORK_EXAMPLES)
     add_subdirectory(examples/compile)
 endif()
 
-add_library(rayfork INTERFACE)
+set(RAYFORK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rayfork/include)
 
-target_include_directories(rayfork INTERFACE dependencies)
-target_include_directories(rayfork INTERFACE dependencies/cgltf)
-target_include_directories(rayfork INTERFACE dependencies/dr_libs)
-target_include_directories(rayfork INTERFACE dependencies/jar)
-target_include_directories(rayfork INTERFACE dependencies/miniaudio)
-target_include_directories(rayfork INTERFACE dependencies/par)
-target_include_directories(rayfork INTERFACE dependencies/stb)
-target_include_directories(rayfork INTERFACE dependencies/tinyobjloader-c)
+include_directories(rayfork/include)
 
-target_include_directories(rayfork INTERFACE rayfork/)
+add_library(rayfork
+        rayfork/src/rayfork.c
+        rayfork/src/rayfork_math.c
+        rayfork/src/rayfork_image.c
+        rayfork/src/rayfork_drawing.c
+        rayfork/src/rayfork_gfx_backend_gl.c
+        rayfork/src/rayfork_image_manipulation.c
+        rayfork/src/rayfork_model.c
+        rayfork/src/rayfork_physac.c)
+
+target_compile_features(rayfork PUBLIC c_std_99)
+target_include_directories(rayfork INTERFACE rayfork/include)
+target_include_directories(rayfork PRIVATE rayfork/libs)

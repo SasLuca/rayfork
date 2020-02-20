@@ -1,5 +1,14 @@
-// stb_truetype.h - v1.23 - public domain
-// authored from 2009-2019 by Sean Barrett / RAD Game Tools
+// stb_truetype.h - v1.24 - public domain
+// authored from 2009-2020 by Sean Barrett / RAD Game Tools
+//
+// =======================================================================
+//
+//    NO SECURITY GUARANTEE -- DO NOT USE THIS ON UNTRUSTED FONT FILES
+//
+// This library does no range checking of the offsets found in the file,
+// meaning an attacker can use it to read arbitrary memory.
+//
+// =======================================================================
 //
 //   This library processes TrueType files:
 //        parse files
@@ -32,11 +41,11 @@
 //       Daniel Ribeiro Maciel
 //
 //   Bug/warning reports/fixes:
-//       "Zer" on mollyrocket       Fabian "ryg" Giesen
-//       Cass Everitt               Martins Mozeiko
-//       stoiko (Haemimont Games)   Cap Petschulat
-//       Brian Hook                 Omar Cornut
-//       Walter van Niftrik         github:aloucks
+//       "Zer" on mollyrocket       Fabian "ryg" Giesen   github:NiLuJe
+//       Cass Everitt               Martins Mozeiko       github:aloucks
+//       stoiko (Haemimont Games)   Cap Petschulat        github:oyvindjam
+//       Brian Hook                 Omar Cornut           github:vassvik
+//       Walter van Niftrik         Ryan Griege
 //       David Gow                  Peter LaValle
 //       David Given                Sergey Popov
 //       Ivan-Assen Ivanov          Giumo X. Clanjor
@@ -44,12 +53,12 @@
 //       Johan Duparc               Thomas Fields
 //       Hou Qiming                 Derek Vinyard
 //       Rob Loach                  Cort Stratton
-//       Kenney Phillis Jr.         github:oyvindjam
-//       Brian Costabile            github:vassvik
-//       Ken Voskuil (kaesve)       Ryan Griege
+//       Kenney Phillis Jr.         Brian Costabile
+//       Ken Voskuil (kaesve)
 //
 // VERSION HISTORY
 //
+//   1.24 (2020-02-05) fix warning
 //   1.23 (2020-02-02) query SVG data for glyphs; query whole kerning table (but only kern not GPOS)
 //   1.22 (2019-08-11) minimize missing-glyph duplication; fix kerning if both 'GPOS' and 'kern' are defined
 //   1.21 (2019-02-25) fix warning
@@ -410,7 +419,7 @@ int main(int arg, char **argv)
 ////   link with the C runtime library.
 
 #ifdef STB_TRUETYPE_IMPLEMENTATION
-   // #define your own (u)stbtt_int8/16/32 before including to override this
+// #define your own (u)stbtt_int8/16/32 before including to override this
    #ifndef stbtt_uint8
    typedef unsigned char   stbtt_uint8;
    typedef signed   char   stbtt_int8;
@@ -499,9 +508,9 @@ extern "C" {
 // private structure
 typedef struct
 {
-   unsigned char *data;
-   int cursor;
-   int size;
+    unsigned char *data;
+    int cursor;
+    int size;
 } stbtt__buf;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -513,15 +522,15 @@ typedef struct
 
 typedef struct
 {
-   unsigned short x0,y0,x1,y1; // coordinates of bbox in bitmap
-   float xoff,yoff,xadvance;
+    unsigned short x0,y0,x1,y1; // coordinates of bbox in bitmap
+    float xoff,yoff,xadvance;
 } stbtt_bakedchar;
 
 STBTT_DEF int stbtt_BakeFontBitmap(const unsigned char *data, int offset,  // font location (use offset=0 for plain .ttf)
-                                float pixel_height,                     // height of font in pixels
-                                unsigned char *pixels, int pw, int ph,  // bitmap to be filled in
-                                int first_char, int num_chars,          // characters to bake
-                                stbtt_bakedchar *chardata);             // you allocate this, it's num_chars long
+                                   float pixel_height,                     // height of font in pixels
+                                   unsigned char *pixels, int pw, int ph,  // bitmap to be filled in
+                                   int first_char, int num_chars,          // characters to bake
+                                   stbtt_bakedchar *chardata);             // you allocate this, it's num_chars long
 // if return is positive, the first unused row of the bitmap
 // if return is negative, returns the negative of the number of characters that fit
 // if return is 0, no characters fit and no rows were used
@@ -529,15 +538,15 @@ STBTT_DEF int stbtt_BakeFontBitmap(const unsigned char *data, int offset,  // fo
 
 typedef struct
 {
-   float x0,y0,s0,t0; // top-left
-   float x1,y1,s1,t1; // bottom-right
+    float x0,y0,s0,t0; // top-left
+    float x1,y1,s1,t1; // bottom-right
 } stbtt_aligned_quad;
 
 STBTT_DEF void stbtt_GetBakedQuad(const stbtt_bakedchar *chardata, int pw, int ph,  // same data as above
-                               int char_index,             // character to display
-                               float *xpos, float *ypos,   // pointers to current position in screen pixel space
-                               stbtt_aligned_quad *q,      // output: quad to draw
-                               int opengl_fillrule);       // true if opengl fill rule; false if DX9 or earlier
+                                  int char_index,             // character to display
+                                  float *xpos, float *ypos,   // pointers to current position in screen pixel space
+                                  stbtt_aligned_quad *q,      // output: quad to draw
+                                  int opengl_fillrule);       // true if opengl fill rule; false if DX9 or earlier
 // Call GetBakedQuad with char_index = 'character - first_char', and it
 // creates the quad you need to draw and advances the current position.
 //
@@ -561,9 +570,9 @@ STBTT_DEF void stbtt_GetScaledFontVMetrics(const unsigned char *fontdata, int in
 
 typedef struct
 {
-   unsigned short x0,y0,x1,y1; // coordinates of bbox in bitmap
-   float xoff,yoff,xadvance;
-   float xoff2,yoff2;
+    unsigned short x0,y0,x1,y1; // coordinates of bbox in bitmap
+    float xoff,yoff,xadvance;
+    float xoff2,yoff2;
 } stbtt_packedchar;
 
 typedef struct stbtt_pack_context stbtt_pack_context;
@@ -589,7 +598,7 @@ STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc);
 #define STBTT_POINT_SIZE(x)   (-(x))
 
 STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, float font_size,
-                                int first_unicode_char_in_range, int num_chars_in_range, stbtt_packedchar *chardata_for_range);
+                                   int first_unicode_char_in_range, int num_chars_in_range, stbtt_packedchar *chardata_for_range);
 // Creates character bitmaps from the font_index'th font found in fontdata (use
 // font_index=0 if you don't know what that is). It creates num_chars_in_range
 // bitmaps for characters with unicode values starting at first_unicode_char_in_range
@@ -605,12 +614,12 @@ STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char 
 
 typedef struct
 {
-   float font_size;
-   int first_unicode_codepoint_in_range;  // if non-zero, then the chars are continuous, and this is the first codepoint
-   int *array_of_unicode_codepoints;       // if non-zero, then this is an array of unicode codepoints
-   int num_chars;
-   stbtt_packedchar *chardata_for_range; // output
-   unsigned char h_oversample, v_oversample; // don't set these, they're used internally
+    float font_size;
+    int first_unicode_codepoint_in_range;  // if non-zero, then the chars are continuous, and this is the first codepoint
+    int *array_of_unicode_codepoints;       // if non-zero, then this is an array of unicode codepoints
+    int num_chars;
+    stbtt_packedchar *chardata_for_range; // output
+    unsigned char h_oversample, v_oversample; // don't set these, they're used internally
 } stbtt_pack_range;
 
 STBTT_DEF int  stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, stbtt_pack_range *ranges, int num_ranges);
@@ -642,10 +651,10 @@ STBTT_DEF void stbtt_PackSetSkipMissingCodepoints(stbtt_pack_context *spc, int s
 // typically an empty box by convention.
 
 STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph,  // same data as above
-                               int char_index,             // character to display
-                               float *xpos, float *ypos,   // pointers to current position in screen pixel space
-                               stbtt_aligned_quad *q,      // output: quad to draw
-                               int align_to_integer);
+                                   int char_index,             // character to display
+                                   float *xpos, float *ypos,   // pointers to current position in screen pixel space
+                                   stbtt_aligned_quad *q,      // output: quad to draw
+                                   int align_to_integer);
 
 STBTT_DEF int  stbtt_PackFontRangesGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *info, stbtt_pack_range *ranges, int num_ranges, stbrp_rect *rects);
 STBTT_DEF void stbtt_PackFontRangesPackRects(stbtt_pack_context *spc, stbrp_rect *rects, int num_rects);
@@ -663,16 +672,16 @@ STBTT_DEF int  stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, cons
 // this is an opaque structure that you shouldn't mess with which holds
 // all the context needed from PackBegin to PackEnd.
 struct stbtt_pack_context {
-   void *user_allocator_context;
-   void *pack_info;
-   int   width;
-   int   height;
-   int   stride_in_bytes;
-   int   padding;
-   int   skip_missing;
-   unsigned int   h_oversample, v_oversample;
-   unsigned char *pixels;
-   void  *nodes;
+    void *user_allocator_context;
+    void *pack_info;
+    int   width;
+    int   height;
+    int   stride_in_bytes;
+    int   padding;
+    int   skip_missing;
+    unsigned int   h_oversample, v_oversample;
+    unsigned char *pixels;
+    void  *nodes;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -699,22 +708,22 @@ STBTT_DEF int stbtt_GetFontOffsetForIndex(const unsigned char *data, int index);
 // the stack or as a global or etc, but you should treat it as opaque.
 struct stbtt_fontinfo
 {
-   void           * userdata;
-   unsigned char  * data;              // pointer to .ttf file
-   int              fontstart;         // offset of start of font
+    void           * userdata;
+    unsigned char  * data;              // pointer to .ttf file
+    int              fontstart;         // offset of start of font
 
-   int numGlyphs;                     // number of glyphs, needed for range checking
+    int numGlyphs;                     // number of glyphs, needed for range checking
 
-   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; // table locations as offset from start of .ttf
-   int index_map;                     // a cmap mapping for our chosen character encoding
-   int indexToLocFormat;              // format needed to map from glyph index to glyph
+    int loca,head,glyf,hhea,hmtx,kern,gpos,svg; // table locations as offset from start of .ttf
+    int index_map;                     // a cmap mapping for our chosen character encoding
+    int indexToLocFormat;              // format needed to map from glyph index to glyph
 
-   stbtt__buf cff;                    // cff font data
-   stbtt__buf charstrings;            // the charstring index
-   stbtt__buf gsubrs;                 // global charstring subroutines index
-   stbtt__buf subrs;                  // private charstring subroutines index
-   stbtt__buf fontdicts;              // array of font dicts
-   stbtt__buf fdselect;               // map from glyph to fontdict
+    stbtt__buf cff;                    // cff font data
+    stbtt__buf charstrings;            // the charstring index
+    stbtt__buf gsubrs;                 // global charstring subroutines index
+    stbtt__buf subrs;                  // private charstring subroutines index
+    stbtt__buf fontdicts;              // array of font dicts
+    stbtt__buf fdselect;               // map from glyph to fontdict
 };
 
 STBTT_DEF int stbtt_InitFont(stbtt_fontinfo *info, const unsigned char *data, int offset);
@@ -790,9 +799,9 @@ STBTT_DEF int  stbtt_GetGlyphBox(const stbtt_fontinfo *info, int glyph_index, in
 
 typedef struct stbtt_kerningentry
 {
-   int glyph1; // use stbtt_FindGlyphIndex
-   int glyph2;
-   int advance;
+    int glyph1; // use stbtt_FindGlyphIndex
+    int glyph2;
+    int advance;
 } stbtt_kerningentry;
 
 STBTT_DEF int  stbtt_GetKerningTableLength(const stbtt_fontinfo *info);
@@ -808,22 +817,22 @@ STBTT_DEF int  stbtt_GetKerningTable(const stbtt_fontinfo *info, stbtt_kerningen
 //
 
 #ifndef STBTT_vmove // you can predefine these to use different values (but why?)
-   enum {
-      STBTT_vmove=1,
-      STBTT_vline,
-      STBTT_vcurve,
-      STBTT_vcubic
-   };
+enum {
+    STBTT_vmove=1,
+    STBTT_vline,
+    STBTT_vcurve,
+    STBTT_vcubic
+};
 #endif
 
 #ifndef stbtt_vertex // you can predefine this to use different values
-                   // (we share this with other code at RAD)
-   #define stbtt_vertex_type short // can't use stbtt_int16 because that's not visible in the header file
-   typedef struct
-   {
-      stbtt_vertex_type x,y,cx,cy,cx1,cy1;
-      unsigned char type,padding;
-   } stbtt_vertex;
+// (we share this with other code at RAD)
+#define stbtt_vertex_type short // can't use stbtt_int16 because that's not visible in the header file
+typedef struct
+{
+    stbtt_vertex_type x,y,cx,cy,cx1,cy1;
+    unsigned char type,padding;
+} stbtt_vertex;
 #endif
 
 STBTT_DEF int stbtt_IsGlyphEmpty(const stbtt_fontinfo *info, int glyph_index);
@@ -909,8 +918,8 @@ STBTT_DEF void stbtt_GetGlyphBitmapBoxSubpixel(const stbtt_fontinfo *font, int g
 // @TODO: don't expose this structure
 typedef struct
 {
-   int w,h,stride;
-   unsigned char *pixels;
+    int w,h,stride;
+    unsigned char *pixels;
 } stbtt__bitmap;
 
 // rasterize a shape with quadratic beziers into a bitmap
@@ -1028,52 +1037,52 @@ STBTT_DEF const char *stbtt_GetFontNameString(const stbtt_fontinfo *font, int *l
 //     http://www.microsoft.com/typography/otspec/name.htm
 
 enum { // platformID
-   STBTT_PLATFORM_ID_UNICODE   =0,
-   STBTT_PLATFORM_ID_MAC       =1,
-   STBTT_PLATFORM_ID_ISO       =2,
-   STBTT_PLATFORM_ID_MICROSOFT =3
+    STBTT_PLATFORM_ID_UNICODE   =0,
+    STBTT_PLATFORM_ID_MAC       =1,
+    STBTT_PLATFORM_ID_ISO       =2,
+    STBTT_PLATFORM_ID_MICROSOFT =3
 };
 
 enum { // encodingID for STBTT_PLATFORM_ID_UNICODE
-   STBTT_UNICODE_EID_UNICODE_1_0    =0,
-   STBTT_UNICODE_EID_UNICODE_1_1    =1,
-   STBTT_UNICODE_EID_ISO_10646      =2,
-   STBTT_UNICODE_EID_UNICODE_2_0_BMP=3,
-   STBTT_UNICODE_EID_UNICODE_2_0_FULL=4
+    STBTT_UNICODE_EID_UNICODE_1_0    =0,
+    STBTT_UNICODE_EID_UNICODE_1_1    =1,
+    STBTT_UNICODE_EID_ISO_10646      =2,
+    STBTT_UNICODE_EID_UNICODE_2_0_BMP=3,
+    STBTT_UNICODE_EID_UNICODE_2_0_FULL=4
 };
 
 enum { // encodingID for STBTT_PLATFORM_ID_MICROSOFT
-   STBTT_MS_EID_SYMBOL        =0,
-   STBTT_MS_EID_UNICODE_BMP   =1,
-   STBTT_MS_EID_SHIFTJIS      =2,
-   STBTT_MS_EID_UNICODE_FULL  =10
+    STBTT_MS_EID_SYMBOL        =0,
+    STBTT_MS_EID_UNICODE_BMP   =1,
+    STBTT_MS_EID_SHIFTJIS      =2,
+    STBTT_MS_EID_UNICODE_FULL  =10
 };
 
 enum { // encodingID for STBTT_PLATFORM_ID_MAC; same as Script Manager codes
-   STBTT_MAC_EID_ROMAN        =0,   STBTT_MAC_EID_ARABIC       =4,
-   STBTT_MAC_EID_JAPANESE     =1,   STBTT_MAC_EID_HEBREW       =5,
-   STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,
-   STBTT_MAC_EID_KOREAN       =3,   STBTT_MAC_EID_RUSSIAN      =7
+    STBTT_MAC_EID_ROMAN        =0,   STBTT_MAC_EID_ARABIC       =4,
+    STBTT_MAC_EID_JAPANESE     =1,   STBTT_MAC_EID_HEBREW       =5,
+    STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,
+    STBTT_MAC_EID_KOREAN       =3,   STBTT_MAC_EID_RUSSIAN      =7
 };
 
 enum { // languageID for STBTT_PLATFORM_ID_MICROSOFT; same as LCID...
-       // problematic because there are e.g. 16 english LCIDs and 16 arabic LCIDs
-   STBTT_MS_LANG_ENGLISH     =0x0409,   STBTT_MS_LANG_ITALIAN     =0x0410,
-   STBTT_MS_LANG_CHINESE     =0x0804,   STBTT_MS_LANG_JAPANESE    =0x0411,
-   STBTT_MS_LANG_DUTCH       =0x0413,   STBTT_MS_LANG_KOREAN      =0x0412,
-   STBTT_MS_LANG_FRENCH      =0x040c,   STBTT_MS_LANG_RUSSIAN     =0x0419,
-   STBTT_MS_LANG_GERMAN      =0x0407,   STBTT_MS_LANG_SPANISH     =0x0409,
-   STBTT_MS_LANG_HEBREW      =0x040d,   STBTT_MS_LANG_SWEDISH     =0x041D
+    // problematic because there are e.g. 16 english LCIDs and 16 arabic LCIDs
+    STBTT_MS_LANG_ENGLISH     =0x0409,   STBTT_MS_LANG_ITALIAN     =0x0410,
+    STBTT_MS_LANG_CHINESE     =0x0804,   STBTT_MS_LANG_JAPANESE    =0x0411,
+    STBTT_MS_LANG_DUTCH       =0x0413,   STBTT_MS_LANG_KOREAN      =0x0412,
+    STBTT_MS_LANG_FRENCH      =0x040c,   STBTT_MS_LANG_RUSSIAN     =0x0419,
+    STBTT_MS_LANG_GERMAN      =0x0407,   STBTT_MS_LANG_SPANISH     =0x0409,
+    STBTT_MS_LANG_HEBREW      =0x040d,   STBTT_MS_LANG_SWEDISH     =0x041D
 };
 
 enum { // languageID for STBTT_PLATFORM_ID_MAC
-   STBTT_MAC_LANG_ENGLISH      =0 ,   STBTT_MAC_LANG_JAPANESE     =11,
-   STBTT_MAC_LANG_ARABIC       =12,   STBTT_MAC_LANG_KOREAN       =23,
-   STBTT_MAC_LANG_DUTCH        =4 ,   STBTT_MAC_LANG_RUSSIAN      =32,
-   STBTT_MAC_LANG_FRENCH       =1 ,   STBTT_MAC_LANG_SPANISH      =6 ,
-   STBTT_MAC_LANG_GERMAN       =2 ,   STBTT_MAC_LANG_SWEDISH      =5 ,
-   STBTT_MAC_LANG_HEBREW       =10,   STBTT_MAC_LANG_CHINESE_SIMPLIFIED =33,
-   STBTT_MAC_LANG_ITALIAN      =3 ,   STBTT_MAC_LANG_CHINESE_TRAD =19
+    STBTT_MAC_LANG_ENGLISH      =0 ,   STBTT_MAC_LANG_JAPANESE     =11,
+    STBTT_MAC_LANG_ARABIC       =12,   STBTT_MAC_LANG_KOREAN       =23,
+    STBTT_MAC_LANG_DUTCH        =4 ,   STBTT_MAC_LANG_RUSSIAN      =32,
+    STBTT_MAC_LANG_FRENCH       =1 ,   STBTT_MAC_LANG_SPANISH      =6 ,
+    STBTT_MAC_LANG_GERMAN       =2 ,   STBTT_MAC_LANG_SWEDISH      =5 ,
+    STBTT_MAC_LANG_HEBREW       =10,   STBTT_MAC_LANG_CHINESE_SIMPLIFIED =33,
+    STBTT_MAC_LANG_ITALIAN      =3 ,   STBTT_MAC_LANG_CHINESE_TRAD =19
 };
 
 #ifdef __cplusplus
@@ -2700,11 +2709,12 @@ STBTT_DEF int stbtt_GetGlyphSVG(const stbtt_fontinfo *info, int gl, const char *
    stbtt_uint8 *data = info->data;
    stbtt_uint8 *svg_doc;
 
-   if(info->svg == 0)
+   if (info->svg == 0)
       return 0;
 
-   if(svg_doc = stbtt_FindSVGDoc(info, gl)) {
-      *svg = (char *)data + info->svg + ttULONG(svg_doc + 4);
+   svg_doc = stbtt_FindSVGDoc(info, gl);
+   if (svg_doc != NULL) {
+      *svg = (char *) data + info->svg + ttULONG(svg_doc + 4);
       return ttULONG(svg_doc + 8);
    } else {
       return 0;

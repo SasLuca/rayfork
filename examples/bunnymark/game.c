@@ -4,7 +4,7 @@
 #define RF_GRAPHICS_API_OPENGL_33
 #define rf_max_batch_elements (8192*2)
 #include "glad/glad.h"
-#include "rayfork.h"
+#include "include/old_rayfork.h"
 #include "game.h"
 
 #define MAX_BUNNIES 50000  // 50K bunnies limit

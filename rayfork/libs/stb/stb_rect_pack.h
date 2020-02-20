@@ -108,15 +108,15 @@ STBRP_DEF int stbrp_pack_rects (stbrp_context *context, stbrp_rect *rects, int n
 
 struct stbrp_rect
 {
-   // reserved for your use:
-   int            id;
+    // reserved for your use:
+    int            id;
 
-   // input:
-   stbrp_coord    w, h;
+    // input:
+    stbrp_coord    w, h;
 
-   // output:
-   stbrp_coord    x, y;
-   int            was_packed;  // non-zero if valid packing
+    // output:
+    stbrp_coord    x, y;
+    int            was_packed;  // non-zero if valid packing
 
 }; // 16 bytes, nominally
 
@@ -155,9 +155,9 @@ STBRP_DEF void stbrp_setup_heuristic (stbrp_context *context, int heuristic);
 
 enum
 {
-   STBRP_HEURISTIC_Skyline_default=0,
-   STBRP_HEURISTIC_Skyline_BL_sortHeight = STBRP_HEURISTIC_Skyline_default,
-   STBRP_HEURISTIC_Skyline_BF_sortHeight
+    STBRP_HEURISTIC_Skyline_default=0,
+    STBRP_HEURISTIC_Skyline_BL_sortHeight = STBRP_HEURISTIC_Skyline_default,
+    STBRP_HEURISTIC_Skyline_BF_sortHeight
 };
 
 
@@ -168,21 +168,21 @@ enum
 
 struct stbrp_node
 {
-   stbrp_coord  x,y;
-   stbrp_node  *next;
+    stbrp_coord  x,y;
+    stbrp_node  *next;
 };
 
 struct stbrp_context
 {
-   int width;
-   int height;
-   int align;
-   int init_mode;
-   int heuristic;
-   int num_nodes;
-   stbrp_node *active_head;
-   stbrp_node *free_head;
-   stbrp_node extra[2]; // we allocate two extra nodes so optimal user-node-count is 'width' not 'width+2'
+    int width;
+    int height;
+    int align;
+    int init_mode;
+    int heuristic;
+    int num_nodes;
+    stbrp_node *active_head;
+    stbrp_node *free_head;
+    stbrp_node extra[2]; // we allocate two extra nodes so optimal user-node-count is 'width' not 'width+2'
 };
 
 #ifdef __cplusplus

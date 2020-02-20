@@ -5,7 +5,7 @@
 #define RAYFORK_MATH_IMPLEMENTATION
 #include "glad/glad.h"
 #include "sokol_app.h"
-#include "rayfork.h"
+#include "include/old_rayfork.h"
 
 rf_context rf_ctx;
 rf_memory  rf_mem;
