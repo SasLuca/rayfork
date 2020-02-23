@@ -1,11 +1,12 @@
-#include "rayfork_common_internal.h"
-#include "rayfork_gfx.h"
 #include "rayfork.h"
 
-#include "math.h"
+//Declare the internal global pointer
+extern rf_context* _rf_ctx;
 
 //Used internally to make gl calls not look too ugly
 #define _RF_GL (_rf_ctx->gl)
+
+#define _rf_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
 
 //Use this for glDepthFunc
 #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
@@ -1050,7 +1051,7 @@ RF_INTERNAL void _rf_set_shader_default_locations(rf_shader* shader)
 
     // Get handles to GLSL uniform locations (vertex shader)
     shader->locs[RF_LOC_MATRIX_MVP]  = _RF_GL.glGetUniformLocation(shader->id, "mvp");
-    shader->locs[RF_LOC_MATRIX_PROJECTION]  = _RF_GL.glGetUniformLocation(shader->id, "_rf_ctx->gl_ctx.projection");
+    shader->locs[RF_LOC_MATRIX_PROJECTION]  = _RF_GL.glGetUniformLocation(shader->id, "projection");
     shader->locs[RF_LOC_MATRIX_VIEW]  = _RF_GL.glGetUniformLocation(shader->id, "view");
 
     // Get handles to GLSL uniform locations (fragment shader)
@@ -1554,6 +1555,12 @@ RF_INTERNAL void _rf_setup_frame_buffer(int width, int height)
 }
 //endregion
 
+// Used to set rf_context::get_random_value_proc by default
+RF_INTERNAL int _rf_default_get_random_value(int min, int max)
+{
+    return 0;
+}
+
 RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, int height, rf_opengl_procs gl)
 {
     RF_ASSERT(width != 0 && height != 0);
@@ -1563,6 +1570,7 @@ RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, in
     *_rf_ctx = (rf_context) {0};
     _rf_ctx->gl = gl;
     _rf_ctx->gfx_ctx.memory = memory;
+    _rf_ctx->get_random_value_proc = _rf_default_get_random_value;
 
     _rf_ctx->gfx_ctx.current_matrix_mode = -1;
     _rf_ctx->gfx_ctx.current_depth = -1.0f;
@@ -2203,40 +2211,134 @@ RF_API void rf_gfx_disable_texture()
 }
 
 // Set texture parameters (wrap mode/filter mode)
-RF_API void rf_gfx_texture_parameters(unsigned int id, int param, int value)
+RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode)
 {
-    _RF_GL.glBindTexture(GL_TEXTURE_2D, id);
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, texture.id);
 
-    switch (param)
+    switch (wrap_mode)
     {
-        case GL_TEXTURE_WRAP_S:
-        case GL_TEXTURE_WRAP_T:
+        case RF_WRAP_REPEAT:
         {
-            if (value == GL_MIRROR_CLAMP_EXT)
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        } break;
+
+        case RF_WRAP_CLAMP:
+        {
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        } break;
+
+        case RF_WRAP_MIRROR_REPEAT:
+        {
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+            _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+        } break;
+
+        case RF_WRAP_MIRROR_CLAMP:
+        {
+            if (_rf_ctx->gfx_ctx.tex_mirror_clamp_supported)
             {
-                if (_rf_ctx->gfx_ctx.tex_mirror_clamp_supported) _RF_GL.glTexParameteri(GL_TEXTURE_2D, param, value);
-                else RF_LOG(RF_LOG_WARNING, "Clamp mirror wrap mode not supported");
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_EXT);
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_EXT);
             }
-            else _RF_GL.glTexParameteri(GL_TEXTURE_2D, param, value);
+            else
+            {
+                RF_LOG(RF_LOG_WARNING, "Clamp mirror wrap mode not supported");
+            }
+        } break;
 
-        }
-            break;
+        default: break;
+    }
 
-        case GL_TEXTURE_MAG_FILTER:
-        case GL_TEXTURE_MIN_FILTER: _RF_GL.glTexParameteri(GL_TEXTURE_2D, param, value); break;
-        case GL_TEXTURE_ANISOTROPIC_FILTER:
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+// Set filter for texture
+RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode)
+{
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, texture.id);
+
+    // Used only in case of anisotropic filters
+    float anisotropic_value = 0;
+
+    switch (filter_mode)
+    {
+        case RF_FILTER_POINT:
         {
-            if (value <= _rf_ctx->gfx_ctx.max_anisotropic_level) _RF_GL.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)value);
+            if (texture.mipmaps > 1)
+            {
+                // GL_NEAREST_MIPMAP_NEAREST - tex filter: POINT, mipmaps filter: POINT (sharp switching between mipmaps)
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+
+                // GL_NEAREST - tex filter: POINT (no filter), no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+            else
+            {
+                // GL_NEAREST - tex filter: POINT (no filter), no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            }
+        } break;
+
+        case RF_FILTER_BILINEAR:
+        {
+            if (texture.mipmaps > 1)
+            {
+                // GL_LINEAR_MIPMAP_NEAREST - tex filter: BILINEAR, mipmaps filter: POINT (sharp switching between mipmaps)
+                // Alternative: GL_NEAREST_MIPMAP_LINEAR - tex filter: POINT, mipmaps filter: BILINEAR (smooth transition between mipmaps)
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+
+                // GL_LINEAR - tex filter: BILINEAR, no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            else
+            {
+                // GL_LINEAR - tex filter: BILINEAR, no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+        } break;
+
+        case RF_FILTER_TRILINEAR:
+        {
+            if (texture.mipmaps > 1)
+            {
+                // GL_LINEAR_MIPMAP_LINEAR - tex filter: BILINEAR, mipmaps filter: BILINEAR (smooth transition between mipmaps)
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+                // GL_LINEAR - tex filter: BILINEAR, no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            else
+            {
+                RF_LOG_V(RF_LOG_WARNING, "[TEX ID %i] No mipmaps available for TRILINEAR texture filtering", texture.id);
+
+                // GL_LINEAR - tex filter: BILINEAR, no mipmaps
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+        } break;
+
+        case RF_FILTER_ANISOTROPIC_4x:  anisotropic_value = 4;
+        case RF_FILTER_ANISOTROPIC_8x:  anisotropic_value = 8;
+        case RF_FILTER_ANISOTROPIC_16x: anisotropic_value = 16;
+        {
+            if (anisotropic_value <= _rf_ctx->gfx_ctx.max_anisotropic_level)
+            {
+                _RF_GL.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_value);
+            }
             else if (_rf_ctx->gfx_ctx.max_anisotropic_level > 0.0f)
             {
                 RF_LOG_V(RF_LOG_WARNING, "[TEX ID %i] Maximum anisotropic filter level supported is %i_x", id, _rf_ctx->gfx_ctx.max_anisotropic_level);
-                _RF_GL.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (float)value);
+                _RF_GL.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_value);
             }
-            else RF_LOG(RF_LOG_WARNING, "Anisotropic filtering not supported");
-        }
-            break;
-
-        default: break;
+            else
+            {
+                RF_LOG(RF_LOG_WARNING, "Anisotropic filtering not supported");
+            }
+        } break;
     }
 
     _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
@@ -3273,4 +3375,299 @@ RF_API void rf_gfx_unload_mesh(rf_mesh mesh)
     rf_gfx_delete_vertex_arrays(mesh.vao_id);
 }
 
+//endregion
+
+//region gen textures
+// Generate cubemap texture from HDR texture
+RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, int size)
+{
+    rf_texture2d cubemap = { 0 };
+    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_mat in shader
+    // Other locations should be setup externally in shader before calling the function
+
+    // Set up depth face culling and cubemap seamless
+    _RF_GL.glDisable(GL_CULL_FACE);
+    _RF_GL.glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);     // Flag not supported on OpenGL ES 2.0
+
+    // Setup framebuffer
+    unsigned int fbo, rbo;
+    _RF_GL.glGenFramebuffers(1, &fbo);
+    _RF_GL.glGenRenderbuffers(1, &rbo);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    _RF_GL.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    _RF_GL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size, size);
+    _RF_GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // Set up cubemap to render and attach to framebuffer
+    // NOTE: Faces are stored as 32 bit floating point values
+    _RF_GL.glGenTextures(1, &cubemap.id);
+    _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, size, size, 0, GL_RGB, GL_FLOAT, NULL);
+    }
+
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Create _rf_ctx->gl_ctx.projection and different views for each face
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_views[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
+    };
+
+    // Convert HDR equirectangular environment map to cubemap equivalent
+    _RF_GL.glUseProgram(shader.id);
+    _RF_GL.glActiveTexture(GL_TEXTURE0);
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, sky_hdr.id);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+
+    // Note: don't forget to configure the viewport to the capture dimensions
+    _RF_GL.glViewport(0, 0, size, size);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    for (int i = 0; i < 6; i++)
+    {
+        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+        _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap.id, 0);
+        _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        _rf_gen_draw_cube();
+    }
+
+    // Unbind framebuffer and textures
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Reset viewport dimensions to default
+    _RF_GL.glViewport(0, 0, _rf_ctx->gfx_ctx.framebuffer_width, _rf_ctx->gfx_ctx.framebuffer_height);
+    //glEnable(GL_CULL_FACE);
+
+    // NOTE: rf_texture2d is a GL_TEXTURE_CUBE_MAP, not a GL_TEXTURE_2D!
+    cubemap.width = size;
+    cubemap.height = size;
+    cubemap.mipmaps = 1;
+    cubemap.format = RF_UNCOMPRESSED_R32G32B32;
+
+    return cubemap;
+}
+
+// Generate irradiance texture using cubemap data
+RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, int size)
+{
+    rf_texture2d irradiance = { 0 };
+
+    // NOTE: _rf_set_shader_default_locations() already setups locations for _rf_ctx->gl_ctx.projection and view rf_mat in shader
+    // Other locations should be setup externally in shader before calling the function
+
+    // Setup framebuffer
+    unsigned int fbo, rbo;
+    _RF_GL.glGenFramebuffers(1, &fbo);
+    _RF_GL.glGenRenderbuffers(1, &rbo);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    _RF_GL.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    _RF_GL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size, size);
+    _RF_GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // Create an irradiance cubemap, and re-scale capture FBO to irradiance scale
+    _RF_GL.glGenTextures(1, &irradiance.id);
+    _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, irradiance.id);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, size, size, 0, GL_RGB, GL_FLOAT, NULL);
+    }
+
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Create _rf_ctx->gl_ctx.projection (transposed) and different views for each face
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_views[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
+    };
+
+    // Solve diffuse integral by convolution to create an irradiance cubemap
+    _RF_GL.glUseProgram(shader.id);
+    _RF_GL.glActiveTexture(GL_TEXTURE0);
+    _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+
+    // Note: don't forget to configure the viewport to the capture dimensions
+    _RF_GL.glViewport(0, 0, size, size);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    for (int i = 0; i < 6; i++)
+    {
+        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+        _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance.id, 0);
+        _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        _rf_gen_draw_cube();
+    }
+
+    // Unbind framebuffer and textures
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Reset viewport dimensions to default
+    _RF_GL.glViewport(0, 0, _rf_ctx->gfx_ctx.framebuffer_width, _rf_ctx->gfx_ctx.framebuffer_height);
+
+    irradiance.width = size;
+    irradiance.height = size;
+    irradiance.mipmaps = 1;
+    //irradiance.format = UNCOMPRESSED_R16G16B16;
+
+    return irradiance;
+}
+
+// Generate prefilter texture using cubemap data
+RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, int size)
+{
+    rf_texture2d prefilter = { 0 };
+
+    // NOTE: _rf_set_shader_default_locations() already setups locations for projection and view rf_mat in shader
+    // Other locations should be setup externally in shader before calling the function
+    // TODO: Locations should be taken out of this function... too shader dependant...
+    int roughness_loc = rf_get_shader_location(shader, "roughness");
+
+    // Setup framebuffer
+    unsigned int fbo, rbo;
+    _RF_GL.glGenFramebuffers(1, &fbo);
+    _RF_GL.glGenRenderbuffers(1, &rbo);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    _RF_GL.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    _RF_GL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size, size);
+    _RF_GL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // Create a prefiltered HDR environment map
+    _RF_GL.glGenTextures(1, &prefilter.id);
+    _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, prefilter.id);
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, size, size, 0, GL_RGB, GL_FLOAT, NULL);
+    }
+
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Generate mipmaps for the prefiltered HDR texture
+    _RF_GL.glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    // Create _rf_ctx->gl_ctx.projection (transposed) and different views for each face
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_views[6] = {
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, 1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
+            rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, 0.0f, -1.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f})
+    };
+
+    // Prefilter HDR and store data into mipmap levels
+    _RF_GL.glUseProgram(shader.id);
+    _RF_GL.glActiveTexture(GL_TEXTURE0);
+    _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
+    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+#define MAX_MIPMAP_LEVELS   5   // Max number of prefilter texture mipmaps
+
+    for (int mip = 0; mip < MAX_MIPMAP_LEVELS; mip++)
+    {
+        // Resize framebuffer according to mip-level size.
+        unsigned int mip_width  = size*(int)powf(0.5f, (float)mip);
+        unsigned int mip_height = size*(int)powf(0.5f, (float)mip);
+
+        _RF_GL.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        _RF_GL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mip_width, mip_height);
+        _RF_GL.glViewport(0, 0, mip_width, mip_height);
+
+        float roughness = (float)mip/(float)(MAX_MIPMAP_LEVELS - 1);
+        _RF_GL.glUniform1f(roughness_loc, roughness);
+
+        for (int i = 0; i < 6; i++)
+        {
+            rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+            _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilter.id, mip);
+            _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            _rf_gen_draw_cube();
+        }
+    }
+
+    // Unbind framebuffer and textures
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Reset viewport dimensions to default
+    _RF_GL.glViewport(0, 0, _rf_ctx->gfx_ctx.framebuffer_width, _rf_ctx->gfx_ctx.framebuffer_height);
+
+    prefilter.width = size;
+    prefilter.height = size;
+    //prefilter.mipmaps = 1 + (int)floor(log(size)/log(2));
+    //prefilter.format = UNCOMPRESSED_R16G16B16;
+
+    return prefilter;
+}
+
+// Generate BRDF texture using cubemap data. Todo: Review implementation: https://github.com/HectorMF/BRDFGenerator
+RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size)
+{
+    rf_texture2d brdf = { 0 };
+    // Generate BRDF convolution texture
+    _RF_GL.glGenTextures(1, &brdf.id);
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, brdf.id);
+    _RF_GL.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, size, size, 0, GL_RGB, GL_FLOAT, NULL);
+
+    _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Render BRDF LUT into a quad using FBO
+    unsigned int fbo, rbo;
+    _RF_GL.glGenFramebuffers(1, &fbo);
+    _RF_GL.glGenRenderbuffers(1, &rbo);
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    _RF_GL.glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    _RF_GL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size, size);
+    _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdf.id, 0);
+
+    _RF_GL.glViewport(0, 0, size, size);
+    _RF_GL.glUseProgram(shader.id);
+    _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _rf_gen_draw_quad();
+
+    // Unbind framebuffer and textures
+    _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Unload framebuffer but keep color texture
+    _RF_GL.glDeleteRenderbuffers(1, &rbo);
+    _RF_GL.glDeleteFramebuffers(1, &fbo);
+
+    // Reset viewport dimensions to default
+    _RF_GL.glViewport(0, 0, _rf_ctx->gfx_ctx.framebuffer_width, _rf_ctx->gfx_ctx.framebuffer_height);
+
+    brdf.width = size;
+    brdf.height = size;
+    brdf.mipmaps = 1;
+    brdf.format = RF_UNCOMPRESSED_R32G32B32;
+
+    return brdf;
+}
 //endregion

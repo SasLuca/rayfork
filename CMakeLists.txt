@@ -41,13 +41,7 @@ include_directories(rayfork/include)
 
 add_library(rayfork
         rayfork/src/rayfork.c
-        rayfork/src/rayfork_math.c
-        rayfork/src/rayfork_image.c
-        rayfork/src/rayfork_drawing.c
-        rayfork/src/rayfork_gfx_backend_gl.c
-        rayfork/src/rayfork_image_manipulation.c
-        rayfork/src/rayfork_model.c
-        rayfork/src/rayfork_physac.c)
+        rayfork/src/rayfork_gfx_backend_gl.c)
 
 target_compile_features(rayfork PUBLIC c_std_99)
 target_include_directories(rayfork INTERFACE rayfork/include)
