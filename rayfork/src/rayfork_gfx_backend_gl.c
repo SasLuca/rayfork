@@ -1,21 +1,23 @@
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
 #include "rayfork.h"
 
 //Declare the internal global pointer
 extern rf_context* _rf_ctx;
 
 //Used internally to make gl calls not look too ugly
-#define _RF_GL (_rf_ctx->gl)
+#define _RF_GL (_rf_ctx->gfx_ctx.gl)
 
 #define _rf_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
 
 //Use this for glDepthFunc
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     #define _RF_GL_glDepthFunc glDepthFunc
-#else //if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+#else //if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
     #define _RF_GL_glDepthFunc glDepthFuncf
 #endif
 
 //region gl constants
+//Since we don't have an opengl header to include I just pasted all the constants we might need
 #define GL_DEPTH_BUFFER_BIT 0x00000100
 #define GL_STENCIL_BUFFER_BIT 0x00000400
 #define GL_COLOR_BUFFER_BIT 0x00004000
@@ -952,14 +954,14 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
 
     // Vertex shader directly defined, no external file required
     const char* default_vertex_shader_str =
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
             "#version 100                       \n"
             "attribute vec3 vertex_position;     \n"
             "attribute vec2 vertex_tex_coord;     \n"
             "attribute vec4 vertex_color;        \n"
             "varying vec2 frag_tex_coord;         \n"
             "varying vec4 frag_color;            \n"
-            #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+            #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
             "#version 330                       \n"
             "in vec3 vertex_position;            \n"
             "in vec2 vertex_tex_coord;            \n"
@@ -977,13 +979,14 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
 
     // Fragment shader directly defined, no external file required
     const char* default_fragment_shader_str =
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
             "#version 100                       \n"
-            "precision mediump float;           \n"     // precision required for OpenGL ES2 (WebGL)
+            "precision mediump float;           \n"
             "varying vec2 frag_tex_coord;         \n"
             "varying vec4 frag_color;            \n"
-            #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+            #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
             "#version 330       \n"
+            "precision mediump float;           \n"
             "in vec2 frag_tex_coord;              \n"
             "in vec4 frag_color;                 \n"
             "out vec4 final_color;               \n"
@@ -992,10 +995,10 @@ RF_INTERNAL rf_shader _rf_load_default_shader()
             "uniform vec4 col_diffuse;           \n"
             "void main()                        \n"
             "{                                  \n"
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
             "    vec4 texel_color = texture2D(texture0, frag_tex_coord); \n" // NOTE: texture2D() is deprecated on OpenGL 3.3 and ES 3.0
             "    gl_frag_color = texel_color*col_diffuse*frag_color;      \n"
-            #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+            #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
             "    vec4 texel_color = texture(texture0, frag_tex_coord);   \n"
             "    final_color = texel_color*col_diffuse*frag_color;        \n"
             #endif
@@ -1140,9 +1143,9 @@ RF_INTERNAL void _rf_load_buffers_default()
         // Fill index buffer
         _RF_GL.glGenBuffers(1, &_rf_ctx->gfx_ctx.memory->vertex_data[i].vbo_id[3]);
         _RF_GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _rf_ctx->gfx_ctx.memory->vertex_data[i].vbo_id[3]);
-        #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+        #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
         _RF_GL.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int) * 6 * RF_MAX_BATCH_ELEMENTS, _rf_ctx->gfx_ctx.memory->vertex_data[i].indices, GL_STATIC_DRAW);
-        #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+        #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         _RF_GL.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(short) * 6 * RF_MAX_BATCH_ELEMENTS, _rf_ctx->gfx_ctx.memory->vertex_data[i].indices, GL_STATIC_DRAW);
         #endif
     }
@@ -1166,12 +1169,12 @@ RF_INTERNAL void _rf_update_buffers_default()
 
         // Vertex positions buffer
         _RF_GL.glBindBuffer(GL_ARRAY_BUFFER, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vbo_id[0]);
-        _RF_GL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 3*_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vertices);
+        _RF_GL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 3 * _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vertices);
         //_RF_GL.glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * 4 * rf_max_batch_elements, _rf_ctx->gl_ctx.memory->vertex_data[_rf_ctx->gl_ctx.current_buffer].vertices, GL_DYNAMIC_DRAW);  // Update all buffer
 
         // rf_texture coordinates buffer
         _RF_GL.glBindBuffer(GL_ARRAY_BUFFER, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vbo_id[1]);
-        _RF_GL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 2*_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].texcoords);
+        _RF_GL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 2 * _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter, _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].texcoords);
         //_RF_GL.glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * 4 * rf_max_batch_elements, _rf_ctx->gl_ctx.memory->vertex_data[_rf_ctx->gl_ctx.current_buffer].texcoords, GL_DYNAMIC_DRAW); // Update all buffer
 
         // Colors buffer
@@ -1205,86 +1208,80 @@ RF_INTERNAL void _rf_draw_buffers_default()
     rf_mat mat_projection = _rf_ctx->gfx_ctx.projection;
     rf_mat mat_model_view = _rf_ctx->gfx_ctx.modelview;
 
-    int eyes_count = 1;
-
-    for (int eye = 0; eye < eyes_count; eye++)
+    // Draw buffers
+    if (_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter > 0)
     {
-        // Draw buffers
-        if (_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter > 0)
+        // Set current shader and upload current MVP matrix
+        _RF_GL.glUseProgram(_rf_ctx->gfx_ctx.current_shader.id);
+
+        // Create _rf_ctx->gl_ctx.modelview-_rf_ctx->gl_ctx.projection matrix
+        rf_mat mat_mvp = rf_mat_mul(_rf_ctx->gfx_ctx.modelview, _rf_ctx->gfx_ctx.projection);
+
+        _RF_GL.glUniformMatrix4fv(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_mat_to_float16(mat_mvp).v);
+        _RF_GL.glUniform4f(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_COLOR_DIFFUSE], 1.0f, 1.0f, 1.0f, 1.0f);
+        _RF_GL.glUniform1i(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_MAP_DIFFUSE], 0);    // Provided value refers to the texture unit (active)
+
+        // TODO: Support additional texture units on custom shader
+        //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) _RF_GL.glUniform1i(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MAP_SPECULAR], 1);
+        //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_NORMAL] > 0) _RF_GL.glUniform1i(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MAP_NORMAL], 2);
+
+        // NOTE: Right now additional map textures not considered for default buffers drawing
+
+        int vertex_offset = 0;
+
+        _RF_GL.glBindVertexArray(_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vao_id);
+
+        _RF_GL.glActiveTexture(GL_TEXTURE0);
+
+        for (int i = 0; i < _rf_ctx->gfx_ctx.draws_counter; i++)
         {
-            // Set current shader and upload current MVP matrix
-            _RF_GL.glUseProgram(_rf_ctx->gfx_ctx.current_shader.id);
+            _RF_GL.glBindTexture(GL_TEXTURE_2D, _rf_ctx->gfx_ctx.draws[i].texture_id);
 
-            // Create _rf_ctx->gl_ctx.modelview-_rf_ctx->gl_ctx.projection matrix
-            rf_mat mat_mvp = rf_mat_mul(_rf_ctx->gfx_ctx.modelview, _rf_ctx->gfx_ctx.projection);
+            // TODO: Find some way to bind additional textures --> Use global texture IDs? Register them on draw[i]?
+            //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { _RF_GL.glActiveTexture(GL_TEXTURE1); _RF_GL.glBindTexture(GL_TEXTURE_2D, textureUnit1_id); }
+            //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { _RF_GL.glActiveTexture(GL_TEXTURE2); _RF_GL.glBindTexture(GL_TEXTURE_2D, textureUnit2_id); }
 
-            _RF_GL.glUniformMatrix4fv(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_MATRIX_MVP], 1, false, rf_mat_to_float16(mat_mvp).v);
-            _RF_GL.glUniform4f(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_COLOR_DIFFUSE], 1.0f, 1.0f, 1.0f, 1.0f);
-            _RF_GL.glUniform1i(_rf_ctx->gfx_ctx.current_shader.locs[RF_LOC_MAP_DIFFUSE], 0);    // Provided value refers to the texture unit (active)
-
-            // TODO: Support additional texture units on custom shader
-            //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) _RF_GL.glUniform1i(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MAP_SPECULAR], 1);
-            //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_NORMAL] > 0) _RF_GL.glUniform1i(_rf_ctx->gl_ctx.current_shader.locs[RF_LOC_MAP_NORMAL], 2);
-
-            // NOTE: Right now additional map textures not considered for default buffers drawing
-
-            int vertex_offset = 0;
-
-            _RF_GL.glBindVertexArray(_rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].vao_id);
-
-            _RF_GL.glActiveTexture(GL_TEXTURE0);
-
-            for (int i = 0; i < _rf_ctx->gfx_ctx.draws_counter; i++)
+            if ((_rf_ctx->gfx_ctx.draws[i].mode == RF_LINES) || (_rf_ctx->gfx_ctx.draws[i].mode == RF_TRIANGLES))
             {
-                _RF_GL.glBindTexture(GL_TEXTURE_2D, _rf_ctx->gfx_ctx.draws[i].texture_id);
-
-                // TODO: Find some way to bind additional textures --> Use global texture IDs? Register them on draw[i]?
-                //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { _RF_GL.glActiveTexture(GL_TEXTURE1); _RF_GL.glBindTexture(GL_TEXTURE_2D, textureUnit1_id); }
-                //if (_rf_ctx->gl_ctx.current_shader->locs[RF_LOC_MAP_SPECULAR] > 0) { _RF_GL.glActiveTexture(GL_TEXTURE2); _RF_GL.glBindTexture(GL_TEXTURE_2D, textureUnit2_id); }
-
-                if ((_rf_ctx->gfx_ctx.draws[i].mode == GL_LINES) || (_rf_ctx->gfx_ctx.draws[i].mode == GL_TRIANGLES)) _RF_GL.glDrawArrays(_rf_ctx->gfx_ctx.draws[i].mode, vertex_offset, _rf_ctx->gfx_ctx.draws[i].vertex_count);
-                else
-                {
-                    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
-                    // We need to define the number of indices to be processed: quadsCount*6
-                    // NOTE: The final parameter tells the GPU the offset in bytes from the
-                    // start of the index buffer to the location of the first index to process
-                    _RF_GL.glDrawElements(GL_TRIANGLES, _rf_ctx->gfx_ctx.draws[i].vertex_count/4 * 6, GL_UNSIGNED_INT, (void*)(sizeof(GLuint)*vertex_offset/4 * 6));
-                    #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
-                    _RF_GL.glDrawElements(GL_TRIANGLES, _rf_ctx->gfx_ctx.draws[i].vertex_count/4 * 6, GL_UNSIGNED_SHORT, (void*)(sizeof(unsigned short)*vertex_offset/4 * 6));
-                    #endif
-                }
-
-                vertex_offset += (_rf_ctx->gfx_ctx.draws[i].vertex_count + _rf_ctx->gfx_ctx.draws[i].vertex_alignment);
+                _RF_GL.glDrawArrays(_rf_ctx->gfx_ctx.draws[i].mode, vertex_offset, _rf_ctx->gfx_ctx.draws[i].vertex_count);
+            }
+            else
+            {
+                #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
+                // We need to define the number of indices to be processed: quadsCount*6
+                // NOTE: The final parameter tells the GPU the offset in bytes from the
+                // start of the index buffer to the location of the first index to process
+                _RF_GL.glDrawElements(GL_TRIANGLES, _rf_ctx->gfx_ctx.draws[i].vertex_count / 4 * 6, GL_UNSIGNED_INT, (void*)(sizeof(unsigned int) * vertex_offset / 4 * 6));
+                #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
+                _RF_GL.glDrawElements(GL_TRIANGLES, _rf_ctx->gfx_ctx.draws[i].vertex_count / 4 * 6, GL_UNSIGNED_SHORT, (void*)(sizeof(unsigned short) * vertex_offset / 4 * 6));
+                #endif
             }
 
-            _RF_GL.glBindBuffer(GL_ARRAY_BUFFER, 0);
-            _RF_GL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-            _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);    // Unbind textures
+            vertex_offset += (_rf_ctx->gfx_ctx.draws[i].vertex_count + _rf_ctx->gfx_ctx.draws[i].vertex_alignment);
         }
 
-        _RF_GL.glBindVertexArray(0); // Unbind VAO
-
-        _RF_GL.glUseProgram(0);    // Unbind shader program
+        _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    _RF_GL.glBindVertexArray(0);
+    _RF_GL.glUseProgram(0);
+
     // Reset vertex counters for next frame
-    _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter = 0;
+    _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter  = 0;
     _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].tc_counter = 0;
-    _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].c_counter = 0;
+    _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].c_counter  = 0;
 
     // Reset depth for next draw
     _rf_ctx->gfx_ctx.current_depth = -1.0f;
 
     // Restore _rf_ctx->gl_ctx.projection/_rf_ctx->gl_ctx.modelview matrices
     _rf_ctx->gfx_ctx.projection = mat_projection;
-    _rf_ctx->gfx_ctx.modelview = mat_model_view;
+    _rf_ctx->gfx_ctx.modelview  = mat_model_view;
 
     // Reset _rf_ctx->gl_ctx.draws array
     for (int i = 0; i < RF_MAX_DRAWCALL_REGISTERED; i++)
     {
-        _rf_ctx->gfx_ctx.draws[i].mode = GL_QUADS;
+        _rf_ctx->gfx_ctx.draws[i].mode = RF_QUADS;
         _rf_ctx->gfx_ctx.draws[i].vertex_count = 0;
         _rf_ctx->gfx_ctx.draws[i].texture_id = _rf_ctx->gfx_ctx.default_texture_id;
     }
@@ -1434,7 +1431,7 @@ RF_INTERNAL void _rf_gen_draw_cube(void)
 
 RF_INTERNAL void _rf_set_gl_extension_if_available(const char* gl_ext, int len)
 {
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // Check NPOT textures support
         // NOTE: Only check on OpenGL ES, OpenGL 3.3 has NPOT textures full support as core feature
         if (_rf_strings_match(gl_ext, len, "GL_OES_texture_npot", sizeof("GL_OES_texture_npot"))) _rf_ctx->gfx_ctx.tex_npot_supported = true;
@@ -1561,14 +1558,14 @@ RF_INTERNAL int _rf_default_get_random_value(int min, int max)
     return 0;
 }
 
-RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, int height, rf_opengl_procs gl)
+RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int width, int height, rf_opengl_procs gl)
 {
     RF_ASSERT(width != 0 && height != 0);
 
     _rf_ctx = rf_ctx;
 
     *_rf_ctx = (rf_context) {0};
-    _rf_ctx->gl = gl;
+    _rf_ctx->gfx_ctx.gl = gl;
     _rf_ctx->gfx_ctx.memory = memory;
     _rf_ctx->get_random_value_proc = _rf_default_get_random_value;
 
@@ -1584,7 +1581,7 @@ RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, in
 
     int num_ext = 0;
 
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     {
         // Multiple texture extensions supported by default
         _rf_ctx->gfx_ctx.tex_npot_supported  = true;
@@ -1599,7 +1596,7 @@ RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, in
             _rf_set_gl_extension_if_available(ext, strlen(ext));
         }
     }
-    #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+    #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
     {
         //Note: How this works is that we get one big string formated like "gl_ext_func_name1 gl_ext_func_name2 ..."
         //All function names are separated by a space, so we just take a pointer to the begin and advance until we hit a space
@@ -1712,13 +1709,11 @@ RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, in
 
     // Setup default viewport
     rf_set_viewport(width, height);
-
-    rf_load_default_font();
 }
 
 //region shader
 // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
-RF_API rf_shader rf_load_shader(const char* vs_code, const char* fs_code)
+RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
 {
     rf_shader shader = { 0 };
     memset(shader.locs, -1, sizeof(shader.locs));
@@ -1775,7 +1770,7 @@ RF_API rf_shader rf_load_shader(const char* vs_code, const char* fs_code)
 }
 
 // Unload shader from GPU memory (VRAM)
-RF_API void rf_unload_shader(rf_shader shader)
+RF_API void rf_gfx_unload_shader(rf_shader shader)
 {
     if (shader.id > 0)
     {
@@ -1785,7 +1780,7 @@ RF_API void rf_unload_shader(rf_shader shader)
 }
 
 // Get shader uniform location
-RF_API int rf_get_shader_location(rf_shader shader, const char* uniform_name)
+RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name)
 {
     int location = -1;
     location = _RF_GL.glGetUniformLocation(shader.id, uniform_name);
@@ -1797,13 +1792,13 @@ RF_API int rf_get_shader_location(rf_shader shader, const char* uniform_name)
 }
 
 // Set shader uniform value
-RF_API void rf_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name)
+RF_API void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name)
 {
-    rf_set_shader_value_v(shader, uniform_loc, value, uniform_name, 1);
+    rf_gfx_set_shader_value_v(shader, uniform_loc, value, uniform_name, 1);
 }
 
 // Set shader uniform value vector
-RF_API void rf_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count)
+RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count)
 {
     _RF_GL.glUseProgram(shader.id);
 
@@ -1825,7 +1820,7 @@ RF_API void rf_set_shader_value_v(rf_shader shader, int uniform_loc, const void*
 }
 
 // Set shader uniform value (matrix 4x4)
-RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat)
+RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat)
 {
     _RF_GL.glUseProgram(shader.id);
 
@@ -1835,7 +1830,7 @@ RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat
 }
 
 // Set shader uniform value for texture
-RF_API void rf_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture)
+RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture)
 {
     _RF_GL.glUseProgram(shader.id);
 
@@ -1845,12 +1840,12 @@ RF_API void rf_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_te
 }
 
 // Return internal _rf_ctx->gl_ctx.projection matrix
-RF_API rf_mat rf_get_matrix_projection() {
+RF_API rf_mat rf_gfx_get_matrix_projection() {
     return _rf_ctx->gfx_ctx.projection;
 }
 
 // Return internal _rf_ctx->gl_ctx.modelview matrix
-RF_API rf_mat rf_get_matrix_modelview()
+RF_API rf_mat rf_gfx_get_matrix_modelview()
 {
     rf_mat matrix = rf_mat_identity();
     matrix = _rf_ctx->gfx_ctx.modelview;
@@ -1858,13 +1853,13 @@ RF_API rf_mat rf_get_matrix_modelview()
 }
 
 // Set a custom projection matrix (replaces internal _rf_ctx->gl_ctx.projection matrix)
-RF_API void rf_set_matrix_projection(rf_mat proj)
+RF_API void rf_gfx_set_matrix_projection(rf_mat proj)
 {
     _rf_ctx->gfx_ctx.projection = proj;
 }
 
 // Set a custom _rf_ctx->gl_ctx.modelview matrix (replaces internal _rf_ctx->gl_ctx.modelview matrix)
-RF_API void rf_set_matrix_modelview(rf_mat view)
+RF_API void rf_gfx_set_matrix_modelview(rf_mat view)
 {
     _rf_ctx->gfx_ctx.modelview = view;
 }
@@ -2176,12 +2171,23 @@ RF_API void rf_gfx_enable_texture(unsigned int id)
             // It implies adding some extra alignment vertex at the end of the draw,
             // those vertex are not processed but they are considered as an additional offset
             // for the next set of vertex to be drawn
-            if (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].mode == GL_LINES) _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = ((_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count < 4) ? _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count : _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count % 4);
-            else if (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].mode == GL_TRIANGLES) _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = ((_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count < 4) ? 1 : (4 - (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count % 4)));
+            if (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].mode == RF_LINES)
+            {
+                _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = ((_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count < 4) ? _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count : _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count % 4);
+            }
+            else if (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].mode == RF_TRIANGLES)
+            {
+                _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = ((_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count < 4) ? 1 : (4 - (_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count % 4)));
+            }
+            else
+            {
+                _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = 0;
+            }
 
-            else _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment = 0;
-
-            if (rf_gfx_check_buffer_limit(_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment)) rf_gfx_draw();
+            if (rf_gfx_check_buffer_limit(_rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment))
+            {
+                rf_gfx_draw();
+            }
             else
             {
                 _rf_ctx->gfx_ctx.memory->vertex_data[_rf_ctx->gfx_ctx.current_buffer].v_counter += _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_alignment;
@@ -2192,7 +2198,10 @@ RF_API void rf_gfx_enable_texture(unsigned int id)
             }
         }
 
-        if (_rf_ctx->gfx_ctx.draws_counter >= RF_MAX_DRAWCALL_REGISTERED) rf_gfx_draw();
+        if (_rf_ctx->gfx_ctx.draws_counter >= RF_MAX_DRAWCALL_REGISTERED)
+        {
+            rf_gfx_draw();
+        }
 
         _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].texture_id = id;
         _rf_ctx->gfx_ctx.draws[_rf_ctx->gfx_ctx.draws_counter - 1].vertex_count = 0;
@@ -2386,18 +2395,18 @@ RF_API void rf_gfx_scissor(int x, int y, int width, int height) { _RF_GL.glSciss
 // Enable wire mode
 RF_API void rf_gfx_enable_wire_mode(void)
 {
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     // NOTE: glPolygonMode() not available on OpenGL ES
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    _RF_GL.glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
 }
 
 // Disable wire mode
 RF_API void rf_gfx_disable_wire_mode(void)
 {
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     // NOTE: glPolygonMode() not available on OpenGL ES
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    _RF_GL.glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
 }
 
@@ -2529,7 +2538,7 @@ RF_API bool rf_gfx_check_buffer_limit(int v_count)
 // Set debug marker
 RF_API void rf_gfx_set_debug_marker(const char* text)
 {
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     //if (_rf_ctx->gl_ctx.debug_marker_supported) glInsertEventMarkerEXT(0, text);
 #endif
 }
@@ -2600,15 +2609,15 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
         {
             if (format < RF_COMPRESSED_DXT1_RGB) _RF_GL.glTexImage2D(GL_TEXTURE_2D, i, glInternalFormat, mip_width, mip_height, 0, glFormat, glType, (unsigned char* )data + mip_offset);
 
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
                 if (format == RF_UNCOMPRESSED_GRAYSCALE)
                 {
-                    GLint swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+                    int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                     _RF_GL.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
                 else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
                 {
-                    GLint swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+                    int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
                     _RF_GL.glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
             #endif
@@ -2625,7 +2634,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
 
     // rf_texture parameters configuration
     // NOTE: _RF_GL.glTexParameteri does NOT affect texture uploading, just the way it's used
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // NOTE: OpenGL ES 2.0 with no GL_OES_texture_npot support (i.e. WebGL) has limited NPOT support, so CLAMP_TO_EDGE must be used
         if (_rf_ctx->gfx_ctx.tex_npot_supported)
         {
@@ -2647,7 +2656,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);  // Alternative: GL_LINEAR
     _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // Alternative: GL_LINEAR
 
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     if (mipmap_count > 1)
     {
         // Activate Trilinear filtering if mipmaps are available
@@ -2738,15 +2747,15 @@ RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format
             if (format < RF_COMPRESSED_DXT1_RGB) _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, glFormat, glType, (unsigned char* )data + i * data_size);
             else _RF_GL.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, data_size, (unsigned char* )data + i*data_size);
 
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
                 if (format == RF_UNCOMPRESSED_GRAYSCALE)
                 {
-                    GLint swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+                    int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                     _RF_GL.glTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
                 else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
                 {
-                    GLint swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
+                    int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
                     _RF_GL.glTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
             #endif
@@ -2758,9 +2767,9 @@ RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format
     _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     _RF_GL.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);  // Flag not supported on OpenGL ES 2.0
-    #endif // defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+    #endif // defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
 
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
@@ -2792,7 +2801,7 @@ RF_API void rf_gfx_get_gl_texture_formats(int format, unsigned int* glInternalFo
 
     switch (format)
     {
-        #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+        #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // NOTE: on OpenGL ES 2.0 (WebGL), internalFormat must match format and options allowed are: GL_LUMINANCE, GL_RGB, GL_RGBA
         case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_UNSIGNED_BYTE; break;
         case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_LUMINANCE_ALPHA; *glFormat = GL_LUMINANCE_ALPHA; *glType = GL_UNSIGNED_BYTE; break;
@@ -2805,7 +2814,7 @@ RF_API void rf_gfx_get_gl_texture_formats(int format, unsigned int* glInternalFo
         case RF_UNCOMPRESSED_R32G32B32: if (_rf_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
         case RF_UNCOMPRESSED_R32G32B32A32: if (_rf_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
 
-        #elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+        #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
         case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_R8; *glFormat = GL_RED; *glType = GL_UNSIGNED_BYTE; break;
         case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_RG8; *glFormat = GL_RG; *glType = GL_UNSIGNED_BYTE; break;
             //case RF_UNCOMPRESSED_R5G6B5: *glInternalFormat = GL_RGB565; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
@@ -2860,7 +2869,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
 {
     void* pixels = NULL;
 
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     _RF_GL.glBindTexture(GL_TEXTURE_2D, texture.id);
 
     // NOTE: Using texture.id, we can retrieve some texture info (but not on OpenGL ES 2.0)
@@ -2890,7 +2899,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
     _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
     #endif
 
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
     // _RF_GL.glGetTexImage() is not available on OpenGL ES 2.0
     // rf_texture2d width and height are required on OpenGL ES 2.0. There is no way to get it from texture id.
     // Two possible Options:
@@ -3038,7 +3047,7 @@ RF_API bool rf_gfx_render_texture_complete(rf_render_texture target)
             case GL_FRAMEBUFFER_UNSUPPORTED: RF_LOG(RF_LOG_WARNING, "Framebuffer is unsupported"); break;
             case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: RF_LOG(RF_LOG_WARNING, "Framebuffer has incomplete attachment"); break;
 
-            #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
+            #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
             case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: RF_LOG(RF_LOG_WARNING, "Framebuffer has incomplete dimensions"); break;
             #endif
 
@@ -3267,7 +3276,8 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
     // Matrices and other values required by shader
     //-----------------------------------------------------
     // Calculate and send to shader model matrix (used by PBR shader)
-    if (material.shader.locs[RF_LOC_MATRIX_MODEL] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_MODEL], transform);
+    if (material.shader.locs[RF_LOC_MATRIX_MODEL] != -1)
+        rf_gfx_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_MODEL], transform);
 
     // Upload to shader material.col_diffuse
     if (material.shader.locs[RF_LOC_COLOR_DIFFUSE] != -1)
@@ -3283,8 +3293,12 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
                     (float)material.maps[RF_MAP_SPECULAR].color.b / 255.0f,
                     (float)material.maps[RF_MAP_SPECULAR].color.a / 255.0f);
 
-    if (material.shader.locs[RF_LOC_MATRIX_VIEW] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_VIEW], _rf_ctx->gfx_ctx.modelview);
-    if (material.shader.locs[RF_LOC_MATRIX_PROJECTION] != -1) rf_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_PROJECTION], _rf_ctx->gfx_ctx.projection);
+    if (material.shader.locs[RF_LOC_MATRIX_VIEW] != -1)
+        rf_gfx_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_VIEW],
+                                       _rf_ctx->gfx_ctx.modelview);
+    if (material.shader.locs[RF_LOC_MATRIX_PROJECTION] != -1)
+        rf_gfx_set_shader_value_matrix(material.shader, material.shader.locs[RF_LOC_MATRIX_PROJECTION],
+                                       _rf_ctx->gfx_ctx.projection);
 
     // At this point the _rf_ctx->gl_ctx.modelview matrix just contains the view matrix (camera)
     // That's because rf_begin_mode3d() sets it an no model-drawing function modifies it, all use rf_gfx_push_matrix() and rf_gfx_pop_matrix()
@@ -3428,7 +3442,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
     _RF_GL.glUseProgram(shader.id);
     _RF_GL.glActiveTexture(GL_TEXTURE0);
     _RF_GL.glBindTexture(GL_TEXTURE_2D, sky_hdr.id);
-    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+    rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
 
     // Note: don't forget to configure the viewport to the capture dimensions
     _RF_GL.glViewport(0, 0, size, size);
@@ -3436,7 +3450,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
 
     for (int i = 0; i < 6; i++)
     {
-        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+        rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
         _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap.id, 0);
         _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         _rf_gen_draw_cube();
@@ -3504,7 +3518,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     _RF_GL.glUseProgram(shader.id);
     _RF_GL.glActiveTexture(GL_TEXTURE0);
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
-    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+    rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
 
     // Note: don't forget to configure the viewport to the capture dimensions
     _RF_GL.glViewport(0, 0, size, size);
@@ -3512,7 +3526,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
 
     for (int i = 0; i < 6; i++)
     {
-        rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+        rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
         _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance.id, 0);
         _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         _rf_gen_draw_cube();
@@ -3540,7 +3554,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     // NOTE: _rf_set_shader_default_locations() already setups locations for projection and view rf_mat in shader
     // Other locations should be setup externally in shader before calling the function
     // TODO: Locations should be taken out of this function... too shader dependant...
-    int roughness_loc = rf_get_shader_location(shader, "roughness");
+    int roughness_loc = rf_gfx_get_shader_location(shader, "roughness");
 
     // Setup framebuffer
     unsigned int fbo, rbo;
@@ -3583,7 +3597,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     _RF_GL.glUseProgram(shader.id);
     _RF_GL.glActiveTexture(GL_TEXTURE0);
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap.id);
-    rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
+    rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_PROJECTION], fbo_projection);
 
     _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
@@ -3604,7 +3618,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 
         for (int i = 0; i < 6; i++)
         {
-            rf_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
+            rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
             _RF_GL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilter.id, mip);
             _RF_GL.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             _rf_gen_draw_cube();
@@ -3671,3 +3685,4 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size)
     return brdf;
 }
 //endregion
+#endif

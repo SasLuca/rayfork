@@ -6,3 +6,5 @@ add_executable(collision_area
         main.c
         game.c
         ../dependencies/glad/glad.c)
+
+target_link_libraries(collision_area PRIVATE rayfork)

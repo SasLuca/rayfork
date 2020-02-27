@@ -1,17 +1,24 @@
 #include "rayfork.h"
+#include "math.h"
 
-// Internals must be before the internal libraries
-//region internals
-RF_INTERNAL void* _rf_realloc_wrapper(rf_allocator allocator, const void* source, int old_size, int new_size)
+//region internal wrappers
+static void* _rf_realloc_wrapper(rf_allocator allocator, const void* source, int old_size, int new_size)
 {
     void* new_alloc = RF_ALLOC(allocator, new_size);
     memcpy(new_alloc, source, old_size);
     return new_alloc;
 }
 
+static void* _rf_calloc_wrapper(rf_allocator allocator, int amount, int size)
+{
+    void* ptr = RF_ALLOC(allocator, amount * size);
+    memset(ptr, 0, amount * size);
+    return ptr;
+}
+
 #define _rf_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
 
-RF_INTERNAL bool _rf_is_file_extension(const char* filename, const char* ext)
+static bool _rf_is_file_extension(const char* filename, const char* ext)
 {
     int filename_len = strlen(filename);
     int ext_len      = strlen(ext);
@@ -23,6 +30,9 @@ RF_INTERNAL bool _rf_is_file_extension(const char* filename, const char* ext)
 
     return _rf_strings_match(filename + filename_len - ext_len, ext_len, ext, ext_len);
 }
+
+#define RF_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define RF_MAX(a, b) ((a) > (b) ? (a) : (b))
 //endregion
 
 //region stb_image
@@ -30,16 +40,15 @@ RF_INTERNAL bool _rf_is_file_extension(const char* filename, const char* ext)
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* _rf_stbi_allocator;
 
-//Example: RF_STBI_WITH_ALLOCATOR(&allocator, { image.data = stbi_load_from_memory(image_file_buffer, file_size, &img_width, &img_height, &img_bpp, 0); });
-#define RF_STBI_WITH_ALLOCATOR(allocator, ...) { (_rf_stbi_allocator = (allocator)); __VA_ARGS__; _rf_stbi_allocator = NULL; }
+#define RF_STBI_SET_ALLOCATOR(allocator) _rf_stbi_allocator = (allocator)
 
 //#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz)                     RF_ALLOC(*_rf_stbi_allocator, sz)
 #define STBI_FREE(p)                        RF_FREE(*_rf_stbi_allocator, p)
-#define STBI_REALLOC_SIZED(p, oldsz, newsz) _rf_realloc_wrapper(*_rf_stbi_allocator, p, oldsz, newsz);
+#define STBI_REALLOC_SIZED(p, oldsz, newsz) _rf_realloc_wrapper(*_rf_stbi_allocator, p, oldsz, newsz)
 #define STBI_ASSERT(it)                     RF_ASSERT(it)
-#define STBIDEF                             RF_INTERNAL
+#define STBIDEF                             static
 #include "stb/stb_image.h"
 //endregion
 
@@ -48,7 +57,7 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbi_allocator;
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* _rf_stbir_allocator;
 
-#define RF_STBIR_WITH_ALLOCATOR(allocator, ...) { (_rf_stbir_allocator = (allocator)); __VA_ARGS__; _rf_stbir_allocator = NULL; }
+#define RF_STBIR_SET_ALLOCATOR(allocator) _rf_stbir_allocator = (allocator)
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STBIR_MALLOC(sz,c) ((void)(c), RF_ALLOC(*_rf_stbir_allocator, sz))
@@ -69,7 +78,7 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbir_allocator;
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* _rf_stbtt_allocator;
 
-#define RF_STBTT_WITH_ALLOCATOR(allocator, ...) { (_rf_stbtt_allocator = (allocator)); __VA_ARGS__; _rf_stbtt_allocator = NULL; }
+#define RF_STBTT_SET_ALLOCATOR(allocator) _rf_stbtt_allocator = (allocator)
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
@@ -90,6 +99,26 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbtt_allocator;
 #include "par/par_shapes.h"
 //endregion
 
+//region tinyobj loader
+//Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
+static RF_THREAD_LOCAL rf_allocator* _rf_tinyobj_allocator;
+static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
+
+#define RF_SET_TINYOBJ_ALLOCATOR(allocator) _rf_tinyobj_allocator = allocator
+#define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf_tinyobj_io = io;
+
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
+#define TINYOBJ_MALLOC(size)             RF_ALLOC(*_rf_tinyobj_allocator, size)
+#define TINYOBJ_REALLOC(p, oldsz, newsz) _rf_realloc_wrapper(*_rf_tinyobj_allocator, p, oldsz, newsz)
+#define TINYOBJ_CALLOC(amount, size)     _rf_calloc_wrapper(*_rf_tinyobj_allocator, amount, size)
+#define TINYOBJ_FREE(p)                  RF_FREE(*_rf_tinyobj_allocator, p)
+
+#define TINYOBJ_GET_FILE_SIZE(filename) (rf_tinyobj_io->get_file_size_proc(filename))
+#define TINYOBJ_LOAD_FILE_IN_BUFFER(filename, buffer, buffer_size) (rf_tinyobj_io->read_file_into_buffer_proc(filename, buffer, buffer_size))
+
+#include "tinyobjloader-c/tinyobj_loader_c.h"
+//endregion
+
 //Global pointer to context struct
 rf_context* _rf_ctx;
 
@@ -106,64 +135,63 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
     // Default font is directly defined here (data generated from a sprite font image)
     // This way, we reconstruct rf_font without creating large global variables
     // This data is automatically allocated to Stack and automatically deallocated at the end of this function
-    unsigned int default_font_data[512] =
-            {
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200020, 0x0001b000, 0x00000000, 0x00000000, 0x8ef92520, 0x00020a00, 0x7dbe8000, 0x1f7df45f,
-                    0x4a2bf2a0, 0x0852091e, 0x41224000, 0x10041450, 0x2e292020, 0x08220812, 0x41222000, 0x10041450, 0x10f92020, 0x3efa084c, 0x7d22103c, 0x107df7de,
-                    0xe8a12020, 0x08220832, 0x05220800, 0x10450410, 0xa4a3f000, 0x08520832, 0x05220400, 0x10450410, 0xe2f92020, 0x0002085e, 0x7d3e0281, 0x107df41f,
-                    0x00200000, 0x8001b000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xc0000fbe, 0xfbf7e00f, 0x5fbf7e7d, 0x0050bee8, 0x440808a2, 0x0a142fe8, 0x50810285, 0x0050a048,
-                    0x49e428a2, 0x0a142828, 0x40810284, 0x0048a048, 0x10020fbe, 0x09f7ebaf, 0xd89f3e84, 0x0047a04f, 0x09e48822, 0x0a142aa1, 0x50810284, 0x0048a048,
-                    0x04082822, 0x0a142fa0, 0x50810285, 0x0050a248, 0x00008fbe, 0xfbf42021, 0x5f817e7d, 0x07d09ce8, 0x00008000, 0x00000fe0, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x000c0180,
-                    0xdfbf4282, 0x0bfbf7ef, 0x42850505, 0x004804bf, 0x50a142c6, 0x08401428, 0x42852505, 0x00a808a0, 0x50a146aa, 0x08401428, 0x42852505, 0x00081090,
-                    0x5fa14a92, 0x0843f7e8, 0x7e792505, 0x00082088, 0x40a15282, 0x08420128, 0x40852489, 0x00084084, 0x40a16282, 0x0842022a, 0x40852451, 0x00088082,
-                    0xc0bf4282, 0xf843f42f, 0x7e85fc21, 0x3e0900bf, 0x00000000, 0x00000004, 0x00000000, 0x000c0180, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x04000402, 0x41482000, 0x00000000, 0x00000800,
-                    0x04000404, 0x4100203c, 0x00000000, 0x00000800, 0xf7df7df0, 0x514bef85, 0xbefbefbe, 0x04513bef, 0x14414500, 0x494a2885, 0xa28a28aa, 0x04510820,
-                    0xf44145f0, 0x474a289d, 0xa28a28aa, 0x04510be0, 0x14414510, 0x494a2884, 0xa28a28aa, 0x02910a00, 0xf7df7df0, 0xd14a2f85, 0xbefbe8aa, 0x011f7be0,
-                    0x00000000, 0x00400804, 0x20080000, 0x00000000, 0x00000000, 0x00600f84, 0x20080000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0xac000000, 0x00000f01, 0x00000000, 0x00000000, 0x24000000, 0x00000f01, 0x00000000, 0x06000000, 0x24000000, 0x00000f01, 0x00000000, 0x09108000,
-                    0x24fa28a2, 0x00000f01, 0x00000000, 0x013e0000, 0x2242252a, 0x00000f52, 0x00000000, 0x038a8000, 0x2422222a, 0x00000f29, 0x00000000, 0x010a8000,
-                    0x2412252a, 0x00000f01, 0x00000000, 0x010a8000, 0x24fbe8be, 0x00000f01, 0x00000000, 0x0ebe8000, 0xac020000, 0x00000f01, 0x00000000, 0x00048000,
-                    0x0003e000, 0x00000f00, 0x00000000, 0x00008000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000038, 0x8443b80e, 0x00203a03,
-                    0x02bea080, 0xf0000020, 0xc452208a, 0x04202b02, 0xf8029122, 0x07f0003b, 0xe44b388e, 0x02203a02, 0x081e8a1c, 0x0411e92a, 0xf4420be0, 0x01248202,
-                    0xe8140414, 0x05d104ba, 0xe7c3b880, 0x00893a0a, 0x283c0e1c, 0x04500902, 0xc4400080, 0x00448002, 0xe8208422, 0x04500002, 0x80400000, 0x05200002,
-                    0x083e8e00, 0x04100002, 0x804003e0, 0x07000042, 0xf8008400, 0x07f00003, 0x80400000, 0x04000022, 0x00000000, 0x00000000, 0x80400000, 0x04000002,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00800702, 0x1848a0c2, 0x84010000, 0x02920921, 0x01042642, 0x00005121, 0x42023f7f, 0x00291002,
-                    0xefc01422, 0x7efdfbf7, 0xefdfa109, 0x03bbbbf7, 0x28440f12, 0x42850a14, 0x20408109, 0x01111010, 0x28440408, 0x42850a14, 0x2040817f, 0x01111010,
-                    0xefc78204, 0x7efdfbf7, 0xe7cf8109, 0x011111f3, 0x2850a932, 0x42850a14, 0x2040a109, 0x01111010, 0x2850b840, 0x42850a14, 0xefdfbf79, 0x03bbbbf7,
-                    0x001fa020, 0x00000000, 0x00001000, 0x00000000, 0x00002070, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x08022800, 0x00012283, 0x02430802, 0x01010001, 0x8404147c, 0x20000144, 0x80048404, 0x00823f08, 0xdfbf4284, 0x7e03f7ef, 0x142850a1, 0x0000210a,
-                    0x50a14684, 0x528a1428, 0x142850a1, 0x03efa17a, 0x50a14a9e, 0x52521428, 0x142850a1, 0x02081f4a, 0x50a15284, 0x4a221428, 0xf42850a1, 0x03efa14b,
-                    0x50a16284, 0x4a521428, 0x042850a1, 0x0228a17a, 0xdfbf427c, 0x7e8bf7ef, 0xf7efdfbf, 0x03efbd0b, 0x00000000, 0x04000000, 0x00000000, 0x00000008,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200508, 0x00840400, 0x11458122, 0x00014210,
-                    0x00514294, 0x51420800, 0x20a22a94, 0x0050a508, 0x00200000, 0x00000000, 0x00050000, 0x08000000, 0xfefbefbe, 0xfbefbefb, 0xfbeb9114, 0x00fbefbe,
-                    0x20820820, 0x8a28a20a, 0x8a289114, 0x3e8a28a2, 0xfefbefbe, 0xfbefbe0b, 0x8a289114, 0x008a28a2, 0x228a28a2, 0x08208208, 0x8a289114, 0x088a28a2,
-                    0xfefbefbe, 0xfbefbefb, 0xfa2f9114, 0x00fbefbe, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00210100, 0x00000004, 0x00000000, 0x00000000, 0x14508200, 0x00001402, 0x00000000, 0x00000000,
-                    0x00000010, 0x00000020, 0x00000000, 0x00000000, 0xa28a28be, 0x00002228, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000,
-                    0xa28a28aa, 0x000022a8, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000, 0xbefbefbe, 0x00003e2f, 0x00000000, 0x00000000,
-                    0x00000004, 0x00002028, 0x00000000, 0x00000000, 0x80000000, 0x00003e0f, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-                    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
-            };
+    unsigned int default_font_data[512] = {
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200020, 0x0001b000, 0x00000000, 0x00000000, 0x8ef92520, 0x00020a00, 0x7dbe8000, 0x1f7df45f,
+        0x4a2bf2a0, 0x0852091e, 0x41224000, 0x10041450, 0x2e292020, 0x08220812, 0x41222000, 0x10041450, 0x10f92020, 0x3efa084c, 0x7d22103c, 0x107df7de,
+        0xe8a12020, 0x08220832, 0x05220800, 0x10450410, 0xa4a3f000, 0x08520832, 0x05220400, 0x10450410, 0xe2f92020, 0x0002085e, 0x7d3e0281, 0x107df41f,
+        0x00200000, 0x8001b000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xc0000fbe, 0xfbf7e00f, 0x5fbf7e7d, 0x0050bee8, 0x440808a2, 0x0a142fe8, 0x50810285, 0x0050a048,
+        0x49e428a2, 0x0a142828, 0x40810284, 0x0048a048, 0x10020fbe, 0x09f7ebaf, 0xd89f3e84, 0x0047a04f, 0x09e48822, 0x0a142aa1, 0x50810284, 0x0048a048,
+        0x04082822, 0x0a142fa0, 0x50810285, 0x0050a248, 0x00008fbe, 0xfbf42021, 0x5f817e7d, 0x07d09ce8, 0x00008000, 0x00000fe0, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x000c0180,
+        0xdfbf4282, 0x0bfbf7ef, 0x42850505, 0x004804bf, 0x50a142c6, 0x08401428, 0x42852505, 0x00a808a0, 0x50a146aa, 0x08401428, 0x42852505, 0x00081090,
+        0x5fa14a92, 0x0843f7e8, 0x7e792505, 0x00082088, 0x40a15282, 0x08420128, 0x40852489, 0x00084084, 0x40a16282, 0x0842022a, 0x40852451, 0x00088082,
+        0xc0bf4282, 0xf843f42f, 0x7e85fc21, 0x3e0900bf, 0x00000000, 0x00000004, 0x00000000, 0x000c0180, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x04000402, 0x41482000, 0x00000000, 0x00000800,
+        0x04000404, 0x4100203c, 0x00000000, 0x00000800, 0xf7df7df0, 0x514bef85, 0xbefbefbe, 0x04513bef, 0x14414500, 0x494a2885, 0xa28a28aa, 0x04510820,
+        0xf44145f0, 0x474a289d, 0xa28a28aa, 0x04510be0, 0x14414510, 0x494a2884, 0xa28a28aa, 0x02910a00, 0xf7df7df0, 0xd14a2f85, 0xbefbe8aa, 0x011f7be0,
+        0x00000000, 0x00400804, 0x20080000, 0x00000000, 0x00000000, 0x00600f84, 0x20080000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0xac000000, 0x00000f01, 0x00000000, 0x00000000, 0x24000000, 0x00000f01, 0x00000000, 0x06000000, 0x24000000, 0x00000f01, 0x00000000, 0x09108000,
+        0x24fa28a2, 0x00000f01, 0x00000000, 0x013e0000, 0x2242252a, 0x00000f52, 0x00000000, 0x038a8000, 0x2422222a, 0x00000f29, 0x00000000, 0x010a8000,
+        0x2412252a, 0x00000f01, 0x00000000, 0x010a8000, 0x24fbe8be, 0x00000f01, 0x00000000, 0x0ebe8000, 0xac020000, 0x00000f01, 0x00000000, 0x00048000,
+        0x0003e000, 0x00000f00, 0x00000000, 0x00008000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000038, 0x8443b80e, 0x00203a03,
+        0x02bea080, 0xf0000020, 0xc452208a, 0x04202b02, 0xf8029122, 0x07f0003b, 0xe44b388e, 0x02203a02, 0x081e8a1c, 0x0411e92a, 0xf4420be0, 0x01248202,
+        0xe8140414, 0x05d104ba, 0xe7c3b880, 0x00893a0a, 0x283c0e1c, 0x04500902, 0xc4400080, 0x00448002, 0xe8208422, 0x04500002, 0x80400000, 0x05200002,
+        0x083e8e00, 0x04100002, 0x804003e0, 0x07000042, 0xf8008400, 0x07f00003, 0x80400000, 0x04000022, 0x00000000, 0x00000000, 0x80400000, 0x04000002,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00800702, 0x1848a0c2, 0x84010000, 0x02920921, 0x01042642, 0x00005121, 0x42023f7f, 0x00291002,
+        0xefc01422, 0x7efdfbf7, 0xefdfa109, 0x03bbbbf7, 0x28440f12, 0x42850a14, 0x20408109, 0x01111010, 0x28440408, 0x42850a14, 0x2040817f, 0x01111010,
+        0xefc78204, 0x7efdfbf7, 0xe7cf8109, 0x011111f3, 0x2850a932, 0x42850a14, 0x2040a109, 0x01111010, 0x2850b840, 0x42850a14, 0xefdfbf79, 0x03bbbbf7,
+        0x001fa020, 0x00000000, 0x00001000, 0x00000000, 0x00002070, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x08022800, 0x00012283, 0x02430802, 0x01010001, 0x8404147c, 0x20000144, 0x80048404, 0x00823f08, 0xdfbf4284, 0x7e03f7ef, 0x142850a1, 0x0000210a,
+        0x50a14684, 0x528a1428, 0x142850a1, 0x03efa17a, 0x50a14a9e, 0x52521428, 0x142850a1, 0x02081f4a, 0x50a15284, 0x4a221428, 0xf42850a1, 0x03efa14b,
+        0x50a16284, 0x4a521428, 0x042850a1, 0x0228a17a, 0xdfbf427c, 0x7e8bf7ef, 0xf7efdfbf, 0x03efbd0b, 0x00000000, 0x04000000, 0x00000000, 0x00000008,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200508, 0x00840400, 0x11458122, 0x00014210,
+        0x00514294, 0x51420800, 0x20a22a94, 0x0050a508, 0x00200000, 0x00000000, 0x00050000, 0x08000000, 0xfefbefbe, 0xfbefbefb, 0xfbeb9114, 0x00fbefbe,
+        0x20820820, 0x8a28a20a, 0x8a289114, 0x3e8a28a2, 0xfefbefbe, 0xfbefbe0b, 0x8a289114, 0x008a28a2, 0x228a28a2, 0x08208208, 0x8a289114, 0x088a28a2,
+        0xfefbefbe, 0xfbefbefb, 0xfa2f9114, 0x00fbefbe, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00210100, 0x00000004, 0x00000000, 0x00000000, 0x14508200, 0x00001402, 0x00000000, 0x00000000,
+        0x00000010, 0x00000020, 0x00000000, 0x00000000, 0xa28a28be, 0x00002228, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000,
+        0xa28a28aa, 0x000022a8, 0x00000000, 0x00000000, 0xa28a28aa, 0x000022e8, 0x00000000, 0x00000000, 0xbefbefbe, 0x00003e2f, 0x00000000, 0x00000000,
+        0x00000004, 0x00002028, 0x00000000, 0x00000000, 0x80000000, 0x00003e0f, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+    };
 
     int chars_height  = 10;
     int chars_divisor = 1; // Every char is separated from the consecutive by a 1 pixel divisor, horizontally and vertically
 
     int chars_width[224] = {
-            3, 1, 4, 6, 5, 7, 6, 2, 3, 3, 5, 5, 2, 4, 1, 7, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 3, 4, 3, 6,
-            7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 5, 6, 5, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 6, 6, 6, 2, 7, 2, 3, 5,
-            2, 5, 5, 5, 5, 5, 4, 5, 5, 1, 2, 5, 2, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 3, 1, 3, 4, 4,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 5, 5, 5, 7, 1, 5, 3, 7, 3, 5, 4, 1, 7, 4, 3, 5, 3, 3, 2, 5, 6, 1, 2, 2, 3, 5, 6, 6, 6, 6,
-            6, 6, 6, 6, 6, 6, 7, 6, 6, 6, 6, 6, 3, 3, 3, 3, 7, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 4, 6,
-            5, 5, 5, 5, 5, 5, 9, 5, 5, 5, 5, 5, 2, 2, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5
+        3, 1, 4, 6, 5, 7, 6, 2, 3, 3, 5, 5, 2, 4, 1, 7, 5, 2, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 3, 4, 3, 6,
+        7, 6, 6, 6, 6, 6, 6, 6, 6, 3, 5, 6, 5, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 6, 6, 6, 2, 7, 2, 3, 5,
+        2, 5, 5, 5, 5, 5, 4, 5, 5, 1, 2, 5, 2, 5, 5, 5, 5, 5, 5, 5, 4, 5, 5, 5, 5, 5, 5, 3, 1, 3, 4, 4,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 5, 5, 5, 7, 1, 5, 3, 7, 3, 5, 4, 1, 7, 4, 3, 5, 3, 3, 2, 5, 6, 1, 2, 2, 3, 5, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 7, 6, 6, 6, 6, 6, 3, 3, 3, 3, 7, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 4, 6,
+        5, 5, 5, 5, 5, 5, 9, 5, 5, 5, 5, 5, 2, 2, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5
     };
 
     // Re-construct image from _rf_ctx->default_font_data and generate OpenGL texture
@@ -276,7 +304,7 @@ RF_API void rf_setup_viewport(int width, int height)
     rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
 
     // Set orthographic GL_PROJECTION to current framebuffer size
-    // NOTE: Confirf_gl_projectiongured top-left corner as (0, 0)
+    // NOTE: Confirf_gfx_projectiongured top-left corner as (0, 0)
     rf_gfx_ortho(0, _rf_ctx->render_width, _rf_ctx->render_height, 0, 0.0f, 1.0f);
 
     rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
@@ -285,27 +313,37 @@ RF_API void rf_setup_viewport(int width, int height)
 //endregion
 
 //region time functions
-#if defined(RF_CUSTOM_TIME)
-    //Used to set custom functions
-    RF_API void rf_set_time_functions(void (*wait_func)(float), double (*get_time_func)(void))
-    {
-        _rf_ctx.wait_func = wait_func;
-        _rf_ctx.get_time_func = get_time_func;
-    }
 
+//Used to set custom functions
+RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_proc)(void))
+{
+    _rf_ctx->wait_proc = wait_proc;
+    _rf_ctx->get_time_proc = get_time_proc;
+}
+
+// If the user disabled the default time functions implementation or we are compiling for a platform that does not have a default implementation for the time functions
+#if defined(RF_NO_DEFAULT_TIME) || (!defined(_WIN32) && !defined(__linux__) && !defined(__MACH__))
     // Wait for some milliseconds (pauses program execution)
     RF_API void rf_wait(float it)
     {
-        if (_rf_ctx.wait_func) _rf_ctx.wait_func(it);
+        if (_rf_ctx->wait_proc)
+        {
+            _rf_ctx->wait_proc(it);
+        }
     }
 
     // Returns elapsed time in seconds since rf_context_init
     RF_API double rf_get_time(void)
     {
-        if (_rf_ctx.get_time_func) return _rf_ctx.get_time_func(it);
+        if (_rf_ctx->get_time_proc)
+        {
+            return _rf_ctx->get_time_proc();
+        }
+
         return 0;
     }
-#else //if !defined(RF_CUSTOM_TIME)
+
+#else //#if !defined(RF_NO_DEFAULT_TIME)
     //Windows only
     #ifdef _WIN32
         static long long int _rf_global_performance_counter_frequency;
@@ -328,6 +366,11 @@ RF_API void rf_setup_viewport(int width, int height)
         // Returns elapsed time in seconds since program started
         RF_API double rf_get_time(void)
         {
+            if (_rf_ctx->get_time_proc)
+            {
+                return _rf_ctx->get_time_proc();
+            }
+
             if (!_rf_global_performance_counter_frequency_initialised)
             {
                 #ifdef _WINDOWS_
@@ -350,9 +393,15 @@ RF_API void rf_setup_viewport(int width, int height)
         }
 
         RF_API void rf_wait(float duration)
-    {
-        Sleep((int) duration);
-    }
+        {
+            if (_rf_ctx->wait_proc)
+            {
+                _rf_ctx->wait_proc(duration);
+                return;
+            }
+
+            Sleep((int) duration);
+        }
     #endif
 
     #if defined(__linux__)
@@ -361,6 +410,11 @@ RF_API void rf_setup_viewport(int width, int height)
         //Source: http://man7.org/linux/man-pages/man2/clock_gettime.2.html
         RF_API double rf_get_time(void)
         {
+            if (_rf_ctx->get_time_proc)
+            {
+                return _rf_ctx->get_time_proc();
+            }
+
             struct timespec result;
 
             RF_ASSERT(clock_gettime(CLOCK_MONOTONIC_RAW, &result) == 0);
@@ -370,6 +424,12 @@ RF_API void rf_setup_viewport(int width, int height)
 
         RF_API void rf_wait(float duration)
         {
+            if (_rf_ctx->wait_proc)
+            {
+                _rf_ctx->wait_proc(duration);
+                return;
+            }
+
             long milliseconds = (long) duration;
             struct timespec ts;
             ts.tv_sec = milliseconds / 1000;
@@ -388,6 +448,11 @@ RF_API void rf_setup_viewport(int width, int height)
 
         RF_API double rf_get_time(void)
         {
+            if (_rf_ctx->get_time_proc)
+            {
+                return _rf_ctx->get_time_proc();
+            }
+
             uint64_t time;
             if (!_rf_global_mach_time_initialized)
             {
@@ -403,13 +468,39 @@ RF_API void rf_setup_viewport(int width, int height)
 
         RF_API void rf_wait(float duration)
         {
+            if (_rf_ctx->wait_proc)
+            {
+                _rf_ctx->wait_proc(duration);
+                return;
+            }
+
             usleep(duration * 1000);
         }
     #endif //#if defined(__MACH__)
 #endif //if !defined(RF_CUSTOM_TIME)
 //endregion
 
-//region default io
+//region default io & allocator
+#include "malloc.h"
+
+void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
+{
+    ((void)user_data);
+
+    switch (mode)
+    {
+        case RF_AM_ALLOC: return malloc(size_to_alloc);
+
+        case RF_AM_FREE:
+        {
+            free(pointer_to_free);
+        }
+        break;
+    }
+
+    return NULL;
+}
+
 #if !defined(RF_NO_DEFAULT_IO)
 #include "stdio.h"
 
@@ -431,18 +522,18 @@ RF_API int rf_get_file_size(const char* filename)
 RF_API bool rf_load_file_into_buffer(const char* filename, void* buffer, int buffer_size)
 {
     FILE* file = fopen(filename, "rb");
-    if (file != NULL) return false;
+    if (file == NULL) return false;
 
     fseek(file, 0L, SEEK_END);
     int file_size = ftell(file);
     fseek(file, 0L, SEEK_SET);
 
-    if (file_size <= buffer_size) return false;
+    if (file_size > buffer_size) return false;
 
     size_t read_size = fread(buffer, sizeof(char), buffer_size, file);
 
-    if (ferror(file) == 0) return false;
-    if (read_size == file_size) return false;
+    if (ferror(file) != 0) return false;
+    if (read_size != file_size) return false;
 
     fclose(file);
 
@@ -791,8 +882,8 @@ RF_MATH_API  rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
     //      Offset defines target transform relative to screen, but since we're effectively "moving" screen (camera)
     //      we need to do it into opposite direction (inverse transform)
 
-    // Having camera transform in world-space, inverse of it gives the rf_global_model_view transform.
-    // Since (A*B*C)' = C'*B'*A', the rf_global_model_view is
+    // Having camera transform in world-space, inverse of it gives the rf_gfxobal_model_view transform.
+    // Since (A*B*C)' = C'*B'*A', the rf_gfxobal_model_view is
     //   1. Move to offset
     //   2. Rotate and Scale
     //   3. Move by -target
@@ -1217,7 +1308,7 @@ RF_MATH_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
 }
 
 // Return min value for each pair of components
-RF_MATH_API rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2)
+RF_MATH_API rf_vec3 rf_vec3_RF_MIN(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {0};
 
@@ -2561,7 +2652,7 @@ RF_API void rf_begin()
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
     rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v); // Apply screen scaling
 
-    //rf_gl_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1
+    //rf_gfx_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1
     // NOTE: Not required with OpenGL 3.3+
 }
 
@@ -2602,7 +2693,7 @@ RF_API void rf_begin_2d(rf_camera2d camera)
     // Apply screen scaling if required
     rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v);
 
-    // Apply 2d camera transformation to rf_global_model_view
+    // Apply 2d camera transformation to rf_gfxobal_model_view
     rf_gfx_mult_matrixf(rf_mat_to_float16(rf_get_camera_matrix2d(camera)).v);
 }
 
@@ -2645,7 +2736,7 @@ RF_API void rf_begin_3d(rf_camera3d camera)
 
     // NOTE: zNear and zFar values are important when computing depth buffer values
 
-    rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to rf_global_model_view matrix
+    rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to rf_gfxobal_model_view matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 
     // Setup rf_camera3d view
@@ -2661,9 +2752,9 @@ RF_API void rf_end_3d()
     rf_gfx_draw(); // Process internal buffers (update + draw)
 
     rf_gfx_matrix_mode(RF_PROJECTION); // Switch to GL_PROJECTION matrix
-    rf_gfx_pop_matrix(); // Restore previous matrix (PROJECTION) from matrix rf_global_gl_stack
+    rf_gfx_pop_matrix(); // Restore previous matrix (PROJECTION) from matrix rf_gfxobal_gl_stack
 
-    rf_gfx_matrix_mode(RF_MODELVIEW); // Get back to rf_global_model_view matrix
+    rf_gfx_matrix_mode(RF_MODELVIEW); // Get back to rf_gfxobal_model_view matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 
     rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v); // Apply screen scaling if required
@@ -2691,7 +2782,7 @@ RF_API void rf_begin_render_to_texture(rf_render_texture2d target)
     rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 
-    //rf_gl_scalef(0.0f, -1.0f, 0.0f);      // Flip Y-drawing (?)
+    //rf_gfx_scalef(0.0f, -1.0f, 0.0f);      // Flip Y-drawing (?)
 
     // Setup current width/height for proper aspect ratio
     // calculation when using rf_begin_mode3d()
@@ -3984,6 +4075,1120 @@ RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation
 
     rf_gfx_pop_matrix();
 }
+
+// Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture(rf_texture2d texture, rf_vec2 position, float rotation, float scale, rf_color tint)
+{
+    rf_rec source_rec = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
+    rf_rec dest_rec = { position.x, position.y, (float)texture.width*scale, (float)texture.height*scale };
+    rf_vec2 origin = { 0.0f, 0.0f };
+
+    rf_draw_texture_region(texture, source_rec, dest_rec, origin, rotation, tint);
+}
+
+// Draw a part of a texture (defined by a rectangle) with 'pro' parameters. Note: origin is relative to destination rectangle size
+RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
+{
+    // Check if texture is valid
+    if (texture.id > 0)
+    {
+        float width = (float)texture.width;
+        float height = (float)texture.height;
+
+        bool flip_x = false;
+
+        if (source_rec.width < 0) { flip_x = true; source_rec.width *= -1; }
+        if (source_rec.height < 0) source_rec.y -= source_rec.height;
+
+        rf_gfx_enable_texture(texture.id);
+
+        rf_gfx_push_matrix();
+        rf_gfx_translatef(dest_rec.x, dest_rec.y, 0.0f);
+        rf_gfx_rotatef(rotation, 0.0f, 0.0f, 1.0f);
+        rf_gfx_translatef(-origin.x, -origin.y, 0.0f);
+
+        rf_gfx_begin(RF_QUADS);
+        rf_gfx_color4ub(tint.r, tint.g, tint.b, tint.a);
+        rf_gfx_normal3f(0.0f, 0.0f, 1.0f); // Normal vector pointing towards viewer
+
+        // Bottom-left corner for texture and quad
+        if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, source_rec.y/height);
+        else rf_gfx_tex_coord2f(source_rec.x/width, source_rec.y/height);
+        rf_gfx_vertex2f(0.0f, 0.0f);
+
+        // Bottom-right corner for texture and quad
+        if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, (source_rec.y + source_rec.height)/height);
+        else rf_gfx_tex_coord2f(source_rec.x/width, (source_rec.y + source_rec.height)/height);
+        rf_gfx_vertex2f(0.0f, dest_rec.height);
+
+        // Top-right corner for texture and quad
+        if (flip_x) rf_gfx_tex_coord2f(source_rec.x/width, (source_rec.y + source_rec.height)/height);
+        else rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, (source_rec.y + source_rec.height)/height);
+        rf_gfx_vertex2f(dest_rec.width, dest_rec.height);
+
+        // Top-left corner for texture and quad
+        if (flip_x) rf_gfx_tex_coord2f(source_rec.x/width, source_rec.y/height);
+        else rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, source_rec.y/height);
+        rf_gfx_vertex2f(dest_rec.width, 0.0f);
+        rf_gfx_end();
+        rf_gfx_pop_matrix();
+
+        rf_gfx_disable_texture();
+    }
+}
+
+// Draws a texture (or part of it) that stretches or shrinks nicely using n-patch info
+RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_info, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
+{
+    if (texture.id > 0)
+    {
+        float width = (float)texture.width;
+        float height = (float)texture.height;
+
+        float patch_width = (dest_rec.width <= 0.0f)? 0.0f : dest_rec.width;
+        float patch_height = (dest_rec.height <= 0.0f)? 0.0f : dest_rec.height;
+
+        if (n_patch_info.source_rec.width < 0) n_patch_info.source_rec.x -= n_patch_info.source_rec.width;
+        if (n_patch_info.source_rec.height < 0) n_patch_info.source_rec.y -= n_patch_info.source_rec.height;
+        if (n_patch_info.type == RF_NPT_3PATCH_HORIZONTAL) patch_height = n_patch_info.source_rec.height;
+        if (n_patch_info.type == RF_NPT_3PATCH_VERTICAL) patch_width = n_patch_info.source_rec.width;
+
+        bool draw_center = true;
+        bool draw_middle = true;
+        float left_border = (float)n_patch_info.left;
+        float top_border = (float)n_patch_info.top;
+        float right_border = (float)n_patch_info.right;
+        float bottom_border = (float)n_patch_info.bottom;
+
+        // adjust the lateral (left and right) border widths in case patch_width < texture.width
+        if (patch_width <= (left_border + right_border) && n_patch_info.type != RF_NPT_3PATCH_VERTICAL)
+        {
+            draw_center = false;
+            left_border = (left_border / (left_border + right_border)) * patch_width;
+            right_border = patch_width - left_border;
+        }
+        // adjust the lateral (top and bottom) border heights in case patch_height < texture.height
+        if (patch_height <= (top_border + bottom_border) && n_patch_info.type != RF_NPT_3PATCH_HORIZONTAL)
+        {
+            draw_middle = false;
+            top_border = (top_border / (top_border + bottom_border)) * patch_height;
+            bottom_border = patch_height - top_border;
+        }
+
+        rf_vec2 vert_a, vert_b, vert_c, vert_d;
+        vert_a.x = 0.0f; // outer left
+        vert_a.y = 0.0f; // outer top
+        vert_b.x = left_border; // inner left
+        vert_b.y = top_border; // inner top
+        vert_c.x = patch_width - right_border; // inner right
+        vert_c.y = patch_height - bottom_border; // inner bottom
+        vert_d.x = patch_width; // outer right
+        vert_d.y = patch_height; // outer bottom
+
+        rf_vec2 coord_a, coord_b, coord_c, coord_d;
+        coord_a.x = n_patch_info.source_rec.x / width;
+        coord_a.y = n_patch_info.source_rec.y / height;
+        coord_b.x = (n_patch_info.source_rec.x + left_border) / width;
+        coord_b.y = (n_patch_info.source_rec.y + top_border) / height;
+        coord_c.x = (n_patch_info.source_rec.x + n_patch_info.source_rec.width - right_border) / width;
+        coord_c.y = (n_patch_info.source_rec.y + n_patch_info.source_rec.height - bottom_border) / height;
+        coord_d.x = (n_patch_info.source_rec.x + n_patch_info.source_rec.width) / width;
+        coord_d.y = (n_patch_info.source_rec.y + n_patch_info.source_rec.height) / height;
+
+        rf_gfx_enable_texture(texture.id);
+
+        rf_gfx_push_matrix();
+        rf_gfx_translatef(dest_rec.x, dest_rec.y, 0.0f);
+        rf_gfx_rotatef(rotation, 0.0f, 0.0f, 1.0f);
+        rf_gfx_translatef(-origin.x, -origin.y, 0.0f);
+
+        rf_gfx_begin(RF_QUADS);
+        rf_gfx_color4ub(tint.r, tint.g, tint.b, tint.a);
+        rf_gfx_normal3f(0.0f, 0.0f, 1.0f); // Normal vector pointing towards viewer
+
+        if (n_patch_info.type == RF_NPT_9PATCH)
+        {
+            // ------------------------------------------------------------
+            // TOP-LEFT QUAD
+            rf_gfx_tex_coord2f(coord_a.x, coord_b.y); rf_gfx_vertex2f(vert_a.x, vert_b.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_b.y); rf_gfx_vertex2f(vert_b.x, vert_b.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_a.y); rf_gfx_vertex2f(vert_b.x, vert_a.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_a.x, coord_a.y); rf_gfx_vertex2f(vert_a.x, vert_a.y); // Top-left corner for texture and quad
+            if (draw_center)
+            {
+                // TOP-CENTER QUAD
+                rf_gfx_tex_coord2f(coord_b.x, coord_b.y); rf_gfx_vertex2f(vert_b.x, vert_b.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_b.y); rf_gfx_vertex2f(vert_c.x, vert_b.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_a.y); rf_gfx_vertex2f(vert_c.x, vert_a.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_b.x, coord_a.y); rf_gfx_vertex2f(vert_b.x, vert_a.y); // Top-left corner for texture and quad
+            }
+            // TOP-RIGHT QUAD
+            rf_gfx_tex_coord2f(coord_c.x, coord_b.y); rf_gfx_vertex2f(vert_c.x, vert_b.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_b.y); rf_gfx_vertex2f(vert_d.x, vert_b.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_a.y); rf_gfx_vertex2f(vert_d.x, vert_a.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_c.x, coord_a.y); rf_gfx_vertex2f(vert_c.x, vert_a.y); // Top-left corner for texture and quad
+            if (draw_middle)
+            {
+                // ------------------------------------------------------------
+                // MIDDLE-LEFT QUAD
+                rf_gfx_tex_coord2f(coord_a.x, coord_c.y); rf_gfx_vertex2f(vert_a.x, vert_c.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_b.x, coord_c.y); rf_gfx_vertex2f(vert_b.x, vert_c.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_b.x, coord_b.y); rf_gfx_vertex2f(vert_b.x, vert_b.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_a.x, coord_b.y); rf_gfx_vertex2f(vert_a.x, vert_b.y); // Top-left corner for texture and quad
+                if (draw_center)
+                {
+                    // MIDDLE-CENTER QUAD
+                    rf_gfx_tex_coord2f(coord_b.x, coord_c.y); rf_gfx_vertex2f(vert_b.x, vert_c.y); // Bottom-left corner for texture and quad
+                    rf_gfx_tex_coord2f(coord_c.x, coord_c.y); rf_gfx_vertex2f(vert_c.x, vert_c.y); // Bottom-right corner for texture and quad
+                    rf_gfx_tex_coord2f(coord_c.x, coord_b.y); rf_gfx_vertex2f(vert_c.x, vert_b.y); // Top-right corner for texture and quad
+                    rf_gfx_tex_coord2f(coord_b.x, coord_b.y); rf_gfx_vertex2f(vert_b.x, vert_b.y); // Top-left corner for texture and quad
+                }
+
+                // MIDDLE-RIGHT QUAD
+                rf_gfx_tex_coord2f(coord_c.x, coord_c.y); rf_gfx_vertex2f(vert_c.x, vert_c.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_d.x, coord_c.y); rf_gfx_vertex2f(vert_d.x, vert_c.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_d.x, coord_b.y); rf_gfx_vertex2f(vert_d.x, vert_b.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_b.y); rf_gfx_vertex2f(vert_c.x, vert_b.y); // Top-left corner for texture and quad
+            }
+
+            // ------------------------------------------------------------
+            // BOTTOM-LEFT QUAD
+            rf_gfx_tex_coord2f(coord_a.x, coord_d.y); rf_gfx_vertex2f(vert_a.x, vert_d.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_d.y); rf_gfx_vertex2f(vert_b.x, vert_d.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_c.y); rf_gfx_vertex2f(vert_b.x, vert_c.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_a.x, coord_c.y); rf_gfx_vertex2f(vert_a.x, vert_c.y); // Top-left corner for texture and quad
+            if (draw_center)
+            {
+                // BOTTOM-CENTER QUAD
+                rf_gfx_tex_coord2f(coord_b.x, coord_d.y); rf_gfx_vertex2f(vert_b.x, vert_d.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_d.y); rf_gfx_vertex2f(vert_c.x, vert_d.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_c.y); rf_gfx_vertex2f(vert_c.x, vert_c.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_b.x, coord_c.y); rf_gfx_vertex2f(vert_b.x, vert_c.y); // Top-left corner for texture and quad
+            }
+
+            // BOTTOM-RIGHT QUAD
+            rf_gfx_tex_coord2f(coord_c.x, coord_d.y); rf_gfx_vertex2f(vert_c.x, vert_d.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_d.y); rf_gfx_vertex2f(vert_d.x, vert_d.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_c.y); rf_gfx_vertex2f(vert_d.x, vert_c.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_c.x, coord_c.y); rf_gfx_vertex2f(vert_c.x, vert_c.y); // Top-left corner for texture and quad
+        }
+        else if (n_patch_info.type == RF_NPT_3PATCH_VERTICAL)
+        {
+            // TOP QUAD
+            // -----------------------------------------------------------
+            // rf_texture coords                 Vertices
+            rf_gfx_tex_coord2f(coord_a.x, coord_b.y); rf_gfx_vertex2f(vert_a.x, vert_b.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_b.y); rf_gfx_vertex2f(vert_d.x, vert_b.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_a.y); rf_gfx_vertex2f(vert_d.x, vert_a.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_a.x, coord_a.y); rf_gfx_vertex2f(vert_a.x, vert_a.y); // Top-left corner for texture and quad
+            if (draw_center)
+            {
+                // MIDDLE QUAD
+                // -----------------------------------------------------------
+                // rf_texture coords                 Vertices
+                rf_gfx_tex_coord2f(coord_a.x, coord_c.y); rf_gfx_vertex2f(vert_a.x, vert_c.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_d.x, coord_c.y); rf_gfx_vertex2f(vert_d.x, vert_c.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_d.x, coord_b.y); rf_gfx_vertex2f(vert_d.x, vert_b.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_a.x, coord_b.y); rf_gfx_vertex2f(vert_a.x, vert_b.y); // Top-left corner for texture and quad
+            }
+            // BOTTOM QUAD
+            // -----------------------------------------------------------
+            // rf_texture coords                 Vertices
+            rf_gfx_tex_coord2f(coord_a.x, coord_d.y); rf_gfx_vertex2f(vert_a.x, vert_d.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_d.y); rf_gfx_vertex2f(vert_d.x, vert_d.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_c.y); rf_gfx_vertex2f(vert_d.x, vert_c.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_a.x, coord_c.y); rf_gfx_vertex2f(vert_a.x, vert_c.y); // Top-left corner for texture and quad
+        }
+        else if (n_patch_info.type == RF_NPT_3PATCH_HORIZONTAL)
+        {
+            // LEFT QUAD
+            // -----------------------------------------------------------
+            // rf_texture coords                 Vertices
+            rf_gfx_tex_coord2f(coord_a.x, coord_d.y); rf_gfx_vertex2f(vert_a.x, vert_d.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_d.y); rf_gfx_vertex2f(vert_b.x, vert_d.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_b.x, coord_a.y); rf_gfx_vertex2f(vert_b.x, vert_a.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_a.x, coord_a.y); rf_gfx_vertex2f(vert_a.x, vert_a.y); // Top-left corner for texture and quad
+            if (draw_center)
+            {
+                // CENTER QUAD
+                // -----------------------------------------------------------
+                // rf_texture coords                 Vertices
+                rf_gfx_tex_coord2f(coord_b.x, coord_d.y); rf_gfx_vertex2f(vert_b.x, vert_d.y); // Bottom-left corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_d.y); rf_gfx_vertex2f(vert_c.x, vert_d.y); // Bottom-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_c.x, coord_a.y); rf_gfx_vertex2f(vert_c.x, vert_a.y); // Top-right corner for texture and quad
+                rf_gfx_tex_coord2f(coord_b.x, coord_a.y); rf_gfx_vertex2f(vert_b.x, vert_a.y); // Top-left corner for texture and quad
+            }
+            // RIGHT QUAD
+            // -----------------------------------------------------------
+            // rf_texture coords                 Vertices
+            rf_gfx_tex_coord2f(coord_c.x, coord_d.y); rf_gfx_vertex2f(vert_c.x, vert_d.y); // Bottom-left corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_d.y); rf_gfx_vertex2f(vert_d.x, vert_d.y); // Bottom-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_d.x, coord_a.y); rf_gfx_vertex2f(vert_d.x, vert_a.y); // Top-right corner for texture and quad
+            rf_gfx_tex_coord2f(coord_c.x, coord_a.y); rf_gfx_vertex2f(vert_c.x, vert_a.y); // Top-left corner for texture and quad
+        }
+        rf_gfx_end();
+        rf_gfx_pop_matrix();
+
+        rf_gfx_disable_texture();
+
+    }
+}
+
+// Shows current FPS on top-left corner
+RF_API void rf_draw_fps(int posX, int posY)
+{
+    // NOTE: We are rendering fps every second for better viewing on high framerates
+    static int fps = 0;
+    static int counter = 0;
+    static int refreshRate = 20;
+
+    if (counter < refreshRate) counter++;
+    else
+    {
+        fps = rf_get_fps();
+        refreshRate = fps;
+        counter = 0;
+    }
+
+    // NOTE: We have rounding errors every frame, so it oscillates a lot
+    char buff[100];
+    snprintf(buff, 100, "%2i FPS", fps);
+    rf_draw_text(buff, posX, posY, 20, RF_LIME);
+}
+
+// Draw text (using default font)
+RF_API void rf_draw_text(const char* text, int posX, int posY, int fontSize, rf_color color)
+{
+    // Check if default font has been loaded
+    if (rf_get_default_font().texture.id == 0)
+    {
+        return;
+    }
+    
+    rf_vec2 position = { (float)posX, (float)posY };
+
+    int defaultFontSize = 10;   // Default Font chars height in pixel
+    if (fontSize < defaultFontSize) fontSize = defaultFontSize;
+    int spacing = fontSize/defaultFontSize;
+
+    rf_draw_text_ex(rf_get_default_font(), text, strlen(text), position, (float)fontSize, (float)spacing, color);
+}
+
+// Draw text with custom font
+RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint)
+{
+    int text_offset_y = 0; // Required for line break!
+    float text_offset_x = 0.0f; // Offset between characters
+    float scale_factor = 0.0f;
+
+    int letter = 0; // Current character
+    int index = 0; // Index position in sprite font
+
+    scale_factor = font_size/font.base_size;
+
+    for (int i = 0; i < text_len; i++)
+    {
+        int next = 0;
+        letter = rf_get_next_utf8_codepoint(&text[i], text_len - i, &next);
+        index = rf_get_glyph_index(font, letter);
+
+        // NOTE: Normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
+        // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set 'next = 1'
+        if (letter == 0x3f) next = 1;
+        i += (next - 1);
+
+        if (letter == '\n')
+        {
+            // NOTE: Fixed line spacing of 1.5 lines
+            text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+            text_offset_x = 0.0f;
+        }
+        else
+        {
+            if (letter != ' ')
+            {
+                rf_draw_texture_region(font.texture, font.recs[index],
+                                       (rf_rec){position.x + text_offset_x + font.chars[index].offset_x * scale_factor,
+                                                position.y + text_offset_y + font.chars[index].offset_y*scale_factor,
+                                                font.recs[index].width*scale_factor,
+                                                font.recs[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f, tint);
+            }
+
+            if (font.chars[index].advance_x == 0) text_offset_x += ((float)font.recs[index].width*scale_factor + spacing);
+            else text_offset_x += ((float)font.chars[index].advance_x*scale_factor + spacing);
+        }
+    }
+}
+
+// Draw text using font inside rectangle limits
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, bool word_wrap, rf_color tint)
+{
+    int text_offset_x = 0; // Offset between characters
+    int text_offset_y = 0; // Required for line break!
+    float scale_factor = 0.0f;
+
+    int letter = 0; // Current character
+    int index = 0; // Index position in sprite font
+
+    scale_factor = font_size/font.base_size;
+
+    enum
+    {
+        MEASURE_STATE = 0,
+        DRAW_STATE = 1
+    };
+
+    int state = word_wrap ? MEASURE_STATE : DRAW_STATE;
+    int start_line = -1; // Index where to begin drawing (where a line begins)
+    int end_line = -1; // Index where to stop drawing (where a line ends)
+    int lastk = -1; // Holds last value of the character position
+
+    for (int i = 0, k = 0; i < text_len; i++, k++)
+    {
+        int glyph_width = 0;
+        int next = 0;
+        letter = rf_get_next_utf8_codepoint(&text[i], text_len - i, &next);
+        index = rf_get_glyph_index(font, letter);
+
+        // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
+        // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set next = 1
+        if (letter == 0x3f) next = 1;
+        i += next - 1;
+
+        if (letter != '\n')
+        {
+            glyph_width = (font.chars[index].advance_x == 0)?
+                          (int)(font.recs[index].width*scale_factor + spacing):
+                          (int)(font.chars[index].advance_x*scale_factor + spacing);
+        }
+
+        // NOTE: When word_wrap is ON we first measure how much of the text we can draw before going outside of the rec container
+        // We store this info in start_line and end_line, then we change states, draw the text between those two variables
+        // and change states again and again recursively until the end of the text (or until we get outside of the container).
+        // When word_wrap is OFF we don't need the measure state so we go to the drawing state immediately
+        // and begin drawing on the next line before we can get outside the container.
+        if (state == MEASURE_STATE)
+        {
+            // TODO: there are multiple types of spaces in UNICODE, maybe it's a good idea to add support for more
+            // See: http://jkorpela.fi/chars/spaces.html
+            if ((letter == ' ') || (letter == '\t') || (letter == '\n')) end_line = i;
+
+            if ((text_offset_x + glyph_width + 1) >= rec.width)
+            {
+                end_line = (end_line < 1)? i : end_line;
+                if (i == end_line) end_line -= next;
+                if ((start_line + next) == end_line) end_line = i - next;
+                state = !state;
+            }
+            else if ((i + 1) == text_len)
+            {
+                end_line = i;
+                state = !state;
+            }
+            else if (letter == '\n')
+            {
+                state = !state;
+            }
+
+            if (state == DRAW_STATE)
+            {
+                text_offset_x = 0;
+                i = start_line;
+                glyph_width = 0;
+
+                // Save character position when we switch states
+                int tmp = lastk;
+                lastk = k - 1;
+                k = tmp;
+            }
+        }
+        else
+        {
+            if (letter == '\n')
+            {
+                if (!word_wrap)
+                {
+                    text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+                    text_offset_x = 0;
+                }
+            }
+            else
+            {
+                if (!word_wrap && ((text_offset_x + glyph_width + 1) >= rec.width))
+                {
+                    text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+                    text_offset_x = 0;
+                }
+
+                if ((text_offset_y + (int)(font.base_size*scale_factor)) > rec.height) break;
+
+                // Draw glyph
+                if ((letter != ' ') && (letter != '\t'))
+                {
+                    rf_draw_texture_region(font.texture, font.recs[index],
+                                           (rf_rec){rec.x + text_offset_x + font.chars[index].offset_x * scale_factor,
+                                                    rec.y + text_offset_y + font.chars[index].offset_y*scale_factor,
+                                                    font.recs[index].width*scale_factor,
+                                                    font.recs[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f,
+                                           tint);
+                }
+            }
+
+            if (word_wrap && (i == end_line))
+            {
+                text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+                text_offset_x = 0;
+                start_line = end_line;
+                end_line = -1;
+                glyph_width = 0;
+                k = lastk;
+                state = !state;
+            }
+        }
+
+        text_offset_x += glyph_width;
+    }
+}
+
+RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color)
+{
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+    rf_gfx_vertex3f(start_pos.x, start_pos.y, start_pos.z);
+    rf_gfx_vertex3f(end_pos.x, end_pos.y, end_pos.z);
+    rf_gfx_end();
+}
+
+// Draw a circle in 3D world space
+RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotationAngle, rf_color color)
+{
+    if (rf_gfx_check_buffer_limit(2 * 36)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(center.x, center.y, center.z);
+    rf_gfx_rotatef(rotationAngle, rotation_axis.x, rotation_axis.y, rotation_axis.z);
+
+    rf_gfx_begin(RF_LINES);
+    for (int i = 0; i < 360; i += 10)
+    {
+        rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius, cosf(RF_DEG2RAD*i)*radius, 0.0f);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 10))*radius, cosf(RF_DEG2RAD*(i + 10))*radius, 0.0f);
+    }
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw cube
+// NOTE: Cube position is the center position
+RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color)
+{
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    if (rf_gfx_check_buffer_limit(36)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    // NOTE: Transformation is applied in inverse order (scale -> rotate -> translate)
+    rf_gfx_translatef(position.x, position.y, position.z);
+    //rf_gfx_rotatef(45, 0, 1, 0);
+    //rf_gfx_scalef(1.0f, 1.0f, 1.0f);   // NOTE: Vertices are directly scaled on definition
+
+    rf_gfx_begin(RF_TRIANGLES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    // Front face
+    rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Left
+    rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Right
+    rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Left
+
+    rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Top Right
+    rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Left
+    rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Right
+
+    // Back face
+    rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Bottom Left
+    rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left
+    rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Right
+
+    rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Right
+    rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Right
+    rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left
+
+    // Top face
+    rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left
+    rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Bottom Left
+    rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Bottom Right
+
+    rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Right
+    rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left
+    rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Bottom Right
+
+    // Bottom face
+    rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Top Left
+    rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Right
+    rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Left
+
+    rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Top Right
+    rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Right
+    rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Top Left
+
+    // Right face
+    rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Right
+    rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Right
+    rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Top Left
+
+    rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Left
+    rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Right
+    rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Top Left
+
+    // Left face
+    rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Bottom Right
+    rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Left
+    rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Right
+
+    rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Left
+    rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Left
+    rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Bottom Right
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw cube wires
+RF_API void rf_draw_cube_wires(rf_vec3 position, float width, float height, float length, rf_color color)
+{
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    if (rf_gfx_check_buffer_limit(36)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(position.x, position.y, position.z);
+
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    // Front Face -----------------------------------------------------
+    // Bottom Line
+    rf_gfx_vertex3f(x-width/2, y-height/2, z+length/2); // Bottom Left
+    rf_gfx_vertex3f(x+width/2, y-height/2, z+length/2); // Bottom Right
+
+    // Left Line
+    rf_gfx_vertex3f(x+width/2, y-height/2, z+length/2); // Bottom Right
+    rf_gfx_vertex3f(x+width/2, y+height/2, z+length/2); // Top Right
+
+    // Top Line
+    rf_gfx_vertex3f(x+width/2, y+height/2, z+length/2); // Top Right
+    rf_gfx_vertex3f(x-width/2, y+height/2, z+length/2); // Top Left
+
+    // Right Line
+    rf_gfx_vertex3f(x-width/2, y+height/2, z+length/2); // Top Left
+    rf_gfx_vertex3f(x-width/2, y-height/2, z+length/2); // Bottom Left
+
+    // Back Face ------------------------------------------------------
+    // Bottom Line
+    rf_gfx_vertex3f(x-width/2, y-height/2, z-length/2); // Bottom Left
+    rf_gfx_vertex3f(x+width/2, y-height/2, z-length/2); // Bottom Right
+
+    // Left Line
+    rf_gfx_vertex3f(x+width/2, y-height/2, z-length/2); // Bottom Right
+    rf_gfx_vertex3f(x+width/2, y+height/2, z-length/2); // Top Right
+
+    // Top Line
+    rf_gfx_vertex3f(x+width/2, y+height/2, z-length/2); // Top Right
+    rf_gfx_vertex3f(x-width/2, y+height/2, z-length/2); // Top Left
+
+    // Right Line
+    rf_gfx_vertex3f(x-width/2, y+height/2, z-length/2); // Top Left
+    rf_gfx_vertex3f(x-width/2, y-height/2, z-length/2); // Bottom Left
+
+    // Top Face -------------------------------------------------------
+    // Left Line
+    rf_gfx_vertex3f(x-width/2, y+height/2, z+length/2); // Top Left Front
+    rf_gfx_vertex3f(x-width/2, y+height/2, z-length/2); // Top Left Back
+
+    // Right Line
+    rf_gfx_vertex3f(x+width/2, y+height/2, z+length/2); // Top Right Front
+    rf_gfx_vertex3f(x+width/2, y+height/2, z-length/2); // Top Right Back
+
+    // Bottom Face  ---------------------------------------------------
+    // Left Line
+    rf_gfx_vertex3f(x-width/2, y-height/2, z+length/2); // Top Left Front
+    rf_gfx_vertex3f(x-width/2, y-height/2, z-length/2); // Top Left Back
+
+    // Right Line
+    rf_gfx_vertex3f(x+width/2, y-height/2, z+length/2); // Top Right Front
+    rf_gfx_vertex3f(x+width/2, y-height/2, z-length/2); // Top Right Back
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw cube
+// NOTE: Cube position is the center position
+RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float width, float height, float length, rf_color color)
+{
+    float x = position.x;
+    float y = position.y;
+    float z = position.z;
+
+    if (rf_gfx_check_buffer_limit(36)) rf_gfx_draw();
+
+    rf_gfx_enable_texture(texture.id);
+
+    //rf_gfx_push_matrix();
+    // NOTE: Transformation is applied in inverse order (scale -> rotate -> translate)
+    //rf_gfx_translatef(2.0f, 0.0f, 0.0f);
+    //rf_gfx_rotatef(45, 0, 1, 0);
+    //rf_gfx_scalef(2.0f, 2.0f, 2.0f);
+
+    rf_gfx_begin(RF_QUADS);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+    // Front Face
+    rf_gfx_normal3f(0.0f, 0.0f, 1.0f); // Normal Pointing Towards Viewer
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Top Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Left Of The rf_texture and Quad
+    // Back Face
+    rf_gfx_normal3f(0.0f, 0.0f, - 1.0f); // Normal Pointing Away From Viewer
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Bottom Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Left Of The rf_texture and Quad
+    // Top Face
+    rf_gfx_normal3f(0.0f, 1.0f, 0.0f); // Normal Pointing Up
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Bottom Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Bottom Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Right Of The rf_texture and Quad
+    // Bottom Face
+    rf_gfx_normal3f(0.0f, - 1.0f, 0.0f); // Normal Pointing Down
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Top Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Top Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Right Of The rf_texture and Quad
+    // Right face
+    rf_gfx_normal3f(1.0f, 0.0f, 0.0f); // Normal Pointing Right
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z - length/2); // Bottom Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z - length/2); // Top Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x + width/2, y + height/2, z + length/2); // Top Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x + width/2, y - height/2, z + length/2); // Bottom Left Of The rf_texture and Quad
+    // Left Face
+    rf_gfx_normal3f(-1.0f, 0.0f, 0.0f); // Normal Pointing Left
+    rf_gfx_tex_coord2f(0.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z - length/2); // Bottom Left Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 0.0f); rf_gfx_vertex3f(x - width/2, y - height/2, z + length/2); // Bottom Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(1.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z + length/2); // Top Right Of The rf_texture and Quad
+    rf_gfx_tex_coord2f(0.0f, 1.0f); rf_gfx_vertex3f(x - width/2, y + height/2, z - length/2); // Top Left Of The rf_texture and Quad
+    rf_gfx_end();
+    //rf_gfx_pop_matrix();
+
+    rf_gfx_disable_texture();
+}
+
+// Draw sphere
+RF_API void rf_draw_sphere(rf_vec3 center_pos, float radius, rf_color color)
+{
+    rf_draw_sphere_ex(center_pos, radius, 16, 16, color);
+}
+
+// Draw sphere with extended parameters
+RF_API void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
+{
+    int num_vertex = (rings + 2)*slices*6;
+    if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    // NOTE: Transformation is applied in inverse order (scale -> translate)
+    rf_gfx_translatef(center_pos.x, center_pos.y, center_pos.z);
+    rf_gfx_scalef(radius, radius, radius);
+
+    rf_gfx_begin(RF_TRIANGLES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    for (int i = 0; i < (rings + 2); i++)
+    {
+        for (int j = 0; j < slices; j++)
+        {
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+        }
+    }
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw sphere wires
+RF_API void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
+{
+    int num_vertex = (rings + 2)*slices*6;
+    if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    // NOTE: Transformation is applied in inverse order (scale -> translate)
+    rf_gfx_translatef(center_pos.x, center_pos.y, center_pos.z);
+    rf_gfx_scalef(radius, radius, radius);
+
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    for (int i = 0; i < (rings + 2); i++)
+    {
+        for (int j = 0; j < slices; j++)
+        {
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+
+            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
+                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
+                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
+        }
+    }
+
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw a cylinder
+// NOTE: It could be also used for pyramid and cone
+RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
+{
+    if (sides < 3) sides = 3;
+
+    int num_vertex = sides*6;
+    if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(position.x, position.y, position.z);
+
+    rf_gfx_begin(RF_TRIANGLES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    if (radius_top > 0)
+    {
+        // Draw Body -------------------------------------------------------------------------------------
+        for (int i = 0; i < 360; i += 360/sides)
+        {
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom); //Bottom Left
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom); //Bottom Right
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top); //Top Right
+
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top); //Top Left
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom); //Bottom Left
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top); //Top Right
+        }
+
+        // Draw Cap --------------------------------------------------------------------------------------
+        for (int i = 0; i < 360; i += 360/sides)
+        {
+            rf_gfx_vertex3f(0, height, 0);
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
+        }
+    }
+    else
+    {
+        // Draw Cone -------------------------------------------------------------------------------------
+        for (int i = 0; i < 360; i += 360/sides)
+        {
+            rf_gfx_vertex3f(0, height, 0);
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+        }
+    }
+
+    // Draw Base -----------------------------------------------------------------------------------------
+    for (int i = 0; i < 360; i += 360/sides)
+    {
+        rf_gfx_vertex3f(0, 0, 0);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+    }
+
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw a wired cylinder
+// NOTE: It could be also used for pyramid and cone
+RF_API void rf_draw_cylinder_wires(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
+{
+    if (sides < 3) sides = 3;
+
+    int num_vertex = sides*8;
+    if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
+
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(position.x, position.y, position.z);
+
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    for (int i = 0; i < 360; i += 360/sides)
+    {
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
+
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
+
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
+        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+    }
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw a plane
+RF_API void rf_draw_plane(rf_vec3 center_pos, rf_vec2 size, rf_color color)
+{
+    if (rf_gfx_check_buffer_limit(4)) rf_gfx_draw();
+
+    // NOTE: Plane is always created on XZ ground
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(center_pos.x, center_pos.y, center_pos.z);
+    rf_gfx_scalef(size.x, 1.0f, size.y);
+
+    rf_gfx_begin(RF_QUADS);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+    rf_gfx_normal3f(0.0f, 1.0f, 0.0f);
+
+    rf_gfx_vertex3f(-0.5f, 0.0f, -0.5f);
+    rf_gfx_vertex3f(-0.5f, 0.0f, 0.5f);
+    rf_gfx_vertex3f(0.5f, 0.0f, 0.5f);
+    rf_gfx_vertex3f(0.5f, 0.0f, -0.5f);
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw a ray line
+RF_API void rf_draw_ray(rf_ray ray, rf_color color)
+{
+    float scale = 10000;
+
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+    rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+
+    rf_gfx_vertex3f(ray.position.x, ray.position.y, ray.position.z);
+    rf_gfx_vertex3f(ray.position.x + ray.direction.x*scale, ray.position.y + ray.direction.y*scale, ray.position.z + ray.direction.z*scale);
+    rf_gfx_end();
+}
+
+// Draw a grid centered at (0, 0, 0)
+RF_API void rf_draw_grid(int slices, float spacing)
+{
+    int half_slices = slices/2;
+
+    if (rf_gfx_check_buffer_limit(slices * 4)) rf_gfx_draw();
+
+    rf_gfx_begin(RF_LINES);
+    for (int i = -half_slices; i <= half_slices; i++)
+    {
+        if (i == 0)
+        {
+            rf_gfx_color3f(0.5f, 0.5f, 0.5f);
+            rf_gfx_color3f(0.5f, 0.5f, 0.5f);
+            rf_gfx_color3f(0.5f, 0.5f, 0.5f);
+            rf_gfx_color3f(0.5f, 0.5f, 0.5f);
+        }
+        else
+        {
+            rf_gfx_color3f(0.75f, 0.75f, 0.75f);
+            rf_gfx_color3f(0.75f, 0.75f, 0.75f);
+            rf_gfx_color3f(0.75f, 0.75f, 0.75f);
+            rf_gfx_color3f(0.75f, 0.75f, 0.75f);
+        }
+
+        rf_gfx_vertex3f((float)i*spacing, 0.0f, (float)-half_slices*spacing);
+        rf_gfx_vertex3f((float)i*spacing, 0.0f, (float)half_slices*spacing);
+
+        rf_gfx_vertex3f((float)-half_slices*spacing, 0.0f, (float)i*spacing);
+        rf_gfx_vertex3f((float)half_slices*spacing, 0.0f, (float)i*spacing);
+    }
+    rf_gfx_end();
+}
+
+// Draw gizmo
+RF_API void rf_draw_gizmo(rf_vec3 position)
+{
+    // NOTE: RGB = XYZ
+    float length = 1.0f;
+
+    rf_gfx_push_matrix();
+    rf_gfx_translatef(position.x, position.y, position.z);
+    rf_gfx_scalef(length, length, length);
+
+    rf_gfx_begin(RF_LINES);
+    rf_gfx_color3f(1.0f, 0.0f, 0.0f); rf_gfx_vertex3f(0.0f, 0.0f, 0.0f);
+    rf_gfx_color3f(1.0f, 0.0f, 0.0f); rf_gfx_vertex3f(1.0f, 0.0f, 0.0f);
+
+    rf_gfx_color3f(0.0f, 1.0f, 0.0f); rf_gfx_vertex3f(0.0f, 0.0f, 0.0f);
+    rf_gfx_color3f(0.0f, 1.0f, 0.0f); rf_gfx_vertex3f(0.0f, 1.0f, 0.0f);
+
+    rf_gfx_color3f(0.0f, 0.0f, 1.0f); rf_gfx_vertex3f(0.0f, 0.0f, 0.0f);
+    rf_gfx_color3f(0.0f, 0.0f, 1.0f); rf_gfx_vertex3f(0.0f, 0.0f, 1.0f);
+    rf_gfx_end();
+    rf_gfx_pop_matrix();
+}
+
+// Draw a model with extended parameters
+RF_API void rf_draw_model(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
+{
+    // Calculate transformation matrix from function parameters
+    // Get transform matrix (rotation -> scale -> translation)
+    rf_mat mat_scale = rf_mat_scale(scale.x, scale.y, scale.z);
+    rf_mat mat_rotation = rf_mat_rotate(rotation_axis, rotationAngle * RF_DEG2RAD);
+    rf_mat mat_translation = rf_mat_translate(position.x, position.y, position.z);
+
+    rf_mat mat_transform = rf_mat_mul(rf_mat_mul(mat_scale, mat_rotation), mat_translation);
+
+    // Combine model transformation matrix (model.transform) with matrix generated by function parameters (mat_transform)
+    model.transform = rf_mat_mul(model.transform, mat_transform);
+
+    for (int i = 0; i < model.mesh_count; i++)
+    {
+        // TODO: Review color + tint premultiplication mechanism
+        rf_color color = model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color;
+
+        rf_color color_tint = RF_WHITE;
+        color_tint.r = (((float)color.r/255.0)*((float)tint.r/255.0))*255;
+        color_tint.g = (((float)color.g/255.0)*((float)tint.g/255.0))*255;
+        color_tint.b = (((float)color.b/255.0)*((float)tint.b/255.0))*255;
+        color_tint.a = (((float)color.a/255.0)*((float)tint.a/255.0))*255;
+
+        model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color = color_tint;
+        rf_gfx_draw_mesh(model.meshes[i], model.materials[model.mesh_material[i]], model.transform);
+        model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color = color;
+    }
+}
+
+// Draw a model wires (with texture if set) with extended parameters
+RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
+{
+    rf_gfx_enable_wire_mode();
+
+    rf_draw_model(model, position, rotation_axis, rotationAngle, scale, tint);
+
+    rf_gfx_disable_wire_mode();
+}
+
+// Draw a bounding box with wires
+RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color)
+{
+    rf_vec3 size;
+
+    size.x = (float)fabs(box.max.x - box.min.x);
+    size.y = (float)fabs(box.max.y - box.min.y);
+    size.z = (float)fabs(box.max.z - box.min.z);
+
+    rf_vec3 center = {box.min.x + size.x / 2.0f, box.min.y + size.y / 2.0f, box.min.z + size.z / 2.0f };
+
+    rf_draw_cube_wires(center, size.x, size.y, size.z, color);
+}
+
+// Draw a billboard
+RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint)
+{
+    rf_rec source_rec = {0.0f, 0.0f, (float)texture.width, (float)texture.height };
+
+    rf_draw_billboard_rec(camera, texture, source_rec, center, size, tint);
+}
+
+// Draw a billboard (part of a texture defined by a rectangle)
+RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint)
+{
+    // NOTE: Billboard size will maintain source_rec aspect ratio, size will represent billboard width
+    rf_vec2 size_ratio = {size, size * (float)source_rec.height / source_rec.width };
+
+    rf_mat mat_view = rf_mat_look_at(camera.position, camera.target, camera.up);
+
+    rf_vec3 right = {mat_view.m0, mat_view.m4, mat_view.m8 };
+    //rf_vec3 up = { mat_view.m1, mat_view.m5, mat_view.m9 };
+
+    // NOTE: Billboard locked on axis-Y
+    rf_vec3 up = {0.0f, 1.0f, 0.0f };
+    /*
+        a-------b
+        |       |
+        |   *   |
+        |       |
+        d-------c
+    */
+    right = rf_vec3_scale(right, size_ratio.x / 2);
+    up = rf_vec3_scale(up, size_ratio.y / 2);
+
+    rf_vec3 p1 = rf_vec3_add(right, up);
+    rf_vec3 p2 = rf_vec3_sub(right, up);
+
+    rf_vec3 a = rf_vec3_sub(center, p2);
+    rf_vec3 b = rf_vec3_add(center, p1);
+    rf_vec3 c = rf_vec3_add(center, p2);
+    rf_vec3 d = rf_vec3_sub(center, p1);
+
+    if (rf_gfx_check_buffer_limit(4)) rf_gfx_draw();
+
+    rf_gfx_enable_texture(texture.id);
+
+    rf_gfx_begin(RF_QUADS);
+    rf_gfx_color4ub(tint.r, tint.g, tint.b, tint.a);
+
+    // Bottom-left corner for texture and quad
+    rf_gfx_tex_coord2f((float)source_rec.x/texture.width, (float)source_rec.y/texture.height);
+    rf_gfx_vertex3f(a.x, a.y, a.z);
+
+    // Top-left corner for texture and quad
+    rf_gfx_tex_coord2f((float)source_rec.x/texture.width, (float)(source_rec.y + source_rec.height)/texture.height);
+    rf_gfx_vertex3f(d.x, d.y, d.z);
+
+    // Top-right corner for texture and quad
+    rf_gfx_tex_coord2f((float)(source_rec.x + source_rec.width)/texture.width, (float)(source_rec.y + source_rec.height)/texture.height);
+    rf_gfx_vertex3f(c.x, c.y, c.z);
+
+    // Bottom-right corner for texture and quad
+    rf_gfx_tex_coord2f((float)(source_rec.x + source_rec.width)/texture.width, (float)source_rec.y/texture.height);
+    rf_gfx_vertex3f(b.x, b.y, b.z);
+    rf_gfx_end();
+
+    rf_gfx_disable_texture();
+}
 //endregion
 
 //region image
@@ -4349,16 +5554,18 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
         int img_height = 0;
         int img_bpp = 0;
 
-        int file_size = io.get_file_size_cb(filename);
+        int file_size = io.get_file_size_proc(filename);
         unsigned char* image_file_buffer = (unsigned char*) RF_ALLOC(temp_allocator, file_size);
-        io.read_file_into_buffer_cb(filename, image_file_buffer, file_size);
+        io.read_file_into_buffer_proc(filename, image_file_buffer, file_size);
 
-        if (image_file_buffer != NULL)
+        if (image_file_buffer != NULL) //Todo(LucaSas): Better error handling here, check if the file was read correctly
         {
             // NOTE: Using stb_image to load images (Supports multiple image formats)
-            RF_STBI_WITH_ALLOCATOR(&allocator, {
+            RF_STBI_SET_ALLOCATOR(&allocator);
+            {
                 image.data = stbi_load_from_memory(image_file_buffer, file_size, &img_width, &img_height, &img_bpp, 0);
-            });
+            }
+            RF_STBI_SET_ALLOCATOR(NULL);
 
             image.width     = img_width;
             image.height    = img_height;
@@ -4395,9 +5602,11 @@ RF_API rf_image rf_load_image_from_data(void* data, int data_size, rf_allocator 
     rf_image image = { 0 };
 
     // NOTE: Using stb_image to load images (Supports multiple image formats)
-    RF_STBI_WITH_ALLOCATOR(&allocator, {
+    RF_STBI_SET_ALLOCATOR(&allocator);
+    {
         image.data = stbi_load_from_memory(data, data_size, &img_width, &img_height, &img_bpp, 0);
-    });
+    }
+    RF_STBI_SET_ALLOCATOR(NULL);
 
     image.width     = img_width;
     image.height    = img_height;
@@ -4614,7 +5823,7 @@ RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_heigh
             rf_rec src_rec = {0.0f, 0.0f, (float)image->width, (float)image->height };
             rf_rec dst_rec = {(float)offset_x, (float)offset_y, src_rec.width, src_rec.height };
 
-            rf_image_draw(&im_temp, *image, src_rec, dst_rec, RF_WHITE);
+            rf_image_draw(&im_temp, *image, src_rec, dst_rec, RF_WHITE, temp_allocator);
             rf_image_format(&im_temp, image->format, temp_allocator);
             rf_unload_image(*image);
 
@@ -4646,7 +5855,7 @@ RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_heigh
                 dst_rec.y = 0.0f;
             }
 
-            rf_image_draw(&new_image, *image, src_rec, dst_rec, RF_WHITE);
+            rf_image_draw(&new_image, *image, src_rec, dst_rec, RF_WHITE, temp_allocator);
             rf_image_format(&new_image, image->format, temp_allocator);
             rf_unload_image(*image);
 
@@ -5204,30 +6413,30 @@ RF_API void rf_image_dither(rf_image* image, int r_bpp, int g_bpp, int b_bpp, in
                 // NOTE: Some cases are out of the array and should be ignored
                 if (x < (image->width - 1))
                 {
-                    pixels[y*image->width + x+1].r = min((int)pixels[y*image->width + x+1].r + (int)((float)r_error*7.0f/16), 0xff);
-                    pixels[y*image->width + x+1].g = min((int)pixels[y*image->width + x+1].g + (int)((float)g_error*7.0f/16), 0xff);
-                    pixels[y*image->width + x+1].b = min((int)pixels[y*image->width + x+1].b + (int)((float)b_error*7.0f/16), 0xff);
+                    pixels[y*image->width + x+1].r = RF_MIN((int)pixels[y * image->width + x + 1].r + (int)((float)r_error * 7.0f / 16), 0xff);
+                    pixels[y*image->width + x+1].g = RF_MIN((int)pixels[y * image->width + x + 1].g + (int)((float)g_error * 7.0f / 16), 0xff);
+                    pixels[y*image->width + x+1].b = RF_MIN((int)pixels[y * image->width + x + 1].b + (int)((float)b_error * 7.0f / 16), 0xff);
                 }
 
                 if ((x > 0) && (y < (image->height - 1)))
                 {
-                    pixels[(y+1)*image->width + x-1].r = min((int)pixels[(y+1)*image->width + x-1].r + (int)((float)r_error * 3.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x-1].g = min((int)pixels[(y+1)*image->width + x-1].g + (int)((float)g_error * 3.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x-1].b = min((int)pixels[(y+1)*image->width + x-1].b + (int)((float)b_error * 3.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x-1].r = RF_MIN((int)pixels[(y + 1) * image->width + x - 1].r + (int)((float)r_error * 3.0f / 16), 0xff);
+                    pixels[(y+1)*image->width + x-1].g = RF_MIN((int)pixels[(y + 1) * image->width + x - 1].g + (int)((float)g_error * 3.0f / 16), 0xff);
+                    pixels[(y+1)*image->width + x-1].b = RF_MIN((int)pixels[(y + 1) * image->width + x - 1].b + (int)((float)b_error * 3.0f / 16), 0xff);
                 }
 
                 if (y < (image->height - 1))
                 {
-                    pixels[(y+1)*image->width + x].r = min((int)pixels[(y+1)*image->width + x].r + (int)((float)r_error*5.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x].g = min((int)pixels[(y+1)*image->width + x].g + (int)((float)g_error*5.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x].b = min((int)pixels[(y+1)*image->width + x].b + (int)((float)b_error*5.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x].r = RF_MIN((int)pixels[(y+1)*image->width + x].r + (int)((float)r_error*5.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x].g = RF_MIN((int)pixels[(y+1)*image->width + x].g + (int)((float)g_error*5.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x].b = RF_MIN((int)pixels[(y+1)*image->width + x].b + (int)((float)b_error*5.0f/16), 0xff);
                 }
 
                 if ((x < (image->width - 1)) && (y < (image->height - 1)))
                 {
-                    pixels[(y+1)*image->width + x+1].r = min((int)pixels[(y+1)*image->width + x+1].r + (int)((float)r_error*1.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x+1].g = min((int)pixels[(y+1)*image->width + x+1].g + (int)((float)g_error*1.0f/16), 0xff);
-                    pixels[(y+1)*image->width + x+1].b = min((int)pixels[(y+1)*image->width + x+1].b + (int)((float)b_error*1.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x+1].r = RF_MIN((int)pixels[(y+1)*image->width + x+1].r + (int)((float)r_error*1.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x+1].g = RF_MIN((int)pixels[(y+1)*image->width + x+1].g + (int)((float)g_error*1.0f/16), 0xff);
+                    pixels[(y+1)*image->width + x+1].b = RF_MIN((int)pixels[(y+1)*image->width + x+1].b + (int)((float)b_error*1.0f/16), 0xff);
                 }
 
                 r_pixel = (unsigned short)new_pixel.r;
@@ -5289,7 +6498,7 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
             {
                 rf_rec src_rec = {0, 0, font.chars[index].image.width, font.chars[index].image.height };
                 rf_rec dst_rec = {(float)(position_x + font.chars[index].offset_x), (float)font.chars[index].offset_y,font.chars[index].image.width, font.chars[index].image.height };
-                rf_image_draw(&im_text, font.chars[index].image, src_rec,dst_rec, tint);
+                rf_image_draw(&im_text, font.chars[index].image, src_rec,dst_rec, tint, temp_allocator);
             }
 
             if (font.chars[index].advance_x == 0) position_x += (int)(font.recs[index].width + spacing);
@@ -5847,6 +7056,166 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_a
 
     return image;
 }
+
+// Draw an image (source) within an image (destination)
+// NOTE: rf_color tint is applied to source image
+RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator)
+{
+    // Security check to avoid program crash
+    if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0) ||
+        (src.data == NULL) || (src.width == 0) || (src.height == 0)) return;
+
+    // Security checks to avoid size and rectangle issues (out of bounds)
+    // Check that srcRec is inside src image
+    if (src_rec.x < 0) src_rec.x = 0;
+    if (src_rec.y < 0) src_rec.y = 0;
+
+    if ((src_rec.x + src_rec.width) > src.width)
+    {
+        src_rec.width = src.width - src_rec.x;
+        RF_LOG_V(RF_LOG_WARNING, "Source rectangle width out of bounds, rescaled width: %i", src_rec.width);
+    }
+
+    if ((src_rec.y + src_rec.height) > src.height)
+    {
+        src_rec.height = src.height - src_rec.y;
+        RF_LOG_V(RF_LOG_WARNING, "Source rectangle height out of bounds, rescaled height: %i", src_rec.height);
+    }
+
+    rf_image src_copy = rf_image_copy(src, temp_allocator); // Make a copy of source image to work with it
+
+    // Crop source image to desired source rectangle (if required)
+    if ((src.width != (int)src_rec.width) && (src.height != (int)src_rec.height)) rf_image_crop(&src_copy, src_rec, temp_allocator);
+
+    // Scale source image in case destination rec size is different than source rec size
+    if (((int)dst_rec.width != (int)src_rec.width) || ((int)dst_rec.height != (int)src_rec.height))
+    {
+        rf_image_resize(&src_copy, (int)dst_rec.width, (int)dst_rec.height, temp_allocator);
+    }
+
+    // Check that dstRec is inside dst image
+    // Allow negative position within destination with cropping
+    if (dst_rec.x < 0)
+    {
+        rf_image_crop(&src_copy, (rf_rec) {-dst_rec.x, 0, dst_rec.width + dst_rec.x, dst_rec.height }, temp_allocator);
+        dst_rec.width = dst_rec.width + dst_rec.x;
+        dst_rec.x = 0;
+    }
+
+    if ((dst_rec.x + dst_rec.width) > dst->width)
+    {
+        rf_image_crop(&src_copy, (rf_rec) {0, 0, dst->width - dst_rec.x, dst_rec.height }, temp_allocator);
+        dst_rec.width = dst->width - dst_rec.x;
+    }
+
+    if (dst_rec.y < 0)
+    {
+        rf_image_crop(&src_copy, (rf_rec) {0, -dst_rec.y, dst_rec.width, dst_rec.height + dst_rec.y }, temp_allocator);
+        dst_rec.height = dst_rec.height + dst_rec.y;
+        dst_rec.y = 0;
+    }
+
+    if ((dst_rec.y + dst_rec.height) > dst->height)
+    {
+        rf_image_crop(&src_copy, (rf_rec) {0, 0, dst_rec.width, dst->height - dst_rec.y }, temp_allocator);
+        dst_rec.height = dst->height - dst_rec.y;
+    }
+
+    // Get image data as rf_color pixels array to work with it
+    rf_color* dst_pixels = rf_get_image_pixel_data(*dst, temp_allocator);
+    rf_color* src_pixels = rf_get_image_pixel_data(src_copy, temp_allocator);
+
+    rf_unload_image(src_copy); // Source copy not required any more
+
+    rf_vec4 fsrc, fdst, fout; // Normalized pixel data (ready for operation)
+    rf_vec4 ftint = rf_color_normalize(tint); // Normalized color tint
+
+    // Blit pixels, copy source image into destination
+    // TODO: Maybe out-of-bounds blitting could be considered here instead of so much cropping
+    for (int j = (int)dst_rec.y; j < (int)(dst_rec.y + dst_rec.height); j++)
+    {
+        for (int i = (int)dst_rec.x; i < (int)(dst_rec.x + dst_rec.width); i++)
+        {
+            // Alpha blending (https://en.wikipedia.org/wiki/Alpha_compositing)
+
+            fdst = rf_color_normalize(dst_pixels[j*(int)dst->width + i]);
+            fsrc = rf_color_normalize(src_pixels[(j - (int)dst_rec.y)*(int)dst_rec.width + (i - (int)dst_rec.x)]);
+
+            // Apply color tint to source image
+            fsrc.x *= ftint.x; fsrc.y *= ftint.y; fsrc.z *= ftint.z; fsrc.w *= ftint.w;
+
+            fout.w = fsrc.w + fdst.w*(1.0f - fsrc.w);
+
+            if (fout.w <= 0.0f)
+            {
+                fout.x = 0.0f;
+                fout.y = 0.0f;
+                fout.z = 0.0f;
+            }
+            else
+            {
+                fout.x = (fsrc.x*fsrc.w + fdst.x*fdst.w*(1 - fsrc.w))/fout.w;
+                fout.y = (fsrc.y*fsrc.w + fdst.y*fdst.w*(1 - fsrc.w))/fout.w;
+                fout.z = (fsrc.z*fsrc.w + fdst.z*fdst.w*(1 - fsrc.w))/fout.w;
+            }
+
+            dst_pixels[j*(int)dst->width + i] = (rf_color){ (unsigned char)(fout.x*255.0f),
+                                                            (unsigned char)(fout.y*255.0f),
+                                                            (unsigned char)(fout.z*255.0f),
+                                                            (unsigned char)(fout.w*255.0f) };
+
+            // TODO: Support other blending options
+        }
+    }
+
+    rf_unload_image(*dst);
+
+    *dst = rf_load_image_from_pixels(dst_pixels, (int)dst->width, (int)dst->height, dst->allocator);
+    rf_image_format(dst, dst->format, temp_allocator);
+
+    RF_FREE(temp_allocator, src_pixels);
+    RF_FREE(temp_allocator, dst_pixels);
+}
+
+// Draw rectangle within an image
+RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator)
+{
+    // Security check to avoid program crash
+    if ((dst->data == NULL) || (dst->width == 0) || (dst->height == 0)) return;
+
+    rf_image im_rec = rf_gen_image_color((int)rec.width, (int)rec.height, color, temp_allocator, temp_allocator);
+    rf_image_draw(dst, im_rec, (rf_rec){0, 0, rec.width, rec.height }, rec, RF_WHITE, temp_allocator);
+    rf_unload_image(im_rec);
+}
+
+// Draw rectangle lines within an image
+RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator)
+{
+    rf_image_draw_rectangle(dst, (rf_rec){rec.x, rec.y, rec.width, thick }, color, temp_allocator);
+    rf_image_draw_rectangle(dst, (rf_rec){rec.x, rec.y + thick, thick, rec.height - thick * 2 }, color, temp_allocator);
+    rf_image_draw_rectangle(dst, (rf_rec){rec.x + rec.width - thick, rec.y + thick, thick, rec.height - thick * 2 }, color, temp_allocator);
+    rf_image_draw_rectangle(dst, (rf_rec){rec.x, rec.y + rec.height - thick, rec.width, thick }, color, temp_allocator);
+}
+
+// Draw text (default font) within an image (destination)
+RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator)
+{
+    // NOTE: For default font, sapcing is set to desired font size / default font size (10)
+    rf_image_draw_text_ex(dst, position, rf_get_default_font(), text, text_len, (float)font_size, (float)font_size/10, color, temp_allocator);
+}
+
+// Draw text (custom sprite font) within an image (destination)
+RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator)
+{
+    rf_image im_text = rf_image_text_ex(font, text, text_len, font_size, spacing, color, temp_allocator, temp_allocator);
+
+    rf_rec src_rec = {0.0f, 0.0f, (float)im_text.width, (float)im_text.height };
+    rf_rec dst_rec = {position.x, position.y, (float)im_text.width, (float)im_text.height };
+
+    rf_image_draw(dst, im_text, src_rec, dst_rec, RF_WHITE, temp_allocator);
+
+    rf_unload_image(im_text);
+}
 //endregion
 //endregion
 
@@ -5968,7 +7337,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
             // TODO: rf_image formating does not work with compressed textures!
         }
 
-        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, face_recs[i], (rf_rec) {0, size * i, size, size }, RF_WHITE);
+        for (int i = 0; i < 6; i++) rf_image_draw(&faces, image, face_recs[i], (rf_rec) {0, size * i, size, size }, RF_WHITE, temp_allocator);
 
         cubemap.id = rf_gfx_load_texture_cubemap(faces.data, size, faces.format);
         if (cubemap.id == 0) RF_LOG(RF_LOG_WARNING, "Cubemap image could not be loaded.");
@@ -6201,7 +7570,7 @@ RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocat
 
     if (_rf_is_file_extension(filename, ".ttf") || _rf_is_file_extension(filename, ".otf"))
     {
-        int file_size = io.get_file_size_cb(filename);
+        int file_size = io.get_file_size_proc(filename);
         void* data = RF_ALLOC(temp_allocator, file_size);
         font = rf_load_font(data, file_size, RF_DEFAULT_TTF_FONT_SIZE, NULL, RF_DEFAULT_TTF_NUMCHARS, allocator, temp_allocator);
         RF_FREE(temp_allocator, data);
@@ -6826,7 +8195,852 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
 //endregion
 
 //region model
+RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator temp_allocator)
+{
+    // Make sure model transform is set to identity matrix!
+    model.transform = rf_mat_identity();
+
+    if (model.mesh_count == 0)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] No meshes can be loaded, default to cube mesh", file_name);
+
+        model.mesh_count = 1;
+        model.meshes = (rf_mesh *) RF_ALLOC(model.allocator, sizeof(rf_mesh));
+        memset(model.meshes, 0, sizeof(rf_mesh));
+        model.meshes[0] = rf_gen_mesh_cube(1.0f, 1.0f, 1.0f, model.allocator, temp_allocator);
+        model.meshes[0].allocator = model.allocator;
+    }
+    else
+    {
+        // Upload vertex data to GPU (static mesh)
+        for (int i = 0; i < model.mesh_count; i++)
+            rf_gfx_load_mesh(&model.meshes[i], false);
+    }
+
+    if (model.material_count == 0)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] No materials can be loaded, default to white material", file_name);
+
+        model.material_count = 1;
+        model.materials = (rf_material *) RF_ALLOC(model.allocator, sizeof(rf_material));
+        memset(model.materials, 0, sizeof(rf_material));
+        model.materials[0] = rf_load_default_material(model.allocator);
+
+        if (model.mesh_material == NULL)
+        {
+            model.mesh_material = (int *) RF_ALLOC(model.allocator, model.mesh_count * sizeof(int));
+            memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
+        }
+    }
+
+    return model;
+}
+
+// Compute mesh bounding box limits. Note: min_vertex and max_vertex should be transformed by model transform matrix
+RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
+{
+    // Get min and max vertex to construct bounds (AABB)
+    rf_vec3 min_vertex = { 0 };
+    rf_vec3 max_vertex = { 0 };
+
+    if (mesh.vertices != NULL)
+    {
+        min_vertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
+        max_vertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
+
+        for (int i = 1; i < mesh.vertex_count; i++)
+        {
+            min_vertex = rf_vec3_RF_MIN(min_vertex, (rf_vec3) {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1],
+                                                            mesh.vertices[i * 3 + 2]});
+            max_vertex = rf_vec3_max(max_vertex, (rf_vec3) {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1],
+                                                            mesh.vertices[i * 3 + 2]});
+        }
+    }
+
+    // Create the bounding box
+    rf_bounding_box box = { 0 };
+    box.min = min_vertex;
+    box.max = max_vertex;
+
+    return box;
+}
+
+// Compute mesh tangents
+// NOTE: To calculate mesh tangents and binormals we need mesh vertex positions and texture coordinates
+// Implementation base don: https://answers.unity.com/questions/7789/calculating-tangents-vector4.html
+RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator temp_allocator)
+{
+    if (mesh->tangents == NULL) mesh->tangents = (float*) RF_ALLOC(mesh->allocator, mesh->vertex_count * 4 * sizeof(float));
+    else RF_LOG(RF_LOG_WARNING, "rf_mesh tangents already exist");
+
+    rf_vec3* tan1 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
+    rf_vec3* tan2 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
+
+    for (int i = 0; i < mesh->vertex_count; i += 3)
+    {
+        // Get triangle vertices
+        rf_vec3 v1 = { mesh->vertices[(i + 0) * 3 + 0], mesh->vertices[(i + 0) * 3 + 1], mesh->vertices[(i + 0) * 3 + 2] };
+        rf_vec3 v2 = { mesh->vertices[(i + 1) * 3 + 0], mesh->vertices[(i + 1) * 3 + 1], mesh->vertices[(i + 1) * 3 + 2] };
+        rf_vec3 v3 = { mesh->vertices[(i + 2) * 3 + 0], mesh->vertices[(i + 2) * 3 + 1], mesh->vertices[(i + 2) * 3 + 2] };
+
+        // Get triangle texcoords
+        rf_vec2 uv1 = { mesh->texcoords[(i + 0) * 2 + 0], mesh->texcoords[(i + 0) * 2 + 1] };
+        rf_vec2 uv2 = { mesh->texcoords[(i + 1) * 2 + 0], mesh->texcoords[(i + 1) * 2 + 1] };
+        rf_vec2 uv3 = { mesh->texcoords[(i + 2) * 2 + 0], mesh->texcoords[(i + 2) * 2 + 1] };
+
+        float x1 = v2.x - v1.x;
+        float y1 = v2.y - v1.y;
+        float z1 = v2.z - v1.z;
+        float x2 = v3.x - v1.x;
+        float y2 = v3.y - v1.y;
+        float z2 = v3.z - v1.z;
+
+        float s1 = uv2.x - uv1.x;
+        float t1 = uv2.y - uv1.y;
+        float s2 = uv3.x - uv1.x;
+        float t2 = uv3.y - uv1.y;
+
+        float div = s1 * t2 - s2 * t1;
+        float r = (div == 0.0f) ? (0.0f) : (1.0f / div);
+
+        rf_vec3 sdir = {(t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r };
+        rf_vec3 tdir = {(s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r };
+
+        tan1[i + 0] = sdir;
+        tan1[i + 1] = sdir;
+        tan1[i + 2] = sdir;
+
+        tan2[i + 0] = tdir;
+        tan2[i + 1] = tdir;
+        tan2[i + 2] = tdir;
+    }
+
+    // Compute tangents considering normals
+    for (int i = 0; i < mesh->vertex_count; ++i)
+    {
+        rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
+        rf_vec3 tangent = tan1[i];
+
+        // TODO: Review, not sure if tangent computation is right, just used reference proposed maths...
+        rf_vec3_ortho_normalize(&normal, &tangent);
+        mesh->tangents[i * 4 + 0] = tangent.x;
+        mesh->tangents[i * 4 + 1] = tangent.y;
+        mesh->tangents[i * 4 + 2] = tangent.z;
+        mesh->tangents[i * 4 + 3] = (rf_vec3_dot_product(rf_vec3_cross_product(normal, tangent), tan2[i]) < 0.0f) ? -1.0f : 1.0f;
+    }
+
+    RF_FREE(temp_allocator, tan1);
+    RF_FREE(temp_allocator, tan2);
+
+    // Load a new tangent attributes buffer
+    mesh->vbo_id[RF_LOC_VERTEX_TANGENT] = rf_gfx_load_attrib_buffer(mesh->vao_id, RF_LOC_VERTEX_TANGENT, mesh->tangents, mesh->vertex_count * 4 * sizeof(float), false);
+
+    RF_LOG(RF_LOG_INFO, "Tangents computed for mesh");
+}
+
+// Compute mesh binormals (aka bitangent)
+RF_API void rf_mesh_compute_binormals(rf_mesh* mesh)
+{
+    for (int i = 0; i < mesh->vertex_count; i++)
+    {
+        rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
+        rf_vec3 tangent = {mesh->tangents[i * 4 + 0], mesh->tangents[i * 4 + 1], mesh->tangents[i * 4 + 2] };
+        float tangent_w = mesh->tangents[i * 4 + 3];
+
+        // TODO: Register computed binormal in mesh->binormal?
+        // rf_vec3 binormal = rf_vec3_mul(rf_vec3_cross_product(normal, tangent), tangent_w);
+    }
+}
+
+// Unload mesh from memory (RAM and/or VRAM)
+RF_API void rf_unload_mesh(rf_mesh mesh)
+{
+    rf_gfx_unload_mesh(mesh);
+    RF_FREE(mesh.allocator, mesh.vbo_id);
+}
+
+RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_model model = { 0 };
+
+    if (_rf_is_file_extension(filename, ".obj"))
+    {
+        model = rf_load_model_from_obj(filename, allocator, temp_allocator, io);
+    }
+
+    if (_rf_is_file_extension(filename, ".iqm"))
+    {
+        model = rf_load_model_from_iqm(filename, allocator, temp_allocator, io);
+    }
+
+    if (_rf_is_file_extension(filename, ".gltf") || _rf_is_file_extension(filename, ".glb"))
+    {
+        //model = rf_load_gltf(filename);
+    }
+
+    // Make sure model transform is set to identity matrix!
+    model.transform = rf_mat_identity();
+    model.allocator = allocator;
+
+    if (model.mesh_count == 0)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] No meshes can be loaded, default to cube mesh", fileName);
+
+        model.mesh_count = 1;
+        model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+        memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
+        model.meshes[0] = rf_gen_mesh_cube(1.0f, 1.0f, 1.0f, allocator, temp_allocator);
+    }
+    else
+    {
+        // Upload vertex data to GPU (static mesh)
+        for (int i = 0; i < model.mesh_count; i++) rf_gfx_load_mesh(&model.meshes[i], false);
+    }
+
+    if (model.material_count == 0)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] No materials can be loaded, default to white material", filename);
+
+        model.material_count = 1;
+        model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+        memset(model.materials, 0, model.material_count * sizeof(rf_material));
+        model.materials[0] = rf_load_default_material(allocator);
+
+        if (model.mesh_material == NULL) model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+    }
+
+    return model;
+}
+
+// Load OBJ mesh data. Note: This calls into a library to do io, so we need to ask the user for IO callbacks
+RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_model model  = { 0 };
+    model.allocator = allocator;
+
+    tinyobj_attrib_t attrib     = { 0 };
+    tinyobj_shape_t* meshes     = NULL;
+    size_t           mesh_count = 0;
+
+    tinyobj_material_t* materials      = NULL;
+    size_t              material_count = 0;
+
+    size_t data_size = io.get_file_size_proc(filename);
+    void*  data      = RF_ALLOC(temp_allocator, data_size);
+
+    if (io.read_file_into_buffer_proc(filename, data, data_size))
+    {
+        RF_FREE(temp_allocator, data);
+        return (rf_model) { 0 };
+    }
+
+    RF_SET_TINYOBJ_ALLOCATOR(&temp_allocator); // Set to NULL at the end of the function
+    {
+        unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
+        int ret            = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, &material_count, (const char*) data, data_size, flags);
+
+        if (ret != TINYOBJ_SUCCESS)
+        {
+            RF_LOG_V(RF_LOG_WARNING, "[%s] rf_model data could not be loaded", file_name);
+        }
+        else
+        {
+            RF_LOG_V(RF_LOG_INFO, "[%s] rf_model data loaded successfully: %i meshes / %i materials", file_name, mesh_count, material_count);
+        }
+
+        // Init model meshes array
+        {
+            // TODO: Support multiple meshes... in the meantime, only one mesh is returned
+            //model.mesh_count = mesh_count;
+            model.mesh_count = 1;
+            model.meshes     = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+            memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
+        }
+
+        // Init model materials array
+        if (material_count > 0)
+        {
+            model.material_count = material_count;
+            model.materials      = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+            memset(model.materials, 0, model.material_count * sizeof(rf_material));
+        }
+
+        model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+        memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
+
+        // Init model meshes
+        for (int m = 0; m < 1; m++)
+        {
+            rf_mesh mesh = (rf_mesh)
+            {
+                .allocator      = allocator,
+                .vertex_count   = attrib.num_faces * 3,
+                .triangle_count = attrib.num_faces,
+
+                .vertices  = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
+                .texcoords = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 2 * sizeof(float)),
+                .normals   = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
+                .vbo_id    = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO            * sizeof(unsigned int)),
+            };
+
+            memset(mesh.vertices,  0, mesh.vertex_count * 3 * sizeof(float));
+            memset(mesh.texcoords, 0, mesh.vertex_count * 2 * sizeof(float));
+            memset(mesh.normals,   0, mesh.vertex_count * 3 * sizeof(float));
+            memset(mesh.vbo_id,    0, RF_MAX_MESH_VBO       * sizeof(unsigned int));
+
+            int vCount  = 0;
+            int vtCount = 0;
+            int vnCount = 0;
+
+            for (int f = 0; f < attrib.num_faces; f++)
+            {
+                // Get indices for the face
+                tinyobj_vertex_index_t idx0 = attrib.faces[3 * f + 0];
+                tinyobj_vertex_index_t idx1 = attrib.faces[3 * f + 1];
+                tinyobj_vertex_index_t idx2 = attrib.faces[3 * f + 2];
+
+                // RF_LOG(RF_LOG_DEBUG, "Face %i index: v %i/%i/%i . vt %i/%i/%i . vn %i/%i/%i\n", f, idx0.v_idx, idx1.v_idx, idx2.v_idx, idx0.vt_idx, idx1.vt_idx, idx2.vt_idx, idx0.vn_idx, idx1.vn_idx, idx2.vn_idx);
+
+                // Fill vertices buffer (float) using vertex index of the face
+                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx0.v_idx * 3 + v]; }
+                vCount +=3;
+
+                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx1.v_idx * 3 + v]; }
+                vCount +=3;
+
+                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx2.v_idx * 3 + v]; }
+                vCount +=3;
+
+                // Fill texcoords buffer (float) using vertex index of the face
+                // NOTE: Y-coordinate must be flipped upside-down
+                mesh.texcoords[vtCount + 0] = attrib.texcoords[idx0.vt_idx * 2 + 0];
+                mesh.texcoords[vtCount + 1] = 1.0f - attrib.texcoords[idx0.vt_idx * 2 + 1]; vtCount += 2;
+                mesh.texcoords[vtCount + 0] = attrib.texcoords[idx1.vt_idx * 2 + 0];
+                mesh.texcoords[vtCount + 1] = 1.0f - attrib.texcoords[idx1.vt_idx * 2 + 1]; vtCount += 2;
+                mesh.texcoords[vtCount + 0] = attrib.texcoords[idx2.vt_idx * 2 + 0];
+                mesh.texcoords[vtCount + 1] = 1.0f - attrib.texcoords[idx2.vt_idx * 2 + 1]; vtCount += 2;
+
+                // Fill normals buffer (float) using vertex index of the face
+                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx0.vn_idx * 3 + v]; }
+                vnCount +=3;
+
+                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx1.vn_idx * 3 + v]; }
+                vnCount +=3;
+
+                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx2.vn_idx * 3 + v]; }
+                vnCount +=3;
+            }
+
+            model.meshes[m] = mesh; // Assign mesh data to model
+
+            // Assign mesh material for current mesh
+            model.mesh_material[m] = attrib.material_ids[m];
+
+            // Set unfound materials to default
+            if (model.mesh_material[m] == -1) { model.mesh_material[m] = 0; }
+        }
+
+        // Init model materials
+        for (int m = 0; m < material_count; m++)
+        {
+            // Init material to default
+            // NOTE: Uses default shader, only RF_MAP_DIFFUSE supported
+            model.materials[m] = rf_load_default_material(allocator);
+            model.materials[m].maps[RF_MAP_DIFFUSE].texture = rf_get_default_texture(); // Get default texture, in case no texture is defined
+
+            if (materials[m].diffuse_texname != NULL)
+            {
+                model.materials[m].maps[RF_MAP_DIFFUSE].texture = rf_load_texture_from_file(materials[m].diffuse_texname, temp_allocator, io); //char* diffuse_texname; // map_Kd
+            }
+
+            model.materials[m].maps[RF_MAP_DIFFUSE].color = (rf_color)
+            {
+                (float)(materials[m].diffuse[0] * 255.0f),
+                (float)(materials[m].diffuse[1] * 255.0f),
+                (float)(materials[m].diffuse[2] * 255.0f),
+                255
+            };
+
+            model.materials[m].maps[RF_MAP_DIFFUSE].value = 0.0f;
+
+            if (materials[m].specular_texname != NULL)
+            {
+                model.materials[m].maps[RF_MAP_SPECULAR].texture = rf_load_texture_from_file(materials[m].specular_texname, temp_allocator, io); //char* specular_texname; // map_Ks
+            }
+
+            model.materials[m].maps[RF_MAP_SPECULAR].color = (rf_color)
+            {
+                (float)(materials[m].specular[0] * 255.0f),
+                (float)(materials[m].specular[1] * 255.0f),
+                (float)(materials[m].specular[2] * 255.0f),
+                255
+            };
+
+            model.materials[m].maps[RF_MAP_SPECULAR].value = 0.0f;
+
+            if (materials[m].bump_texname != NULL)
+            {
+                model.materials[m].maps[RF_MAP_NORMAL].texture = rf_load_texture_from_file(materials[m].bump_texname, temp_allocator, io); //char* bump_texname; // map_bump, bump
+            }
+
+            model.materials[m].maps[RF_MAP_NORMAL].color = RF_WHITE;
+            model.materials[m].maps[RF_MAP_NORMAL].value = materials[m].shininess;
+
+            model.materials[m].maps[RF_MAP_EMISSION].color = (rf_color)
+            {
+                (float)(materials[m].emission[0] * 255.0f),
+                (float)(materials[m].emission[1] * 255.0f),
+                (float)(materials[m].emission[2] * 255.0f),
+                255
+            };
+
+            if (materials[m].displacement_texname != NULL)
+            {
+                model.materials[m].maps[RF_MAP_HEIGHT].texture = rf_load_texture_from_file(materials[m].displacement_texname, temp_allocator, io); //char* displacement_texname; // disp
+            }
+        }
+
+        tinyobj_attrib_free(&attrib);
+        tinyobj_shapes_free(meshes, mesh_count);
+        tinyobj_materials_free(materials, material_count);
+    }
+    RF_SET_TINYOBJ_ALLOCATOR(NULL);
+
+    // NOTE: At this point we have all model data loaded
+    RF_LOG_V(RF_LOG_INFO, "[%s] rf_model loaded successfully in RAM (CPU)", file_name);
+
+    return _rf_load_meshes_and_materials_for_model(model, temp_allocator);
+}
+
+// Load IQM mesh data
+RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    //region constants
+    #define RF_IQM_MAGIC "INTERQUAKEMODEL" // IQM file magic number
+    #define RF_IQM_VERSION 2 // only IQM version 2 supported
+
+    #define RF_BONE_NAME_LENGTH 32 // rf_bone_info name string length
+    #define RF_MESH_NAME_LENGTH 32 // rf_mesh name string length
+    //endregion
+
+    //region IQM file structs
+    typedef struct rf_iqm_header rf_iqm_header;
+    struct rf_iqm_header
+    {
+        char         magic[16];
+        unsigned int version;
+        unsigned int filesize;
+        unsigned int flags;
+        unsigned int num_text, ofs_text;
+        unsigned int num_meshes, ofs_meshes;
+        unsigned int num_vertexarrays, num_vertexes, ofs_vertexarrays;
+        unsigned int num_triangles, ofs_triangles, ofs_adjacency;
+        unsigned int num_joints, ofs_joints;
+        unsigned int num_poses, ofs_poses;
+        unsigned int num_anims, ofs_anims;
+        unsigned int num_frames, num_framechannels, ofs_frames, ofs_bounds;
+        unsigned int num_comment, ofs_comment;
+        unsigned int num_extensions, ofs_extensions;
+    };
+
+    typedef struct rf_iqm_mesh rf_iqm_mesh;
+    struct rf_iqm_mesh
+    {
+        unsigned int name;
+        unsigned int material;
+        unsigned int first_vertex, num_vertexes;
+        unsigned int first_triangle, num_triangles;
+    };
+
+    typedef struct rf_iqm_triangle rf_iqm_triangle;
+    struct rf_iqm_triangle
+    {
+        unsigned int vertex[3];
+    };
+
+    typedef struct rf_iqm_joint rf_iqm_joint;
+    struct rf_iqm_joint
+    {
+        unsigned int name;
+        int          parent;
+        float        translate[3], rotate[4], scale[3];
+    };
+
+    typedef struct rf_iqm_vertex_array rf_iqm_vertex_array;
+    struct rf_iqm_vertex_array
+    {
+        unsigned int type;
+        unsigned int flags;
+        unsigned int format;
+        unsigned int size;
+        unsigned int offset;
+    };
+
+    // IQM vertex data types
+    typedef enum rf_iqm_vertex_type
+    {
+        RF_IQM_POSITION     = 0,
+        RF_IQM_TEXCOORD     = 1,
+        RF_IQM_NORMAL       = 2,
+        RF_IQM_TANGENT      = 3,   // Note: Tangents unused by default
+        RF_IQM_BLENDINDEXES = 4,
+        RF_IQM_BLENDWEIGHTS = 5,
+        RF_IQM_COLOR        = 6,   // Note: Vertex colors unused by default
+        RF_IQM_CUSTOM       = 0x10 // Note: Custom vertex values unused by default
+    }  rf_iqm_vertex_type;
+    //endregion
+
+    rf_model model = { .allocator = allocator };
+
+    size_t data_size = io.get_file_size_proc(filename);
+    unsigned char* data = (unsigned char*) RF_ALLOC(temp_allocator, data_size);
+
+    if (io.read_file_into_buffer_proc(filename, data, data_size))
+    {
+        RF_FREE(temp_allocator, data);
+    }
+
+    rf_iqm_header iqm = *((rf_iqm_header*)data);
+
+    rf_iqm_mesh*         imesh;
+    rf_iqm_triangle*     tri;
+    rf_iqm_vertex_array* va;
+    rf_iqm_joint*        ijoint;
+
+    float* vertex         = NULL;
+    float* normal         = NULL;
+    float* text           = NULL;
+    char*  blendi         = NULL;
+    unsigned char* blendw = NULL;
+
+    if (strncmp(iqm.magic, RF_IQM_MAGIC, sizeof(RF_IQM_MAGIC)))
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] IQM file does not seem to be valid", file_name);
+        return model;
+    }
+
+    if (iqm.version != RF_IQM_VERSION)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] IQM file version is not supported (%i).", file_name, iqm.version);
+        return model;
+    }
+
+    // Meshes data processing
+    imesh = (rf_iqm_mesh*) RF_ALLOC(temp_allocator, sizeof(rf_iqm_mesh) * iqm.num_meshes);
+    memcpy(imesh, data + iqm.ofs_meshes, sizeof(rf_iqm_mesh) * iqm.num_meshes);
+
+    model.mesh_count = iqm.num_meshes;
+    model.meshes = (rf_mesh*) RF_ALLOC(model.allocator, model.mesh_count * sizeof(rf_mesh));
+
+    char name[RF_MESH_NAME_LENGTH] = { 0 };
+    for (int i = 0; i < model.mesh_count; i++)
+    {
+        memcpy(name, data + (iqm.ofs_text + imesh[i].name), RF_MESH_NAME_LENGTH);
+
+        model.meshes[i] = (rf_mesh)
+        {
+            .allocator = allocator,
+            .vertex_count = imesh[i].num_vertexes
+        };
+
+        model.meshes[i].vertices = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex positions
+        memset(model.meshes[i].vertices, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
+
+        model.meshes[i].normals = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex normals
+        memset(model.meshes[i].normals, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
+
+        model.meshes[i].texcoords = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 2 * sizeof(float)); // Default vertex texcoords
+        memset(model.meshes[i].texcoords, 0, model.meshes[i].vertex_count * 2 * sizeof(float));
+
+        model.meshes[i].bone_ids = (int*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
+        memset(model.meshes[i].bone_ids, 0, model.meshes[i].vertex_count * 4 * sizeof(float));
+
+        model.meshes[i].bone_weights = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
+        memset(model.meshes[i].bone_weights, 0, model.meshes[i].vertex_count * 4 * sizeof(float));
+
+        model.meshes[i].triangle_count = imesh[i].num_triangles;
+
+        model.meshes[i].indices = (unsigned short*) RF_ALLOC(model.allocator, model.meshes[i].triangle_count * 3 * sizeof(unsigned short));
+        memset(model.meshes[i].indices, 0, model.meshes[i].triangle_count * 3 * sizeof(unsigned short));
+
+        // Animated verted data, what we actually process for rendering
+        // NOTE: Animated vertex should be re-uploaded to GPU (if not using GPU skinning)
+        model.meshes[i].anim_vertices = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
+        memset(model.meshes[i].anim_vertices, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
+
+        model.meshes[i].anim_normals = (float*) RF_ALLOC(model.allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
+        memset(model.meshes[i].anim_normals, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
+
+        model.meshes[i].vbo_id = (unsigned int*) RF_ALLOC(model.allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+        memset(model.meshes[i].vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    }
+
+    // Triangles data processing
+    tri = (rf_iqm_triangle*) RF_ALLOC(temp_allocator, iqm.num_triangles * sizeof(rf_iqm_triangle));
+    memcpy(tri, data + iqm.ofs_triangles, iqm.num_triangles * sizeof(rf_iqm_triangle));
+
+    for (int m = 0; m < model.mesh_count; m++)
+    {
+        int tcounter = 0;
+
+        for (int i = imesh[m].first_triangle; i < (imesh[m].first_triangle + imesh[m].num_triangles); i++)
+        {
+            // IQM triangles are stored counter clockwise, but raylib sets opengl to clockwise drawing, so we swap them around
+            model.meshes[m].indices[tcounter + 2] = tri[i].vertex[0] - imesh[m].first_vertex;
+            model.meshes[m].indices[tcounter + 1] = tri[i].vertex[1] - imesh[m].first_vertex;
+            model.meshes[m].indices[tcounter    ] = tri[i].vertex[2] - imesh[m].first_vertex;
+            tcounter += 3;
+        }
+    }
+
+    // Vertex arrays data processing
+    va = (rf_iqm_vertex_array*) RF_ALLOC(temp_allocator, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
+    memcpy(va, data + iqm.ofs_vertexarrays, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
+
+    for (int i = 0; i < iqm.num_vertexarrays; i++)
+    {
+        switch (va[i].type)
+        {
+            case RF_IQM_POSITION:
+            {
+                vertex = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
+                memcpy(vertex, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
+
+                for (int m = 0; m < iqm.num_meshes; m++)
+                {
+                    int vertex_pos_counter = 0;
+                    for (int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
+                    {
+                        model.meshes[m].vertices     [vertex_pos_counter] = vertex[ii];
+                        model.meshes[m].anim_vertices[vertex_pos_counter] = vertex[ii];
+                        vertex_pos_counter++;
+                    }
+                }
+            } break;
+
+            case RF_IQM_NORMAL:
+            {
+                normal = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
+                memcpy(normal, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
+
+                for (int m = 0; m < iqm.num_meshes; m++)
+                {
+                    int vertex_pos_counter = 0;
+                    for (int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
+                    {
+                        model.meshes[m].normals     [vertex_pos_counter] = normal[ii];
+                        model.meshes[m].anim_normals[vertex_pos_counter] = normal[ii];
+                        vertex_pos_counter++;
+                    }
+                }
+            } break;
+
+            case RF_IQM_TEXCOORD:
+            {
+                text = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 2 * sizeof(float));
+                memcpy(text, data + va[i].offset, iqm.num_vertexes * 2 * sizeof(float));
+
+                for (int m = 0; m < iqm.num_meshes; m++)
+                {
+                    int vertex_pos_counter = 0;
+                    for (int ii = imesh[m].first_vertex * 2; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 2; ii++)
+                    {
+                        model.meshes[m].texcoords[vertex_pos_counter] = text[ii];
+                        vertex_pos_counter++;
+                    }
+                }
+            } break;
+
+            case RF_IQM_BLENDINDEXES:
+            {
+                blendi = (char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(char));
+                memcpy(blendi, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(char));
+
+                for (int m = 0; m < iqm.num_meshes; m++)
+                {
+                    int bone_counter = 0;
+                    for (int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
+                    {
+                        model.meshes[m].bone_ids[bone_counter] = blendi[ii];
+                        bone_counter++;
+                    }
+                }
+            } break;
+
+            case RF_IQM_BLENDWEIGHTS:
+            {
+                blendw = (unsigned char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(unsigned char));
+                memcpy(blendw, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(unsigned char));
+
+                for (int m = 0; m < iqm.num_meshes; m++)
+                {
+                    int bone_counter = 0;
+                    for (int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
+                    {
+                        model.meshes[m].bone_weights[bone_counter] = blendw[ii] / 255.0f;
+                        bone_counter++;
+                    }
+                }
+            } break;
+        }
+    }
+
+    // Bones (joints) data processing
+    ijoint = (rf_iqm_joint*) RF_ALLOC(temp_allocator, iqm.num_joints * sizeof(rf_iqm_joint));
+    memcpy(ijoint, data + iqm.ofs_joints, iqm.num_joints * sizeof(rf_iqm_joint));
+
+    model.bone_count = iqm.num_joints;
+    model.bones      = (rf_bone_info*) RF_ALLOC(model.allocator, iqm.num_joints * sizeof(rf_bone_info));
+    model.bind_pose  = (rf_transform*) RF_ALLOC(model.allocator, iqm.num_joints * sizeof(rf_transform));
+
+    for (int i = 0; i < iqm.num_joints; i++)
+    {
+        // Bones
+        model.bones[i].parent = ijoint[i].parent;
+        memcpy(model.bones[i].name, data + iqm.ofs_text + ijoint[i].name, RF_BONE_NAME_LENGTH * sizeof(char));
+
+        // Bind pose (base pose)
+        model.bind_pose[i].translation.x = ijoint[i].translate[0];
+        model.bind_pose[i].translation.y = ijoint[i].translate[1];
+        model.bind_pose[i].translation.z = ijoint[i].translate[2];
+
+        model.bind_pose[i].rotation.x = ijoint[i].rotate[0];
+        model.bind_pose[i].rotation.y = ijoint[i].rotate[1];
+        model.bind_pose[i].rotation.z = ijoint[i].rotate[2];
+        model.bind_pose[i].rotation.w = ijoint[i].rotate[3];
+
+        model.bind_pose[i].scale.x = ijoint[i].scale[0];
+        model.bind_pose[i].scale.y = ijoint[i].scale[1];
+        model.bind_pose[i].scale.z = ijoint[i].scale[2];
+    }
+
+    // Build bind pose from parent joints
+    for (int i = 0; i < model.bone_count; i++)
+    {
+        if (model.bones[i].parent >= 0)
+        {
+            model.bind_pose[i].rotation    = rf_quaternion_mul(model.bind_pose[model.bones[i].parent].rotation, model.bind_pose[i].rotation);
+            model.bind_pose[i].translation = rf_vec3_rotate_by_quaternion(model.bind_pose[i].translation, model.bind_pose[model.bones[i].parent].rotation);
+            model.bind_pose[i].translation = rf_vec3_add(model.bind_pose[i].translation, model.bind_pose[model.bones[i].parent].translation);
+            model.bind_pose[i].scale       = rf_vec3_mul_v(model.bind_pose[i].scale, model.bind_pose[model.bones[i].parent].scale);
+        }
+    }
+
+    RF_FREE(temp_allocator, imesh);
+    RF_FREE(temp_allocator, tri);
+    RF_FREE(temp_allocator, va);
+    RF_FREE(temp_allocator, vertex);
+    RF_FREE(temp_allocator, normal);
+    RF_FREE(temp_allocator, text);
+    RF_FREE(temp_allocator, blendi);
+    RF_FREE(temp_allocator, blendw);
+    RF_FREE(temp_allocator, ijoint);
+
+    return _rf_load_meshes_and_materials_for_model(model, temp_allocator);
+}
+
+// Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
+RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator)
+{
+    rf_model model = { 0 };
+
+    model.transform = rf_mat_identity();
+
+    model.mesh_count = 1;
+    model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+    memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
+    model.meshes[0] = mesh;
+
+    model.material_count = 1;
+    model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+    memset(model.materials, 0, model.material_count * sizeof(rf_material));
+    model.materials[0] = rf_load_default_material(allocator);
+
+    model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+    memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
+    model.mesh_material[0] = 0; // First material index
+
+    return model;
+}
+
+// Unload model from memory (RAM and/or VRAM)
+RF_API void rf_unload_model(rf_model model)
+{
+    for (int i = 0; i < model.mesh_count; i++) rf_unload_mesh(model.meshes[i]);
+
+    // As the user could be sharing shaders and textures between models,
+    // we don't unload the material but just free it's maps, the user
+    // is responsible for freeing models shaders and textures
+    for (int i = 0; i < model.material_count; i++) RF_FREE(model.allocator, model.materials[i].maps);
+
+    RF_FREE(model.allocator, model.meshes);
+    RF_FREE(model.allocator, model.materials);
+    RF_FREE(model.allocator, model.mesh_material);
+
+    // Unload animation data
+    RF_FREE(model.allocator, model.bones);
+    RF_FREE(model.allocator, model.bind_pose);
+
+    RF_LOG(RF_LOG_INFO, "Unloaded model data from RAM and VRAM");
+}
+
+// Load materials from model file
+RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator)
+{
+    RF_SET_TINYOBJ_ALLOCATOR(&allocator);
+
+    rf_material* materials = NULL;
+    unsigned int count = 0;
+
+    // TODO: Support IQM and GLTF for materials parsing
+
+    tinyobj_material_t* mats;
+
+    if (tinyobj_parse_mtl_file(&mats, (size_t*) &count, data, data_size) != TINYOBJ_SUCCESS)
+    {
+
+    }
+
+    // TODO: Process materials to return
+
+    tinyobj_materials_free(mats, count);
+
+    // Set materials shader to default (DIFFUSE, SPECULAR, NORMAL)
+    for (int i = 0; i < count; i++)
+    {
+        materials[i].shader = rf_get_default_shader();
+    }
+
+    *material_count = count;
+    return materials;
+}
+
+RF_API void rf_unload_material(rf_material material)
+{
+    // Unload material shader (avoid unloading default shader, managed by raylib)
+    if (material.shader.id != rf_get_default_shader().id)
+    {
+        rf_gfx_unload_shader(material.shader);
+    }
+
+    // Unload loaded texture maps (avoid unloading default texture, managed by raylib)
+    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
+    {
+        if (material.maps[i].texture.id != rf_get_default_texture().id)
+        {
+            rf_gfx_delete_textures(material.maps[i].texture.id);
+        }
+    }
+
+    RF_FREE(material.allocator, material.maps);
+}
+
+RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+
+RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
+
 // Generated cuboid mesh
+
 RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
@@ -6889,46 +9103,5 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
     rf_gfx_load_mesh(&mesh, false);
 
     return mesh;
-}
-
-RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator temp_allocator)
-{
-    // Make sure model transform is set to identity matrix!
-    model.transform = rf_mat_identity();
-
-    if (model.mesh_count == 0)
-    {
-        RF_LOG_V(RF_LOG_WARNING, "[%s] No meshes can be loaded, default to cube mesh", file_name);
-
-        model.mesh_count = 1;
-        model.meshes = (rf_mesh *) RF_ALLOC(model.allocator, sizeof(rf_mesh));
-        memset(model.meshes, 0, sizeof(rf_mesh));
-        model.meshes[0] = rf_gen_mesh_cube(1.0f, 1.0f, 1.0f, model.allocator, temp_allocator);
-        model.meshes[0].allocator = model.allocator;
-    }
-    else
-    {
-        // Upload vertex data to GPU (static mesh)
-        for (int i = 0; i < model.mesh_count; i++)
-            rf_gfx_load_mesh(&model.meshes[i], false);
-    }
-
-    if (model.material_count == 0)
-    {
-        RF_LOG_V(RF_LOG_WARNING, "[%s] No materials can be loaded, default to white material", file_name);
-
-        model.material_count = 1;
-        model.materials = (rf_material *) RF_ALLOC(model.allocator, sizeof(rf_material));
-        memset(model.materials, 0, sizeof(rf_material));
-        model.materials[0] = rf_load_default_material(model.allocator);
-
-        if (model.mesh_material == NULL)
-        {
-            model.mesh_material = (int *) RF_ALLOC(model.allocator, model.mesh_count * sizeof(int));
-            memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
-        }
-    }
-
-    return model;
 }
 //endregion

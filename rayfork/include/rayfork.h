@@ -9,15 +9,15 @@
 //region macros and constants
 
 //If no graphics backend was set, choose OpenGL ES3
-#if !defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_DIRECTX)
-    #define RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3
+#if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX)
+    #define RAYFORK_GRAPHICS_BACKEND_GL_33
 #endif
 
 //Check to make sure only one graphics backend was selected
-#if (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) && (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_DIRECTX))) || \
-    (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) && (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_DIRECTX))) || \
-    (defined(RAYFORK_GRAPHICS_BACKEND_METAL) && (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_DIRECTX))) || \
-    (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_DIRECTX) && (defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL)))
+#if (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
+    (defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
+    (defined(RAYFORK_GRAPHICS_BACKEND_METAL) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
+    (defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL)))
     #error You can only set one graphics backend but 2 were detected.
 #endif
 
@@ -113,7 +113,7 @@
 #define RF_RAYWHITE   (RF_LIT(rf_color) { 245, 245, 245, 255 }) // My own White (raylib logo)
 
 #ifndef RF_MAX_BATCH_ELEMENTS
-    #if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL)
+    #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL)
         #define RF_MAX_BATCH_ELEMENTS (2048)
     #else
         #define RF_MAX_BATCH_ELEMENTS (8192)
@@ -472,8 +472,8 @@ struct rf_rec
 typedef struct rf_io_callbacks rf_io_callbacks;
 struct rf_io_callbacks
 {
-    int (*get_file_size_cb)(const char* filename);
-    bool (*read_file_into_buffer_cb)(const char* filename, void* buffer, int buffer_size); //Returns true if operation was successful
+    int (*get_file_size_proc)(const char* filename);
+    bool (*read_file_into_buffer_proc)(const char* filename, void* buffer, int buffer_size); //Returns true if operation was successful
 };
 
 typedef struct rf_allocator rf_allocator;
@@ -735,221 +735,9 @@ struct rf_bounding_box
     rf_vec3 max; // Maximum vertex box-corner
 };
 
-// Dynamic vertex buffers (position + texcoords + colors + indices arrays)
-typedef struct rf_dynamic_buffer rf_dynamic_buffer;
-struct rf_dynamic_buffer
-{
-    int v_counter;  // vertex position counter to process (and draw) from full buffer
-    int tc_counter; // vertex texcoord counter to process (and draw) from full buffer
-    int c_counter;  // vertex color counter to process (and draw) from full buffer
-
-    float vertices[3 * 4 * RF_MAX_BATCH_ELEMENTS];
-    float texcoords[2 * 4 * RF_MAX_BATCH_ELEMENTS];
-    unsigned char colors[4 * 4 * RF_MAX_BATCH_ELEMENTS];
-
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33)
-    unsigned int indices[6 * RF_MAX_BATCH_ELEMENTS]; // 6 int by quad (indices)
-#elif defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
-    unsigned short indices[6 * RF_MAX_BATCH_ELEMENTS];  // 6 int by quad (indices)
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
+#include "rayfork_gfx_backend_gl.inc"
 #endif
-
-    unsigned int vao_id;         // OpenGL Vertex Array Object id
-    unsigned int vbo_id[4];      // OpenGL Vertex Buffer Objects id (4 types of vertex data)
-};
-
-// Draw call type
-typedef struct rf_draw_call rf_draw_call;
-struct rf_draw_call
-{
-    int mode;                   // Drawing mode: LINES, TRIANGLES, QUADS
-    int vertex_count;            // Number of vertex of the draw
-    int vertex_alignment;        // Number of vertex required for index alignment (LINES, TRIANGLES)
-    //unsigned int vao_id;         // Vertex array id to be used on the draw
-    //unsigned int shaderId;      // rf_shader id to be used on the draw
-    unsigned int texture_id;     // rf_texture id to be used on the draw
-    // TODO: Support additional texture units?
-
-    //rf_mat projection;        // Projection matrix for this draw
-    //rf_mat modelview;         // Modelview matrix for this draw
-};
-
-typedef struct rf_memory rf_memory;
-struct rf_memory
-{
-    rf_dynamic_buffer vertex_data[RF_MAX_BATCH_BUFFERING];
-    rf_draw_call draw_calls[RF_MAX_DRAWCALL_REGISTERED];
-
-    rf_char_info default_font_chars[RF_DEFAULT_FONT_CHARS_COUNT];
-    rf_rec default_font_recs[RF_DEFAULT_FONT_CHARS_COUNT];
-};
-
-typedef struct rf_opengl_procs rf_opengl_procs;
-struct rf_opengl_procs
-{
-    void (*glViewport)(int x, int y, int width, int height);
-    void (*glBindTexture)(unsigned int target, unsigned int texture);
-    void (*glTexParameteri)(unsigned int target, unsigned int pname, int param);
-    void (*glTexParameterf)(unsigned int target, unsigned int pname, float param);
-    void (*glBindFramebuffer)(unsigned int target, unsigned int framebuffer);
-    void (*glEnable)(unsigned int cap);
-    void (*glDisable)(unsigned int cap);
-    void (*glScissor)(int x, int y, int width, int height);
-    void (*glDeleteTextures)(int n, const unsigned int* textures);
-    void (*glDeleteRenderbuffers)(int n, const unsigned int* renderbuffers);
-    void (*glDeleteFramebuffers)(int n, const unsigned int* framebuffers);
-    void (*glDeleteVertexArrays)(int n, const unsigned int* arrays);
-    void (*glDeleteBuffers)(int n, const unsigned int* buffers);
-    void (*glClearColor)(float red, float green, float blue, float alpha);
-    void (*glClear)(unsigned int mask);
-    void (*glBindBuffer)(unsigned int target, unsigned int buffer);
-    void (*glBufferSubData)(unsigned int target, ptrdiff_t offset, ptrdiff_t size, const void* data);
-    void (*glBindVertexArray)(unsigned int array);
-    void (*glGenBuffers)(int n, unsigned int* buffers);
-    void (*glBufferData)(unsigned int target, ptrdiff_t size, const void* data, unsigned int usage);
-    void (*glVertexAttribPointer)(unsigned int index, int size, unsigned int type, unsigned char normalized, int stride, const void* pointer);
-    void (*glEnableVertexAttribArray)(unsigned int index);
-    void (*glGenVertexArrays)(int n, unsigned int* arrays);
-    void (*glVertexAttrib3f)(unsigned int index, float x, float y, float z);
-    void (*glDisableVertexAttribArray)(unsigned int index);
-    void (*glVertexAttrib4f)(unsigned int index, float x, float y, float z, float w);
-    void (*glVertexAttrib2f)(unsigned int index, float x, float y);
-    void (*glUseProgram)(unsigned int program);
-    void (*glUniform4f)(int location, float v0, float v1, float v2, float v3);
-    void (*glActiveTexture)(unsigned int texture);
-    void (*glUniform1i)(int location, int v0);
-    void (*glUniformMatrix4fv)(int location, int count, unsigned char transpose, const float* value);
-    void (*glDrawElements)(unsigned int mode, int count, unsigned int type, const void* indices);
-    void (*glDrawArrays)(unsigned int mode, int first, int count);
-    void (*glPixelStorei)(unsigned int pname, int param);
-    void (*glGenTextures)(int n, unsigned int* textures);
-    void (*glTexImage2D)(unsigned int target, int level, int internalformat, int width, int height, int border, unsigned int format, unsigned int type, const void* pixels);
-    void (*glGenRenderbuffers)(int n, unsigned int* renderbuffers);
-    void (*glBindRenderbuffer)(unsigned int target, unsigned int renderbuffer);
-    void (*glRenderbufferStorage)(unsigned int target, unsigned int internalformat, int width, int height);
-    void (*glCompressedTexImage2D)(unsigned int target, int level, unsigned int internalformat, int width, int height, int border, int imageSize, const void* data);
-    void (*glTexSubImage2D)(unsigned int target, int level, int txoffset, int yoffset, int width, int height, unsigned int format, unsigned int type, const void* pixels);
-    void (*glGenerateMipmap)(unsigned int target);
-    void (*glReadPixels)(int x, int y, int width, int height, unsigned int format, unsigned int type, void* pixels);
-    void (*glGenFramebuffers)(int n, unsigned int* framebuffers);
-    void (*glFramebufferTexture2D)(unsigned int target, unsigned int attachment, unsigned int textarget, unsigned int texture, int level);
-    void (*glFramebufferRenderbuffer)(unsigned int target, unsigned int attachment, unsigned int renderbuffertarget, unsigned int renderbuffer);
-    unsigned int (*glCheckFramebufferStatus)(unsigned int target);
-    unsigned int (*glCreateShader)(unsigned int type);
-    void (*glShaderSource)(unsigned int shader, int count, const char** string, const int* length);
-    void (*glCompileShader)(unsigned int shader);
-    void (*glGetShaderiv)(unsigned int shader, unsigned int pname, int* params);
-    void (*glGetShaderInfoLog)(unsigned int shader, int bufSize, int* length, char* infoLog);
-    unsigned int (*glCreateProgram)();
-    void (*glAttachShader)(unsigned int program, unsigned int shader);
-    void (*glBindAttribLocation)(unsigned int program, unsigned int index, const char* name);
-    void (*glLinkProgram)(unsigned int program);
-    void (*glGetProgramiv)(unsigned int program, unsigned int pname, int* params);
-    void (*glGetProgramInfoLog)(unsigned int program, int bufSize, int* length, char* infoLog);
-    void (*glDeleteProgram)(unsigned int program);
-    int (*glGetAttribLocation)(unsigned int program, const char* name);
-    int (*glGetUniformLocation)(unsigned int program, const char* name);
-    void (*glDetachShader)(unsigned int program, unsigned int shader);
-    void (*glDeleteShader)(unsigned int shader);
-
-    void (*glGetTexImage)(unsigned int target, int level, unsigned int format, unsigned int type, void* pixels); // NULL for OpenGLES3
-
-    void (*glGetActiveUniform)(unsigned int program, unsigned int index, int bufSize, int* length, int* size, unsigned int* type, char* name);
-    void (*glUniform1f)(int location, float v0);
-    void (*glUniform1fv)(int location, int count, const float* value);
-    void (*glUniform2fv)(int location, int count, const float* value);
-    void (*glUniform3fv)(int location, int count, const float* value);
-    void (*glUniform4fv)(int location, int count, const float* value);
-    void (*glUniform1iv)(int location, int count, const int* value);
-    void (*glUniform2iv)(int location, int count, const int* value);
-    void (*glUniform3iv)(int location, int count, const int* value);
-    void (*glUniform4iv)(int location, int count, const int* value);
-    const unsigned char* (*glGetString)(unsigned int name);
-    void (*glGetFloatv)(unsigned int pname, float* data);
-    void (*glDepthFunc)(unsigned int func);
-    void (*glBlendFunc)(unsigned int sfactor, unsigned int dfactor);
-    void (*glCullFace)(unsigned int mode);
-    void (*glFrontFace)(unsigned int mode);
-
-    //On OpenGL33 we only set glClearDepth but on OpenGLES2 we set glClearDepthf. In the gl backend we use a macro to choose the correct glClearDepth function depending on the gl version
-    void (*glClearDepth)(double depth);
-    void (*glClearDepthf)(float depth);
-
-    void (*glGetIntegerv)(unsigned int pname, int* data); //OpenGL 33 only, should be NULL in OpenGL ES2
-    const unsigned char* (*glGetStringi)(unsigned int name, unsigned int index);
-};
-
-typedef struct rf_renderer_context rf_renderer_context;
-struct rf_renderer_context
-{
-    rf_mat stack[RF_MAX_MATRIX_STACK_SIZE];
-    int stack_counter;
-
-    rf_mat modelview;
-    rf_mat projection;
-    rf_mat* current_matrix;
-    int current_matrix_mode;
-    float current_depth;
-    int current_buffer;
-
-    // transform matrix to be used with rlTranslate, rlRotate, rlScale
-    rf_mat transform_matrix;
-    bool use_transform_matrix;
-
-    // Default buffers draw calls
-    rf_draw_call *draws;
-    int draws_counter;
-
-    // Default texture (1px white) useful for plain color polys (required by shader)
-    unsigned int default_texture_id;
-
-    // Default shaders
-    unsigned int default_vertex_shader_id;   // Default vertex shader id (used by default shader program)
-    unsigned int default_frag_shader_id;     // Default fragment shader Id (used by default shader program)
-
-    rf_shader default_shader;                // Basic shader, support vertex color and diffuse texture
-    rf_shader current_shader;                // rf_shader to be used on rendering (by default, default_shader)
-
-    // Extension supported flag: Compressed textures
-    bool tex_comp_dxt_supported;             // DDS texture compression support
-    bool tex_comp_etc1_supported;            // ETC1 texture compression support
-    bool tex_comp_etc2_supported;            // ETC2/EAC texture compression support
-    bool tex_comp_pvrt_supported;            // PVR texture compression support
-    bool tex_comp_astc_supported;            // ASTC texture compression support
-
-    // Extension supported flag: Textures format
-    bool tex_npot_supported;                 // NPOT textures full support
-    bool tex_float_supported;                // float textures support (32 bit per channel)
-    bool tex_depth_supported;                // Depth textures supported
-    int max_depth_bits;                      // Maximum bits for depth component
-
-    // Extension supported flag: Clamp mirror wrap mode
-    bool tex_mirror_clamp_supported;         // Clamp mirror wrap mode supported
-
-    // Extension supported flag: Anisotropic filtering
-    bool tex_anisotropic_filter_supported;   // Anisotropic texture filtering support
-    float max_anisotropic_level;             // Maximum anisotropy level supported (minimum is 2.0f)
-
-    bool debug_marker_supported;             // Debug marker support
-
-    int blend_mode;                          // Track current blending mode
-
-    // Default framebuffer size
-    int framebuffer_width;                   // Default framebuffer width
-    int framebuffer_height;                  // Default framebuffer height
-
-    //Note(LucaSas): Camera 3d stuff, might extract into another struct
-    rf_vec2 camera_angle;                    // rf_camera3d angle in plane XZ
-    float camera_target_distance;            // rf_camera3d distance from position to target
-
-    int camera_mode;                         // Current camera mode
-
-    //Note(LucaSas): shapes global data
-    rf_texture2d tex_shapes;
-    rf_rec rec_tex_shapes;
-
-    // Default dynamic buffer for elements data. Note: A multi-buffering system is supported
-    rf_memory* memory;
-};
 
 typedef struct rf_context rf_context;
 struct rf_context
@@ -1004,11 +792,7 @@ struct rf_context
 
     rf_font default_font; // Default font provided by raylib
 
-    rf_renderer_context gfx_ctx;
-
-#if defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_33) || defined(RAYFORK_GRAPHICS_BACKEND_OPENGL_ES3)
-    rf_opengl_procs gl;
-#endif
+    rf_gfx_context gfx_ctx;
 
     double current_time; // Current time measure
     double previous_time; // Previous time measure
@@ -1017,20 +801,16 @@ struct rf_context
     double frame_time; // Time measure for one frame
     double target_time; // Desired time for one frame, if 0 not applied
 
-    void (*wait_proc)(float); // Wait for some milliseconds (pauses program execution). Only used if RF_CUSTOM_TIME is defined. Can be null in which case it just won't have any effect
-    double (*get_time_proc)(void); // Returns elapsed time in seconds since rf_context_init. Only used if RF_CUSTOM_TIME is defined. Can be null in which case it just won't have any effect
+    void (*wait_proc)(float); // Wait for some milliseconds (pauses program execution).
+    double (*get_time_proc)(void); // Returns elapsed time in seconds since rf_context_init.
     int (*get_random_value_proc)(int min, int max); //A callback for a function that returns a random value in a range
 };
 
 //endregion
 
-//region init and setup
-#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-    RF_API void rf_init_context(rf_context* rf_ctx, rf_memory* memory, int width, int height, rf_opengl_procs gl);
-#endif
-
+//region setups and defaults
 RF_API void rf_setup_viewport(int width, int height); // Set viewport for a provided width and height
-RF_API void rf_load_default_font(); // Load the raylib default font
+RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_allocator); // Load the raylib default font
 RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 //endregion
 
@@ -1039,7 +819,8 @@ RF_API double rf_get_time(void); // Wait for some milliseconds (pauses program e
 RF_API void rf_wait(float duration); // Returns elapsed time in seconds since rf_context_init
 //endregion
 
-//region default io
+//region default io and allocator
+void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data);
 #if !defined(RF_NO_DEFAULT_IO)
     RF_API int rf_get_file_size(const char* filename); //Get the size of the file
     RF_API bool rf_load_file_into_buffer(const char* filename, void* buffer, int buffer_size); //Load the file into a buffer
@@ -1192,7 +973,7 @@ RF_MATH_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat); 
 
 //region collision detection
 
-RF_MATH_API bool rf_check_collision_rec(rf_rec rec1, rf_rec rec2); // Check collision between two rectangles
+RF_MATH_API bool rf_check_collision_recs(rf_rec rec1, rf_rec rec2); // Check collision between two rectangles
 RF_MATH_API bool rf_check_collision_circles(rf_vec2 center1, float radius1, rf_vec2 center2, float radius2); // Check collision between two circles
 RF_MATH_API bool rf_check_collision_circle_rec(rf_vec2 center, float radius, rf_rec rec); // Check collision between circle and rectangle
 RF_MATH_API rf_rec rf_get_collision_rec(rf_rec rec1, rf_rec rec2); // Get collision rectangle for two rectangles collision
@@ -1216,18 +997,19 @@ RF_MATH_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground
 
 //region rf_gfx
 //region shader
-RF_API rf_shader rf_load_shader(const char* vs_code, const char* fs_code); // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
-RF_API void rf_unload_shader(rf_shader shader); // Unload shader from GPU memory (VRAM)
-RF_API int rf_get_shader_location(rf_shader shader, const char* uniform_name); // Get shader uniform location
-RF_API void rf_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name); // Set shader uniform value
-RF_API void rf_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count); // Set shader uniform value vector
-RF_API void rf_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat); // Set shader uniform value (matrix 4x4)
-RF_API void rf_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture); // Set shader uniform value for texture
-RF_API rf_mat rf_get_matrix_projection(); // Return internal _rf_ctx->gl_ctx.projection matrix
-RF_API rf_mat rf_get_matrix_modelview(); // Return internal _rf_ctx->gl_ctx.modelview matrix
-RF_API void rf_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal _rf_ctx->gl_ctx.projection matrix)
-RF_API void rf_set_matrix_modelview(rf_mat view); // Set a custom _rf_ctx->gl_ctx.modelview matrix (replaces internal _rf_ctx->gl_ctx.modelview matrix)
+RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code); // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
+RF_API void rf_gfx_unload_shader(rf_shader shader); // Unload shader from GPU memory (VRAM)
+RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name); // Get shader uniform location
+RF_API void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name); // Set shader uniform value
+RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count); // Set shader uniform value vector
+RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat); // Set shader uniform value (matrix 4x4)
+RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture); // Set shader uniform value for texture
 //endregion
+
+RF_API rf_mat rf_gfx_get_matrix_projection(); // Return internal _rf_ctx->gl_ctx.projection matrix
+RF_API rf_mat rf_gfx_get_matrix_modelview(); // Return internal _rf_ctx->gl_ctx.modelview matrix
+RF_API void rf_gfx_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal _rf_ctx->gl_ctx.projection matrix)
+RF_API void rf_gfx_set_matrix_modelview(rf_mat view); // Set a custom _rf_ctx->gl_ctx.modelview matrix (replaces internal _rf_ctx->gl_ctx.modelview matrix)
 
 RF_API void rf_gfx_blend_mode(rf_blend_mode mode); // Choose the blending mode (alpha, additive, multiplied)
 RF_API void rf_gfx_matrix_mode(rf_matrix_mode mode); // Choose the current matrix to be transformed
@@ -1331,7 +1113,7 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
 RF_API rf_image rf_load_image_from_data(void* data, int data_size, rf_allocator allocator); // Load image from file data into CPU memory (RAM)
 RF_API rf_image rf_load_image_from_data_in_format(void* data, int data_size,  rf_allocator allocator); // Load image from file data into CPU memory (RAM)
 RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
-RF_API rf_image rf_load_image_from_data_with_params(void* data, int data_size, int width, int height, rf_pixel_format format, rf_allocator allocator); // Load image from raw data with parameters
+RF_API rf_image rf_load_image_from_data_with_params(void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
 RF_API void     rf_unload_image(rf_image); // Unloads the image using its allocator
 //endregion
 
@@ -1436,7 +1218,7 @@ RF_API void rf_end_scissor_mode(); // End scissor mode
 RF_API void rf_begin_shader(rf_shader shader); // Begin custom shader drawing
 RF_API void rf_end_shader(); // End custom shader drawing (use default shader)
 
-RF_API void rf_begin_blend_mode(int mode); // Begin blending mode (alpha, additive, multiplied)
+RF_API void rf_begin_blend_mode(rf_blend_mode mode); // Begin blending mode (alpha, additive, multiplied)
 RF_API void rf_end_blend_mode(); // End blending mode (reset to default: alpha blending)
 
 RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color); // Draw a pixel
@@ -1485,13 +1267,8 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_
 // Text drawing functions
 RF_API void rf_draw_fps(int posX, int posY); // Shows current FPS
 RF_API void rf_draw_text(const char* text, int posX, int posY, int fontSize, rf_color color); // Draw text (using default font)
-RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
-RF_API void rf_draw_text_from_buffer(rf_font font, const char* text, int length, rf_vec2 position, float fontSize, float spacing, rf_color tint); //Draw text using font from text buffer
-RF_API void rf_draw_text_rec(rf_font font, const char* text, rf_rec rec, float fontSize, float spacing, bool wordWrap, rf_color tint); // Draw text using font inside rectangle limits
-RF_API void rf_draw_text_rec_ex(rf_font font, const char* text, rf_rec rec, float fontSize, float spacing, bool wordWrap, rf_color tint,
-                                int selectStart, int selectLength, rf_color selectText, rf_color selectBack); // Draw text using font inside rectangle limits with support for text selection
-
-// Basic geometric 3D shapes drawing functions
+RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float fontSize, float spacing, bool wordWrap, rf_color tint); // Draw text using font inside rectangle limits
 RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color); // Draw a line in 3D world space
 RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotation_angle, rf_color color); // Draw a circle in 3D world space
 RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color); // Draw cube
@@ -1515,11 +1292,33 @@ RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 
 RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint); // Draw a billboard texture defined by source_rec
 
 // rf_image draw
-RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint); // Draw a source image within a destination image (tint applied to source)
-RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color); // Draw rectangle within an image
-RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color); // Draw rectangle lines within an image
-RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color); // Draw text (default font) within an image (destination)
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color); // Draw text (custom sprite font) within an image (destination)
+
+RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator); // Draw a source image within a destination image (tint applied to source)
+RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator); // Draw rectangle within an image
+RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator); // Draw rectangle lines within an image
+RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator); // Draw text (default font) within an image (destination)
+RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator); // Draw text (custom sprite font) within an image (destination)
+//endregion
+
+//region model
+RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh); // Compute mesh bounding box limits
+RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator temp_allocator); // Compute mesh tangents
+RF_API void rf_mesh_compute_binormals(rf_mesh* mesh); // Compute mesh binormals
+RF_API void rf_unload_mesh(rf_mesh mesh); // Unload mesh from memory (RAM and/or VRAM)
+
+RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
+RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
+RF_API rf_model rf_load_model_from_gltf(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load model from files (meshes and materials)
+RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
+RF_API void rf_unload_model(rf_model model); // Unload model from memory (RAM and/or VRAM)
+
+RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator); // Load materials from model file
+RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
+RF_API void rf_unload_material(rf_material material); // Unload material from GPU memory (VRAM)
+
+RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator); // Generate cuboid mesh
 //endregion
 
 #endif //#ifndef RAYFORK_H

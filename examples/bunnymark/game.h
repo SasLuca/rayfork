@@ -1,7 +1,7 @@
 #pragma once
 
-#define screen_width 800
-#define screen_height 450
+#define SCREEN_WIDTH  (800)
+#define SCREEN_HEIGHT (450)
 
 typedef struct input_data input_data;
 struct input_data

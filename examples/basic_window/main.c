@@ -5,9 +5,9 @@
 #define SOKOL_WIN32_NO_GL_LOADER
 #include "sokol_app.h"
 
-void on_init(void);
-void on_frame(void);
-void on_resize(int width, int height);
+extern void on_init(void);
+extern void on_frame(void);
+extern void on_resize(int width, int height);
 
 void on_event(const sapp_event* event)
 {

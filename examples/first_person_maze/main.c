@@ -1,16 +1,11 @@
 //In this file we only initialise the window using sokol_app
 
-#include <glad/glad.h>
-
-#define GLFW_INCLUDE_NONE
+#include "rayfork.h"
+#include "glad.h"
 #include "GLFW/glfw3.h"
 
-#define RF_RENDERER_IMPL
-#define RF_GRAPHICS_API_OPENGL_33
-#include "include/old_rayfork.h"
-
-#define screen_width 800*2
-#define screen_height 450*2
+#define SCREEN_WIDTH (800*2)
+#define SCREEN_HEIGHT (450*2)
 
 rf_input_state_for_update_camera input;
 
@@ -44,7 +39,7 @@ int main()
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, "rayfork [core] example - first person maze", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "rayfork [core] example - first person maze", NULL, NULL);
     glfwSetKeyCallback(window, key_callback);
     glfwMakeContextCurrent(window);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -56,16 +51,18 @@ int main()
     //Rayfork and game init
     //Initialise rayfork and load the default font
     rf_context rf_ctx;
-    rf_memory rf_memory;
-    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
+    rf_renderer_memory_buffers rf_mem;
+    rf_init(&rf_ctx, &rf_mem, SCREEN_WIDTH, SCREEN_HEIGHT, RF_DEFAULT_OPENGL_PROCS);
+    rf_load_default_font(RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR);
+    rf_set_target_fps(60);
 
     //Load stuff
-    rf_image imMap        = rf_load_image("../../../examples/assets/cubicmap.png"); // Load cubicmap image (RAM)
+    rf_image imMap        = rf_load_image_from_file("../../../examples/assets/cubicmap.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); // Load cubicmap image (RAM)
     rf_texture2d cubicmap = rf_load_texture_from_image(imMap); // Convert image to texture to display (VRAM)
     rf_mesh mesh          = rf_gen_mesh_cubicmap(imMap, (rf_vec3){1.0f, 1.0f, 1.0f });
     rf_model model        = rf_load_model_from_mesh(mesh);
 
-    rf_vec2 ball_position = {(float) screen_width / 2, (float) screen_height / 2 };
+    rf_vec2 ball_position = {(float) SCREEN_WIDTH / 2, (float) SCREEN_HEIGHT / 2 };
     rf_camera3d camera = { { 0.2f, 0.4f, 0.2f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 45.0f, 0 };
 
     // NOTE: By default each cube is mapped to one part of texture atlas
@@ -136,11 +133,11 @@ int main()
 
         rf_end_3d();
 
-        rf_draw_texture_ex(cubicmap, (rf_vec2) {screen_width - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, RF_WHITE);
-        rf_draw_rectangle_lines(screen_width - cubicmap.width * 4 - 20, 20, cubicmap.width * 4, cubicmap.height * 4, RF_GREEN);
+        rf_draw_texture(cubicmap, (rf_vec2) { SCREEN_WIDTH - cubicmap.width * 4 - 20, 20 }, 0.0f, 4.0f, RF_WHITE);
+        rf_draw_rectangle_outline((rf_rec ) { SCREEN_WIDTH - cubicmap.width * 4 - 20, 20, cubicmap.width * 4 }, cubicmap.height * 4, RF_GREEN);
 
         // Draw player position radar
-        rf_draw_rectangle(screen_width - cubicmap.width * 4 - 20 + playerCellX * 4, 20 + playerCellY * 4, 4, 4, RF_RED);
+        rf_draw_rectangle(SCREEN_WIDTH - cubicmap.width * 4 - 20 + playerCellX * 4, 20 + playerCellY * 4, 4, 4, RF_RED);
 
         rf_draw_fps(10, 10);
 

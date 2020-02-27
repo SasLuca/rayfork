@@ -1,11 +1,10 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
-#define RF_RENDERER_IMPL
-#define RF_GRAPHICS_API_OPENGL_33
-#define rf_max_batch_elements (8192*2)
-#include "glad/glad.h"
-#include "include/old_rayfork.h"
 #include "game.h"
+#include "rayfork.h"
+#include "glad.h"
+#include "stdlib.h"
+#include "stdio.h"
 
 #define MAX_BUNNIES 50000  // 50K bunnies limit
 
@@ -14,17 +13,16 @@
 typedef struct bunny bunny;
 struct bunny
 {
-    rf_vec2 position;
-    rf_vec2 speed;
+    rf_vec2  position;
+    rf_vec2  speed;
     rf_color color;
 };
 
-
-rf_context rf_ctx;
-rf_memory  rf_memory;
-rf_texture2d        bunny_texture;
-bunny*              bunnies;
-int                 bunnies_count;
+rf_context   rf_ctx;
+rf_renderer_memory_buffers    rf_mem;
+rf_texture2d bunny_texture;
+bunny*       bunnies;
+int          bunnies_count;
 
 int random_value_in_range(int min, int max)
 {
@@ -44,7 +42,9 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_renderer_init_context(&rf_ctx, &rf_memory, screen_width, screen_height);
+    rf_init(&rf_ctx, &rf_mem, SCREEN_WIDTH, SCREEN_HEIGHT, RF_DEFAULT_OPENGL_PROCS);
+    rf_load_default_font(RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR);
+
     bunny_texture = rf_load_texture_from_file("../../../examples/assets/wabbit_alpha.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
 
     bunnies = (bunny*) malloc(MAX_BUNNIES * sizeof(bunny)); // Bunnies array
@@ -60,10 +60,10 @@ void on_frame(const input_data input)
         {
             if (bunnies_count < MAX_BUNNIES)
             {
-                bunnies[bunnies_count].position = (rf_vec2) {(float) input.mouse_x, (float) input.mouse_y };
-                bunnies[bunnies_count].speed.x = (float) random_value_in_range(-250, 250) / 60.0f;
-                bunnies[bunnies_count].speed.y = (float) random_value_in_range(-250, 250) / 60.0f;
-                bunnies[bunnies_count].color = (rf_color) { random_value_in_range(50, 240),random_value_in_range(80, 240), random_value_in_range(100, 240), 255 };
+                bunnies[bunnies_count].position = (rf_vec2) { (float) input.mouse_x, (float) input.mouse_y };
+                bunnies[bunnies_count].speed.x  = (float) random_value_in_range(-250, 250) / 60.0f;
+                bunnies[bunnies_count].speed.y  = (float) random_value_in_range(-250, 250) / 60.0f;
+                bunnies[bunnies_count].color    = (rf_color) { random_value_in_range(50, 240), random_value_in_range(80, 240), random_value_in_range(100, 240), 255 };
                 bunnies_count++;
             }
         }
@@ -75,9 +75,9 @@ void on_frame(const input_data input)
         bunnies[i].position.x += bunnies[i].speed.x;
         bunnies[i].position.y += bunnies[i].speed.y;
 
-        if (((bunnies[i].position.x + bunny_texture.width / 2) > screen_width) ||
+        if (((bunnies[i].position.x + bunny_texture.width / 2) > SCREEN_WIDTH) ||
             ((bunnies[i].position.x + bunny_texture.width / 2) < 0)) bunnies[i].speed.x *= -1;
-        if (((bunnies[i].position.y + bunny_texture.height / 2) > screen_height) ||
+        if (((bunnies[i].position.y + bunny_texture.height / 2) > SCREEN_HEIGHT) ||
             ((bunnies[i].position.y + bunny_texture.height / 2 - 40) < 0)) bunnies[i].speed.y *= -1;
     }
 
@@ -97,16 +97,16 @@ void on_frame(const input_data input)
         rf_draw_texture(bunny_texture, (rf_vec2) { bunnies[i].position.x, bunnies[i].position.y }, 0, 1, bunnies[i].color);
     }
 
-    rf_draw_rectangle((rf_rec) { 0, 0, screen_width, 40 }, RF_VEC2_ZERO, 0, RF_BLACK);
+    rf_draw_rectangle(0, 0, SCREEN_WIDTH, 40, RF_BLACK);
+
+    rf_draw_fps(10, 10);
 
     char text[1024];
     snprintf(text, sizeof(text), "bunnies: %i", bunnies_count);
-    int text_len = strlen(text);
-    rf_draw_text(rf_get_default_font(), text, text_len, (rf_vec2) { 120, 10 }, 20, 1, RF_GREEN);
+    rf_draw_text(text, 120, 10, 20, RF_GREEN);
 
     snprintf(text, sizeof(text), "batched draw calls: %i", 1 + bunnies_count / RF_MAX_BATCH_ELEMENTS);
-    text_len = strlen(text);
-    rf_draw_text(rf_get_default_font(), text, text_len, (rf_vec2) { 320, 10 }, 20, 1, RF_MAROON);
+    rf_draw_text(text, 320, 10, 20, RF_MAROON);
 
     rf_end();
 }

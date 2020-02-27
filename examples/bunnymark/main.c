@@ -41,8 +41,8 @@ sapp_desc sokol_main(int argc, char** argv)
 {
     return (sapp_desc) 
     {
-        .width = 800,
-        .height = 450,
+        .width = SCREEN_WIDTH,
+        .height = SCREEN_HEIGHT,
         .init_cb = on_init,
         .frame_cb = platform_on_frame,
         .event_cb = platform_on_event,

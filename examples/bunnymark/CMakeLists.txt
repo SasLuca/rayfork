@@ -6,3 +6,5 @@ add_executable(bunnymark
         main.c
         game.c
         ../dependencies/glad/glad.c)
+
+target_link_libraries(bunnymark PRIVATE rayfork)

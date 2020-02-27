@@ -96,9 +96,11 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
                              size_t *num_materials, const char *buf, size_t len,
                              unsigned int flags);
+
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
-                                  const char *filename);
+                                  const void* material_file_data,
+                                  int material_file_size);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
@@ -107,10 +109,13 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    size_t num_materials);
 
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
-#include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+
+#if !defined(TINYOBJ_GET_FILE_SIZE) && !defined(TINYOBJ_LOAD_FILE_IN_BUFFER)
+#error This is a custom version of tinyobj that requires you define macros for io.
+#endif
 
 #if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_REALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE)
 /* ok */
@@ -494,29 +499,32 @@ static char *my_strndup(const char *s, size_t len) {
   return d;
 }
 
-char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
-  char *offset;
-  char *ret;
-  size_t old_size;
-
-  if (!(ret = fgets(*buf, (int)*size, file))) {
-    return ret;
-  }
-
-  if (NULL != strchr(*buf, '\n')) {
-    return ret;
-  }
-
-  do {
-    old_size = *size;
-    *size *= 2;
-    *buf = (char*)TINYOBJ_REALLOC(*buf, *size);
-    offset = &((*buf)[old_size - 1]);
-
-    ret = fgets(offset, (int)(old_size + 1), file);
-  } while(ret && (NULL == strchr(*buf, '\n')));
-
-  return ret;
+char *dynamic_fgets(char **buf, size_t *size, void* original_buff, size_t original_buff_size)
+{
+//  char *offset;
+//  char *ret;
+//  size_t old_size;
+//
+//  if (!(ret = fgets(*buf, (int)*size, file)))
+//  {
+//    return ret;
+//  }
+//
+//  if (NULL != strchr(*buf, '\n')) {
+//    return ret;
+//  }
+//
+//  do {
+//    old_size = *size;
+//    *size *= 2;
+//    *buf = (char*)TINYOBJ_REALLOC(*buf, old_size, *size);
+//    offset = &((*buf)[old_size - 1]);
+//
+//    ret = fgets(offset, (int)(old_size + 1), file);
+//  } while(ret && (NULL == strchr(*buf, '\n')));
+//
+//  return ret;
+    return 0;
 }
 
 static void initMaterial(tinyobj_material_t *material) {
@@ -546,7 +554,6 @@ static void initMaterial(tinyobj_material_t *material) {
 
 #define HASH_TABLE_ERROR 1 
 #define HASH_TABLE_SUCCESS 0
-
 #define HASH_TABLE_DEFAULT_SIZE 10
 
 typedef struct hash_table_entry_t
@@ -662,7 +669,7 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
   }
   new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
   /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
-  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
+  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC((void*) hash_table->hashes, sizeof(unsigned long) * new_hash_table.capacity, sizeof(unsigned long) * new_capacity);
   new_hash_table.entries = (hash_table_entry_t*) TINYOBJ_CALLOC(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
@@ -716,7 +723,7 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
                                                 tinyobj_material_t *new_mat) {
   tinyobj_material_t *dst;
   dst = (tinyobj_material_t *)TINYOBJ_REALLOC(
-                                      prev, sizeof(tinyobj_material_t) * (num_materials + 1));
+                                      prev, sizeof(tinyobj_material_t) * num_materials, sizeof(tinyobj_material_t) * (num_materials + 1));
 
   dst[num_materials] = (*new_mat); /* Just copy pointer for char* members */
   return dst;
@@ -724,12 +731,12 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
 
 static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             size_t *num_materials_out,
-                                            const char *filename,
+                                            const void* material_file_data,
+                                            int material_file_size,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
   size_t buffer_size = 128;
   char *linebuf;
-  FILE *fp;
   size_t num_materials = 0;
   tinyobj_material_t *materials = NULL;
   int has_previous_material = 0;
@@ -746,17 +753,11 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   (*materials_out) = NULL;
   (*num_materials_out) = 0;
 
-  fp = fopen(filename, "r");
-  if (!fp) {
-    fprintf(stderr, "TINYOBJ: Error reading file '%s': %s (%d)\n", filename, strerror(errno), errno);
-    return TINYOBJ_ERROR_FILE_OPERATION;
-  }
-
   /* Create a default material */
   initMaterial(&material);
 
   linebuf = (char*)TINYOBJ_MALLOC(buffer_size);
-  while (NULL != dynamic_fgets(&linebuf, &buffer_size, fp)) {
+  while (NULL != dynamic_fgets(&linebuf, &buffer_size, material_file_data, material_file_size)) {
     const char *token = linebuf;
 
     line_end = token + strlen(token);
@@ -964,10 +965,8 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   return TINYOBJ_SUCCESS;
 }
 
-int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
-                           size_t *num_materials_out,
-                           const char *filename) {
-  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
+int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out, size_t *num_materials_out, const void* material_file_data, int material_file_size) {
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, material_file_data, material_file_size, NULL);
 } 
 
 
@@ -1312,12 +1311,16 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   }
 
   /* Load material(if exits) */
-  if (mtllib_line_index >= 0 && commands[mtllib_line_index].mtllib_name &&
-      commands[mtllib_line_index].mtllib_name_len > 0) {
+  if (mtllib_line_index >= 0 && commands[mtllib_line_index].mtllib_name && commands[mtllib_line_index].mtllib_name_len > 0)
+  {
     char *filename = my_strndup(commands[mtllib_line_index].mtllib_name,
                                 commands[mtllib_line_index].mtllib_name_len);
 
-    int ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, &material_table);
+    int file_size = TINYOBJ_GET_FILE_SIZE(filename);
+    void* file_buffer = TINYOBJ_MALLOC(file_size);
+    TINYOBJ_LOAD_FILE_IN_BUFFER(filename, file_buffer, file_size);
+
+    int ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, file_buffer, file_size, &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */

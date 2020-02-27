@@ -1,25 +1,25 @@
 //Implementation of the geometric shapes example from raylib using rayfork
 
-#define RF_RENDERER_IMPL
-#define RF_GRAPHICS_API_OPENGL_33
-#include "glad/glad.h"
+#include "rayfork.h"
+#include "glad.h"
 #include "sokol_app.h"
-#include "include/old_rayfork.h"
 #include "stdio.h"
 
 rf_context rf_ctx;
+rf_renderer_memory_buffers rf_mem;
+
 #define SCREEN_WIDTH 800
-#define screen_height 450
+#define SCREEN_HEIGHT 450
 
 float mouse_x;
 float mouse_y;
 
 // Box A: Moving box
-rf_rec box_a = {10, (float) screen_height / 2 - 50, 200, 100 };
+rf_rec box_a = {10, (float) SCREEN_HEIGHT / 2 - 50, 200, 100 };
 int box_a_speed_x = 4;
 
 // Box B: Mouse moved box
-rf_rec box_b = {(float) SCREEN_WIDTH / 2 - 30, (float) screen_height / 2 - 30, 60, 60 };
+rf_rec box_b = {(float) SCREEN_WIDTH / 2 - 30, (float) SCREEN_HEIGHT / 2 - 30, 60, 60 };
 
 // Collision rectangle
 rf_rec box_collision = {0 };
@@ -39,9 +39,9 @@ void on_init(void)
     gladLoadGL();
 
     //Initialise rayfork and load the default font
-    rf_context_init(&rf_ctx, SCREEN_WIDTH, screen_height);
+    rf_init(&rf_ctx, &rf_mem, SCREEN_WIDTH, SCREEN_HEIGHT, RF_DEFAULT_OPENGL_PROCS);
+    rf_load_default_font(RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR);
     rf_set_target_fps(60);
-    rf_load_font_default();
 }
 
 void on_frame(void)
@@ -60,43 +60,46 @@ void on_frame(void)
     if ((box_b.x + box_b.width) >= SCREEN_WIDTH) box_b.x = SCREEN_WIDTH - box_b.width;
     else if (box_b.x <= 0) box_b.x = 0;
 
-    if ((box_b.y + box_b.height) >= screen_height) box_b.y = screen_height - box_b.height;
+    if ((box_b.y + box_b.height) >= SCREEN_HEIGHT) box_b.y = SCREEN_HEIGHT - box_b.height;
     else if (box_b.y <= screen_upper_limit) box_b.y = screen_upper_limit;
 
     // Check boxes collision
-    collision = rf_check_collision_rec(box_a, box_b);
+    collision = rf_check_collision_recs(box_a, box_b);
 
     // Get collision rectangle (only on collision)
     if (collision) box_collision = rf_get_collision_rec(box_a, box_b);
     
     // Draw
     //-----------------------------------------------------
-    rf_begin_drawing();
-
-    rf_clear_background(rf_raywhite);
-
-    rf_draw_rectangle(0, 0, SCREEN_WIDTH, screen_upper_limit, collision ? rf_red : rf_black);
-
-    rf_draw_rectangle_rec(box_a, rf_gold);
-    rf_draw_rectangle_rec(box_b, rf_blue);
-
-    if (collision)
+    rf_begin();
     {
-        // Draw collision area
-        rf_draw_rectangle_rec(box_collision, rf_lime);
+        rf_clear(RF_RAYWHITE);
 
-        // Draw collision message
-        rf_draw_text("COLLISION!", SCREEN_WIDTH / 2 - rf_measure_text("COLLISION!", 20) / 2, screen_upper_limit / 2 - 10, 20, rf_black);
+        rf_draw_rectangle(0, 0, SCREEN_WIDTH, screen_upper_limit, collision ? RF_RED : RF_BLACK);
 
-        // Draw collision area
-        char text_buff[512];
-        snprintf(text_buff, 512, "Collision Area: %i", (int) box_collision.width * (int) box_collision.height);
-        rf_draw_text(text_buff, SCREEN_WIDTH / 2 - 100, screen_upper_limit + 10, 20, rf_black);
+        rf_draw_rectangle_rec(box_a, RF_GOLD);
+        rf_draw_rectangle_rec(box_b, RF_BLUE);
+
+        if (collision)
+        {
+            // Draw collision area
+            rf_draw_rectangle_rec(box_collision, RF_LIME);
+
+            // Draw collision message
+            const char* text = "COLLISION!";
+            const int text_len = strlen(text);
+            const int text_size = rf_measure_text(rf_get_default_font(), text, text_len, 20, 1).width;
+            rf_draw_text(text, SCREEN_WIDTH / 2 - text_size / 2, screen_upper_limit / 2 - 10, 20, RF_BLACK);
+
+            // Draw collision area
+            char text_buff[512];
+            snprintf(text_buff, 512, "Collision Area: %i", (int) box_collision.width * (int) box_collision.height);
+            rf_draw_text(text_buff, SCREEN_WIDTH / 2 - 100, screen_upper_limit + 10, 20, RF_BLACK);
+        }
+
+        rf_draw_fps(10, 10);
     }
-
-    rf_draw_fps(10, 10);
-
-    rf_end_drawing();
+    rf_end();
 }
 
 void on_event(const sapp_event* event)

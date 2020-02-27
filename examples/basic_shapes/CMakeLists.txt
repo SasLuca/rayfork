@@ -6,3 +6,5 @@ add_executable(basic_shapes
         main.c
         game.c
         ../dependencies/glad/glad.c)
+
+target_link_libraries(basic_shapes PRIVATE rayfork)
