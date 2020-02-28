@@ -2,23 +2,23 @@
 #include "math.h"
 
 //region internal wrappers
-static void* _rf_realloc_wrapper(rf_allocator allocator, const void* source, int old_size, int new_size)
+static void* rf_internal_realloc_wrapper(rf_allocator allocator, const void* source, int old_size, int new_size)
 {
     void* new_alloc = RF_ALLOC(allocator, new_size);
     memcpy(new_alloc, source, old_size);
     return new_alloc;
 }
 
-static void* _rf_calloc_wrapper(rf_allocator allocator, int amount, int size)
+static void* rf_internal_calloc_wrapper(rf_allocator allocator, int amount, int size)
 {
     void* ptr = RF_ALLOC(allocator, amount * size);
     memset(ptr, 0, amount * size);
     return ptr;
 }
 
-#define _rf_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
+#define rf_internal_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
 
-static bool _rf_is_file_extension(const char* filename, const char* ext)
+static bool rf_internal_is_file_extension(const char* filename, const char* ext)
 {
     int filename_len = strlen(filename);
     int ext_len      = strlen(ext);
@@ -28,7 +28,7 @@ static bool _rf_is_file_extension(const char* filename, const char* ext)
         return false;
     }
 
-    return _rf_strings_match(filename + filename_len - ext_len, ext_len, ext, ext_len);
+    return rf_internal_strings_match(filename + filename_len - ext_len, ext_len, ext, ext_len);
 }
 
 #define RF_MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -38,15 +38,15 @@ static bool _rf_is_file_extension(const char* filename, const char* ext)
 //region stb_image
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* _rf_stbi_allocator;
+static RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
 
-#define RF_STBI_SET_ALLOCATOR(allocator) _rf_stbi_allocator = (allocator)
+#define RF_STBI_SET_ALLOCATOR(allocator) rf_internal_stbi_allocator = (allocator)
 
 //#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)                     RF_ALLOC(*_rf_stbi_allocator, sz)
-#define STBI_FREE(p)                        RF_FREE(*_rf_stbi_allocator, p)
-#define STBI_REALLOC_SIZED(p, oldsz, newsz) _rf_realloc_wrapper(*_rf_stbi_allocator, p, oldsz, newsz)
+#define STBI_MALLOC(sz)                     RF_ALLOC(*rf_internal_stbi_allocator, sz)
+#define STBI_FREE(p)                        RF_FREE(*rf_internal_stbi_allocator, p)
+#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_internal_realloc_wrapper(*rf_internal_stbi_allocator, p, oldsz, newsz)
 #define STBI_ASSERT(it)                     RF_ASSERT(it)
 #define STBIDEF                             static
 #include "stb/stb_image.h"
@@ -55,13 +55,13 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbi_allocator;
 //region stb_image_resize
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* _rf_stbir_allocator;
+static RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 
-#define RF_STBIR_SET_ALLOCATOR(allocator) _rf_stbir_allocator = (allocator)
+#define RF_STBIR_SET_ALLOCATOR(allocator) rf_internal_stbir_allocator = (allocator)
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR_MALLOC(sz,c) ((void)(c), RF_ALLOC(*_rf_stbir_allocator, sz))
-#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(*_rf_stbir_allocator, p))
+#define STBIR_MALLOC(sz,c) ((void)(c), RF_ALLOC(*rf_internal_stbir_allocator, sz))
+#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(*rf_internal_stbir_allocator, p))
 #define STBIR_ASSERT(it)     RF_ASSERT(it)
 #define STBIRDEF             RF_INTERNAL
 #include "stb/stb_image_resize.h"
@@ -76,14 +76,14 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbir_allocator;
 
 //region stb_truetype
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* _rf_stbtt_allocator;
+static RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 
-#define RF_STBTT_SET_ALLOCATOR(allocator) _rf_stbtt_allocator = (allocator)
+#define RF_STBTT_SET_ALLOCATOR(allocator) rf_internal_stbtt_allocator = (allocator)
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
-#define STBTT_malloc(sz, u) RF_ALLOC(*_rf_stbtt_allocator, sz)
-#define STBTT_free(p, u)    RF_FREE(*_rf_stbtt_allocator, p)
+#define STBTT_malloc(sz, u) RF_ALLOC(*rf_internal_stbtt_allocator, sz)
+#define STBTT_free(p, u)    RF_FREE(*rf_internal_stbtt_allocator, p)
 #define STBTT_assert(it)    RF_ASSERT(it)
 #include "stb/stb_truetype.h"
 //endregion
@@ -101,17 +101,17 @@ static RF_THREAD_LOCAL rf_allocator* _rf_stbtt_allocator;
 
 //region tinyobj loader
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* _rf_tinyobj_allocator;
+static RF_THREAD_LOCAL rf_allocator* rf_internal_tinyobj_allocator;
 static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
 
-#define RF_SET_TINYOBJ_ALLOCATOR(allocator) _rf_tinyobj_allocator = allocator
+#define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf_internal_tinyobj_allocator = allocator
 #define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf_tinyobj_io = io;
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
-#define TINYOBJ_MALLOC(size)             RF_ALLOC(*_rf_tinyobj_allocator, size)
-#define TINYOBJ_REALLOC(p, oldsz, newsz) _rf_realloc_wrapper(*_rf_tinyobj_allocator, p, oldsz, newsz)
-#define TINYOBJ_CALLOC(amount, size)     _rf_calloc_wrapper(*_rf_tinyobj_allocator, amount, size)
-#define TINYOBJ_FREE(p)                  RF_FREE(*_rf_tinyobj_allocator, p)
+#define TINYOBJ_MALLOC(size)             RF_ALLOC(*rf_internal_tinyobj_allocator, size)
+#define TINYOBJ_REALLOC(p, oldsz, newsz) rf_internal_realloc_wrapper(*rf_internal_tinyobj_allocator, p, oldsz, newsz)
+#define TINYOBJ_CALLOC(amount, size)     rf_internal_calloc_wrapper(*rf_internal_tinyobj_allocator, amount, size)
+#define TINYOBJ_FREE(p)                  RF_FREE(*rf_internal_tinyobj_allocator, p)
 
 #define TINYOBJ_GET_FILE_SIZE(filename) (rf_tinyobj_io->get_file_size_proc(filename))
 #define TINYOBJ_LOAD_FILE_IN_BUFFER(filename, buffer, buffer_size) (rf_tinyobj_io->read_file_into_buffer_proc(filename, buffer, buffer_size))
@@ -120,7 +120,7 @@ static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
 //endregion
 
 //Global pointer to context struct
-rf_context* _rf_ctx;
+rf_context* rf_internal_ctx;
 
 //region init and setup
 
@@ -130,7 +130,7 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
     // NOTE: Using UTF8 encoding table for Unicode U+0000..U+00FF Basic Latin + Latin-1 Supplement
     // http://www.utf8-chartable.de/unicode-utf8-table.pl
 
-    _rf_ctx->default_font.chars_count = 224; // Number of chars included in our default font
+    rf_internal_ctx->default_font.chars_count = 224; // Number of chars included in our default font
 
     // Default font is directly defined here (data generated from a sprite font image)
     // This way, we reconstruct rf_font without creating large global variables
@@ -194,7 +194,7 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
         5, 5, 5, 5, 5, 5, 9, 5, 5, 5, 5, 5, 2, 2, 3, 3, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 5
     };
 
-    // Re-construct image from _rf_ctx->default_font_data and generate OpenGL texture
+    // Re-construct image from rf_internal_ctx->default_font_data and generate OpenGL texture
     //----------------------------------------------------------------------
     const int im_width = 128;
     const int im_height = 128;
@@ -203,7 +203,7 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
 
     int counter = 0; // rf_font data elements counter
 
-    // Fill img_data with _rf_ctx->default_font_data (convert from bit to pixel!)
+    // Fill img_data with rf_internal_ctx->default_font_data (convert from bit to pixel!)
     for (int i = 0; i < im_width * im_height; i += 32)
     {
         for (int j = 31; j >= 0; j--)
@@ -220,54 +220,54 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
     rf_image im_font = rf_load_image_from_pixels(image_pixels, im_width, im_height, allocator);
     rf_image_format(&im_font, RF_UNCOMPRESSED_GRAY_ALPHA, temp_allocator);
 
-    _rf_ctx->default_font.texture = rf_load_texture_from_image(im_font);
+    rf_internal_ctx->default_font.texture = rf_load_texture_from_image(im_font);
 
     // Reconstruct charSet using chars_width[], chars_height, chars_divisor, chars_count
     //------------------------------------------------------------------------------
 
     // Allocate space for our characters info data
     // NOTE: This memory should be freed at end! --> CloseWindow()
-    _rf_ctx->default_font.chars = _rf_ctx->gfx_ctx.memory->default_font_chars;
-    _rf_ctx->default_font.recs  = _rf_ctx->gfx_ctx.memory->default_font_recs;
+    rf_internal_ctx->default_font.chars = rf_internal_ctx->gfx_ctx.memory->default_font_chars;
+    rf_internal_ctx->default_font.recs  = rf_internal_ctx->gfx_ctx.memory->default_font_recs;
 
     int current_line  = 0;
     int current_pos_x = chars_divisor;
     int test_pos_x    = chars_divisor;
 
-    for (int i = 0; i < _rf_ctx->default_font.chars_count; i++)
+    for (int i = 0; i < rf_internal_ctx->default_font.chars_count; i++)
     {
-        _rf_ctx->default_font.chars[i].value = 32 + i; // First char is 32
+        rf_internal_ctx->default_font.chars[i].value = 32 + i; // First char is 32
 
-        _rf_ctx->default_font.recs[i].x      = (float) current_pos_x;
-        _rf_ctx->default_font.recs[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
-        _rf_ctx->default_font.recs[i].width  = (float) chars_width[i];
-        _rf_ctx->default_font.recs[i].height = (float) chars_height;
+        rf_internal_ctx->default_font.recs[i].x      = (float) current_pos_x;
+        rf_internal_ctx->default_font.recs[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+        rf_internal_ctx->default_font.recs[i].width  = (float) chars_width[i];
+        rf_internal_ctx->default_font.recs[i].height = (float) chars_height;
 
-        test_pos_x += (int) (_rf_ctx->default_font.recs[i].width + (float)chars_divisor);
+        test_pos_x += (int) (rf_internal_ctx->default_font.recs[i].width + (float)chars_divisor);
 
-        if (test_pos_x >= _rf_ctx->default_font.texture.width)
+        if (test_pos_x >= rf_internal_ctx->default_font.texture.width)
         {
             current_line++;
             current_pos_x = 2 * chars_divisor + chars_width[i];
             test_pos_x = current_pos_x;
 
-            _rf_ctx->default_font.recs[i].x = (float) (chars_divisor);
-            _rf_ctx->default_font.recs[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+            rf_internal_ctx->default_font.recs[i].x = (float) (chars_divisor);
+            rf_internal_ctx->default_font.recs[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
         }
         else current_pos_x = test_pos_x;
 
         // NOTE: On default font character offsets and xAdvance are not required
-        _rf_ctx->default_font.chars[i].offset_x = 0;
-        _rf_ctx->default_font.chars[i].offset_y = 0;
-        _rf_ctx->default_font.chars[i].advance_x = 0;
+        rf_internal_ctx->default_font.chars[i].offset_x = 0;
+        rf_internal_ctx->default_font.chars[i].offset_y = 0;
+        rf_internal_ctx->default_font.chars[i].advance_x = 0;
 
         // Fill character image data from fontClear data
-        _rf_ctx->default_font.chars[i].image = rf_image_from_image(im_font, _rf_ctx->default_font.recs[i], allocator, temp_allocator);
+        rf_internal_ctx->default_font.chars[i].image = rf_image_from_image(im_font, rf_internal_ctx->default_font.recs[i], allocator, temp_allocator);
     }
 
-    _rf_ctx->default_font.base_size = (int)_rf_ctx->default_font.recs[0].height;
+    rf_internal_ctx->default_font.base_size = (int)rf_internal_ctx->default_font.recs[0].height;
 
-    RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] Default font loaded successfully", _rf_ctx->default_font.texture.id);
+    RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] Default font loaded successfully", rf_internal_ctx->default_font.texture.id);
 }
 
 // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
@@ -292,20 +292,20 @@ RF_API rf_material rf_load_default_material(rf_allocator allocator)
 // Set viewport for a provided width and height
 RF_API void rf_setup_viewport(int width, int height)
 {
-    _rf_ctx->render_width  = width;
-    _rf_ctx->render_height = height;
+    rf_internal_ctx->render_width  = width;
+    rf_internal_ctx->render_height = height;
 
     // Set viewport width and height
     // NOTE: We consider render size and offset in case black bars are required and
     // render area does not match full global_display area (this situation is only applicable on fullscreen mode)
-    rf_gfx_viewport(_rf_ctx->render_offset_x/2, _rf_ctx->render_offset_y/2, _rf_ctx->render_width - _rf_ctx->render_offset_x, _rf_ctx->render_height - _rf_ctx->render_offset_y);
+    rf_gfx_viewport(rf_internal_ctx->render_offset_x/2, rf_internal_ctx->render_offset_y/2, rf_internal_ctx->render_width - rf_internal_ctx->render_offset_x, rf_internal_ctx->render_height - rf_internal_ctx->render_offset_y);
 
     rf_gfx_matrix_mode(RF_PROJECTION); // Switch to PROJECTION matrix
     rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
 
     // Set orthographic GL_PROJECTION to current framebuffer size
     // NOTE: Confirf_gfx_projectiongured top-left corner as (0, 0)
-    rf_gfx_ortho(0, _rf_ctx->render_width, _rf_ctx->render_height, 0, 0.0f, 1.0f);
+    rf_gfx_ortho(0, rf_internal_ctx->render_width, rf_internal_ctx->render_height, 0, 0.0f, 1.0f);
 
     rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
@@ -317,8 +317,8 @@ RF_API void rf_setup_viewport(int width, int height)
 //Used to set custom functions
 RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_proc)(void))
 {
-    _rf_ctx->wait_proc = wait_proc;
-    _rf_ctx->get_time_proc = get_time_proc;
+    rf_internal_ctx->wait_proc = wait_proc;
+    rf_internal_ctx->get_time_proc = get_time_proc;
 }
 
 // If the user disabled the default time functions implementation or we are compiling for a platform that does not have a default implementation for the time functions
@@ -326,18 +326,18 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
     // Wait for some milliseconds (pauses program execution)
     RF_API void rf_wait(float it)
     {
-        if (_rf_ctx->wait_proc)
+        if (rf_internal_ctx->wait_proc)
         {
-            _rf_ctx->wait_proc(it);
+            rf_internal_ctx->wait_proc(it);
         }
     }
 
     // Returns elapsed time in seconds since rf_context_init
     RF_API double rf_get_time(void)
     {
-        if (_rf_ctx->get_time_proc)
+        if (rf_internal_ctx->get_time_proc)
         {
-            return _rf_ctx->get_time_proc();
+            return rf_internal_ctx->get_time_proc();
         }
 
         return 0;
@@ -346,8 +346,8 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 #else //#if !defined(RF_NO_DEFAULT_TIME)
     //Windows only
     #ifdef _WIN32
-        static long long int _rf_global_performance_counter_frequency;
-        static bool _rf_global_performance_counter_frequency_initialised;
+        static long long int rf_internal_global_performance_counter_frequency;
+        static bool rf_internal_global_performance_counter_frequency_initialised;
 
         //If windows.h is not included
         #if !defined(_WINDOWS_)
@@ -366,19 +366,19 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
         // Returns elapsed time in seconds since program started
         RF_API double rf_get_time(void)
         {
-            if (_rf_ctx->get_time_proc)
+            if (rf_internal_ctx->get_time_proc)
             {
-                return _rf_ctx->get_time_proc();
+                return rf_internal_ctx->get_time_proc();
             }
 
-            if (!_rf_global_performance_counter_frequency_initialised)
+            if (!rf_internal_global_performance_counter_frequency_initialised)
             {
                 #ifdef _WINDOWS_
-                    RF_ASSERT(QueryPerformanceFrequency((LARGE_INTEGER*)&_rf_global_performance_counter_frequency) != false);
+                    RF_ASSERT(QueryPerformanceFrequency((LARGE_INTEGER*)&rf_internal_global_performance_counter_frequency) != false);
                 #else
-                    RF_ASSERT(QueryPerformanceFrequency(&_rf_global_performance_counter_frequency) != false);
+                    RF_ASSERT(QueryPerformanceFrequency(&rf_internal_global_performance_counter_frequency) != false);
                 #endif
-                _rf_global_performance_counter_frequency_initialised = true;
+                rf_internal_global_performance_counter_frequency_initialised = true;
             }
 
             long long int qpc_result = {0};
@@ -389,14 +389,14 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
                 RF_ASSERT(QueryPerformanceCounter(&qpc_result) != false);
             #endif
 
-            return (double) qpc_result / (double) _rf_global_performance_counter_frequency;
+            return (double) qpc_result / (double) rf_internal_global_performance_counter_frequency;
         }
 
         RF_API void rf_wait(float duration)
         {
-            if (_rf_ctx->wait_proc)
+            if (rf_internal_ctx->wait_proc)
             {
-                _rf_ctx->wait_proc(duration);
+                rf_internal_ctx->wait_proc(duration);
                 return;
             }
 
@@ -410,9 +410,9 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
         //Source: http://man7.org/linux/man-pages/man2/clock_gettime.2.html
         RF_API double rf_get_time(void)
         {
-            if (_rf_ctx->get_time_proc)
+            if (rf_internal_ctx->get_time_proc)
             {
-                return _rf_ctx->get_time_proc();
+                return rf_internal_ctx->get_time_proc();
             }
 
             struct timespec result;
@@ -424,9 +424,9 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 
         RF_API void rf_wait(float duration)
         {
-            if (_rf_ctx->wait_proc)
+            if (rf_internal_ctx->wait_proc)
             {
-                _rf_ctx->wait_proc(duration);
+                rf_internal_ctx->wait_proc(duration);
                 return;
             }
 
@@ -442,35 +442,35 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
         #include <mach/mach_time.h>
         #include <unistd.h>
 
-        static bool _rf_global_mach_time_initialized;
-        static uint64_t _rf_global_mach_time_start;
-        static double _rf_global_mach_time_seconds_factor;
+        static bool rf_internal_global_mach_time_initialized;
+        static uint64_t rf_internal_global_mach_time_start;
+        static double rf_internal_global_mach_time_seconds_factor;
 
         RF_API double rf_get_time(void)
         {
-            if (_rf_ctx->get_time_proc)
+            if (rf_internal_ctx->get_time_proc)
             {
-                return _rf_ctx->get_time_proc();
+                return rf_internal_ctx->get_time_proc();
             }
 
             uint64_t time;
-            if (!_rf_global_mach_time_initialized)
+            if (!rf_internal_global_mach_time_initialized)
             {
                 mach_timebase_info_data_t timebase;
                 mach_timebase_info(&timebase);
-                _rf_global_mach_time_seconds_factor = 1e-9 * (double)timebase.numer / (double)timebase.denom;
-                _rf_global_mach_time_start = mach_absolute_time();
-                _rf_global_mach_time_initialized = true;
+                rf_internal_global_mach_time_seconds_factor = 1e-9 * (double)timebase.numer / (double)timebase.denom;
+                rf_internal_global_mach_time_start = mach_absolute_time();
+                rf_internal_global_mach_time_initialized = true;
             }
             time = mach_absolute_time();
-            return (double)(time - _rf_global_mach_time_start) * _rf_global_mach_time_seconds_factor;
+            return (double)(time - rf_internal_global_mach_time_start) * rf_internal_global_mach_time_seconds_factor;
         }
 
         RF_API void rf_wait(float duration)
         {
-            if (_rf_ctx->wait_proc)
+            if (rf_internal_ctx->wait_proc)
             {
-                _rf_ctx->wait_proc(duration);
+                rf_internal_ctx->wait_proc(duration);
                 return;
             }
 
@@ -546,7 +546,7 @@ RF_API bool rf_load_file_into_buffer(const char* filename, void* buffer, int buf
 // Returns time in seconds for last frame drawn
 RF_API float rf_get_frame_time()
 {
-    return (float) _rf_ctx->frame_time;
+    return (float) rf_internal_ctx->frame_time;
 }
 
 // Returns current FPS
@@ -558,20 +558,20 @@ RF_API int rf_get_fps()
 // Get the default font, useful to be used with extended parameters
 RF_API rf_font rf_get_default_font()
 {
-    return _rf_ctx->default_font;
+    return rf_internal_ctx->default_font;
 }
 
 // Get default shader
 RF_API rf_shader rf_get_default_shader()
 {
-    return _rf_ctx->gfx_ctx.default_shader;
+    return rf_internal_ctx->gfx_ctx.default_shader;
 }
 
 // Get default internal texture (white texture)
 RF_API rf_texture2d rf_get_default_texture()
 {
     rf_texture2d texture = { 0 };
-    texture.id = _rf_ctx->gfx_ctx.default_texture_id;
+    texture.id = rf_internal_ctx->gfx_ctx.default_texture_id;
     texture.width = 1;
     texture.height = 1;
     texture.mipmaps = 1;
@@ -583,7 +583,7 @@ RF_API rf_texture2d rf_get_default_texture()
 //Get the context pointer
 RF_API rf_context* rf_get_context()
 {
-    return _rf_ctx;
+    return rf_internal_ctx;
 }
 
 // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
@@ -591,8 +591,8 @@ RF_API rf_image rf_get_screen_data(rf_allocator allocator, rf_allocator temp_all
 {
     rf_image image = { 0 };
 
-    image.width = _rf_ctx->screen_width;
-    image.height = _rf_ctx->screen_height;
+    image.width = rf_internal_ctx->screen_width;
+    image.height = rf_internal_ctx->screen_height;
     image.mipmaps = 1;
     image.format = RF_UNCOMPRESSED_R8G8B8A8;
     image.data = rf_gfx_read_screen_pixels(image.width, image.height, allocator, temp_allocator);
@@ -605,26 +605,26 @@ RF_API rf_image rf_get_screen_data(rf_allocator allocator, rf_allocator temp_all
 // Set the global context pointer
 RF_API void rf_set_global_context_pointer(rf_context* ctx)
 {
-    _rf_ctx = ctx;
+    rf_internal_ctx = ctx;
 }
 
 // Set viewport for a provided width and height
 RF_API void rf_set_viewport(int width, int height)
 {
-    _rf_ctx->render_width = width;
-    _rf_ctx->render_height = height;
+    rf_internal_ctx->render_width = width;
+    rf_internal_ctx->render_height = height;
 
     // Set viewport width and height
     // NOTE: We consider render size and offset in case black bars are required and
     // render area does not match full global_display area (this situation is only applicable on fullscreen mode)
-    rf_gfx_viewport(_rf_ctx->render_offset_x/2, _rf_ctx->render_offset_y/2, _rf_ctx->render_width - _rf_ctx->render_offset_x, _rf_ctx->render_height - _rf_ctx->render_offset_y);
+    rf_gfx_viewport(rf_internal_ctx->render_offset_x/2, rf_internal_ctx->render_offset_y/2, rf_internal_ctx->render_width - rf_internal_ctx->render_offset_x, rf_internal_ctx->render_height - rf_internal_ctx->render_offset_y);
 
     rf_gfx_matrix_mode(RF_PROJECTION); // Switch to PROJECTION matrix
     rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
 
     // Set orthographic GL_PROJECTION to current framebuffer size
     // NOTE: Confirf_gfx_projectiongured top-left corner as (0, 0)
-    rf_gfx_ortho(0, _rf_ctx->render_width, _rf_ctx->render_height, 0, 0.0f, 1.0f);
+    rf_gfx_ortho(0, rf_internal_ctx->render_width, rf_internal_ctx->render_height, 0, 0.0f, 1.0f);
 
     rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
@@ -633,10 +633,10 @@ RF_API void rf_set_viewport(int width, int height)
 // Set target FPS (maximum)
 RF_API void rf_set_target_fps(int fps)
 {
-    if (fps < 1) _rf_ctx->target_time = RF_UNLOCKED_FPS;
-    else _rf_ctx->target_time = 1.0 / ((double) fps);
+    if (fps < 1) rf_internal_ctx->target_time = RF_UNLOCKED_FPS;
+    else rf_internal_ctx->target_time = 1.0 / ((double) fps);
 
-    RF_LOG_V(RF_LOG_INFO, "Target time per frame: %02.03f milliseconds", (float) _rf_global_context_ptr->target_time * 1000);
+    RF_LOG_V(RF_LOG_INFO, "Target time per frame: %02.03f milliseconds", (float) rf_internal_global_context_ptr->target_time * 1000);
 }
 //endregion
 
@@ -789,7 +789,7 @@ RF_MATH_API  rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 {
     rf_vec3 result = {0.0f, 0.0f, 0.0f };
 
-    // Calculate unproject matrix (multiply view patrix by _rf_ctx->gl_ctx.projection matrix) and invert it
+    // Calculate unproject matrix (multiply view patrix by rf_internal_ctx->gl_ctx.projection matrix) and invert it
     rf_mat mat_viewProj = rf_mat_mul(view, proj);
     mat_viewProj = rf_mat_invert(mat_viewProj);
 
@@ -2613,19 +2613,19 @@ RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground_heig
 //region internal functions
 
 // Get texture to draw shapes Note(LucaSas): Do we need this?
-RF_INTERNAL rf_texture2d _rf_get_shapes_texture()
+RF_INTERNAL rf_texture2d rf_internal_get_shapes_texture()
 {
-    if (_rf_ctx->gfx_ctx.tex_shapes.id == 0)
+    if (rf_internal_ctx->gfx_ctx.tex_shapes.id == 0)
     {
-        _rf_ctx->gfx_ctx.tex_shapes = rf_get_default_texture(); // Use default white texture
-        _rf_ctx->gfx_ctx.rec_tex_shapes = (rf_rec) {0.0f, 0.0f, 1.0f, 1.0f };
+        rf_internal_ctx->gfx_ctx.tex_shapes = rf_get_default_texture(); // Use default white texture
+        rf_internal_ctx->gfx_ctx.rec_tex_shapes = (rf_rec) {0.0f, 0.0f, 1.0f, 1.0f };
     }
 
-    return _rf_ctx->gfx_ctx.tex_shapes;
+    return rf_internal_ctx->gfx_ctx.tex_shapes;
 }
 
 // Cubic easing in-out. Note: Required for rf_draw_line_bezier()
-RF_INTERNAL float _rf_shapes_ease_cubic_in_out(float t, float b, float c, float d)
+RF_INTERNAL float rf_internal_shapes_ease_cubic_in_out(float t, float b, float c, float d)
 {
     if ((t /= 0.5f*d) < 1) return 0.5f*c*t*t*t + b;
 
@@ -2645,12 +2645,12 @@ RF_API void rf_clear(rf_color color)
 // Setup canvas (framebuffer) to start drawing
 RF_API void rf_begin()
 {
-    _rf_ctx->current_time = rf_get_time(); // Number of elapsed seconds
-    _rf_ctx->update_time = _rf_ctx->current_time - _rf_ctx->previous_time;
-    _rf_ctx->previous_time = _rf_ctx->current_time;
+    rf_internal_ctx->current_time = rf_get_time(); // Number of elapsed seconds
+    rf_internal_ctx->update_time = rf_internal_ctx->current_time - rf_internal_ctx->previous_time;
+    rf_internal_ctx->previous_time = rf_internal_ctx->current_time;
 
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
-    rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v); // Apply screen scaling
+    rf_gfx_mult_matrixf(rf_mat_to_float16(rf_internal_ctx->screen_scaling).v); // Apply screen scaling
 
     //rf_gfx_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1
     // NOTE: Not required with OpenGL 3.3+
@@ -2662,22 +2662,22 @@ RF_API void rf_end()
     rf_gfx_draw();
 
     // Frame time control system
-    _rf_ctx->current_time = rf_get_time();
-    _rf_ctx->draw_time = _rf_ctx->current_time - _rf_ctx->previous_time;
-    _rf_ctx->previous_time = _rf_ctx->current_time;
+    rf_internal_ctx->current_time = rf_get_time();
+    rf_internal_ctx->draw_time = rf_internal_ctx->current_time - rf_internal_ctx->previous_time;
+    rf_internal_ctx->previous_time = rf_internal_ctx->current_time;
 
-    _rf_ctx->frame_time = _rf_ctx->update_time + _rf_ctx->draw_time;
+    rf_internal_ctx->frame_time = rf_internal_ctx->update_time + rf_internal_ctx->draw_time;
 
     // rf_wait for some milliseconds...
-    if (_rf_ctx->target_time != ((double) RF_UNLOCKED_FPS) && _rf_ctx->frame_time < _rf_ctx->target_time)
+    if (rf_internal_ctx->target_time != ((double) RF_UNLOCKED_FPS) && rf_internal_ctx->frame_time < rf_internal_ctx->target_time)
     {
-        rf_wait((float)(_rf_ctx->target_time - _rf_ctx->frame_time)*1000.0f);
+        rf_wait((float)(rf_internal_ctx->target_time - rf_internal_ctx->frame_time)*1000.0f);
 
-        _rf_ctx->current_time = rf_get_time();
-        double extraTime = _rf_ctx->current_time - _rf_ctx->previous_time;
-        _rf_ctx->previous_time = _rf_ctx->current_time;
+        rf_internal_ctx->current_time = rf_get_time();
+        double extraTime = rf_internal_ctx->current_time - rf_internal_ctx->previous_time;
+        rf_internal_ctx->previous_time = rf_internal_ctx->current_time;
 
-        _rf_ctx->frame_time += extraTime;
+        rf_internal_ctx->frame_time += extraTime;
     }
 
     return;
@@ -2691,7 +2691,7 @@ RF_API void rf_begin_2d(rf_camera2d camera)
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 
     // Apply screen scaling if required
-    rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v);
+    rf_gfx_mult_matrixf(rf_mat_to_float16(rf_internal_ctx->screen_scaling).v);
 
     // Apply 2d camera transformation to rf_gfxobal_model_view
     rf_gfx_mult_matrixf(rf_mat_to_float16(rf_get_camera_matrix2d(camera)).v);
@@ -2703,7 +2703,7 @@ RF_API void rf_end_2d()
     rf_gfx_draw();
 
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
-    rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v); // Apply screen scaling if required
+    rf_gfx_mult_matrixf(rf_mat_to_float16(rf_internal_ctx->screen_scaling).v); // Apply screen scaling if required
 }
 
 // Initializes 3D mode with custom camera (3D)
@@ -2715,7 +2715,7 @@ RF_API void rf_begin_3d(rf_camera3d camera)
     rf_gfx_push_matrix(); // Save previous matrix, which contains the settings for the 2d ortho GL_PROJECTION
     rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
 
-    float aspect = (float) _rf_ctx->current_width / (float)_rf_ctx->current_height;
+    float aspect = (float) rf_internal_ctx->current_width / (float)rf_internal_ctx->current_height;
 
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
@@ -2757,7 +2757,7 @@ RF_API void rf_end_3d()
     rf_gfx_matrix_mode(RF_MODELVIEW); // Get back to rf_gfxobal_model_view matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 
-    rf_gfx_mult_matrixf(rf_mat_to_float16(_rf_ctx->screen_scaling).v); // Apply screen scaling if required
+    rf_gfx_mult_matrixf(rf_mat_to_float16(rf_internal_ctx->screen_scaling).v); // Apply screen scaling if required
 
     rf_gfx_disable_depth_test(); // Disable DEPTH_TEST for 2D
 }
@@ -2786,8 +2786,8 @@ RF_API void rf_begin_render_to_texture(rf_render_texture2d target)
 
     // Setup current width/height for proper aspect ratio
     // calculation when using rf_begin_mode3d()
-    _rf_ctx->current_width = target.texture.width;
-    _rf_ctx->current_height = target.texture.height;
+    rf_internal_ctx->current_width = target.texture.width;
+    rf_internal_ctx->current_height = target.texture.height;
 }
 
 // Ends drawing to render texture
@@ -2798,11 +2798,11 @@ RF_API void rf_end_render_to_texture()
     rf_gfx_disable_render_texture(); // Disable render target
 
     // Set viewport to default framebuffer size
-    rf_set_viewport(_rf_ctx->render_width, _rf_ctx->render_height);
+    rf_set_viewport(rf_internal_ctx->render_width, rf_internal_ctx->render_height);
 
     // Reset current screen size
-    _rf_ctx->current_width = _rf_ctx->screen_width;
-    _rf_ctx->current_height = _rf_ctx->screen_height;
+    rf_internal_ctx->current_width = rf_internal_ctx->screen_width;
+    rf_internal_ctx->current_height = rf_internal_ctx->screen_height;
 }
 
 // Begin scissor mode (define screen area for following drawing)
@@ -2812,7 +2812,7 @@ RF_API void rf_begin_scissors(int x, int y, int width, int height)
     rf_gfx_draw(); // Force drawing elements
 
     rf_gfx_enable_scissor_test();
-    rf_gfx_scissor(x, _rf_ctx->screen_height - (y + height), width, height);
+    rf_gfx_scissor(x, rf_internal_ctx->screen_height - (y + height), width, height);
 }
 
 // End scissor mode
@@ -2825,17 +2825,17 @@ RF_API void rf_end_scissors()
 // Begin custom shader mode
 RF_API void rf_begin_shader(rf_shader shader)
 {
-    if (_rf_ctx->gfx_ctx.current_shader.id != shader.id)
+    if (rf_internal_ctx->gfx_ctx.current_shader.id != shader.id)
     {
         rf_gfx_draw();
-        _rf_ctx->gfx_ctx.current_shader = shader;
+        rf_internal_ctx->gfx_ctx.current_shader = shader;
     }
 }
 
 // End custom shader mode (returns to default shader)
 RF_API void rf_end_shader()
 {
-    rf_begin_shader(_rf_ctx->gfx_ctx.default_shader);
+    rf_begin_shader(rf_internal_ctx->gfx_ctx.default_shader);
 }
 
 // Begin blending mode (alpha, additive, multiplied). Default blend mode is alpha
@@ -2910,7 +2910,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
     static int swing_counter = 0; // Used for 1st person swinging movement
     static rf_vec2 previous_mouse_position = {0.0f, 0.0f };
 
-    // TODO: Compute _rf_ctx->gl_ctx.camera_target_distance and _rf_ctx->gl_ctx.camera_angle here
+    // TODO: Compute rf_internal_ctx->gl_ctx.camera_target_distance and rf_internal_ctx->gl_ctx.camera_angle here
 
     // Mouse movement detection
     rf_vec2 mouse_position_delta = {0.0f, 0.0f };
@@ -2932,7 +2932,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
 
     // TODO: Consider touch inputs for camera
 
-    if (_rf_ctx->gfx_ctx.camera_mode != RF_CAMERA_CUSTOM)
+    if (rf_internal_ctx->gfx_ctx.camera_mode != RF_CAMERA_CUSTOM)
     {
         mouse_position_delta.x = mouse_position.x - previous_mouse_position.x;
         mouse_position_delta.y = mouse_position.y - previous_mouse_position.y;
@@ -2941,58 +2941,58 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
     }
 
     // Support for multiple automatic camera modes
-    switch (_rf_ctx->gfx_ctx.camera_mode)
+    switch (rf_internal_ctx->gfx_ctx.camera_mode)
     {
         case RF_CAMERA_FREE:
         {
             // rf_camera3d zoom
-            if ((_rf_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+            if ((rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                _rf_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
 
-                if (_rf_ctx->gfx_ctx.camera_target_distance > rf_camera_free_distance_max_clamp) _rf_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_max_clamp;
+                if (rf_internal_ctx->gfx_ctx.camera_target_distance > rf_camera_free_distance_max_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_max_clamp;
             }
                 // rf_camera3d looking down
-                // TODO: Review, weird comparisson of _rf_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y > camera->target.y) && (_rf_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+                // TODO: Review, weird comparisson of rf_internal_ctx->gl_ctx.camera_target_distance == 120.0f?
+            else if ((camera->position.y > camera->target.y) && (rf_internal_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y >= 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
 
                 // if (camera->target.y < 0) camera->target.y = -0.001;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y < 0) && (mouse_wheel_move > 0))
             {
-                _rf_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
-                if (_rf_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) _rf_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
+                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
             }
                 // rf_camera3d looking up
-                // TODO: Review, weird comparisson of _rf_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y < camera->target.y) && (_rf_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+                // TODO: Review, weird comparisson of rf_internal_ctx->gl_ctx.camera_target_distance == 120.0f?
+            else if ((camera->position.y < camera->target.y) && (rf_internal_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y <= 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/_rf_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
 
                 // if (camera->target.y > 0) camera->target.y = 0.001;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y > 0) && (mouse_wheel_move > 0))
             {
-                _rf_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
-                if (_rf_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) _rf_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
+                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
             }
 
             // Input keys checks
@@ -3003,80 +3003,80 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
                     if (szoom_key)
                     {
                         // rf_camera3d smooth zoom
-                        _rf_ctx->gfx_ctx.camera_target_distance += (mouse_position_delta.y*rf_camera_free_smooth_zoom_sensitivity);
+                        rf_internal_ctx->gfx_ctx.camera_target_distance += (mouse_position_delta.y*rf_camera_free_smooth_zoom_sensitivity);
                     }
                     else
                     {
                         // rf_camera3d rotation
-                        _rf_ctx->gfx_ctx.camera_angle.x += mouse_position_delta.x*-rf_camera_free_mouse_sensitivity;
-                        _rf_ctx->gfx_ctx.camera_angle.y += mouse_position_delta.y*-rf_camera_free_mouse_sensitivity;
+                        rf_internal_ctx->gfx_ctx.camera_angle.x += mouse_position_delta.x*-rf_camera_free_mouse_sensitivity;
+                        rf_internal_ctx->gfx_ctx.camera_angle.y += mouse_position_delta.y*-rf_camera_free_mouse_sensitivity;
 
                         // Angle clamp
-                        if (_rf_ctx->gfx_ctx.camera_angle.y > rf_camera_free_min_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_free_min_clamp*RF_DEG2RAD;
-                        else if (_rf_ctx->gfx_ctx.camera_angle.y < rf_camera_free_max_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_free_max_clamp*RF_DEG2RAD;
+                        if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_free_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_free_min_clamp*RF_DEG2RAD;
+                        else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_free_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_free_max_clamp*RF_DEG2RAD;
                     }
                 }
                 else
                 {
                     // rf_camera3d panning
-                    camera->target.x += ((mouse_position_delta.x*-rf_camera_free_mouse_sensitivity)*cosf(_rf_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*sinf(_rf_ctx->gfx_ctx.camera_angle.x)*sinf(_rf_ctx->gfx_ctx.camera_angle.y))*(_rf_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
-                    camera->target.y += ((mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(_rf_ctx->gfx_ctx.camera_angle.y))*(_rf_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
-                    camera->target.z += ((mouse_position_delta.x*rf_camera_free_mouse_sensitivity)*sinf(_rf_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(_rf_ctx->gfx_ctx.camera_angle.x)*sinf(_rf_ctx->gfx_ctx.camera_angle.y))*(_rf_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.x += ((mouse_position_delta.x*-rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.y += ((mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.z += ((mouse_position_delta.x*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
                 }
             }
 
             // Update camera position with changes
-            camera->position.x = sinf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            camera->position.y = ((_rf_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(_rf_ctx->gfx_ctx.camera_angle.y)*_rf_ctx->gfx_ctx.camera_target_distance*sinf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
+            camera->position.y = ((rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
 
         } break;
         case RF_CAMERA_ORBITAL:
         {
-            _rf_ctx->gfx_ctx.camera_angle.x += rf_camera_orbital_speed; // rf_camera3d orbit angle
-            _rf_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity); // rf_camera3d zoom
+            rf_internal_ctx->gfx_ctx.camera_angle.x += rf_camera_orbital_speed; // rf_camera3d orbit angle
+            rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity); // rf_camera3d zoom
 
             // rf_camera3d distance clamp
-            if (_rf_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) _rf_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
+            if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
 
             // Update camera position with changes
-            camera->position.x = sinf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            camera->position.y = ((_rf_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(_rf_ctx->gfx_ctx.camera_angle.y)*_rf_ctx->gfx_ctx.camera_target_distance*sinf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
+            camera->position.y = ((rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
 
         } break;
         case RF_CAMERA_FIRST_PERSON:
         {
-            camera->position.x += (sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.x += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
-            camera->position.y += (sinf(_rf_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
+            camera->position.y += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
                                    1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down])/rf_player_movement_sensitivity;
 
-            camera->position.z += (cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.z += (cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
             bool is_moving = false; // Required for swinging
 
             for (int i = 0; i < 6; i++) if (direction[i]) { is_moving = true; break; }
 
             // rf_camera3d orientation calculation
-            _rf_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
-            _rf_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (_rf_ctx->gfx_ctx.camera_angle.y > rf_camera_first_person_min_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_min_clamp*RF_DEG2RAD;
-            else if (_rf_ctx->gfx_ctx.camera_angle.y < rf_camera_first_person_max_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_max_clamp*RF_DEG2RAD;
+            if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_first_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_min_clamp*RF_DEG2RAD;
+            else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_first_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_max_clamp*RF_DEG2RAD;
 
             // rf_camera3d is always looking at player
-            camera->target.x = camera->position.x - sinf(_rf_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
-            camera->target.y = camera->position.y + sinf(_rf_ctx->gfx_ctx.camera_angle.y)*rf_camera_first_person_focus_distance;
-            camera->target.z = camera->position.z - cosf(_rf_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
+            camera->target.x = camera->position.x - sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
+            camera->target.y = camera->position.y + sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_camera_first_person_focus_distance;
+            camera->target.z = camera->position.z - cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
 
             if (is_moving) swing_counter++;
 
@@ -3091,39 +3091,39 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
         } break;
         case RF_CAMERA_THIRD_PERSON:
         {
-            camera->position.x += (sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.x += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
-            camera->position.y += (sinf(_rf_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
+            camera->position.y += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
                                    1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down])/rf_player_movement_sensitivity;
 
-            camera->position.z += (cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   cosf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
-                                   sinf(_rf_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.z += (cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
+                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
+                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
             // rf_camera3d orientation calculation
-            _rf_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
-            _rf_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (_rf_ctx->gfx_ctx.camera_angle.y > rf_camera_third_person_min_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_min_clamp*RF_DEG2RAD;
-            else if (_rf_ctx->gfx_ctx.camera_angle.y < rf_camera_third_person_max_clamp*RF_DEG2RAD) _rf_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_max_clamp*RF_DEG2RAD;
+            if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_third_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_min_clamp*RF_DEG2RAD;
+            else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_third_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_max_clamp*RF_DEG2RAD;
 
             // rf_camera3d zoom
-            _rf_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+            rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
 
             // rf_camera3d distance clamp
-            if (_rf_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) _rf_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
+            if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
 
             // TODO: It seems camera->position is not correctly updated or some rounding issue makes the camera move straight to camera->target...
-            camera->position.x = sinf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            if (_rf_ctx->gfx_ctx.camera_angle.y <= 0.0f) camera->position.y = sinf(_rf_ctx->gfx_ctx.camera_angle.y)*_rf_ctx->gfx_ctx.camera_target_distance*sinf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            else camera->position.y = -sinf(_rf_ctx->gfx_ctx.camera_angle.y)*_rf_ctx->gfx_ctx.camera_target_distance*sinf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(_rf_ctx->gfx_ctx.camera_angle.x)*_rf_ctx->gfx_ctx.camera_target_distance*cosf(_rf_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
+            if (rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f) camera->position.y = sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
+            else camera->position.y = -sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
 
         } break;
         default: break;
@@ -3178,7 +3178,7 @@ RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_
     float d = sqrtf(dx*dx + dy*dy);
     float angle = asinf(dy/d);
 
-    rf_gfx_enable_texture(_rf_get_shapes_texture().id);
+    rf_gfx_enable_texture(rf_internal_get_shapes_texture().id);
 
     rf_gfx_push_matrix();
     rf_gfx_translatef((float)start_pos.x, (float)start_pos.y, 0.0f);
@@ -3189,16 +3189,16 @@ RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
     rf_gfx_normal3f(0.0f, 0.0f, 1.0f);
 
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(0.0f, 0.0f);
 
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(0.0f, thick);
 
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(d, thick);
 
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(d, 0.0f);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -3218,7 +3218,7 @@ RF_API void rf_draw_line_bezier(rf_vec2 start_pos, rf_vec2 end_pos, float thick,
     {
         // Cubic easing in-out
         // NOTE: Easing is calculated only for y position value
-        current.y = _rf_shapes_ease_cubic_in_out((float)i, start_pos.y, end_pos.y - start_pos.y, (float)RF_LINE_DIVISIONS);
+        current.y = rf_internal_shapes_ease_cubic_in_out((float)i, start_pos.y, end_pos.y - start_pos.y, (float)RF_LINE_DIVISIONS);
         current.x = previous.x + (end_pos.x - start_pos.x)/ (float)RF_LINE_DIVISIONS;
 
         rf_draw_line_ex(previous, current, thick, color);
@@ -3573,7 +3573,7 @@ RF_API void rf_draw_rectangle_rec(rf_rec rec, rf_color color)
 // Draw a color-filled rectangle with pro parameters
 RF_API void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf_color color)
 {
-    rf_gfx_enable_texture(_rf_get_shapes_texture().id);
+    rf_gfx_enable_texture(rf_internal_get_shapes_texture().id);
 
     rf_gfx_push_matrix();
     rf_gfx_translatef(rec.x, rec.y, 0.0f);
@@ -3584,16 +3584,16 @@ RF_API void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf
     rf_gfx_normal3f(0.0f, 0.0f, 1.0f);
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(0.0f, 0.0f);
 
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(0.0f, rec.height);
 
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.width, rec.height);
 
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.width, 0.0f);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -3619,7 +3619,7 @@ RF_API void rf_draw_rectangle_gradient_h(int pos_x, int pos_y, int width, int he
 // NOTE: Colors refer to corners, starting at top-lef corner and counter-clockwise
 RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4)
 {
-    rf_gfx_enable_texture(_rf_get_shapes_texture().id);
+    rf_gfx_enable_texture(rf_internal_get_shapes_texture().id);
 
     rf_gfx_push_matrix();
     rf_gfx_begin(RF_QUADS);
@@ -3627,19 +3627,19 @@ RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2,
 
     // NOTE: Default raylib font character 95 is a white square
     rf_gfx_color4ub(col1.r, col1.g, col1.b, col1.a);
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.x, rec.y);
 
     rf_gfx_color4ub(col2.r, col2.g, col2.b, col2.a);
-    rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.x, rec.y + rec.height);
 
     rf_gfx_color4ub(col3.r, col3.g, col3.b, col3.a);
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.x + rec.width, rec.y + rec.height);
 
     rf_gfx_color4ub(col4.r, col4.g, col4.b, col4.a);
-    rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
     rf_gfx_vertex2f(rec.x + rec.width, rec.y);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -3996,22 +3996,22 @@ RF_API void rf_draw_triangle_fan(rf_vec2 *points, int points_count, rf_color col
     {
         if (rf_gfx_check_buffer_limit((points_count - 2) * 4)) rf_gfx_draw();
 
-        rf_gfx_enable_texture(_rf_get_shapes_texture().id);
+        rf_gfx_enable_texture(rf_internal_get_shapes_texture().id);
         rf_gfx_begin(RF_QUADS);
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
         for (int i = 1; i < points_count - 1; i++)
         {
-            rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
             rf_gfx_vertex2f(points[0].x, points[0].y);
 
-            rf_gfx_tex_coord2f(_rf_ctx->gfx_ctx.rec_tex_shapes.x/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
             rf_gfx_vertex2f(points[i].x, points[i].y);
 
-            rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, (_rf_ctx->gfx_ctx.rec_tex_shapes.y + _rf_ctx->gfx_ctx.rec_tex_shapes.height)/_rf_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
             rf_gfx_vertex2f(points[i + 1].x, points[i + 1].y);
 
-            rf_gfx_tex_coord2f((_rf_ctx->gfx_ctx.rec_tex_shapes.x + _rf_ctx->gfx_ctx.rec_tex_shapes.width)/_rf_ctx->gfx_ctx.tex_shapes.width, _rf_ctx->gfx_ctx.rec_tex_shapes.y/_rf_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
             rf_gfx_vertex2f(points[i + 1].x, points[i + 1].y);
         }
         rf_gfx_end();
@@ -5542,12 +5542,12 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
 {
     rf_image image = { 0 };
 
-    if ((   _rf_is_file_extension(filename, ".png"))
-        || (_rf_is_file_extension(filename, ".bmp"))
-        || (_rf_is_file_extension(filename, ".tga"))
-        || (_rf_is_file_extension(filename, ".gif"))
-        || (_rf_is_file_extension(filename, ".pic"))
-        || (_rf_is_file_extension(filename, ".psd")))
+    if ((   rf_internal_is_file_extension(filename, ".png"))
+        || (rf_internal_is_file_extension(filename, ".bmp"))
+        || (rf_internal_is_file_extension(filename, ".tga"))
+        || (rf_internal_is_file_extension(filename, ".gif"))
+        || (rf_internal_is_file_extension(filename, ".pic"))
+        || (rf_internal_is_file_extension(filename, ".psd")))
     {
 
         int img_width = 0;
@@ -5901,7 +5901,7 @@ RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator)
         return;
     }
 
-    void* temp = _rf_realloc_wrapper(image->allocator, image->data, rf_image_size(*image), mip_size);
+    void* temp = rf_internal_realloc_wrapper(image->allocator, image->data, rf_image_size(*image), mip_size);
 
     if (temp != NULL)
     {
@@ -6956,7 +6956,7 @@ RF_API rf_image rf_gen_image_white_noise(int width, int height, float factor, rf
 
     for (int i = 0; i < width*height; i++)
     {
-        if (_rf_ctx->get_random_value_proc(0, 99) < (int)(factor * 100.0f)) pixels[i] = RF_WHITE;
+        if (rf_internal_ctx->get_random_value_proc(0, 99) < (int)(factor * 100.0f)) pixels[i] = RF_WHITE;
         else pixels[i] = RF_BLACK;
     }
 
@@ -7010,8 +7010,8 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_a
 
     for (int i = 0; i < seeds_count; i++)
     {
-        int y = (i / seeds_per_row) * tile_size + _rf_ctx->get_random_value_proc(0, tile_size - 1);
-        int x = (i % seeds_per_row) * tile_size + _rf_ctx->get_random_value_proc(0, tile_size - 1);
+        int y = (i / seeds_per_row) * tile_size + rf_internal_ctx->get_random_value_proc(0, tile_size - 1);
+        int x = (i % seeds_per_row) * tile_size + rf_internal_ctx->get_random_value_proc(0, tile_size - 1);
         seeds[i] = (rf_vec2) { (float) x, (float) y };
     }
 
@@ -7568,7 +7568,7 @@ RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocat
 
     rf_font font = { 0 };
 
-    if (_rf_is_file_extension(filename, ".ttf") || _rf_is_file_extension(filename, ".otf"))
+    if (rf_internal_is_file_extension(filename, ".ttf") || rf_internal_is_file_extension(filename, ".otf"))
     {
         int file_size = io.get_file_size_proc(filename);
         void* data = RF_ALLOC(temp_allocator, file_size);
@@ -8115,7 +8115,7 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
     {
         int glyph_width = 0;
         int next = 0;
-        letter = _rf_get_next_utf8_codepoint(&text[i], &next);
+        letter = rf_internal_get_next_utf8_codepoint(&text[i], &next);
         index = rf_get_glyph_index(font, letter);
 
         // NOTE: normally we exit the decoding sequence as soon as a bad rf_byte is found (and return 0x3f)
@@ -8195,7 +8195,7 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
 //endregion
 
 //region model
-RF_INTERNAL rf_model _rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator temp_allocator)
+RF_INTERNAL rf_model rf_internal_load_meshes_and_materials_for_model(rf_model model, rf_allocator temp_allocator)
 {
     // Make sure model transform is set to identity matrix!
     model.transform = rf_mat_identity();
@@ -8363,17 +8363,17 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 {
     rf_model model = { 0 };
 
-    if (_rf_is_file_extension(filename, ".obj"))
+    if (rf_internal_is_file_extension(filename, ".obj"))
     {
         model = rf_load_model_from_obj(filename, allocator, temp_allocator, io);
     }
 
-    if (_rf_is_file_extension(filename, ".iqm"))
+    if (rf_internal_is_file_extension(filename, ".iqm"))
     {
         model = rf_load_model_from_iqm(filename, allocator, temp_allocator, io);
     }
 
-    if (_rf_is_file_extension(filename, ".gltf") || _rf_is_file_extension(filename, ".glb"))
+    if (rf_internal_is_file_extension(filename, ".gltf") || rf_internal_is_file_extension(filename, ".glb"))
     {
         //model = rf_load_gltf(filename);
     }
@@ -8609,7 +8609,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
     // NOTE: At this point we have all model data loaded
     RF_LOG_V(RF_LOG_INFO, "[%s] rf_model loaded successfully in RAM (CPU)", file_name);
 
-    return _rf_load_meshes_and_materials_for_model(model, temp_allocator);
+    return rf_internal_load_meshes_and_materials_for_model(model, temp_allocator);
 }
 
 // Load IQM mesh data
@@ -8936,7 +8936,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     RF_FREE(temp_allocator, blendw);
     RF_FREE(temp_allocator, ijoint);
 
-    return _rf_load_meshes_and_materials_for_model(model, temp_allocator);
+    return rf_internal_load_meshes_and_materials_for_model(model, temp_allocator);
 }
 
 // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]

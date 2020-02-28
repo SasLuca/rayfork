@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 set(RAYFORK_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rayfork/include)
 
 option(RAYFORK_GRAPHICS_BACKEND_GL_33 "Use OpenGL 33 Backend" ON)
