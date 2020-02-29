@@ -1,24 +1,25 @@
 #include "rayfork.h"
 #include "math.h"
 
-//region internal wrappers
-static void* rf_internal_realloc_wrapper(rf_allocator allocator, const void* source, int old_size, int new_size)
+//region internal
+RF_INTERNAL void* rf_internal_realloc_wrapper(rf_allocator allocator, void* source, int old_size, int new_size)
 {
     void* new_alloc = RF_ALLOC(allocator, new_size);
-    memcpy(new_alloc, source, old_size);
+    if (new_alloc && source && old_size) { memcpy(new_alloc, source, old_size); }
+    if (source) { RF_FREE(allocator, source); }
     return new_alloc;
 }
 
-static void* rf_internal_calloc_wrapper(rf_allocator allocator, int amount, int size)
+RF_INTERNAL void* rf_internal_calloc_wrapper(rf_allocator allocator, int amount, int size)
 {
     void* ptr = RF_ALLOC(allocator, amount * size);
     memset(ptr, 0, amount * size);
     return ptr;
 }
 
-#define rf_internal_strings_match(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
+#define RF_INTERNAL_STRINGS_MATCH(a, a_len, b, b_len) (a_len == b_len && (strncmp(a, b, a_len) == 0))
 
-static bool rf_internal_is_file_extension(const char* filename, const char* ext)
+RF_INTERNAL bool rf_internal_is_file_extension(const char* filename, const char* ext)
 {
     int filename_len = strlen(filename);
     int ext_len      = strlen(ext);
@@ -28,11 +29,58 @@ static bool rf_internal_is_file_extension(const char* filename, const char* ext)
         return false;
     }
 
-    return rf_internal_strings_match(filename + filename_len - ext_len, ext_len, ext, ext_len);
+    return RF_INTERNAL_STRINGS_MATCH(filename + filename_len - ext_len, ext_len, ext, ext_len);
+}
+
+// String pointer reverse break: returns right-most occurrence of charset in s
+RF_INTERNAL const char* rf_internal_strprbrk(const char* s, const char* charset)
+{
+    const char* latestMatch = NULL;
+    for (; s = strpbrk(s, charset), s != NULL; latestMatch = s++) { }
+    return latestMatch;
+}
+
+#ifndef RF_MAX_FILEPATH_LEN
+    #define RF_MAX_FILEPATH_LEN 1024
+#endif
+
+RF_INTERNAL RF_THREAD_LOCAL char rf_internal_dir_path[RF_MAX_FILEPATH_LEN];
+
+// Get directory for a given filePath
+RF_INTERNAL const char* rf_internal_get_directory_path(const char* filePath)
+{
+    const char* last_slash = NULL;
+    memset(rf_internal_dir_path, 0, RF_MAX_FILEPATH_LEN);
+
+    last_slash = rf_internal_strprbrk(filePath, "\\/");
+    if (!last_slash) { return NULL; }
+
+    // NOTE: Be careful, strncpy() is not safe, it does not care about '\0'
+    strncpy(rf_internal_dir_path, filePath, strlen(filePath) - (strlen(last_slash) - 1));
+    rf_internal_dir_path[strlen(filePath) - strlen(last_slash)] = '\0'; // Add '\0' manually
+
+    return rf_internal_dir_path;
 }
 
 #define RF_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define RF_MAX(a, b) ((a) > (b) ? (a) : (b))
+
+RF_INTERNAL const unsigned char rf_internal_base64_table[] =
+{
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 62, 0, 0, 0, 63, 52, 53,
+    54, 55, 56, 57, 58, 59, 60, 61, 0, 0,
+    0, 0, 0, 0, 0, 0, 1, 2, 3, 4,
+    5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+    25, 0, 0, 0, 0, 0, 0, 26, 27, 28,
+    29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+    39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+    49, 50, 51
+};
 //endregion
 
 //region stb_image
@@ -40,7 +88,7 @@ static bool rf_internal_is_file_extension(const char* filename, const char* ext)
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
 
-#define RF_STBI_SET_ALLOCATOR(allocator) rf_internal_stbi_allocator = (allocator)
+#define RF_SET_STBI_ALLOCATOR(allocator) rf_internal_stbi_allocator = (allocator)
 
 //#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
@@ -57,7 +105,7 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 
-#define RF_STBIR_SET_ALLOCATOR(allocator) rf_internal_stbir_allocator = (allocator)
+#define RF_SET_STBIR_ALLOCATOR(allocator) rf_internal_stbir_allocator = (allocator)
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STBIR_MALLOC(sz,c) ((void)(c), RF_ALLOC(*rf_internal_stbir_allocator, sz))
@@ -78,7 +126,7 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
 static RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 
-#define RF_STBTT_SET_ALLOCATOR(allocator) rf_internal_stbtt_allocator = (allocator)
+#define RF_SET_STBTT_ALLOCATOR(allocator) rf_internal_stbtt_allocator = (allocator)
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
@@ -94,7 +142,16 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 //endregion
 
 //region par shapes
+//Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
+static RF_THREAD_LOCAL rf_allocator* rf_internal_par_allocator;
+
+#define RF_SET_PARSHAPES_ALLOCATOR(allocator) rf_internal_par_allocator = (allocator)
+
 #define PAR_SHAPES_IMPLEMENTATION
+#define PAR_MALLOC(T, N)                    ((T*)RF_ALLOC(*rf_internal_par_allocator, N * sizeof(T)))
+#define PAR_CALLOC(T, N)                    ((T*)rf_internal_calloc_wrapper(*rf_internal_par_allocator, N, sizeof(T)))
+#define PAR_FREE(BUF)                       RF_FREE(*rf_internal_par_allocator, BUF)
+#define PAR_REALLOC(T, BUF, N, OLD_SZ)      ((T*) rf_internal_realloc_wrapper(BUF, sizeof(T) * (N), OLD_SZ))
 
 #include "par/par_shapes.h"
 //endregion
@@ -119,10 +176,88 @@ static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
 #include "tinyobjloader-c/tinyobj_loader_c.h"
 //endregion
 
+//region cgltf
+static RF_THREAD_LOCAL rf_allocator* rf_internal_cgltf_allocator;
+
+#define RF_SET_CGLTF_ALLOCATOR(allocator) rf_internal_cgltf_allocator = allocator
+
+#define CGLTF_IMPLEMENTATION
+#define CGLTF_MALLOC(size) RF_ALLOC(*rf_internal_cgltf_allocator, size)
+#define CGLTF_FREE(ptr)    RF_FREE(*rf_internal_cgltf_allocator, ptr)
+
+#include "cgltf/cgltf.h"
+
+cgltf_result rf_internal_cgltf_io_read(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data)
+{
+    ((void) memory_options);
+    ((void) file_options);
+
+    rf_io_callbacks* io = (rf_io_callbacks*) file_options->user_data;
+
+    int file_size = io->get_file_size_proc(path);
+
+    if (file_size == 0)
+    {
+        return cgltf_result_file_not_found;
+    }
+
+    *data = CGLTF_MALLOC(file_size);
+
+    if (data == NULL)
+    {
+        return cgltf_result_out_of_memory;
+    }
+
+    if (!io->read_file_into_buffer_proc(path, *data, file_size))
+    {
+        CGLTF_FREE(*data);
+        return cgltf_result_io_error;
+    }
+
+    return cgltf_result_success;
+}
+
+void rf_internal_cgltf_io_release(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, void* data)
+{
+    ((void) memory_options);
+    ((void) file_options);
+
+    CGLTF_FREE(data);
+}
+//endregion
+
 //Global pointer to context struct
 rf_context* rf_internal_ctx;
 
 //region init and setup
+// Set viewport for a provided width and height
+RF_API void rf_setup_viewport(int width, int height)
+{
+    rf_internal_ctx->render_width  = width;
+    rf_internal_ctx->render_height = height;
+
+    // Set viewport width and height
+    // NOTE: We consider render size and offset in case black bars are required and
+    // render area does not match full global_display area (this situation is only applicable on fullscreen mode)
+    rf_gfx_viewport(rf_internal_ctx->render_offset_x/2, rf_internal_ctx->render_offset_y/2, rf_internal_ctx->render_width - rf_internal_ctx->render_offset_x, rf_internal_ctx->render_height - rf_internal_ctx->render_offset_y);
+
+    rf_gfx_matrix_mode(RF_PROJECTION); // Switch to PROJECTION matrix
+    rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
+
+    // Set orthographic GL_PROJECTION to current framebuffer size
+    // NOTE: Confirf_gfx_projectiongured top-left corner as (0, 0)
+    rf_gfx_ortho(0, rf_internal_ctx->render_width, rf_internal_ctx->render_height, 0, 0.0f, 1.0f);
+
+    rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
+    rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
+}
+
+// Define default texture used to draw shapes
+RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
+{
+    rf_internal_ctx->tex_shapes = texture;
+    rf_internal_ctx->rec_tex_shapes = source;
+}
 
 // Load the raylib default font
 RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_allocator)
@@ -287,28 +422,6 @@ RF_API rf_material rf_load_default_material(rf_allocator allocator)
     material.maps[RF_MAP_SPECULAR].color = RF_WHITE; // Specular color
 
     return material;
-}
-
-// Set viewport for a provided width and height
-RF_API void rf_setup_viewport(int width, int height)
-{
-    rf_internal_ctx->render_width  = width;
-    rf_internal_ctx->render_height = height;
-
-    // Set viewport width and height
-    // NOTE: We consider render size and offset in case black bars are required and
-    // render area does not match full global_display area (this situation is only applicable on fullscreen mode)
-    rf_gfx_viewport(rf_internal_ctx->render_offset_x/2, rf_internal_ctx->render_offset_y/2, rf_internal_ctx->render_width - rf_internal_ctx->render_offset_x, rf_internal_ctx->render_height - rf_internal_ctx->render_offset_y);
-
-    rf_gfx_matrix_mode(RF_PROJECTION); // Switch to PROJECTION matrix
-    rf_gfx_load_identity(); // Reset current matrix (PROJECTION)
-
-    // Set orthographic GL_PROJECTION to current framebuffer size
-    // NOTE: Confirf_gfx_projectiongured top-left corner as (0, 0)
-    rf_gfx_ortho(0, rf_internal_ctx->render_width, rf_internal_ctx->render_height, 0, 0.0f, 1.0f);
-
-    rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
-    rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 }
 //endregion
 
@@ -483,7 +596,7 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 //region default io & allocator
 #include "malloc.h"
 
-void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
+void* RF_ALLOC_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
 {
     ((void)user_data);
 
@@ -641,16 +754,81 @@ RF_API void rf_set_target_fps(int fps)
 //endregion
 
 //region math
+//region base64
+RF_API int rf_get_size_base64(const unsigned char* input)
+{
+    int size = 0;
+
+    for (int i = 0; input[4 * i] != 0; i++)
+    {
+        if (input[4 * i + 3] == '=')
+        {
+            if (input[4 * i + 2] == '=') size += 1;
+            else size += 2;
+        }
+        else size += 3;
+    }
+
+    return size;
+}
+
+RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator)
+{
+    rf_base64_output result;
+    result.size      = rf_get_size_base64(input);
+    result.allocator = allocator;
+    result.buffer    = (unsigned char*) RF_ALLOC(allocator, result.size);
+    
+    for (int i = 0; i < result.size / 3; i++)
+    {
+        unsigned char a = rf_internal_base64_table[(int)input[4 * i + 0]];
+        unsigned char b = rf_internal_base64_table[(int)input[4 * i + 1]];
+        unsigned char c = rf_internal_base64_table[(int)input[4 * i + 2]];
+        unsigned char d = rf_internal_base64_table[(int)input[4 * i + 3]];
+
+        result.buffer[3 * i + 0] = (a << 2) | (b >> 4);
+        result.buffer[3 * i + 1] = (b << 4) | (c >> 2);
+        result.buffer[3 * i + 2] = (c << 6) | d;
+    }
+
+    int n = result.size / 3;
+
+    if (result.size % 3 == 1)
+    {
+        unsigned char a = rf_internal_base64_table[(int)input[4 * n + 0]];
+        unsigned char b = rf_internal_base64_table[(int)input[4 * n + 1]];
+
+        result.buffer[result.size - 1] = (a << 2) | (b >> 4);
+    }
+    else if (result.size % 3 == 2)
+    {
+        unsigned char a = rf_internal_base64_table[(int)input[4 * n + 0]];
+        unsigned char b = rf_internal_base64_table[(int)input[4 * n + 1]];
+        unsigned char c = rf_internal_base64_table[(int)input[4 * n + 2]];
+
+        result.buffer[result.size - 2] = (a << 2) | (b >> 4);
+        result.buffer[result.size - 1] = (b << 4) | (c >> 2);
+    }
+
+    return result;
+}
+
+RF_API void rf_unload_base64_output(rf_base64_output it)
+{
+    RF_FREE(it.allocator, it.buffer);
+}
+//endregion
+
 //region color
 
 // Returns hexadecimal value for a rf_color
-RF_MATH_API int rf_color_to_int(rf_color color)
+RF_API int rf_color_to_int(rf_color color)
 {
     return (((int)color.r << 24) | ((int)color.g << 16) | ((int)color.b << 8) | (int)color.a);
 }
 
 // Returns color normalized as float [0..1]
-RF_MATH_API rf_vec4 rf_color_normalize(rf_color color)
+RF_API rf_vec4 rf_color_normalize(rf_color color)
 {
     rf_vec4 result;
 
@@ -663,7 +841,7 @@ RF_MATH_API rf_vec4 rf_color_normalize(rf_color color)
 }
 
 // Returns color from normalized values [0..1]
-RF_MATH_API rf_color rf_color_from_normalized(rf_vec4 normalized)
+RF_API rf_color rf_color_from_normalized(rf_vec4 normalized)
 {
     rf_color result;
 
@@ -676,7 +854,7 @@ RF_MATH_API rf_color rf_color_from_normalized(rf_vec4 normalized)
 }
 
 // Returns HSV values for a rf_color. Hue is returned as degrees [0..360]
-RF_MATH_API rf_vec3 rf_color_to_hsv(rf_color color)
+RF_API rf_vec3 rf_color_to_hsv(rf_color color)
 {
     rf_vec3 rgb = {(float)color.r / 255.0f, (float)color.g / 255.0f, (float)color.b / 255.0f };
     rf_vec3 hsv = {0.0f, 0.0f, 0.0f };
@@ -727,7 +905,7 @@ RF_MATH_API rf_vec3 rf_color_to_hsv(rf_color color)
 }
 
 // Returns a rf_color from HSV values. rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors. Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
-RF_MATH_API rf_color rf_color_from_hsv(rf_vec3 hsv)
+RF_API rf_color rf_color_from_hsv(rf_vec3 hsv)
 {
     rf_color color = { 0, 0, 0, 255 };
     float h = hsv.x, s = hsv.y, v = hsv.z;
@@ -760,7 +938,7 @@ RF_MATH_API rf_color rf_color_from_hsv(rf_vec3 hsv)
 }
 
 // Returns a rf_color struct from hexadecimal value
-RF_MATH_API rf_color rf_color_from_int(int hex_value)
+RF_API rf_color rf_color_from_int(int hex_value)
 {
     rf_color color;
 
@@ -773,7 +951,7 @@ RF_MATH_API rf_color rf_color_from_int(int hex_value)
 }
 
 // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
-RF_MATH_API rf_color rf_fade(rf_color color, float alpha)
+RF_API rf_color rf_fade(rf_color color, float alpha)
 {
     if (alpha < 0.0f) alpha = 0.0f;
     else if (alpha > 1.0f) alpha = 1.0f;
@@ -785,7 +963,7 @@ RF_MATH_API rf_color rf_fade(rf_color color, float alpha)
 
 //region camera
 // Get world coordinates from screen coordinates
-RF_MATH_API  rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
+RF_API  rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 {
     rf_vec3 result = {0.0f, 0.0f, 0.0f };
 
@@ -808,7 +986,7 @@ RF_MATH_API  rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 }
 
 // Returns a ray trace from mouse position
-RF_MATH_API  rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera)
+RF_API  rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera)
 {
     rf_ray ray;
 
@@ -864,13 +1042,13 @@ RF_MATH_API  rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_positio
 }
 
 // Get transform matrix for camera
-RF_MATH_API  rf_mat rf_get_camera_matrix(rf_camera3d camera)
+RF_API  rf_mat rf_get_camera_matrix(rf_camera3d camera)
 {
     return rf_mat_look_at(camera.position, camera.target, camera.up);
 }
 
 // Returns camera 2d transform matrix
-RF_MATH_API  rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
+RF_API  rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 {
     rf_mat mat_transform = { 0 };
     // The camera in world-space is set by
@@ -898,7 +1076,7 @@ RF_MATH_API  rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 }
 
 // Returns the screen space position from a 3d world space position
-RF_MATH_API  rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera)
+RF_API  rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera)
 {
     // Calculate GL_PROJECTION matrix (from perspective instead of frustum
     rf_mat mat_proj = rf_mat_identity();
@@ -941,7 +1119,7 @@ RF_MATH_API  rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 positi
 }
 
 // Returns the screen space position for a 2d camera world space position
-RF_MATH_API  rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
+RF_API  rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
 {
     rf_mat mat_camera = rf_get_camera_matrix2d(camera);
     rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, mat_camera);
@@ -950,7 +1128,7 @@ RF_MATH_API  rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d came
 }
 
 // Returns the world space position for a 2d camera screen space position
-RF_MATH_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
+RF_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
 {
     rf_mat inv_mat_camera = rf_mat_invert(rf_get_camera_matrix2d(camera));
     rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, inv_mat_camera);
@@ -961,7 +1139,7 @@ RF_MATH_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d came
 
 //region vec and matrix math
 //Get the buffer size of an image of a specific width and height in a given format
-RF_MATH_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format)
+RF_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format)
 {
     int data_size = 0; // Size in bytes
     int bpp = 0; // Bits per pixel
@@ -998,55 +1176,55 @@ RF_MATH_API int rf_get_buffer_size_for_pixel_format(int width, int height, int f
 }
 
 // Clamp float value
-RF_MATH_API float rf_clamp(float value, float min, float max)
+RF_API float rf_clamp(float value, float min, float max)
 {
     const float res = value < min ? min : value;
     return res > max ? max : res;
 }
 
 // Calculate linear interpolation between two floats
-RF_MATH_API float rf_lerp(float start, float end, float amount)
+RF_API float rf_lerp(float start, float end, float amount)
 {
     return start + amount * (end - start);
 }
 
 // Add two vectors (v1 + v2)
-RF_MATH_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2)
+RF_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x + v2.x, v1.y + v2.y};
     return result;
 }
 
 // Subtract two vectors (v1 - v2)
-RF_MATH_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2)
+RF_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x - v2.x, v1.y - v2.y};
     return result;
 }
 
 // Calculate vector length
-RF_MATH_API float rf_vec2_len(rf_vec2 v)
+RF_API float rf_vec2_len(rf_vec2 v)
 {
     float result = sqrt((v.x * v.x) + (v.y * v.y));
     return result;
 }
 
 // Calculate two vectors dot product
-RF_MATH_API float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2)
+RF_API float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2)
 {
     float result = (v1.x * v2.x + v1.y * v2.y);
     return result;
 }
 
 // Calculate distance between two vectors
-RF_MATH_API float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2)
+RF_API float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2)
 {
     float result = sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
     return result;
 }
 
 // Calculate angle from two vectors in X-axis
-RF_MATH_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2)
+RF_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2)
 {
     float result = atan2f(v2.y - v1.y, v2.x - v1.x) * (180.0f / RF_PI);
     if (result < 0) result += 360.0f;
@@ -1054,49 +1232,49 @@ RF_MATH_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2)
 }
 
 // Scale vector (multiply by value)
-RF_MATH_API rf_vec2 rf_vec2_scale(rf_vec2 v, float scale)
+RF_API rf_vec2 rf_vec2_scale(rf_vec2 v, float scale)
 {
     rf_vec2 result = {v.x * scale, v.y * scale};
     return result;
 }
 
 // Multiply vector by vector
-RF_MATH_API rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2)
+RF_API rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x * v2.x, v1.y * v2.y};
     return result;
 }
 
 // Negate vector
-RF_MATH_API rf_vec2 rf_vec2_negate(rf_vec2 v)
+RF_API rf_vec2 rf_vec2_negate(rf_vec2 v)
 {
     rf_vec2 result = {-v.x, -v.y};
     return result;
 }
 
 // Divide vector by a float value
-RF_MATH_API rf_vec2 rf_vec2_div(rf_vec2 v, float div)
+RF_API rf_vec2 rf_vec2_div(rf_vec2 v, float div)
 {
     rf_vec2 result = {v.x / div, v.y / div};
     return result;
 }
 
 // Divide vector by vector
-RF_MATH_API rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2)
+RF_API rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x / v2.x, v1.y / v2.y};
     return result;
 }
 
 // Normalize provided vector
-RF_MATH_API rf_vec2 rf_vec2_normalize(rf_vec2 v)
+RF_API rf_vec2 rf_vec2_normalize(rf_vec2 v)
 {
     rf_vec2 result = rf_vec2_div(v, rf_vec2_len(v));
     return result;
 }
 
 // Calculate linear interpolation between two vectors
-RF_MATH_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
+RF_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
 {
     rf_vec2 result = {0};
 
@@ -1107,42 +1285,42 @@ RF_MATH_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
 }
 
 // Add two vectors
-RF_MATH_API rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
     return result;
 }
 
 // Subtract two vectors
-RF_MATH_API rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
     return result;
 }
 
 // Multiply vector by scalar
-RF_MATH_API rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar)
+RF_API rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar)
 {
     rf_vec3 result = {v.x * scalar, v.y * scalar, v.z * scalar};
     return result;
 }
 
 // Multiply vector by vector
-RF_MATH_API rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
     return result;
 }
 
 // Calculate two vectors cross product
-RF_MATH_API rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x};
     return result;
 }
 
 // Calculate one vector perpendicular vector
-RF_MATH_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
+RF_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
 {
     rf_vec3 result = {0};
 
@@ -1168,21 +1346,21 @@ RF_MATH_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
 }
 
 // Calculate vector length
-RF_MATH_API float rf_vec3_len(rf_vec3 v)
+RF_API float rf_vec3_len(rf_vec3 v)
 {
     float result = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     return result;
 }
 
 // Calculate two vectors dot product
-RF_MATH_API float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2)
+RF_API float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2)
 {
     float result = (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
     return result;
 }
 
 // Calculate distance between two vectors
-RF_MATH_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
+RF_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
 {
     float dx = v2.x - v1.x;
     float dy = v2.y - v1.y;
@@ -1192,35 +1370,35 @@ RF_MATH_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
 }
 
 // Scale provided vector
-RF_MATH_API rf_vec3 rf_vec3_scale(rf_vec3 v, float scale)
+RF_API rf_vec3 rf_vec3_scale(rf_vec3 v, float scale)
 {
     rf_vec3 result = {v.x * scale, v.y * scale, v.z * scale};
     return result;
 }
 
 // Negate provided vector (invert direction)
-RF_MATH_API rf_vec3 rf_vec3_negate(rf_vec3 v)
+RF_API rf_vec3 rf_vec3_negate(rf_vec3 v)
 {
     rf_vec3 result = {-v.x, -v.y, -v.z};
     return result;
 }
 
 // Divide vector by a float value
-RF_MATH_API rf_vec3 rf_vec3_div(rf_vec3 v, float div)
+RF_API rf_vec3 rf_vec3_div(rf_vec3 v, float div)
 {
     rf_vec3 result = {v.x / div, v.y / div, v.z / div};
     return result;
 }
 
 // Divide vector by vector
-RF_MATH_API rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x / v2.x, v1.y / v2.y, v1.z / v2.z};
     return result;
 }
 
 // Normalize provided vector
-RF_MATH_API rf_vec3 rf_vec3_normalize(rf_vec3 v)
+RF_API rf_vec3 rf_vec3_normalize(rf_vec3 v)
 {
     rf_vec3 result = v;
 
@@ -1239,7 +1417,7 @@ RF_MATH_API rf_vec3 rf_vec3_normalize(rf_vec3 v)
 // Orthonormalize provided vectors
 // Makes vectors normalized and orthogonal to each other
 // Gram-Schmidt function implementation
-RF_MATH_API void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
+RF_API void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
 {
     *v1 = rf_vec3_normalize(*v1);
     rf_vec3 vn = rf_vec3_cross_product(*v1, *v2);
@@ -1248,7 +1426,7 @@ RF_MATH_API void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
 }
 
 // Transforms a rf_vec3 by a given rf_mat
-RF_MATH_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
+RF_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
 {
     rf_vec3 result = {0};
     float x = v.x;
@@ -1263,7 +1441,7 @@ RF_MATH_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
 }
 
 // rf_transform a vector by quaternion rotation
-RF_MATH_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
+RF_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
 {
     rf_vec3 result = {0};
 
@@ -1278,7 +1456,7 @@ RF_MATH_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
 }
 
 // Calculate linear interpolation between two vectors
-RF_MATH_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
+RF_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
 {
     rf_vec3 result = {0};
 
@@ -1290,7 +1468,7 @@ RF_MATH_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
 }
 
 // Calculate reflected vector to normal
-RF_MATH_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
+RF_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
 {
     // I is the original vector
     // N is the normal of the incident plane
@@ -1308,7 +1486,7 @@ RF_MATH_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
 }
 
 // Return min value for each pair of components
-RF_MATH_API rf_vec3 rf_vec3_RF_MIN(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_RF_MIN(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {0};
 
@@ -1320,7 +1498,7 @@ RF_MATH_API rf_vec3 rf_vec3_RF_MIN(rf_vec3 v1, rf_vec3 v2)
 }
 
 // Return max value for each pair of components
-RF_MATH_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
+RF_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {0};
 
@@ -1333,7 +1511,7 @@ RF_MATH_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
 
 // Compute barycenter coordinates (u, v, w) for point p with respect to triangle (a, b, c)
 // NOTE: Assumes P is on the plane of the triangle
-RF_MATH_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c)
+RF_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c)
 {
 //Vector v0 = b - a, v1 = c - a, v2 = p - a;
 
@@ -1358,7 +1536,7 @@ RF_MATH_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 
 }
 
 // Compute matrix determinant
-RF_MATH_API float rf_mat_determinant(rf_mat mat)
+RF_API float rf_mat_determinant(rf_mat mat)
 {
     float result = 0.0;
 
@@ -1379,14 +1557,14 @@ RF_MATH_API float rf_mat_determinant(rf_mat mat)
 }
 
 // Returns the trace of the matrix (sum of the values along the diagonal)
-RF_MATH_API float rf_mat_trace(rf_mat mat)
+RF_API float rf_mat_trace(rf_mat mat)
 {
     float result = (mat.m0 + mat.m5 + mat.m10 + mat.m15);
     return result;
 }
 
 // Transposes provided matrix
-RF_MATH_API rf_mat rf_mat_transpose(rf_mat mat)
+RF_API rf_mat rf_mat_transpose(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -1411,7 +1589,7 @@ RF_MATH_API rf_mat rf_mat_transpose(rf_mat mat)
 }
 
 // Invert provided matrix
-RF_MATH_API rf_mat rf_mat_invert(rf_mat mat)
+RF_API rf_mat rf_mat_invert(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -1458,7 +1636,7 @@ RF_MATH_API rf_mat rf_mat_invert(rf_mat mat)
 }
 
 // Normalize provided matrix
-RF_MATH_API rf_mat rf_mat_normalize(rf_mat mat)
+RF_API rf_mat rf_mat_normalize(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -1485,7 +1663,7 @@ RF_MATH_API rf_mat rf_mat_normalize(rf_mat mat)
 }
 
 // Returns identity matrix
-RF_MATH_API rf_mat rf_mat_identity(void)
+RF_API rf_mat rf_mat_identity(void)
 {
     rf_mat result = {1.0f, 0.0f, 0.0f, 0.0f,
                      0.0f, 1.0f, 0.0f, 0.0f,
@@ -1496,7 +1674,7 @@ RF_MATH_API rf_mat rf_mat_identity(void)
 }
 
 // Add two matrices
-RF_MATH_API rf_mat rf_mat_add(rf_mat left, rf_mat right)
+RF_API rf_mat rf_mat_add(rf_mat left, rf_mat right)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1521,7 +1699,7 @@ RF_MATH_API rf_mat rf_mat_add(rf_mat left, rf_mat right)
 }
 
 // Subtract two matrices (left - right)
-RF_MATH_API rf_mat rf_mat_sub(rf_mat left, rf_mat right)
+RF_API rf_mat rf_mat_sub(rf_mat left, rf_mat right)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1546,7 +1724,7 @@ RF_MATH_API rf_mat rf_mat_sub(rf_mat left, rf_mat right)
 }
 
 // Returns translation matrix
-RF_MATH_API rf_mat rf_mat_translate(float x, float y, float z)
+RF_API rf_mat rf_mat_translate(float x, float y, float z)
 {
     rf_mat result = {1.0f, 0.0f, 0.0f, x,
                      0.0f, 1.0f, 0.0f, y,
@@ -1558,7 +1736,7 @@ RF_MATH_API rf_mat rf_mat_translate(float x, float y, float z)
 
 // Create rotation matrix from axis and angle
 // NOTE: Angle should be provided in radians
-RF_MATH_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
+RF_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
 {
     rf_mat result = {0};
 
@@ -1602,7 +1780,7 @@ RF_MATH_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
 }
 
 // Returns xyz-rotation matrix (angles in radians)
-RF_MATH_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
+RF_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1629,7 +1807,7 @@ RF_MATH_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
 }
 
 // Returns x-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_rotate_x(float angle)
+RF_API rf_mat rf_mat_rotate_x(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1645,7 +1823,7 @@ RF_MATH_API rf_mat rf_mat_rotate_x(float angle)
 }
 
 // Returns y-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_rotate_y(float angle)
+RF_API rf_mat rf_mat_rotate_y(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1661,7 +1839,7 @@ RF_MATH_API rf_mat rf_mat_rotate_y(float angle)
 }
 
 // Returns z-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_rotate_z(float angle)
+RF_API rf_mat rf_mat_rotate_z(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -1677,7 +1855,7 @@ RF_MATH_API rf_mat rf_mat_rotate_z(float angle)
 }
 
 // Returns scaling matrix
-RF_MATH_API rf_mat rf_mat_scale(float x, float y, float z)
+RF_API rf_mat rf_mat_scale(float x, float y, float z)
 {
     rf_mat result = {x, 0.0f, 0.0f, 0.0f,
                      0.0f, y, 0.0f, 0.0f,
@@ -1689,7 +1867,7 @@ RF_MATH_API rf_mat rf_mat_scale(float x, float y, float z)
 
 // Returns two matrix multiplication
 // NOTE: When multiplying matrices... the order matters!
-RF_MATH_API rf_mat rf_mat_mul(rf_mat left, rf_mat right)
+RF_API rf_mat rf_mat_mul(rf_mat left, rf_mat right)
 {
     rf_mat result = {0};
 
@@ -1714,7 +1892,7 @@ RF_MATH_API rf_mat rf_mat_mul(rf_mat left, rf_mat right)
 }
 
 // Returns perspective GL_PROJECTION matrix
-RF_MATH_API rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val)
+RF_API rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val)
 {
     rf_mat result = {0};
 
@@ -1747,7 +1925,7 @@ RF_MATH_API rf_mat rf_mat_frustum(double left, double right, double bottom, doub
 
 // Returns perspective GL_PROJECTION matrix
 // NOTE: Angle should be provided in radians
-RF_MATH_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val)
+RF_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val)
 {
     double top = near_val * tan(fovy * 0.5);
     double right = top * aspect;
@@ -1757,7 +1935,7 @@ RF_MATH_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_va
 }
 
 // Returns orthographic GL_PROJECTION matrix
-RF_MATH_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val)
+RF_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val)
 {
     rf_mat result = {0};
 
@@ -1786,7 +1964,7 @@ RF_MATH_API rf_mat rf_mat_ortho(double left, double right, double bottom, double
 }
 
 // Returns camera look-at matrix (view matrix)
-RF_MATH_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
+RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
 {
     rf_mat result = {0};
 
@@ -1819,7 +1997,7 @@ RF_MATH_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
     return result;
 }
 
-RF_MATH_API rf_float16 rf_mat_to_float16(rf_mat mat)
+RF_API rf_float16 rf_mat_to_float16(rf_mat mat)
 {
     rf_float16 buffer = {0};
 
@@ -1844,21 +2022,21 @@ RF_MATH_API rf_float16 rf_mat_to_float16(rf_mat mat)
 }
 
 // Returns identity quaternion
-RF_MATH_API rf_quaternion rf_quaternion_identity(void)
+RF_API rf_quaternion rf_quaternion_identity(void)
 {
     rf_quaternion result = {0.0f, 0.0f, 0.0f, 1.0f};
     return result;
 }
 
 // Computes the length of a quaternion
-RF_MATH_API float rf_quaternion_len(rf_quaternion q)
+RF_API float rf_quaternion_len(rf_quaternion q)
 {
     float result = (float) sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
     return result;
 }
 
 // Normalize provided quaternion
-RF_MATH_API rf_quaternion rf_quaternion_normalize(rf_quaternion q)
+RF_API rf_quaternion rf_quaternion_normalize(rf_quaternion q)
 {
     rf_quaternion result = {0};
 
@@ -1876,7 +2054,7 @@ RF_MATH_API rf_quaternion rf_quaternion_normalize(rf_quaternion q)
 }
 
 // Invert provided quaternion
-RF_MATH_API rf_quaternion rf_quaternion_invert(rf_quaternion q)
+RF_API rf_quaternion rf_quaternion_invert(rf_quaternion q)
 {
     rf_quaternion result = q;
     float length = rf_quaternion_len(q);
@@ -1896,7 +2074,7 @@ RF_MATH_API rf_quaternion rf_quaternion_invert(rf_quaternion q)
 }
 
 // Calculate two quaternion multiplication
-RF_MATH_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
+RF_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
 {
     rf_quaternion result = {0};
 
@@ -1912,7 +2090,7 @@ RF_MATH_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
 }
 
 // Calculate linear interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount)
+RF_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = {0};
 
@@ -1925,7 +2103,7 @@ RF_MATH_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2,
 }
 
 // Calculate slerp-optimized interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount)
+RF_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = rf_quaternion_lerp(q1, q2, amount);
     result = rf_quaternion_normalize(result);
@@ -1934,7 +2112,7 @@ RF_MATH_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2
 }
 
 // Calculates spherical linear interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount)
+RF_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = {0};
 
@@ -1969,7 +2147,7 @@ RF_MATH_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2
 }
 
 // Calculate quaternion based on the rotation from one vector to another
-RF_MATH_API rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf_vec3 to)
+RF_API rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf_vec3 to)
 {
     rf_quaternion result = {0};
 
@@ -1991,7 +2169,7 @@ RF_MATH_API rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf
 }
 
 // Returns a quaternion for a given rotation matrix
-RF_MATH_API rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
+RF_API rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
 {
     rf_quaternion result = {0};
 
@@ -2044,7 +2222,7 @@ RF_MATH_API rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
 }
 
 // Returns a matrix for a given quaternion
-RF_MATH_API rf_mat rf_quaternion_to_matrix(rf_quaternion q)
+RF_API rf_mat rf_quaternion_to_matrix(rf_quaternion q)
 {
     rf_mat result = {0};
 
@@ -2091,7 +2269,7 @@ RF_MATH_API rf_mat rf_quaternion_to_matrix(rf_quaternion q)
 
 // Returns rotation quaternion for an angle and axis
 // NOTE: angle must be provided in radians
-RF_MATH_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle)
+RF_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle)
 {
     rf_quaternion result = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -2115,7 +2293,7 @@ RF_MATH_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angl
 }
 
 // Returns the rotation angle and axis for a given quaternion
-RF_MATH_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, float *outAngle)
+RF_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, float *outAngle)
 {
     if (fabs(q.w) > 1.0f) q = rf_quaternion_normalize(q);
 
@@ -2142,7 +2320,7 @@ RF_MATH_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, 
 }
 
 // Returns he quaternion equivalent to Euler angles
-RF_MATH_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw)
+RF_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw)
 {
     rf_quaternion q = {0};
 
@@ -2163,7 +2341,7 @@ RF_MATH_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, floa
 
 // Return the Euler angles equivalent to quaternion (roll, pitch, yaw)
 // NOTE: Angles are returned in a rf_vec3 struct in degrees
-RF_MATH_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q)
+RF_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q)
 {
     rf_vec3 result = {0};
 
@@ -2187,7 +2365,7 @@ RF_MATH_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q)
 }
 
 // rf_transform a quaternion given a transformation matrix
-RF_MATH_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat)
+RF_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat)
 {
     rf_quaternion result = {0};
 
@@ -2615,13 +2793,13 @@ RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground_heig
 // Get texture to draw shapes Note(LucaSas): Do we need this?
 RF_INTERNAL rf_texture2d rf_internal_get_shapes_texture()
 {
-    if (rf_internal_ctx->gfx_ctx.tex_shapes.id == 0)
+    if (rf_internal_ctx->tex_shapes.id == 0)
     {
-        rf_internal_ctx->gfx_ctx.tex_shapes = rf_get_default_texture(); // Use default white texture
-        rf_internal_ctx->gfx_ctx.rec_tex_shapes = (rf_rec) {0.0f, 0.0f, 1.0f, 1.0f };
+        rf_internal_ctx->tex_shapes = rf_get_default_texture(); // Use default white texture
+        rf_internal_ctx->rec_tex_shapes = (rf_rec) {0.0f, 0.0f, 1.0f, 1.0f };
     }
 
-    return rf_internal_ctx->gfx_ctx.tex_shapes;
+    return rf_internal_ctx->tex_shapes;
 }
 
 // Cubic easing in-out. Note: Required for rf_draw_line_bezier()
@@ -2932,7 +3110,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
 
     // TODO: Consider touch inputs for camera
 
-    if (rf_internal_ctx->gfx_ctx.camera_mode != RF_CAMERA_CUSTOM)
+    if (rf_internal_ctx->camera_mode != RF_CAMERA_CUSTOM)
     {
         mouse_position_delta.x = mouse_position.x - previous_mouse_position.x;
         mouse_position_delta.y = mouse_position.y - previous_mouse_position.y;
@@ -2941,58 +3119,58 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
     }
 
     // Support for multiple automatic camera modes
-    switch (rf_internal_ctx->gfx_ctx.camera_mode)
+    switch (rf_internal_ctx->camera_mode)
     {
         case RF_CAMERA_FREE:
         {
             // rf_camera3d zoom
-            if ((rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+            if ((rf_internal_ctx->camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                rf_internal_ctx->camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
 
-                if (rf_internal_ctx->gfx_ctx.camera_target_distance > rf_camera_free_distance_max_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_max_clamp;
+                if (rf_internal_ctx->camera_target_distance > rf_camera_free_distance_max_clamp) rf_internal_ctx->camera_target_distance = rf_camera_free_distance_max_clamp;
             }
                 // rf_camera3d looking down
                 // TODO: Review, weird comparisson of rf_internal_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y > camera->target.y) && (rf_internal_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+            else if ((camera->position.y > camera->target.y) && (rf_internal_ctx->camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y >= 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
 
                 // if (camera->target.y < 0) camera->target.y = -0.001;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y < 0) && (mouse_wheel_move > 0))
             {
-                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
-                if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
+                rf_internal_ctx->camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                if (rf_internal_ctx->camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->camera_target_distance = rf_camera_free_distance_min_clamp;
             }
                 // rf_camera3d looking up
                 // TODO: Review, weird comparisson of rf_internal_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y < camera->target.y) && (rf_internal_ctx->gfx_ctx.camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
+            else if ((camera->position.y < camera->target.y) && (rf_internal_ctx->camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y <= 0))
             {
-                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
-                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->gfx_ctx.camera_target_distance;
+                camera->target.x += mouse_wheel_move*(camera->target.x - camera->position.x)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.y += mouse_wheel_move*(camera->target.y - camera->position.y)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
+                camera->target.z += mouse_wheel_move*(camera->target.z - camera->position.z)*rf_camera_mouse_scroll_sensitivity/rf_internal_ctx->camera_target_distance;
 
                 // if (camera->target.y > 0) camera->target.y = 0.001;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y > 0) && (mouse_wheel_move > 0))
             {
-                rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
-                if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_free_distance_min_clamp;
+                rf_internal_ctx->camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+                if (rf_internal_ctx->camera_target_distance < rf_camera_free_distance_min_clamp) rf_internal_ctx->camera_target_distance = rf_camera_free_distance_min_clamp;
             }
 
             // Input keys checks
@@ -3003,80 +3181,80 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
                     if (szoom_key)
                     {
                         // rf_camera3d smooth zoom
-                        rf_internal_ctx->gfx_ctx.camera_target_distance += (mouse_position_delta.y*rf_camera_free_smooth_zoom_sensitivity);
+                        rf_internal_ctx->camera_target_distance += (mouse_position_delta.y*rf_camera_free_smooth_zoom_sensitivity);
                     }
                     else
                     {
                         // rf_camera3d rotation
-                        rf_internal_ctx->gfx_ctx.camera_angle.x += mouse_position_delta.x*-rf_camera_free_mouse_sensitivity;
-                        rf_internal_ctx->gfx_ctx.camera_angle.y += mouse_position_delta.y*-rf_camera_free_mouse_sensitivity;
+                        rf_internal_ctx->camera_angle.x += mouse_position_delta.x*-rf_camera_free_mouse_sensitivity;
+                        rf_internal_ctx->camera_angle.y += mouse_position_delta.y*-rf_camera_free_mouse_sensitivity;
 
                         // Angle clamp
-                        if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_free_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_free_min_clamp*RF_DEG2RAD;
-                        else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_free_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_free_max_clamp*RF_DEG2RAD;
+                        if (rf_internal_ctx->camera_angle.y > rf_camera_free_min_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_free_min_clamp*RF_DEG2RAD;
+                        else if (rf_internal_ctx->camera_angle.y < rf_camera_free_max_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_free_max_clamp*RF_DEG2RAD;
                     }
                 }
                 else
                 {
                     // rf_camera3d panning
-                    camera->target.x += ((mouse_position_delta.x*-rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
-                    camera->target.y += ((mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
-                    camera->target.z += ((mouse_position_delta.x*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y))*(rf_internal_ctx->gfx_ctx.camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.x += ((mouse_position_delta.x*-rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->camera_angle.x)*sinf(rf_internal_ctx->camera_angle.y))*(rf_internal_ctx->camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.y += ((mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->camera_angle.y))*(rf_internal_ctx->camera_target_distance/rf_camera_free_panning_divider);
+                    camera->target.z += ((mouse_position_delta.x*rf_camera_free_mouse_sensitivity)*sinf(rf_internal_ctx->camera_angle.x) + (mouse_position_delta.y*rf_camera_free_mouse_sensitivity)*cosf(rf_internal_ctx->camera_angle.x)*sinf(rf_internal_ctx->camera_angle.y))*(rf_internal_ctx->camera_target_distance/rf_camera_free_panning_divider);
                 }
             }
 
             // Update camera position with changes
-            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            camera->position.y = ((rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.x;
+            camera->position.y = ((rf_internal_ctx->camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->camera_angle.y)*rf_internal_ctx->camera_target_distance*sinf(rf_internal_ctx->camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.z;
 
         } break;
         case RF_CAMERA_ORBITAL:
         {
-            rf_internal_ctx->gfx_ctx.camera_angle.x += rf_camera_orbital_speed; // rf_camera3d orbit angle
-            rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity); // rf_camera3d zoom
+            rf_internal_ctx->camera_angle.x += rf_camera_orbital_speed; // rf_camera3d orbit angle
+            rf_internal_ctx->camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity); // rf_camera3d zoom
 
             // rf_camera3d distance clamp
-            if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
+            if (rf_internal_ctx->camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->camera_target_distance = rf_camera_third_person_distance_clamp;
 
             // Update camera position with changes
-            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            camera->position.y = ((rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.x;
+            camera->position.y = ((rf_internal_ctx->camera_angle.y <= 0.0f)? 1 : -1)*sinf(rf_internal_ctx->camera_angle.y)*rf_internal_ctx->camera_target_distance*sinf(rf_internal_ctx->camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.z;
 
         } break;
         case RF_CAMERA_FIRST_PERSON:
         {
-            camera->position.x += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.x += (sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_back] -
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_front] -
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_left] +
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
-            camera->position.y += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
+            camera->position.y += (sinf(rf_internal_ctx->camera_angle.y)*direction[rf_move_front] -
+                                   sinf(rf_internal_ctx->camera_angle.y)*direction[rf_move_back] +
                                    1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down])/rf_player_movement_sensitivity;
 
-            camera->position.z += (cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.z += (cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_back] -
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_front] +
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_left] -
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
             bool is_moving = false; // Required for swinging
 
             for (int i = 0; i < 6; i++) if (direction[i]) { is_moving = true; break; }
 
             // rf_camera3d orientation calculation
-            rf_internal_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
-            rf_internal_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_first_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_min_clamp*RF_DEG2RAD;
-            else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_first_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_first_person_max_clamp*RF_DEG2RAD;
+            if (rf_internal_ctx->camera_angle.y > rf_camera_first_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_first_person_min_clamp*RF_DEG2RAD;
+            else if (rf_internal_ctx->camera_angle.y < rf_camera_first_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_first_person_max_clamp*RF_DEG2RAD;
 
             // rf_camera3d is always looking at player
-            camera->target.x = camera->position.x - sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
-            camera->target.y = camera->position.y + sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_camera_first_person_focus_distance;
-            camera->target.z = camera->position.z - cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_camera_first_person_focus_distance;
+            camera->target.x = camera->position.x - sinf(rf_internal_ctx->camera_angle.x)*rf_camera_first_person_focus_distance;
+            camera->target.y = camera->position.y + sinf(rf_internal_ctx->camera_angle.y)*rf_camera_first_person_focus_distance;
+            camera->target.z = camera->position.z - cosf(rf_internal_ctx->camera_angle.x)*rf_camera_first_person_focus_distance;
 
             if (is_moving) swing_counter++;
 
@@ -3091,39 +3269,39 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
         } break;
         case RF_CAMERA_THIRD_PERSON:
         {
-            camera->position.x += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] -
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] +
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.x += (sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_back] -
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_front] -
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_left] +
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
-            camera->position.y += (sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_front] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*direction[rf_move_back] +
+            camera->position.y += (sinf(rf_internal_ctx->camera_angle.y)*direction[rf_move_front] -
+                                   sinf(rf_internal_ctx->camera_angle.y)*direction[rf_move_back] +
                                    1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down])/rf_player_movement_sensitivity;
 
-            camera->position.z += (cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_back] -
-                                   cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_front] +
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_left] -
-                                   sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
+            camera->position.z += (cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_back] -
+                                   cosf(rf_internal_ctx->camera_angle.x)*direction[rf_move_front] +
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_left] -
+                                   sinf(rf_internal_ctx->camera_angle.x)*direction[rf_move_right])/rf_player_movement_sensitivity;
 
             // rf_camera3d orientation calculation
-            rf_internal_ctx->gfx_ctx.camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
-            rf_internal_ctx->gfx_ctx.camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            rf_internal_ctx->camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (rf_internal_ctx->gfx_ctx.camera_angle.y > rf_camera_third_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_min_clamp*RF_DEG2RAD;
-            else if (rf_internal_ctx->gfx_ctx.camera_angle.y < rf_camera_third_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->gfx_ctx.camera_angle.y = rf_camera_third_person_max_clamp*RF_DEG2RAD;
+            if (rf_internal_ctx->camera_angle.y > rf_camera_third_person_min_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_third_person_min_clamp*RF_DEG2RAD;
+            else if (rf_internal_ctx->camera_angle.y < rf_camera_third_person_max_clamp*RF_DEG2RAD) rf_internal_ctx->camera_angle.y = rf_camera_third_person_max_clamp*RF_DEG2RAD;
 
             // rf_camera3d zoom
-            rf_internal_ctx->gfx_ctx.camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
+            rf_internal_ctx->camera_target_distance -= (mouse_wheel_move*rf_camera_mouse_scroll_sensitivity);
 
             // rf_camera3d distance clamp
-            if (rf_internal_ctx->gfx_ctx.camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->gfx_ctx.camera_target_distance = rf_camera_third_person_distance_clamp;
+            if (rf_internal_ctx->camera_target_distance < rf_camera_third_person_distance_clamp) rf_internal_ctx->camera_target_distance = rf_camera_third_person_distance_clamp;
 
             // TODO: It seems camera->position is not correctly updated or some rounding issue makes the camera move straight to camera->target...
-            camera->position.x = sinf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.x;
-            if (rf_internal_ctx->gfx_ctx.camera_angle.y <= 0.0f) camera->position.y = sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            else camera->position.y = -sinf(rf_internal_ctx->gfx_ctx.camera_angle.y)*rf_internal_ctx->gfx_ctx.camera_target_distance*sinf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.y;
-            camera->position.z = cosf(rf_internal_ctx->gfx_ctx.camera_angle.x)*rf_internal_ctx->gfx_ctx.camera_target_distance*cosf(rf_internal_ctx->gfx_ctx.camera_angle.y) + camera->target.z;
+            camera->position.x = sinf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.x;
+            if (rf_internal_ctx->camera_angle.y <= 0.0f) camera->position.y = sinf(rf_internal_ctx->camera_angle.y)*rf_internal_ctx->camera_target_distance*sinf(rf_internal_ctx->camera_angle.y) + camera->target.y;
+            else camera->position.y = -sinf(rf_internal_ctx->camera_angle.y)*rf_internal_ctx->camera_target_distance*sinf(rf_internal_ctx->camera_angle.y) + camera->target.y;
+            camera->position.z = cosf(rf_internal_ctx->camera_angle.x)*rf_internal_ctx->camera_target_distance*cosf(rf_internal_ctx->camera_angle.y) + camera->target.z;
 
         } break;
         default: break;
@@ -3189,16 +3367,16 @@ RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
     rf_gfx_normal3f(0.0f, 0.0f, 1.0f);
 
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(0.0f, 0.0f);
 
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(0.0f, thick);
 
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(d, thick);
 
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(d, 0.0f);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -3584,16 +3762,16 @@ RF_API void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf
     rf_gfx_normal3f(0.0f, 0.0f, 1.0f);
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(0.0f, 0.0f);
 
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(0.0f, rec.height);
 
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.width, rec.height);
 
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.width, 0.0f);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -3627,19 +3805,19 @@ RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2,
 
     // NOTE: Default raylib font character 95 is a white square
     rf_gfx_color4ub(col1.r, col1.g, col1.b, col1.a);
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.x, rec.y);
 
     rf_gfx_color4ub(col2.r, col2.g, col2.b, col2.a);
-    rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.x, rec.y + rec.height);
 
     rf_gfx_color4ub(col3.r, col3.g, col3.b, col3.a);
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.x + rec.width, rec.y + rec.height);
 
     rf_gfx_color4ub(col4.r, col4.g, col4.b, col4.a);
-    rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+    rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
     rf_gfx_vertex2f(rec.x + rec.width, rec.y);
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -4002,16 +4180,16 @@ RF_API void rf_draw_triangle_fan(rf_vec2 *points, int points_count, rf_color col
 
         for (int i = 1; i < points_count - 1; i++)
         {
-            rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
             rf_gfx_vertex2f(points[0].x, points[0].y);
 
-            rf_gfx_tex_coord2f(rf_internal_ctx->gfx_ctx.rec_tex_shapes.x/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f(rf_internal_ctx->rec_tex_shapes.x/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
             rf_gfx_vertex2f(points[i].x, points[i].y);
 
-            rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, (rf_internal_ctx->gfx_ctx.rec_tex_shapes.y + rf_internal_ctx->gfx_ctx.rec_tex_shapes.height)/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, (rf_internal_ctx->rec_tex_shapes.y + rf_internal_ctx->rec_tex_shapes.height)/rf_internal_ctx->tex_shapes.height);
             rf_gfx_vertex2f(points[i + 1].x, points[i + 1].y);
 
-            rf_gfx_tex_coord2f((rf_internal_ctx->gfx_ctx.rec_tex_shapes.x + rf_internal_ctx->gfx_ctx.rec_tex_shapes.width)/rf_internal_ctx->gfx_ctx.tex_shapes.width, rf_internal_ctx->gfx_ctx.rec_tex_shapes.y/rf_internal_ctx->gfx_ctx.tex_shapes.height);
+            rf_gfx_tex_coord2f((rf_internal_ctx->rec_tex_shapes.x + rf_internal_ctx->rec_tex_shapes.width)/rf_internal_ctx->tex_shapes.width, rf_internal_ctx->rec_tex_shapes.y/rf_internal_ctx->tex_shapes.height);
             rf_gfx_vertex2f(points[i + 1].x, points[i + 1].y);
         }
         rf_gfx_end();
@@ -5561,11 +5739,11 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
         if (image_file_buffer != NULL) //Todo(LucaSas): Better error handling here, check if the file was read correctly
         {
             // NOTE: Using stb_image to load images (Supports multiple image formats)
-            RF_STBI_SET_ALLOCATOR(&allocator);
+            RF_SET_STBI_ALLOCATOR(&allocator);
             {
                 image.data = stbi_load_from_memory(image_file_buffer, file_size, &img_width, &img_height, &img_bpp, 0);
             }
-            RF_STBI_SET_ALLOCATOR(NULL);
+            RF_SET_STBI_ALLOCATOR(NULL);
 
             image.width     = img_width;
             image.height    = img_height;
@@ -5592,7 +5770,7 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
 }
 
 // Load image from file data into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_data(void* data, int data_size, rf_allocator allocator)
+RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator)
 {
     if (data == NULL || data_size == 0) return (rf_image) { 0 };
 
@@ -5602,11 +5780,11 @@ RF_API rf_image rf_load_image_from_data(void* data, int data_size, rf_allocator 
     rf_image image = { 0 };
 
     // NOTE: Using stb_image to load images (Supports multiple image formats)
-    RF_STBI_SET_ALLOCATOR(&allocator);
+    RF_SET_STBI_ALLOCATOR(&allocator);
     {
         image.data = stbi_load_from_memory(data, data_size, &img_width, &img_height, &img_bpp, 0);
     }
-    RF_STBI_SET_ALLOCATOR(NULL);
+    RF_SET_STBI_ALLOCATOR(NULL);
 
     image.width     = img_width;
     image.height    = img_height;
@@ -5654,7 +5832,7 @@ RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int heigh
 }
 
 // Load image from raw data with parameters
-RF_API rf_image rf_load_image_from_data_with_params(void* data, int data_size, int width, int height, int format, rf_allocator allocator)
+RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_size, int width, int height, int format, rf_allocator allocator)
 {
     rf_image src_image = { 0 };
 
@@ -5673,6 +5851,71 @@ RF_API rf_image rf_load_image_from_data_with_params(void* data, int data_size, i
 RF_API void rf_unload_image(rf_image image)
 {
     RF_FREE(image.allocator, image.data);
+}
+//endregion
+
+//region gif
+RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_gif result = (rf_gif) {};
+
+    int file_size = io.get_file_size_proc(filename);
+    unsigned char* buffer = RF_ALLOC(temp_allocator, file_size);
+
+    if (io.read_file_into_buffer_proc(filename, buffer, file_size))
+    {
+        result = rf_load_animated_gif(buffer, file_size, allocator, temp_allocator);
+    }
+
+    RF_FREE(temp_allocator, buffer);
+
+    return result;
+}
+
+RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_gif gif = { 0 };
+
+    int comp = 0;
+
+    RF_SET_STBI_ALLOCATOR(&allocator);
+    {
+        gif.data      = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &comp, 4);
+        gif.allocator = allocator;
+    }
+    RF_SET_STBI_ALLOCATOR(NULL);
+
+    gif.mipmaps = 1;
+    gif.format  = RF_UNCOMPRESSED_R8G8B8A8;
+
+    return gif;
+}
+
+RF_API rf_sizei rf_gif_frame_size(rf_gif gif)
+{
+    return (rf_sizei) { gif.width / gif.frames_count, gif.height / gif.frames_count };
+}
+
+// Returns an image pointing to the frame in the gif
+RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame)
+{
+    rf_sizei size = rf_gif_frame_size(gif);
+
+    return (rf_image)
+    {
+        .data      = ((unsigned char*)gif.data) + rf_get_buffer_size_for_pixel_format(size.width, size.height, gif.format) * frame,
+        .width     = size.width,
+        .height    = size.height,
+        .mipmaps   = 1,
+        .format    = gif.format,
+        .allocator = RF_NULL_ALLOCATOR
+    };
+}
+
+RF_API void rf_unload_gif(rf_gif gif)
+{
+    RF_FREE(gif.allocator, gif.frame_delays);
+    rf_unload_image(gif.image);
 }
 //endregion
 
@@ -8375,7 +8618,7 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 
     if (rf_internal_is_file_extension(filename, ".gltf") || rf_internal_is_file_extension(filename, ".glb"))
     {
-        //model = rf_load_gltf(filename);
+        model = rf_load_model_from_gltf(filename, allocator, temp_allocator, io);
     }
 
     // Make sure model transform is set to identity matrix!
@@ -8394,7 +8637,10 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
     else
     {
         // Upload vertex data to GPU (static mesh)
-        for (int i = 0; i < model.mesh_count; i++) rf_gfx_load_mesh(&model.meshes[i], false);
+        for (int i = 0; i < model.mesh_count; i++)
+        {
+            rf_gfx_load_mesh(&model.meshes[i], false);
+        }
     }
 
     if (model.material_count == 0)
@@ -8406,7 +8652,10 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
         memset(model.materials, 0, model.material_count * sizeof(rf_material));
         model.materials[0] = rf_load_default_material(allocator);
 
-        if (model.mesh_material == NULL) model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+        if (model.mesh_material == NULL)
+        {
+            model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+        }
     }
 
     return model;
@@ -8939,6 +9188,324 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     return rf_internal_load_meshes_and_materials_for_model(model, temp_allocator);
 }
 
+// Load texture from cgltf_image
+RF_INTERNAL rf_texture2d rf_internal_load_texture_from_cgltf_image(cgltf_image* image, const char* tex_path, rf_color tint, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_texture2d texture = { 0 };
+
+    if (image->uri)
+    {
+        if ((strlen(image->uri) > 5) &&
+            (image->uri[0] == 'd') &&
+            (image->uri[1] == 'a') &&
+            (image->uri[2] == 't') &&
+            (image->uri[3] == 'a') &&
+            (image->uri[4] == ':'))
+        {
+            // Data URI
+            // Format: data:<mediatype>;base64,<data>
+
+            // Find the comma
+            int i = 0;
+            while ((image->uri[i] != ',') && (image->uri[i] != 0)) i++;
+
+            if (image->uri[i] == 0) RF_LOG(RF_LOG_WARNING, "CGLTF rf_image: Invalid data URI");
+            else
+            {
+                rf_base64_output data = rf_decode_base64((const unsigned char*)image->uri + i + 1, temp_allocator);
+
+                RF_SET_STBI_ALLOCATOR(&temp_allocator);
+                int w, h;
+                unsigned char* raw = stbi_load_from_memory(data.buffer, data.size, &w, &h, NULL, 4);
+                RF_SET_STBI_ALLOCATOR(NULL);
+
+                rf_image rimage = {
+                    .data      = raw,
+                    .width     = w,
+                    .height    = h,
+                    .mipmaps   = 1,
+                    .format    = RF_UNCOMPRESSED_R8G8B8A8,
+                    .allocator = temp_allocator
+                };
+
+                // TODO: Tint shouldn't be applied here!
+                rf_image_color_tint(&rimage, tint, temp_allocator);
+
+                texture = rf_load_texture_from_image(rimage);
+
+                rf_unload_image(rimage);
+                rf_unload_base64_output(data);
+            }
+        }
+        else
+        {
+            char buff[1024];
+            snprintf(buff, 1024, "%s/%s", tex_path, image->uri);
+            rf_image rimage = rf_load_image_from_file(buff, temp_allocator, temp_allocator, io);
+
+            // TODO: Tint shouldn't be applied here!
+            rf_image_color_tint(&rimage, tint, temp_allocator);
+
+            texture = rf_load_texture_from_image(rimage);
+
+            rf_unload_image(rimage);
+        }
+    }
+    else if (image->buffer_view)
+    {
+        unsigned char* data = (unsigned char*) RF_ALLOC(temp_allocator, image->buffer_view->size);
+        int n = image->buffer_view->offset;
+        int stride = image->buffer_view->stride ? image->buffer_view->stride : 1;
+
+        for (int i = 0; i < image->buffer_view->size; i++)
+        {
+            data[i] = ((unsigned char* )image->buffer_view->buffer->data)[n];
+            n += stride;
+        }
+
+        int w, h;
+        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        unsigned char* raw = stbi_load_from_memory(data, image->buffer_view->size, &w, &h, NULL, 4);
+        RF_SET_STBI_ALLOCATOR(NULL);
+
+        rf_image rimage = {
+            .data      = raw,
+            .width     = w,
+            .height    = h,
+            .mipmaps   = 1,
+            .format    = RF_UNCOMPRESSED_R8G8B8A8,
+            .allocator = temp_allocator
+        };
+
+        // TODO: Tint shouldn't be applied here!
+        rf_image_color_tint(&rimage, tint, temp_allocator);
+
+        texture = rf_load_texture_from_image(rimage);
+
+        rf_unload_image(rimage);
+        RF_FREE(temp_allocator, data);
+        RF_FREE(temp_allocator, raw);
+    }
+    else
+    {
+        rf_image rimage = rf_load_image_from_pixels(&tint, 1, 1, temp_allocator);
+        texture = rf_load_texture_from_image(rimage);
+        rf_unload_image(rimage);
+    }
+
+    return texture;
+}
+
+// Load model from files (meshes and materials)
+RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    #define rf_load_accessor(type, nbcomp, acc, dst)\
+    { \
+        int n = 0;\
+        type* buf = (type*)acc->buffer_view->buffer->data+acc->buffer_view->offset/sizeof(type)+acc->offset/sizeof(type);\
+        for (int k = 0; k < acc->count; k++) {\
+            for (int l = 0; l < nbcomp; l++) {\
+                dst[nbcomp*k+l] = buf[n+l];\
+            }\
+            n += acc->stride/sizeof(type);\
+        }\
+    }
+
+    RF_SET_CGLTF_ALLOCATOR(&temp_allocator);
+    rf_model model = { 0 };
+    
+    cgltf_options options = {
+        cgltf_file_type_invalid,
+        .file = {
+            .read = &rf_internal_cgltf_io_read,
+            .release = &rf_internal_cgltf_io_release,
+            .user_data = &io
+        }
+    };
+    
+    int data_size = io.get_file_size_proc(filename);
+    void* data = RF_ALLOC(temp_allocator, data_size);
+    if (!io.read_file_into_buffer_proc(filename, data, data_size))
+    {
+        RF_FREE(temp_allocator, data);
+        RF_SET_CGLTF_ALLOCATOR(&temp_allocator);
+        return model;    
+    }
+    
+    cgltf_data* cgltf_data = NULL;
+    cgltf_result result = cgltf_parse(&options, data, data_size, &cgltf_data);
+
+    if (result == cgltf_result_success)
+    {
+        RF_LOG_V(RF_LOG_INFO, "[%s][%s] rf_model meshes/materials: %i/%i", filename, (cgltf_data->file_type == 2) ? "glb" : "gltf", cgltf_data->meshes_count, cgltf_data->materials_count);
+
+        // Read cgltf_data buffers
+        result = cgltf_load_buffers(&options, cgltf_data, filename);
+        if (result != cgltf_result_success) RF_LOG_V(RF_LOG_INFO, "[%s][%s] Error loading mesh/material buffers", file_name, (cgltf_data->file_type == 2) ? "glb" : "gltf");
+
+        int primitivesCount = 0;
+
+        for (int i = 0; i < cgltf_data->meshes_count; i++) primitivesCount += (int)cgltf_data->meshes[i].primitives_count;
+
+        // Process glTF cgltf_data and map to model
+        model.allocator = allocator;
+        model.mesh_count = primitivesCount;
+        model.material_count = cgltf_data->materials_count + 1;
+        model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+        model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+        model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+
+        memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
+
+        for (int i = 0; i < model.mesh_count; i++)
+        {
+            model.meshes[i].vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+            model.meshes[i].allocator = allocator;
+            memset(model.meshes[i].vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+        }
+
+        //For each material
+        for (int i = 0; i < model.material_count - 1; i++)
+        {
+            model.materials[i] = rf_load_default_material(allocator);
+            rf_color tint = (rf_color){ 255, 255, 255, 255 };
+            const char* tex_path = rf_internal_get_directory_path(filename);
+
+            //Ensure material follows raylib support for PBR (metallic/roughness flow)
+            if (cgltf_data->materials[i].has_pbr_metallic_roughness)
+            {
+                float roughness = cgltf_data->materials[i].pbr_metallic_roughness.roughness_factor;
+                float metallic = cgltf_data->materials[i].pbr_metallic_roughness.metallic_factor;
+
+                // NOTE: rf_material name not used for the moment
+                //if (model.materials[i].name && cgltf_data->materials[i].name) strcpy(model.materials[i].name, cgltf_data->materials[i].name);
+
+                // TODO: REview: shouldn't these be *255 ???
+                tint.r = (unsigned char)(cgltf_data->materials[i].pbr_metallic_roughness.base_color_factor[0] * 255);
+                tint.g = (unsigned char)(cgltf_data->materials[i].pbr_metallic_roughness.base_color_factor[1] * 255);
+                tint.b = (unsigned char)(cgltf_data->materials[i].pbr_metallic_roughness.base_color_factor[2] * 255);
+                tint.a = (unsigned char)(cgltf_data->materials[i].pbr_metallic_roughness.base_color_factor[3] * 255);
+
+                model.materials[i].maps[RF_MAP_ROUGHNESS].color = tint;
+
+                if (cgltf_data->materials[i].pbr_metallic_roughness.base_color_texture.texture)
+                {
+                    model.materials[i].maps[RF_MAP_ALBEDO].texture = rf_internal_load_texture_from_cgltf_image(cgltf_data->materials[i].pbr_metallic_roughness.base_color_texture.texture->image, tex_path, tint, temp_allocator, io);
+                }
+
+                // NOTE: Tint isn't need for other textures.. pass null or clear?
+                // Just set as white, multiplying by white has no effect
+                tint = RF_WHITE;
+
+                if (cgltf_data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture)
+                {
+                    model.materials[i].maps[RF_MAP_ROUGHNESS].texture = rf_internal_load_texture_from_cgltf_image(cgltf_data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture->image, tex_path, tint, temp_allocator, io);
+                }
+                model.materials[i].maps[RF_MAP_ROUGHNESS].value = roughness;
+                model.materials[i].maps[RF_MAP_METALNESS].value = metallic;
+
+                if (cgltf_data->materials[i].normal_texture.texture)
+                {
+                    model.materials[i].maps[RF_MAP_NORMAL].texture = rf_internal_load_texture_from_cgltf_image(cgltf_data->materials[i].normal_texture.texture->image, tex_path, tint, temp_allocator, io);
+                }
+
+                if (cgltf_data->materials[i].occlusion_texture.texture)
+                {
+                    model.materials[i].maps[RF_MAP_OCCLUSION].texture = rf_internal_load_texture_from_cgltf_image(cgltf_data->materials[i].occlusion_texture.texture->image, tex_path, tint, temp_allocator, io);
+                }
+            }
+        }
+
+        model.materials[model.material_count - 1] = rf_load_default_material(allocator);
+
+        int primitiveIndex = 0;
+
+        for (int i = 0; i < cgltf_data->meshes_count; i++)
+        {
+            for (int p = 0; p < cgltf_data->meshes[i].primitives_count; p++)
+            {
+                for (int j = 0; j < cgltf_data->meshes[i].primitives[p].attributes_count; j++)
+                {
+                    if (cgltf_data->meshes[i].primitives[p].attributes[j].type == cgltf_attribute_type_position)
+                    {
+                        cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].attributes[j].data;
+                        model.meshes[primitiveIndex].vertex_count = acc->count;
+                        model.meshes[primitiveIndex].vertices = (float*) RF_ALLOC(model.meshes[primitiveIndex].allocator, sizeof(float)*model.meshes[primitiveIndex].vertex_count * 3);
+
+                        rf_load_accessor(float, 3, acc, model.meshes[primitiveIndex].vertices)
+                    }
+                    else if (cgltf_data->meshes[i].primitives[p].attributes[j].type == cgltf_attribute_type_normal)
+                    {
+                        cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].attributes[j].data;
+                        model.meshes[primitiveIndex].normals = (float*) RF_ALLOC(model.meshes[primitiveIndex].allocator, sizeof(float)*acc->count * 3);
+
+                        rf_load_accessor(float, 3, acc, model.meshes[primitiveIndex].normals)
+                    }
+                    else if (cgltf_data->meshes[i].primitives[p].attributes[j].type == cgltf_attribute_type_texcoord)
+                    {
+                        cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].attributes[j].data;
+
+                        if (acc->component_type == cgltf_component_type_r_32f)
+                        {
+                            model.meshes[primitiveIndex].texcoords = (float*) RF_ALLOC(model.meshes[primitiveIndex].allocator, sizeof(float)*acc->count * 2);
+                            rf_load_accessor(float, 2, acc, model.meshes[primitiveIndex].texcoords)
+                        }
+                        else
+                        {
+                            // TODO: Support normalized unsigned unsigned char/unsigned short texture coordinates
+                            RF_LOG_V(RF_LOG_WARNING, "[%s] rf_texture coordinates must be float", filename);
+                        }
+                    }
+                }
+
+                cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].indices;
+
+                if (acc)
+                {
+                    if (acc->component_type == cgltf_component_type_r_16u)
+                    {
+                        model.meshes[primitiveIndex].triangle_count = acc->count/3;
+                        model.meshes[primitiveIndex].indices = (unsigned short*) RF_ALLOC(model.meshes[primitiveIndex].allocator, sizeof(unsigned short)*model.meshes[primitiveIndex].triangle_count * 3);
+                        rf_load_accessor(unsigned short, 1, acc, model.meshes[primitiveIndex].indices)
+                    }
+                    else
+                    {
+                        // TODO: Support unsigned unsigned char/unsigned int
+                        RF_LOG_V(RF_LOG_WARNING, "[%s] Indices must be unsigned short", filename);
+                    }
+                }
+                else
+                {
+                    // Unindexed mesh
+                    model.meshes[primitiveIndex].triangle_count = model.meshes[primitiveIndex].vertex_count/3;
+                }
+
+                if (cgltf_data->meshes[i].primitives[p].material)
+                {
+                    // Compute the offset
+                    model.mesh_material[primitiveIndex] = cgltf_data->meshes[i].primitives[p].material - cgltf_data->materials;
+                }
+                else
+                {
+                    model.mesh_material[primitiveIndex] = model.material_count - 1;
+                }
+
+                primitiveIndex++;
+            }
+        }
+
+        cgltf_free(cgltf_data);
+    }
+    else
+    {
+        RF_LOG_V(RF_LOG_WARNING, "[%s] glTF cgltf_data could not be loaded", file_name);
+    }
+
+    RF_SET_CGLTF_ALLOCATOR(NULL);
+
+    return model;
+}
+
 // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
 RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator)
 {
@@ -9041,6 +9608,332 @@ RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int materia
 
 // Generated cuboid mesh
 
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    int size = io.get_file_size_proc(filename);
+    void* data = RF_ALLOC(temp_allocator, size);
+    
+    rf_model_animation_array result = rf_load_model_animations_from_iqm(data, size, allocator, temp_allocator);
+    
+    RF_FREE(temp_allocator, data);
+    
+    return result;
+}
+
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    if (!data || !data_size) return (rf_model_animation_array) {};
+
+    #define RF_IQM_MAGIC "INTERQUAKEMODEL" // IQM file magic number
+    #define RF_IQM_VERSION 2 // only IQM version 2 supported
+
+    typedef struct rf_iqm_header rf_iqm_header;
+    struct rf_iqm_header
+    {
+        char magic[16];
+        unsigned int version;
+        unsigned int filesize;
+        unsigned int flags;
+        unsigned int num_text, ofs_text;
+        unsigned int num_meshes, ofs_meshes;
+        unsigned int num_vertexarrays, num_vertexes, ofs_vertexarrays;
+        unsigned int num_triangles, ofs_triangles, ofs_adjacency;
+        unsigned int num_joints, ofs_joints;
+        unsigned int num_poses, ofs_poses;
+        unsigned int num_anims, ofs_anims;
+        unsigned int num_frames, num_framechannels, ofs_frames, ofs_bounds;
+        unsigned int num_comment, ofs_comment;
+        unsigned int num_extensions, ofs_extensions;
+    };
+
+    typedef struct rf_iqm_pose rf_iqm_pose;
+    struct rf_iqm_pose
+    {
+        int parent;
+        unsigned int mask;
+        float channeloffset[10];
+        float channelscale[10];
+    };
+
+    typedef struct rf_iqm_anim rf_iqm_anim;
+    struct rf_iqm_anim
+    {
+        unsigned int name;
+        unsigned int first_frame, num_frames;
+        float framerate;
+        unsigned int flags;
+    };
+
+    rf_iqm_header iqm;
+
+    // Read IQM header
+    memcpy(&iqm, data, sizeof(rf_iqm_header));
+
+    if (strncmp(iqm.magic, RF_IQM_MAGIC, sizeof(RF_IQM_MAGIC)))
+    {
+        RF_LOG_V(RF_LOG_ERROR, "Magic Number \"%s\"does not match.", iqm.magic);
+
+        return (rf_model_animation_array){};
+    }
+
+    if (iqm.version != RF_IQM_VERSION)
+    {
+        RF_LOG_V(RF_LOG_ERROR, "IQM version %i is incorrect.", iqm.version);
+
+        return (rf_model_animation_array){};
+    }
+
+    rf_model_animation_array result = {
+        .anims_count = iqm.num_anims,
+        .allocator = allocator
+    };
+
+    // Get bones data
+    rf_iqm_pose* poses = (rf_iqm_pose*) RF_ALLOC(temp_allocator, iqm.num_poses * sizeof(rf_iqm_pose));
+    memcpy(poses, data + iqm.ofs_poses, iqm.num_poses * sizeof(rf_iqm_pose));
+
+    // Get animations data
+    rf_iqm_anim* anim = (rf_iqm_anim*) RF_ALLOC(temp_allocator, iqm.num_anims * sizeof(rf_iqm_anim));
+    memcpy(anim, data + iqm.ofs_anims, iqm.num_anims * sizeof(rf_iqm_anim));
+
+    rf_model_animation* animations = (rf_model_animation*) RF_ALLOC(allocator, iqm.num_anims * sizeof(rf_model_animation));
+
+    result.anims       = animations;
+    result.anims_count = iqm.num_anims;
+
+    // frameposes
+    unsigned short* framedata = (unsigned short*) RF_ALLOC(temp_allocator, iqm.num_frames * iqm.num_framechannels * sizeof(unsigned short));
+    memcpy(framedata, data + iqm.ofs_frames, iqm.num_frames*iqm.num_framechannels * sizeof(unsigned short));
+
+    for (int a = 0; a < iqm.num_anims; a++)
+    {
+        animations[a].frame_count = anim[a].num_frames;
+        animations[a].bone_count  = iqm.num_poses;
+        animations[a].bones       = (rf_bone_info*) RF_ALLOC(allocator, iqm.num_poses * sizeof(rf_bone_info));
+        animations[a].frame_poses = (rf_transform**) RF_ALLOC(allocator, anim[a].num_frames * sizeof(rf_transform*));
+        animations[a].allocator   = allocator;
+        //animations[a].framerate = anim.framerate;     // TODO: Use framerate?
+
+        for (int j = 0; j < iqm.num_poses; j++)
+        {
+            strcpy(animations[a].bones[j].name, "ANIMJOINTNAME");
+            animations[a].bones[j].parent = poses[j].parent;
+        }
+
+        for (int j = 0; j < anim[a].num_frames; j++)
+        {
+            animations[a].frame_poses[j] = (rf_transform*) RF_ALLOC(allocator, iqm.num_poses * sizeof(rf_transform));
+        }
+
+        int dcounter = anim[a].first_frame*iqm.num_framechannels;
+
+        for (int frame = 0; frame < anim[a].num_frames; frame++)
+        {
+            for (int i = 0; i < iqm.num_poses; i++)
+            {
+                animations[a].frame_poses[frame][i].translation.x = poses[i].channeloffset[0];
+
+                if (poses[i].mask & 0x01)
+                {
+                    animations[a].frame_poses[frame][i].translation.x += framedata[dcounter]*poses[i].channelscale[0];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].translation.y = poses[i].channeloffset[1];
+
+                if (poses[i].mask & 0x02)
+                {
+                    animations[a].frame_poses[frame][i].translation.y += framedata[dcounter]*poses[i].channelscale[1];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].translation.z = poses[i].channeloffset[2];
+
+                if (poses[i].mask & 0x04)
+                {
+                    animations[a].frame_poses[frame][i].translation.z += framedata[dcounter]*poses[i].channelscale[2];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].rotation.x = poses[i].channeloffset[3];
+
+                if (poses[i].mask & 0x08)
+                {
+                    animations[a].frame_poses[frame][i].rotation.x += framedata[dcounter]*poses[i].channelscale[3];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].rotation.y = poses[i].channeloffset[4];
+
+                if (poses[i].mask & 0x10)
+                {
+                    animations[a].frame_poses[frame][i].rotation.y += framedata[dcounter]*poses[i].channelscale[4];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].rotation.z = poses[i].channeloffset[5];
+
+                if (poses[i].mask & 0x20)
+                {
+                    animations[a].frame_poses[frame][i].rotation.z += framedata[dcounter]*poses[i].channelscale[5];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].rotation.w = poses[i].channeloffset[6];
+
+                if (poses[i].mask & 0x40)
+                {
+                    animations[a].frame_poses[frame][i].rotation.w += framedata[dcounter]*poses[i].channelscale[6];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].scale.x = poses[i].channeloffset[7];
+
+                if (poses[i].mask & 0x80)
+                {
+                    animations[a].frame_poses[frame][i].scale.x += framedata[dcounter]*poses[i].channelscale[7];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].scale.y = poses[i].channeloffset[8];
+
+                if (poses[i].mask & 0x100)
+                {
+                    animations[a].frame_poses[frame][i].scale.y += framedata[dcounter]*poses[i].channelscale[8];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].scale.z = poses[i].channeloffset[9];
+
+                if (poses[i].mask & 0x200)
+                {
+                    animations[a].frame_poses[frame][i].scale.z += framedata[dcounter]*poses[i].channelscale[9];
+                    dcounter++;
+                }
+
+                animations[a].frame_poses[frame][i].rotation = rf_quaternion_normalize(animations[a].frame_poses[frame][i].rotation);
+            }
+        }
+
+        // Build frameposes
+        for (int frame = 0; frame < anim[a].num_frames; frame++)
+        {
+            for (int i = 0; i < animations[a].bone_count; i++)
+            {
+                if (animations[a].bones[i].parent >= 0)
+                {
+                    animations[a].frame_poses[frame][i].rotation    = rf_quaternion_mul(animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation, animations[a].frame_poses[frame][i].rotation);
+                    animations[a].frame_poses[frame][i].translation = rf_vec3_rotate_by_quaternion(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].rotation);
+                    animations[a].frame_poses[frame][i].translation = rf_vec3_add(animations[a].frame_poses[frame][i].translation, animations[a].frame_poses[frame][animations[a].bones[i].parent].translation);
+                    animations[a].frame_poses[frame][i].scale       = rf_vec3_mul_v(animations[a].frame_poses[frame][i].scale, animations[a].frame_poses[frame][animations[a].bones[i].parent].scale);
+                }
+            }
+        }
+    }
+
+    RF_FREE(temp_allocator, framedata);
+    RF_FREE(temp_allocator, poses);
+    RF_FREE(temp_allocator, anim);
+
+    return result;
+}
+
+// Update model animated vertex data (positions and normals) for a given frame
+RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, int frame)
+{
+    if ((anim.frame_count > 0) && (anim.bones != NULL) && (anim.frame_poses != NULL))
+    {
+        return;
+    }
+    
+    if (frame >= anim.frame_count) 
+    {
+        frame = frame%anim.frame_count;
+    }
+
+    for (int m = 0; m < model.mesh_count; m++)
+    {
+        rf_vec3 anim_vertex = { 0 };
+        rf_vec3 anim_normal = { 0 };
+
+        rf_vec3 in_translation = { 0 };
+        rf_quaternion in_rotation = { 0 };
+        rf_vec3 in_scale = { 0 };
+
+        rf_vec3 out_translation = { 0 };
+        rf_quaternion out_rotation = { 0 };
+        rf_vec3 out_scale = { 0 };
+
+        int vertex_pos_counter = 0;
+        int bone_counter = 0;
+        int bone_id = 0;
+
+        for (int i = 0; i < model.meshes[m].vertex_count; i++)
+        {
+            bone_id = model.meshes[m].bone_ids[bone_counter];
+            in_translation = model.bind_pose[bone_id].translation;
+            in_rotation = model.bind_pose[bone_id].rotation;
+            in_scale = model.bind_pose[bone_id].scale;
+            out_translation = anim.frame_poses[frame][bone_id].translation;
+            out_rotation = anim.frame_poses[frame][bone_id].rotation;
+            out_scale = anim.frame_poses[frame][bone_id].scale;
+
+            // Vertices processing
+            // NOTE: We use meshes.vertices (default vertex position) to calculate meshes.anim_vertices (animated vertex position)
+            anim_vertex = (rf_vec3){model.meshes[m].vertices[vertex_pos_counter], model.meshes[m].vertices[vertex_pos_counter + 1], model.meshes[m].vertices[vertex_pos_counter + 2] };
+            anim_vertex = rf_vec3_mul_v(anim_vertex, out_scale);
+            anim_vertex = rf_vec3_sub(anim_vertex, in_translation);
+            anim_vertex = rf_vec3_rotate_by_quaternion(anim_vertex, rf_quaternion_mul(out_rotation, rf_quaternion_invert(in_rotation)));
+            anim_vertex = rf_vec3_add(anim_vertex, out_translation);
+            model.meshes[m].anim_vertices[vertex_pos_counter] = anim_vertex.x;
+            model.meshes[m].anim_vertices[vertex_pos_counter + 1] = anim_vertex.y;
+            model.meshes[m].anim_vertices[vertex_pos_counter + 2] = anim_vertex.z;
+
+            // Normals processing
+            // NOTE: We use meshes.baseNormals (default normal) to calculate meshes.normals (animated normals)
+            anim_normal = (rf_vec3){model.meshes[m].normals[vertex_pos_counter], model.meshes[m].normals[vertex_pos_counter + 1], model.meshes[m].normals[vertex_pos_counter + 2] };
+            anim_normal = rf_vec3_rotate_by_quaternion(anim_normal, rf_quaternion_mul(out_rotation, rf_quaternion_invert(in_rotation)));
+            model.meshes[m].anim_normals[vertex_pos_counter] = anim_normal.x;
+            model.meshes[m].anim_normals[vertex_pos_counter + 1] = anim_normal.y;
+            model.meshes[m].anim_normals[vertex_pos_counter + 2] = anim_normal.z;
+            vertex_pos_counter += 3;
+
+            bone_counter += 4;
+        }
+
+        // Upload new vertex data to GPU for model drawing
+        rf_gfx_update_buffer(model.meshes[m].vbo_id[0], model.meshes[m].anim_vertices, model.meshes[m].vertex_count * 3 * sizeof(float)); // Update vertex position
+        rf_gfx_update_buffer(model.meshes[m].vbo_id[2], model.meshes[m].anim_vertices, model.meshes[m].vertex_count * 3 * sizeof(float)); // Update vertex normals
+    }
+}
+
+// Check model animation skeleton match. Only number of bones and parent connections are checked
+RF_API bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim)
+{
+    int result = true;
+
+    if (model.bone_count != anim.bone_count) result = false;
+    else
+    {
+        for (int i = 0; i < model.bone_count; i++)
+        {
+            if (model.bones[i].parent != anim.bones[i].parent) { result = false; break; }
+        }
+    }
+
+    return result;
+}
+
+// Unload animation data
+RF_API void rf_unload_model_animation(rf_model_animation anim)
+{
+    for (int i = 0; i < anim.frame_count; i++) RF_FREE(anim.allocator, anim.frame_poses[i]);
+
+    RF_FREE(anim.allocator, anim.bones);
+    RF_FREE(anim.allocator, anim.frame_poses);
+}
+
+//region mesh generation
 RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
@@ -9104,4 +9997,859 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
 
     return mesh;
 }
+
+// Generate polygonal mesh
+RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    int vertex_count = sides * 3;
+
+    // Vertices definition
+    rf_vec3* vertices = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
+    for (int i = 0, v = 0; i < 360; i += 360/sides, v += 3)
+    {
+        vertices[v    ] = (rf_vec3){ 0.0f, 0.0f, 0.0f };
+        vertices[v + 1] = (rf_vec3) { sinf(RF_DEG2RAD * i) * radius, 0.0f, cosf(RF_DEG2RAD * i) * radius };
+        vertices[v + 2] = (rf_vec3) { sinf(RF_DEG2RAD * (i + 360 / sides)) * radius, 0.0f, cosf(RF_DEG2RAD * (i + 360 / sides)) * radius };
+    }
+
+    // Normals definition
+    rf_vec3* normals = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
+    for (int n = 0; n < vertex_count; n++) normals[n] = (rf_vec3){0.0f, 1.0f, 0.0f }; // rf_vec3.up;
+
+    // TexCoords definition
+    rf_vec2* texcoords = (rf_vec2*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec2));
+    for (int n = 0; n < vertex_count; n++) texcoords[n] = (rf_vec2) {0.0f, 0.0f };
+
+    mesh.vertex_count = vertex_count;
+    mesh.triangle_count = sides;
+    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+
+    // rf_mesh vertices position array
+    for (int i = 0; i < mesh.vertex_count; i++)
+    {
+        mesh.vertices[3*i] = vertices[i].x;
+        mesh.vertices[3*i + 1] = vertices[i].y;
+        mesh.vertices[3*i + 2] = vertices[i].z;
+    }
+
+    // rf_mesh texcoords array
+    for (int i = 0; i < mesh.vertex_count; i++)
+    {
+        mesh.texcoords[2*i] = texcoords[i].x;
+        mesh.texcoords[2*i + 1] = texcoords[i].y;
+    }
+
+    // rf_mesh normals array
+    for (int i = 0; i < mesh.vertex_count; i++)
+    {
+        mesh.normals[3*i] = normals[i].x;
+        mesh.normals[3*i + 1] = normals[i].y;
+        mesh.normals[3*i + 2] = normals[i].z;
+    }
+
+    RF_FREE(temp_allocator, vertices);
+    RF_FREE(temp_allocator, normals);
+    RF_FREE(temp_allocator, texcoords);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate plane mesh (with subdivisions)
+RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(mesh.allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    #define rf_custom_mesh_gen_plane //Todo: Investigate this macro
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        par_shapes_mesh* plane = par_shapes_create_plane(res_x, res_z); // No normals/texcoords generated!!!
+        par_shapes_scale(plane, width, length, 1.0f);
+
+        float axis[] = { 1, 0, 0 };
+        par_shapes_rotate(plane, -RF_PI / 2.0f, axis);
+        par_shapes_translate(plane, -width / 2, 0.0f, length / 2);
+
+        mesh.vertices   = (float*) RF_ALLOC(mesh.allocator, plane->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords  = (float*) RF_ALLOC(mesh.allocator, plane->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals    = (float*) RF_ALLOC(mesh.allocator, plane->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vbo_id     = (unsigned int*) RF_ALLOC(mesh.allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+        memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+        mesh.vertex_count   = plane->ntriangles * 3;
+        mesh.triangle_count = plane->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = plane->points[plane->triangles[k] * 3    ];
+            mesh.vertices[k * 3 + 1] = plane->points[plane->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = plane->points[plane->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = plane->normals[plane->triangles[k] * 3    ];
+            mesh.normals[k * 3 + 1] = plane->normals[plane->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = plane->normals[plane->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = plane->tcoords[plane->triangles[k] * 2    ];
+            mesh.texcoords[k * 2 + 1] = plane->tcoords[plane->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(plane);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate sphere mesh (standard sphere)
+RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        par_shapes_mesh* sphere = par_shapes_create_parametric_sphere(slices, rings);
+        par_shapes_scale(sphere, radius, radius, radius);
+        // NOTE: Soft normals are computed internally
+
+        mesh.vertices  = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+
+        mesh.vertex_count = sphere->ntriangles * 3;
+        mesh.triangle_count = sphere->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = sphere->points[sphere->triangles[k] * 3];
+            mesh.vertices[k * 3 + 1] = sphere->points[sphere->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = sphere->points[sphere->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = sphere->normals[sphere->triangles[k] * 3];
+            mesh.normals[k * 3 + 1] = sphere->normals[sphere->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = sphere->normals[sphere->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = sphere->tcoords[sphere->triangles[k] * 2];
+            mesh.texcoords[k * 2 + 1] = sphere->tcoords[sphere->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(sphere);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate hemi-sphere mesh (half sphere, no bottom cap)
+RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(mesh.allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        par_shapes_mesh* sphere = par_shapes_create_hemisphere(slices, rings);
+        par_shapes_scale(sphere, radius, radius, radius);
+        // NOTE: Soft normals are computed internally
+
+        mesh.vertices  = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) RF_ALLOC(mesh.allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+
+        mesh.vertex_count   = sphere->ntriangles * 3;
+        mesh.triangle_count = sphere->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = sphere->points[sphere->triangles[k] * 3];
+            mesh.vertices[k * 3 + 1] = sphere->points[sphere->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = sphere->points[sphere->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = sphere->normals[sphere->triangles[k] * 3];
+            mesh.normals[k * 3 + 1] = sphere->normals[sphere->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = sphere->normals[sphere->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = sphere->tcoords[sphere->triangles[k] * 2];
+            mesh.texcoords[k * 2 + 1] = sphere->tcoords[sphere->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(sphere);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate cylinder mesh
+RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(mesh.allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        // Instance a cylinder that sits on the Z=0 plane using the given tessellation
+        // levels across the UV domain.  Think of "slices" like a number of pizza
+        // slices, and "stacks" like a number of stacked rings.
+        // Height and radius are both 1.0, but they can easily be changed with par_shapes_scale
+        par_shapes_mesh* cylinder = par_shapes_create_cylinder(slices, 8);
+        par_shapes_scale(cylinder, radius, radius, height);
+        float axis[] = { 1, 0, 0 };
+        par_shapes_rotate(cylinder, -RF_PI / 2.0f, axis);
+
+        // Generate an orientable disk shape (top cap)
+        float center[] = { 0, 0, 0 };
+        float normal[] = { 0, 0, 1 };
+        float normal_minus_1[] = { 0, 0, -1 };
+        par_shapes_mesh* cap_top = par_shapes_create_disk(radius, slices, center, normal);
+        cap_top->tcoords = PAR_MALLOC(float, 2*cap_top->npoints);
+        for (int i = 0; i < 2 * cap_top->npoints; i++)
+        {
+            cap_top->tcoords[i] = 0.0f;
+        }
+
+        par_shapes_rotate(cap_top, -RF_PI / 2.0f, axis);
+        par_shapes_translate(cap_top, 0, height, 0);
+
+        // Generate an orientable disk shape (bottom cap)
+        par_shapes_mesh* cap_bottom = par_shapes_create_disk(radius, slices, center, normal_minus_1);
+        cap_bottom->tcoords = PAR_MALLOC(float, 2*cap_bottom->npoints);
+        for (int i = 0; i < 2*cap_bottom->npoints; i++) cap_bottom->tcoords[i] = 0.95f;
+        par_shapes_rotate(cap_bottom, RF_PI / 2.0f, axis);
+
+        par_shapes_merge_and_free(cylinder, cap_top);
+        par_shapes_merge_and_free(cylinder, cap_bottom);
+
+        mesh.vertices  = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
+
+        mesh.vertex_count   = cylinder->ntriangles * 3;
+        mesh.triangle_count = cylinder->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = cylinder->points[cylinder->triangles[k] * 3    ];
+            mesh.vertices[k * 3 + 1] = cylinder->points[cylinder->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = cylinder->points[cylinder->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = cylinder->normals[cylinder->triangles[k] * 3    ];
+            mesh.normals[k * 3 + 1] = cylinder->normals[cylinder->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = cylinder->normals[cylinder->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = cylinder->tcoords[cylinder->triangles[k] * 2    ];
+            mesh.texcoords[k * 2 + 1] = cylinder->tcoords[cylinder->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(cylinder);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate torus mesh
+RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    if (radius > 1.0f)      radius = 1.0f;
+    else if (radius < 0.1f) radius = 0.1f;
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        // Create a donut that sits on the Z=0 plane with the specified inner radius
+        // The outer radius can be controlled with par_shapes_scale
+        par_shapes_mesh* torus = par_shapes_create_torus(rad_seg, sides, radius);
+        par_shapes_scale(torus, size/2, size/2, size/2);
+
+        mesh.vertices  = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
+
+        mesh.vertex_count   = torus->ntriangles * 3;
+        mesh.triangle_count = torus->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = torus->points[torus->triangles[k] * 3    ];
+            mesh.vertices[k * 3 + 1] = torus->points[torus->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = torus->points[torus->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = torus->normals[torus->triangles[k] * 3    ];
+            mesh.normals[k * 3 + 1] = torus->normals[torus->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = torus->normals[torus->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = torus->tcoords[torus->triangles[k] * 2    ];
+            mesh.texcoords[k * 2 + 1] = torus->tcoords[torus->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(torus);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate trefoil knot mesh
+RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    if (radius > 3.0f)      radius = 3.0f;
+    else if (radius < 0.5f) radius = 0.5f;
+
+    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    {
+        par_shapes_mesh* knot = par_shapes_create_trefoil_knot(rad_seg, sides, radius);
+        par_shapes_scale(knot, size, size, size);
+
+        mesh.vertices  = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
+
+        mesh.vertex_count   = knot->ntriangles * 3;
+        mesh.triangle_count = knot->ntriangles;
+
+        for (int k = 0; k < mesh.vertex_count; k++)
+        {
+            mesh.vertices[k * 3    ] = knot->points[knot->triangles[k] * 3    ];
+            mesh.vertices[k * 3 + 1] = knot->points[knot->triangles[k] * 3 + 1];
+            mesh.vertices[k * 3 + 2] = knot->points[knot->triangles[k] * 3 + 2];
+
+            mesh.normals[k * 3    ] = knot->normals[knot->triangles[k] * 3    ];
+            mesh.normals[k * 3 + 1] = knot->normals[knot->triangles[k] * 3 + 1];
+            mesh.normals[k * 3 + 2] = knot->normals[knot->triangles[k] * 3 + 2];
+
+            mesh.texcoords[k * 2    ] = knot->tcoords[knot->triangles[k] * 2    ];
+            mesh.texcoords[k * 2 + 1] = knot->tcoords[knot->triangles[k] * 2 + 1];
+        }
+
+        par_shapes_free_mesh(knot);
+    }
+    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate a mesh from heightmap
+// NOTE: Vertex data is uploaded to GPU
+RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator)
+{
+#define RF_GRAY_VALUE(c) ((c.r+c.g+c.b)/3)
+
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    int map_x = heightmap.width;
+    int map_z = heightmap.height;
+
+    rf_color* pixels = rf_get_image_pixel_data(heightmap, temp_allocator);
+
+    // NOTE: One vertex per pixel
+    mesh.triangle_count = (map_x - 1) * (map_z - 1) * 2; // One quad every four pixels
+
+    mesh.vertex_count = mesh.triangle_count * 3;
+
+    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.colors    = NULL;
+
+    int vertex_pos_counter      = 0; // Used to count vertices float by float
+    int vertex_texcoord_counter = 0; // Used to count texcoords float by float
+    int n_counter               = 0; // Used to count normals float by float
+    int tris_counter            = 0;
+
+    rf_vec3 scale_factor = { size.x / map_x, size.y / 255.0f, size.z / map_z };
+
+    for (int z = 0; z < map_z-1; z++)
+    {
+        for (int x = 0; x < map_x-1; x++)
+        {
+            // Fill vertices array with data
+            //----------------------------------------------------------
+
+            // one triangle - 3 vertex
+            mesh.vertices[vertex_pos_counter    ] = (float) x * scale_factor.x;
+            mesh.vertices[vertex_pos_counter + 1] = (float) RF_GRAY_VALUE(pixels[x + z * map_x]) * scale_factor.y;
+            mesh.vertices[vertex_pos_counter + 2] = (float) z * scale_factor.z;
+
+            mesh.vertices[vertex_pos_counter + 3] = (float) x * scale_factor.x;
+            mesh.vertices[vertex_pos_counter + 4] = (float) RF_GRAY_VALUE(pixels[x + (z + 1) * map_x]) * scale_factor.y;
+            mesh.vertices[vertex_pos_counter + 5] = (float) (z + 1) * scale_factor.z;
+
+            mesh.vertices[vertex_pos_counter + 6] = (float)(x + 1) * scale_factor.x;
+            mesh.vertices[vertex_pos_counter + 7] = (float)RF_GRAY_VALUE(pixels[(x + 1) + z * map_x]) * scale_factor.y;
+            mesh.vertices[vertex_pos_counter + 8] = (float)z * scale_factor.z;
+
+            // another triangle - 3 vertex
+            mesh.vertices[vertex_pos_counter + 9 ] = mesh.vertices[vertex_pos_counter + 6];
+            mesh.vertices[vertex_pos_counter + 10] = mesh.vertices[vertex_pos_counter + 7];
+            mesh.vertices[vertex_pos_counter + 11] = mesh.vertices[vertex_pos_counter + 8];
+
+            mesh.vertices[vertex_pos_counter + 12] = mesh.vertices[vertex_pos_counter + 3];
+            mesh.vertices[vertex_pos_counter + 13] = mesh.vertices[vertex_pos_counter + 4];
+            mesh.vertices[vertex_pos_counter + 14] = mesh.vertices[vertex_pos_counter + 5];
+
+            mesh.vertices[vertex_pos_counter + 15] = (float)(x + 1) * scale_factor.x;
+            mesh.vertices[vertex_pos_counter + 16] = (float)RF_GRAY_VALUE(pixels[(x + 1) + (z + 1) * map_x]) * scale_factor.y;
+            mesh.vertices[vertex_pos_counter + 17] = (float)(z + 1) * scale_factor.z;
+            vertex_pos_counter += 18; // 6 vertex, 18 floats
+
+            // Fill texcoords array with data
+            //--------------------------------------------------------------
+            mesh.texcoords[vertex_texcoord_counter    ] = (float)x / (map_x - 1);
+            mesh.texcoords[vertex_texcoord_counter + 1] = (float)z / (map_z - 1);
+
+            mesh.texcoords[vertex_texcoord_counter + 2] = (float)x / (map_x - 1);
+            mesh.texcoords[vertex_texcoord_counter + 3] = (float)(z + 1) / (map_z - 1);
+
+            mesh.texcoords[vertex_texcoord_counter + 4] = (float)(x + 1) / (map_x - 1);
+            mesh.texcoords[vertex_texcoord_counter + 5] = (float)z / (map_z - 1);
+
+            mesh.texcoords[vertex_texcoord_counter + 6] = mesh.texcoords[vertex_texcoord_counter + 4];
+            mesh.texcoords[vertex_texcoord_counter + 7] = mesh.texcoords[vertex_texcoord_counter + 5];
+
+            mesh.texcoords[vertex_texcoord_counter + 8] = mesh.texcoords[vertex_texcoord_counter + 2];
+            mesh.texcoords[vertex_texcoord_counter + 9] = mesh.texcoords[vertex_texcoord_counter + 3];
+
+            mesh.texcoords[vertex_texcoord_counter + 10] = (float)(x + 1) / (map_x - 1);
+            mesh.texcoords[vertex_texcoord_counter + 11] = (float)(z + 1) / (map_z - 1);
+
+            vertex_texcoord_counter += 12; // 6 texcoords, 12 floats
+
+            // Fill normals array with data
+            //--------------------------------------------------------------
+            for (int i = 0; i < 18; i += 3)
+            {
+                mesh.normals[n_counter + i    ] = 0.0f;
+                mesh.normals[n_counter + i + 1] = 1.0f;
+                mesh.normals[n_counter + i + 2] = 0.0f;
+            }
+
+            // TODO: Calculate normals in an efficient way
+
+            n_counter    += 18; // 6 vertex, 18 floats
+            tris_counter += 2;
+        }
+    }
+
+    RF_FREE(temp_allocator, pixels);
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+
+// Generate a cubes mesh from pixel data
+// NOTE: Vertex data is uploaded to GPU
+RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_mesh mesh = { 0 };
+    mesh.allocator = allocator;
+    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
+
+    rf_color* cubicmap_pixels = rf_get_image_pixel_data(cubicmap, temp_allocator);
+
+    int map_width = cubicmap.width;
+    int map_height = cubicmap.height;
+
+    // NOTE: Max possible number of triangles numCubes*(12 triangles by cube)
+    int maxTriangles = cubicmap.width*cubicmap.height*12;
+
+    int vertex_pos_counter = 0; // Used to count vertices
+    int vertex_texcoord_counter = 0; // Used to count texcoords
+    int n_counter = 0; // Used to count normals
+
+    float w = cube_size.x;
+    float h = cube_size.z;
+    float h2 = cube_size.y;
+
+    rf_vec3* map_vertices  = (rf_vec3*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
+    rf_vec2 *map_texcoords = (rf_vec2*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec2));
+    rf_vec3* map_normals   = (rf_vec3*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
+
+    // Define the 6 normals of the cube, we will combine them accordingly later...
+    rf_vec3 n1 = {  1.0f,  0.0f,  0.0f };
+    rf_vec3 n2 = { -1.0f,  0.0f,  0.0f };
+    rf_vec3 n3 = {  0.0f,  1.0f,  0.0f };
+    rf_vec3 n4 = {  0.0f, -1.0f,  0.0f };
+    rf_vec3 n5 = {  0.0f,  0.0f,  1.0f };
+    rf_vec3 n6 = {  0.0f,  0.0f, -1.0f };
+
+    // NOTE: We use texture rectangles to define different textures for top-bottom-front-back-right-left (6)
+    typedef struct rf_recf rf_recf;
+    struct rf_recf
+    {
+        float x;
+        float y;
+        float width;
+        float height;
+    };
+
+    rf_recf right_tex_uv  = { 0.0f, 0.0f, 0.5f, 0.5f };
+    rf_recf left_tex_uv   = { 0.5f, 0.0f, 0.5f, 0.5f };
+    rf_recf front_tex_uv  = { 0.0f, 0.0f, 0.5f, 0.5f };
+    rf_recf back_tex_uv   = { 0.5f, 0.0f, 0.5f, 0.5f };
+    rf_recf top_tex_uv    = { 0.0f, 0.5f, 0.5f, 0.5f };
+    rf_recf bottom_tex_uv = { 0.5f, 0.5f, 0.5f, 0.5f };
+
+    for (int z = 0; z < map_height; ++z)
+    {
+        for (int x = 0; x < map_width; ++x)
+        {
+            // Define the 8 vertex of the cube, we will combine them accordingly later...
+            rf_vec3 v1 = {w * (x - 0.5f), h2, h * (z - 0.5f) };
+            rf_vec3 v2 = {w * (x - 0.5f), h2, h * (z + 0.5f) };
+            rf_vec3 v3 = {w * (x + 0.5f), h2, h * (z + 0.5f) };
+            rf_vec3 v4 = {w * (x + 0.5f), h2, h * (z - 0.5f) };
+            rf_vec3 v5 = {w * (x + 0.5f), 0, h * (z - 0.5f) };
+            rf_vec3 v6 = {w * (x - 0.5f), 0, h * (z - 0.5f) };
+            rf_vec3 v7 = {w * (x - 0.5f), 0, h * (z + 0.5f) };
+            rf_vec3 v8 = {w * (x + 0.5f), 0, h * (z + 0.5f) };
+
+            // We check pixel color to be RF_WHITE, we will full cubes
+            if ((cubicmap_pixels[z*cubicmap.width + x].r == 255) &&
+                (cubicmap_pixels[z*cubicmap.width + x].g == 255) &&
+                (cubicmap_pixels[z*cubicmap.width + x].b == 255))
+            {
+                // Define triangles (Checking Collateral Cubes!)
+                //----------------------------------------------
+
+                // Define top triangles (2 tris, 6 vertex --> v1-v2-v3, v1-v3-v4)
+                map_vertices[vertex_pos_counter] = v1;
+                map_vertices[vertex_pos_counter + 1] = v2;
+                map_vertices[vertex_pos_counter + 2] = v3;
+                map_vertices[vertex_pos_counter + 3] = v1;
+                map_vertices[vertex_pos_counter + 4] = v3;
+                map_vertices[vertex_pos_counter + 5] = v4;
+                vertex_pos_counter += 6;
+
+                map_normals[n_counter] = n3;
+                map_normals[n_counter + 1] = n3;
+                map_normals[n_counter + 2] = n3;
+                map_normals[n_counter + 3] = n3;
+                map_normals[n_counter + 4] = n3;
+                map_normals[n_counter + 5] = n3;
+                n_counter += 6;
+
+                map_texcoords[vertex_texcoord_counter] = (rf_vec2){top_tex_uv.x, top_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){top_tex_uv.x, top_tex_uv.y + top_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y + top_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){top_tex_uv.x, top_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y + top_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y };
+                vertex_texcoord_counter += 6;
+
+                // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
+                map_vertices[vertex_pos_counter] = v6;
+                map_vertices[vertex_pos_counter + 1] = v8;
+                map_vertices[vertex_pos_counter + 2] = v7;
+                map_vertices[vertex_pos_counter + 3] = v6;
+                map_vertices[vertex_pos_counter + 4] = v5;
+                map_vertices[vertex_pos_counter + 5] = v8;
+                vertex_pos_counter += 6;
+
+                map_normals[n_counter] = n4;
+                map_normals[n_counter + 1] = n4;
+                map_normals[n_counter + 2] = n4;
+                map_normals[n_counter + 3] = n4;
+                map_normals[n_counter + 4] = n4;
+                map_normals[n_counter + 5] = n4;
+                n_counter += 6;
+
+                map_texcoords[vertex_texcoord_counter] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y + bottom_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y + bottom_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y + bottom_tex_uv.height };
+                vertex_texcoord_counter += 6;
+
+                if (((z < cubicmap.height - 1) &&
+                     (cubicmap_pixels[(z + 1)*cubicmap.width + x].r == 0) &&
+                     (cubicmap_pixels[(z + 1)*cubicmap.width + x].g == 0) &&
+                     (cubicmap_pixels[(z + 1)*cubicmap.width + x].b == 0)) || (z == cubicmap.height - 1))
+                {
+                    // Define front triangles (2 tris, 6 vertex) --> v2 v7 v3, v3 v7 v8
+                    // NOTE: Collateral occluded faces are not generated
+                    map_vertices[vertex_pos_counter] = v2;
+                    map_vertices[vertex_pos_counter + 1] = v7;
+                    map_vertices[vertex_pos_counter + 2] = v3;
+                    map_vertices[vertex_pos_counter + 3] = v3;
+                    map_vertices[vertex_pos_counter + 4] = v7;
+                    map_vertices[vertex_pos_counter + 5] = v8;
+                    vertex_pos_counter += 6;
+
+                    map_normals[n_counter] = n6;
+                    map_normals[n_counter + 1] = n6;
+                    map_normals[n_counter + 2] = n6;
+                    map_normals[n_counter + 3] = n6;
+                    map_normals[n_counter + 4] = n6;
+                    map_normals[n_counter + 5] = n6;
+                    n_counter += 6;
+
+                    map_texcoords[vertex_texcoord_counter] = (rf_vec2){front_tex_uv.x, front_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){front_tex_uv.x, front_tex_uv.y + front_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){front_tex_uv.x + front_tex_uv.width, front_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){front_tex_uv.x + front_tex_uv.width, front_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){front_tex_uv.x, front_tex_uv.y + front_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){front_tex_uv.x + front_tex_uv.width, front_tex_uv.y + front_tex_uv.height };
+                    vertex_texcoord_counter += 6;
+                }
+
+                if (((z > 0) &&
+                     (cubicmap_pixels[(z - 1)*cubicmap.width + x].r == 0) &&
+                     (cubicmap_pixels[(z - 1)*cubicmap.width + x].g == 0) &&
+                     (cubicmap_pixels[(z - 1)*cubicmap.width + x].b == 0)) || (z == 0))
+                {
+                    // Define back triangles (2 tris, 6 vertex) --> v1 v5 v6, v1 v4 v5
+                    // NOTE: Collateral occluded faces are not generated
+                    map_vertices[vertex_pos_counter] = v1;
+                    map_vertices[vertex_pos_counter + 1] = v5;
+                    map_vertices[vertex_pos_counter + 2] = v6;
+                    map_vertices[vertex_pos_counter + 3] = v1;
+                    map_vertices[vertex_pos_counter + 4] = v4;
+                    map_vertices[vertex_pos_counter + 5] = v5;
+                    vertex_pos_counter += 6;
+
+                    map_normals[n_counter] = n5;
+                    map_normals[n_counter + 1] = n5;
+                    map_normals[n_counter + 2] = n5;
+                    map_normals[n_counter + 3] = n5;
+                    map_normals[n_counter + 4] = n5;
+                    map_normals[n_counter + 5] = n5;
+                    n_counter += 6;
+
+                    map_texcoords[vertex_texcoord_counter] = (rf_vec2){back_tex_uv.x + back_tex_uv.width, back_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){back_tex_uv.x, back_tex_uv.y + back_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){back_tex_uv.x + back_tex_uv.width, back_tex_uv.y + back_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){back_tex_uv.x + back_tex_uv.width, back_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){back_tex_uv.x, back_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){back_tex_uv.x, back_tex_uv.y + back_tex_uv.height };
+                    vertex_texcoord_counter += 6;
+                }
+
+                if (((x < cubicmap.width - 1) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x + 1)].r == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x + 1)].g == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x + 1)].b == 0)) || (x == cubicmap.width - 1))
+                {
+                    // Define right triangles (2 tris, 6 vertex) --> v3 v8 v4, v4 v8 v5
+                    // NOTE: Collateral occluded faces are not generated
+                    map_vertices[vertex_pos_counter] = v3;
+                    map_vertices[vertex_pos_counter + 1] = v8;
+                    map_vertices[vertex_pos_counter + 2] = v4;
+                    map_vertices[vertex_pos_counter + 3] = v4;
+                    map_vertices[vertex_pos_counter + 4] = v8;
+                    map_vertices[vertex_pos_counter + 5] = v5;
+                    vertex_pos_counter += 6;
+
+                    map_normals[n_counter] = n1;
+                    map_normals[n_counter + 1] = n1;
+                    map_normals[n_counter + 2] = n1;
+                    map_normals[n_counter + 3] = n1;
+                    map_normals[n_counter + 4] = n1;
+                    map_normals[n_counter + 5] = n1;
+                    n_counter += 6;
+
+                    map_texcoords[vertex_texcoord_counter] = (rf_vec2){right_tex_uv.x, right_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){right_tex_uv.x, right_tex_uv.y + right_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){right_tex_uv.x + right_tex_uv.width, right_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){right_tex_uv.x + right_tex_uv.width, right_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){right_tex_uv.x, right_tex_uv.y + right_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){right_tex_uv.x + right_tex_uv.width, right_tex_uv.y + right_tex_uv.height };
+                    vertex_texcoord_counter += 6;
+                }
+
+                if (((x > 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x - 1)].r == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x - 1)].g == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + (x - 1)].b == 0)) || (x == 0))
+                {
+                    // Define left triangles (2 tris, 6 vertex) --> v1 v7 v2, v1 v6 v7
+                    // NOTE: Collateral occluded faces are not generated
+                    map_vertices[vertex_pos_counter] = v1;
+                    map_vertices[vertex_pos_counter + 1] = v7;
+                    map_vertices[vertex_pos_counter + 2] = v2;
+                    map_vertices[vertex_pos_counter + 3] = v1;
+                    map_vertices[vertex_pos_counter + 4] = v6;
+                    map_vertices[vertex_pos_counter + 5] = v7;
+                    vertex_pos_counter += 6;
+
+                    map_normals[n_counter] = n2;
+                    map_normals[n_counter + 1] = n2;
+                    map_normals[n_counter + 2] = n2;
+                    map_normals[n_counter + 3] = n2;
+                    map_normals[n_counter + 4] = n2;
+                    map_normals[n_counter + 5] = n2;
+                    n_counter += 6;
+
+                    map_texcoords[vertex_texcoord_counter] = (rf_vec2){left_tex_uv.x, left_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){left_tex_uv.x + left_tex_uv.width, left_tex_uv.y + left_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){left_tex_uv.x + left_tex_uv.width, left_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){left_tex_uv.x, left_tex_uv.y };
+                    map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){left_tex_uv.x, left_tex_uv.y + left_tex_uv.height };
+                    map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){left_tex_uv.x + left_tex_uv.width, left_tex_uv.y + left_tex_uv.height };
+                    vertex_texcoord_counter += 6;
+                }
+            }
+                // We check pixel color to be RF_BLACK, we will only draw floor and roof
+            else if ((cubicmap_pixels[z*cubicmap.width + x].r == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + x].g == 0) &&
+                     (cubicmap_pixels[z*cubicmap.width + x].b == 0))
+            {
+                // Define top triangles (2 tris, 6 vertex --> v1-v2-v3, v1-v3-v4)
+                map_vertices[vertex_pos_counter] = v1;
+                map_vertices[vertex_pos_counter + 1] = v3;
+                map_vertices[vertex_pos_counter + 2] = v2;
+                map_vertices[vertex_pos_counter + 3] = v1;
+                map_vertices[vertex_pos_counter + 4] = v4;
+                map_vertices[vertex_pos_counter + 5] = v3;
+                vertex_pos_counter += 6;
+
+                map_normals[n_counter] = n4;
+                map_normals[n_counter + 1] = n4;
+                map_normals[n_counter + 2] = n4;
+                map_normals[n_counter + 3] = n4;
+                map_normals[n_counter + 4] = n4;
+                map_normals[n_counter + 5] = n4;
+                n_counter += 6;
+
+                map_texcoords[vertex_texcoord_counter] = (rf_vec2){top_tex_uv.x, top_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y + top_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){top_tex_uv.x, top_tex_uv.y + top_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){top_tex_uv.x, top_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){top_tex_uv.x + top_tex_uv.width, top_tex_uv.y + top_tex_uv.height };
+                vertex_texcoord_counter += 6;
+
+                // Define bottom triangles (2 tris, 6 vertex --> v6-v8-v7, v6-v5-v8)
+                map_vertices[vertex_pos_counter] = v6;
+                map_vertices[vertex_pos_counter + 1] = v7;
+                map_vertices[vertex_pos_counter + 2] = v8;
+                map_vertices[vertex_pos_counter + 3] = v6;
+                map_vertices[vertex_pos_counter + 4] = v8;
+                map_vertices[vertex_pos_counter + 5] = v5;
+                vertex_pos_counter += 6;
+
+                map_normals[n_counter] = n3;
+                map_normals[n_counter + 1] = n3;
+                map_normals[n_counter + 2] = n3;
+                map_normals[n_counter + 3] = n3;
+                map_normals[n_counter + 4] = n3;
+                map_normals[n_counter + 5] = n3;
+                n_counter += 6;
+
+                map_texcoords[vertex_texcoord_counter] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 1] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y + bottom_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 2] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y + bottom_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 3] = (rf_vec2){bottom_tex_uv.x + bottom_tex_uv.width, bottom_tex_uv.y };
+                map_texcoords[vertex_texcoord_counter + 4] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y + bottom_tex_uv.height };
+                map_texcoords[vertex_texcoord_counter + 5] = (rf_vec2){bottom_tex_uv.x, bottom_tex_uv.y };
+                vertex_texcoord_counter += 6;
+            }
+        }
+    }
+
+    // Move data from map_vertices temp arays to vertices float array
+    mesh.vertex_count = vertex_pos_counter;
+    mesh.triangle_count = vertex_pos_counter/3;
+
+    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.colors = NULL;
+
+    int f_counter = 0;
+
+    // Move vertices data
+    for (int i = 0; i < vertex_pos_counter; i++)
+    {
+        mesh.vertices[f_counter] = map_vertices[i].x;
+        mesh.vertices[f_counter + 1] = map_vertices[i].y;
+        mesh.vertices[f_counter + 2] = map_vertices[i].z;
+        f_counter += 3;
+    }
+
+    f_counter = 0;
+
+    // Move normals data
+    for (int i = 0; i < n_counter; i++)
+    {
+        mesh.normals[f_counter] = map_normals[i].x;
+        mesh.normals[f_counter + 1] = map_normals[i].y;
+        mesh.normals[f_counter + 2] = map_normals[i].z;
+        f_counter += 3;
+    }
+
+    f_counter = 0;
+
+    // Move texcoords data
+    for (int i = 0; i < vertex_texcoord_counter; i++)
+    {
+        mesh.texcoords[f_counter] = map_texcoords[i].x;
+        mesh.texcoords[f_counter + 1] = map_texcoords[i].y;
+        f_counter += 2;
+    }
+
+    RF_FREE(temp_allocator, map_vertices);
+    RF_FREE(temp_allocator, map_normals);
+    RF_FREE(temp_allocator, map_texcoords);
+
+    RF_FREE(temp_allocator, cubicmap_pixels); // Free image pixel data
+
+    // Upload vertex data to GPU (static mesh)
+    rf_gfx_load_mesh(&mesh, false);
+
+    return mesh;
+}
+//endregion
 //endregion

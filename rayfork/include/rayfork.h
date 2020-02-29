@@ -67,7 +67,7 @@
     #define RF_LOG_V(type, msg, ...)
 #endif
 
-#define RF_NO_ALLOCATOR      (RF_LIT(rf_allocator) { 0 })
+#define RF_NULL_ALLOCATOR    (RF_LIT(rf_allocator) { 0 })
 #define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_malloc_wrapper })
 
 #define RF_ALLOC(allocator, amount) ((allocator).request(RF_AM_ALLOC, (amount), NULL, (allocator).user_data))
@@ -496,16 +496,36 @@ struct rf_color
 typedef struct rf_image rf_image;
 struct rf_image
 {
-    void* data;    //rf_image raw data
-    int   width;   //rf_image base width
-    int   height;  //rf_image base height
+    void* data;    //image raw data
+    int   width;   //image base width
+    int   height;  //image base height
     int   mipmaps; //Mipmap levels, 1 by default
-    rf_pixel_format   format;  //Data format (rf_pixel_format type)
+    rf_pixel_format format;  //Data format (rf_pixel_format type)
     rf_allocator allocator; //Allocator used for the image
 };
 
-// rf_texture2d type
-// NOTE: Data stored in GPU memory
+typedef struct rf_gif rf_gif;
+struct rf_gif
+{
+    int frames_count;
+    int* frame_delays;
+
+    union
+    {
+        rf_image image;
+
+        struct
+        {
+            void* data;    //rf_image raw data
+            int   width;   //rf_image base width
+            int   height;  //rf_image base height
+            int   mipmaps; //Mipmap levels, 1 by default
+            rf_pixel_format format;  //Data format (rf_pixel_format type)
+            rf_allocator allocator; //Allocator used for the image
+        };
+    };
+};
+
 typedef struct rf_texture2d rf_texture2d;
 typedef struct rf_texture2d rf_texture_cubemap;
 struct rf_texture2d
@@ -517,7 +537,6 @@ struct rf_texture2d
     int format;      //Data format (rf_pixel_format type)
 };
 
-//rf_render_texture2d type, for texture rendering
 typedef struct rf_render_texture2d rf_render_texture2d;
 typedef struct rf_render_texture2d rf_render_texture;
 struct rf_render_texture2d
@@ -528,7 +547,6 @@ struct rf_render_texture2d
     bool depth_texture;   //Track if depth attachment is a texture or renderbuffer
 };
 
-//N-Patch layout info
 typedef struct rf_npatch_info rf_npatch_info;
 struct rf_npatch_info
 {
@@ -540,7 +558,6 @@ struct rf_npatch_info
     int type;            //layout of the n-patch: 3x3, 1x3 or 3x1
 };
 
-//rf_font character info
 typedef struct rf_char_info rf_char_info;
 struct rf_char_info
 {
@@ -551,7 +568,6 @@ struct rf_char_info
     rf_image image;  //Character image data
 };
 
-// rf_font type, includes texture and charSet array data
 typedef struct rf_font rf_font;
 struct rf_font
 {
@@ -571,7 +587,6 @@ struct rf_load_font_async_result
     rf_image atlas;
 };
 
-// Camera type, defines a camera position/orientation in 3d space
 typedef struct rf_camera3d rf_camera3d;
 struct rf_camera3d
 {
@@ -582,7 +597,6 @@ struct rf_camera3d
     int type;         // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
 };
 
-// rf_camera2d type, defines a 2d camera
 typedef struct rf_camera2d rf_camera2d;
 struct rf_camera2d
 {
@@ -592,8 +606,6 @@ struct rf_camera2d
     float zoom;     // Camera zoom (scaling), should be 1.0f by default
 };
 
-// Vertex data definning a mesh
-// NOTE: Data stored in CPU memory (and GPU)
 typedef struct rf_mesh rf_mesh;
 struct rf_mesh
 {
@@ -633,7 +645,6 @@ struct rf_input_state_for_update_camera
     bool        direction_keys[6];                 //'W', 'S', 'D', 'A', 'E', 'Q'
 };
 
-// rf_shader type (generic)
 typedef struct rf_shader rf_shader;
 struct rf_shader
 {
@@ -641,7 +652,6 @@ struct rf_shader
     int locs[RF_MAX_SHADER_LOCATIONS];       // rf_shader locations array (RF_MAX_SHADER_LOCATIONS)
 };
 
-// rf_material texture map
 typedef struct rf_material_map rf_material_map;
 struct rf_material_map
 {
@@ -650,7 +660,6 @@ struct rf_material_map
     float value;       // rf_material map value
 };
 
-// rf_material type (generic)
 typedef struct rf_material rf_material;
 struct rf_material
 {
@@ -661,7 +670,6 @@ struct rf_material
     rf_allocator allocator;
 };
 
-// Transformation properties
 typedef struct rf_transform rf_transform;
 struct rf_transform
 {
@@ -670,7 +678,6 @@ struct rf_transform
     rf_vec3 scale;       // Scale
 };
 
-// Bone information
 typedef struct rf_bone_info rf_bone_info;
 struct rf_bone_info
 {
@@ -678,7 +685,6 @@ struct rf_bone_info
     int  parent;   // Bone parent
 };
 
-// rf_model type
 typedef struct rf_model rf_model;
 struct rf_model
 {
@@ -698,7 +704,6 @@ struct rf_model
     rf_allocator allocator;
 };
 
-// rf_model animation
 typedef struct rf_model_animation rf_model_animation;
 struct rf_model_animation
 {
@@ -709,6 +714,14 @@ struct rf_model_animation
     rf_allocator allocator;
 };
 
+typedef struct rf_model_animation_array rf_model_animation_array;
+struct rf_model_animation_array
+{
+    int                 anims_count;
+    rf_model_animation* anims;
+    rf_allocator        allocator;
+};
+
 // rf_ray type (useful for raycast)
 typedef struct rf_ray rf_ray;
 struct rf_ray
@@ -717,7 +730,6 @@ struct rf_ray
     rf_vec3 direction; // rf_ray direction
 };
 
-// Raycast hit information
 typedef struct rf_ray_hit_info rf_ray_hit_info;
 struct rf_ray_hit_info
 {
@@ -727,12 +739,19 @@ struct rf_ray_hit_info
     rf_vec3 normal; // Surface normal of hit
 };
 
-// Bounding box type
 typedef struct rf_bounding_box rf_bounding_box;
 struct rf_bounding_box
 {
     rf_vec3 min; // Minimum vertex box-corner
     rf_vec3 max; // Maximum vertex box-corner
+};
+
+typedef struct rf_base64_output rf_base64_output;
+struct rf_base64_output
+{
+    int size;
+    unsigned char* buffer;
+    rf_allocator allocator;
 };
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
@@ -801,6 +820,16 @@ struct rf_context
     double frame_time; // Time measure for one frame
     double target_time; // Desired time for one frame, if 0 not applied
 
+    //Camera 3d stuff
+    //Note(LucaSas): might extract into another struct
+    rf_vec2 camera_angle;         // rf_camera3d angle in plane XZ
+    float camera_target_distance; // rf_camera3d distance from position to target
+    rf_camera3d_mode camera_mode; // Current camera mode
+
+    //Shapes global data
+    rf_texture2d tex_shapes;
+    rf_rec rec_tex_shapes;
+
     void (*wait_proc)(float); // Wait for some milliseconds (pauses program execution).
     double (*get_time_proc)(void); // Returns elapsed time in seconds since rf_context_init.
     int (*get_random_value_proc)(int min, int max); //A callback for a function that returns a random value in a range
@@ -810,6 +839,7 @@ struct rf_context
 
 //region setups and defaults
 RF_API void rf_setup_viewport(int width, int height); // Set viewport for a provided width and height
+RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_allocator); // Load the raylib default font
 RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 //endregion
@@ -849,14 +879,6 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 //endregion
 
 //region math
-#ifndef RF_MATH_API
-#define RF_MATH_API RF_API
-#endif
-
-#ifndef RF_MATH_INTERNAL
-#define RF_MATH_INTERNAL RF_MATH_API
-#endif
-
 #define RF_PI (3.14159265358979323846f)
 
 #define RF_DEG2RAD (RF_PI / 180.0f)
@@ -868,129 +890,135 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 #define RF_VEC3_ZERO ((rf_vec3) { 0.0f, 0.0f, 0.0f })
 #define RF_VEC3_ONE  ((rf_vec3) { 1.0f, 1.0f, 1.0f })
 
+//region base64
+RF_API int rf_get_size_base64(const unsigned char* input);
+RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator);
+RF_API void rf_unload_base64_output(rf_base64_output it);
+//endregion
+
 //region color
-RF_MATH_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
-RF_MATH_API rf_vec4 rf_color_normalize(rf_color color); // Returns color normalized as float [0..1]
-RF_MATH_API rf_color rf_color_from_normalized(rf_vec4 normalized); // Returns color from normalized values [0..1]
-RF_MATH_API rf_vec3 rf_color_to_hsv(rf_color color); // Returns HSV values for a rf_color. Hue is returned as degrees [0..360]
-RF_MATH_API rf_color rf_color_from_hsv(rf_vec3 hsv); // Returns a rf_color from HSV values. rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors. Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
-RF_MATH_API rf_color rf_color_from_int(int hex_value); // Returns a rf_color struct from hexadecimal value
-RF_MATH_API rf_color rf_fade(rf_color color, float alpha); // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
+RF_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
+RF_API rf_vec4 rf_color_normalize(rf_color color); // Returns color normalized as float [0..1]
+RF_API rf_color rf_color_from_normalized(rf_vec4 normalized); // Returns color from normalized values [0..1]
+RF_API rf_vec3 rf_color_to_hsv(rf_color color); // Returns HSV values for a rf_color. Hue is returned as degrees [0..360]
+RF_API rf_color rf_color_from_hsv(rf_vec3 hsv); // Returns a rf_color from HSV values. rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors. Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
+RF_API rf_color rf_color_from_int(int hex_value); // Returns a rf_color struct from hexadecimal value
+RF_API rf_color rf_fade(rf_color color, float alpha); // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
 //endregion
 
 //region camera
-RF_MATH_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
-RF_MATH_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
-RF_MATH_API rf_mat rf_get_camera_matrix(rf_camera3d camera); // Get transform matrix for camera
-RF_MATH_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
-RF_MATH_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
-RF_MATH_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
-RF_MATH_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
+RF_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
+RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
+RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera); // Get transform matrix for camera
+RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
+RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
+RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
+RF_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
 //endregion
 
 //region vec and matrix math
-RF_MATH_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format); //Get the buffer size of an image of a specific width and height in a given format
-RF_MATH_API float rf_clamp(float value, float min, float max); // Clamp float value
-RF_MATH_API float rf_lerp(float start, float end, float amount); // Calculate linear interpolation between two floats
+RF_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format); //Get the buffer size of an image of a specific width and height in a given format
+RF_API float rf_clamp(float value, float min, float max); // Clamp float value
+RF_API float rf_lerp(float start, float end, float amount); // Calculate linear interpolation between two floats
 
-RF_MATH_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2); // Add two vectors (v1 + v2)
-RF_MATH_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2); // Subtract two vectors (v1 - v2)
-RF_MATH_API float rf_vec2_len(rf_vec2 v); // Calculate vector length
-RF_MATH_API float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2); // Calculate two vectors dot product
-RF_MATH_API float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2); // Calculate distance between two vectors
-RF_MATH_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2); // Calculate angle from two vectors in X-axis
-RF_MATH_API rf_vec2 rf_vec2_scale(rf_vec2 v, float scale); // Scale vector (multiply by value)
-RF_MATH_API rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2); // Multiply vector by vector
-RF_MATH_API rf_vec2 rf_vec2_negate(rf_vec2 v); // Negate vector
-RF_MATH_API rf_vec2 rf_vec2_div(rf_vec2 v, float div); // Divide vector by a float value
-RF_MATH_API rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2); // Divide vector by vector
-RF_MATH_API rf_vec2 rf_vec2_normalize(rf_vec2 v); // Normalize provided vector
-RF_MATH_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount); // Calculate linear interpolation between two vectors
+RF_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2); // Add two vectors (v1 + v2)
+RF_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2); // Subtract two vectors (v1 - v2)
+RF_API float rf_vec2_len(rf_vec2 v); // Calculate vector length
+RF_API float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2); // Calculate two vectors dot product
+RF_API float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2); // Calculate distance between two vectors
+RF_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2); // Calculate angle from two vectors in X-axis
+RF_API rf_vec2 rf_vec2_scale(rf_vec2 v, float scale); // Scale vector (multiply by value)
+RF_API rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2); // Multiply vector by vector
+RF_API rf_vec2 rf_vec2_negate(rf_vec2 v); // Negate vector
+RF_API rf_vec2 rf_vec2_div(rf_vec2 v, float div); // Divide vector by a float value
+RF_API rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2); // Divide vector by vector
+RF_API rf_vec2 rf_vec2_normalize(rf_vec2 v); // Normalize provided vector
+RF_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount); // Calculate linear interpolation between two vectors
 
-RF_MATH_API rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2); // Add two vectors
-RF_MATH_API rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2); // Subtract two vectors
-RF_MATH_API rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar); // Multiply vector by scalar
-RF_MATH_API rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2); // Multiply vector by vector
-RF_MATH_API rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2); // Calculate two vectors cross product
-RF_MATH_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v); // Calculate one vector perpendicular vector
-RF_MATH_API float rf_vec3_len(rf_vec3 v); // Calculate vector length
-RF_MATH_API float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2); // Calculate two vectors dot product
-RF_MATH_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2); // Calculate distance between two vectors
-RF_MATH_API rf_vec3 rf_vec3_scale(rf_vec3 v, float scale); // Scale provided vector
-RF_MATH_API rf_vec3 rf_vec3_negate(rf_vec3 v); // Negate provided vector (invert direction)
-RF_MATH_API rf_vec3 rf_vec3_div(rf_vec3 v, float div); // Divide vector by a float value
-RF_MATH_API rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2); // Divide vector by vector
-RF_MATH_API rf_vec3 rf_vec3_normalize(rf_vec3 v); // Normalize provided vector
-RF_MATH_API void rf_vec3_ortho_normalize(rf_vec3* v1, rf_vec3* v2); // Orthonormalize provided vectors. Makes vectors normalized and orthogonal to each other. Gram-Schmidt function implementation
-RF_MATH_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat); // Transforms a rf_vec3 by a given rf_mat
-RF_MATH_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q); // rf_transform a vector by quaternion rotation
-RF_MATH_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount); // Calculate linear interpolation between two vectors
-RF_MATH_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal); // Calculate reflected vector to normal
-RF_MATH_API rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2); // Return min value for each pair of components
-RF_MATH_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2); // Return max value for each pair of components
-RF_MATH_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c); // Compute barycenter coordinates (u, v, w) for point p with respect to triangle (a, b, c) NOTE: Assumes P is on the plane of the triangle
+RF_API rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2); // Add two vectors
+RF_API rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2); // Subtract two vectors
+RF_API rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar); // Multiply vector by scalar
+RF_API rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2); // Multiply vector by vector
+RF_API rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2); // Calculate two vectors cross product
+RF_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v); // Calculate one vector perpendicular vector
+RF_API float rf_vec3_len(rf_vec3 v); // Calculate vector length
+RF_API float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2); // Calculate two vectors dot product
+RF_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2); // Calculate distance between two vectors
+RF_API rf_vec3 rf_vec3_scale(rf_vec3 v, float scale); // Scale provided vector
+RF_API rf_vec3 rf_vec3_negate(rf_vec3 v); // Negate provided vector (invert direction)
+RF_API rf_vec3 rf_vec3_div(rf_vec3 v, float div); // Divide vector by a float value
+RF_API rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2); // Divide vector by vector
+RF_API rf_vec3 rf_vec3_normalize(rf_vec3 v); // Normalize provided vector
+RF_API void rf_vec3_ortho_normalize(rf_vec3* v1, rf_vec3* v2); // Orthonormalize provided vectors. Makes vectors normalized and orthogonal to each other. Gram-Schmidt function implementation
+RF_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat); // Transforms a rf_vec3 by a given rf_mat
+RF_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q); // rf_transform a vector by quaternion rotation
+RF_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount); // Calculate linear interpolation between two vectors
+RF_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal); // Calculate reflected vector to normal
+RF_API rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2); // Return min value for each pair of components
+RF_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2); // Return max value for each pair of components
+RF_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c); // Compute barycenter coordinates (u, v, w) for point p with respect to triangle (a, b, c) NOTE: Assumes P is on the plane of the triangle
 
-RF_MATH_API float rf_mat_determinant(rf_mat mat); // Compute matrix determinant
-RF_MATH_API float rf_mat_trace(rf_mat mat); // Returns the trace of the matrix (sum of the values along the diagonal)
-RF_MATH_API rf_mat rf_mat_transpose(rf_mat mat); // Transposes provided matrix
-RF_MATH_API rf_mat rf_mat_invert(rf_mat mat); // Invert provided matrix
-RF_MATH_API rf_mat rf_mat_normalize(rf_mat mat); // Normalize provided matrix
-RF_MATH_API rf_mat rf_mat_identity(void); // Returns identity matrix
-RF_MATH_API rf_mat rf_mat_add(rf_mat left, rf_mat right); // Add two matrices
-RF_MATH_API rf_mat rf_mat_sub(rf_mat left, rf_mat right); // Subtract two matrices (left - right)
-RF_MATH_API rf_mat rf_mat_translate(float x, float y, float z); // Returns translation matrix
-RF_MATH_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle); // Create rotation matrix from axis and angle. NOTE: Angle should be provided in radians
-RF_MATH_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang); // Returns xyz-rotation matrix (angles in radians)
-RF_MATH_API rf_mat rf_mat_rotate_x(float angle); // Returns x-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_rotate_y(float angle); // Returns y-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_rotate_z(float angle); // Returns z-rotation matrix (angle in radians)
-RF_MATH_API rf_mat rf_mat_scale(float x, float y, float z); // Returns scaling matrix
-RF_MATH_API rf_mat rf_mat_mul(rf_mat left, rf_mat right); // Returns two matrix multiplication. NOTE: When multiplying matrices... the order matters!
-RF_MATH_API rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val); // Returns perspective GL_PROJECTION matrix
-RF_MATH_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val); // Returns perspective GL_PROJECTION matrix. NOTE: Angle should be provided in radians
-RF_MATH_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val); // Returns orthographic GL_PROJECTION matrix
-RF_MATH_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up); // Returns camera look-at matrix (view matrix)
-RF_MATH_API rf_float16 rf_mat_to_float16(rf_mat mat); // Returns the matrix as an array of 16 floats
+RF_API float rf_mat_determinant(rf_mat mat); // Compute matrix determinant
+RF_API float rf_mat_trace(rf_mat mat); // Returns the trace of the matrix (sum of the values along the diagonal)
+RF_API rf_mat rf_mat_transpose(rf_mat mat); // Transposes provided matrix
+RF_API rf_mat rf_mat_invert(rf_mat mat); // Invert provided matrix
+RF_API rf_mat rf_mat_normalize(rf_mat mat); // Normalize provided matrix
+RF_API rf_mat rf_mat_identity(void); // Returns identity matrix
+RF_API rf_mat rf_mat_add(rf_mat left, rf_mat right); // Add two matrices
+RF_API rf_mat rf_mat_sub(rf_mat left, rf_mat right); // Subtract two matrices (left - right)
+RF_API rf_mat rf_mat_translate(float x, float y, float z); // Returns translation matrix
+RF_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle); // Create rotation matrix from axis and angle. NOTE: Angle should be provided in radians
+RF_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang); // Returns xyz-rotation matrix (angles in radians)
+RF_API rf_mat rf_mat_rotate_x(float angle); // Returns x-rotation matrix (angle in radians)
+RF_API rf_mat rf_mat_rotate_y(float angle); // Returns y-rotation matrix (angle in radians)
+RF_API rf_mat rf_mat_rotate_z(float angle); // Returns z-rotation matrix (angle in radians)
+RF_API rf_mat rf_mat_scale(float x, float y, float z); // Returns scaling matrix
+RF_API rf_mat rf_mat_mul(rf_mat left, rf_mat right); // Returns two matrix multiplication. NOTE: When multiplying matrices... the order matters!
+RF_API rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val); // Returns perspective GL_PROJECTION matrix
+RF_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val); // Returns perspective GL_PROJECTION matrix. NOTE: Angle should be provided in radians
+RF_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val); // Returns orthographic GL_PROJECTION matrix
+RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up); // Returns camera look-at matrix (view matrix)
+RF_API rf_float16 rf_mat_to_float16(rf_mat mat); // Returns the matrix as an array of 16 floats
 
-RF_MATH_API rf_quaternion rf_quaternion_identity(void); // Returns identity quaternion
-RF_MATH_API float rf_quaternion_len(rf_quaternion q); // Computes the length of a quaternion
-RF_MATH_API rf_quaternion rf_quaternion_normalize(rf_quaternion q); // Normalize provided quaternion
-RF_MATH_API rf_quaternion rf_quaternion_invert(rf_quaternion q); // Invert provided quaternion
-RF_MATH_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2); // Calculate two quaternion multiplication
-RF_MATH_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculate linear interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculate slerp-optimized interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculates spherical linear interpolation between two quaternions
-RF_MATH_API rf_quaternion rf_quaternion_from_vec3_to_vec3(rf_vec3 from, rf_vec3 to); // Calculate quaternion based on the rotation from one vector to another
-RF_MATH_API rf_quaternion rf_quaternion_from_mat(rf_mat mat); // Returns a quaternion for a given rotation matrix
-RF_MATH_API rf_mat rf_quaternion_to_mat(rf_quaternion q); // Returns a matrix for a given quaternion
-RF_MATH_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle); // Returns rotation quaternion for an angle and axis. NOTE: angle must be provided in radians
-RF_MATH_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3* outAxis, float* outAngle); // Returns the rotation angle and axis for a given quaternion
-RF_MATH_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw); // Returns he quaternion equivalent to Euler angles
-RF_MATH_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q); // Return the Euler angles equivalent to quaternion (roll, pitch, yaw). NOTE: Angles are returned in a rf_vec3 struct in degrees
-RF_MATH_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat); // rf_transform a quaternion given a transformation matrix
+RF_API rf_quaternion rf_quaternion_identity(void); // Returns identity quaternion
+RF_API float rf_quaternion_len(rf_quaternion q); // Computes the length of a quaternion
+RF_API rf_quaternion rf_quaternion_normalize(rf_quaternion q); // Normalize provided quaternion
+RF_API rf_quaternion rf_quaternion_invert(rf_quaternion q); // Invert provided quaternion
+RF_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2); // Calculate two quaternion multiplication
+RF_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculate linear interpolation between two quaternions
+RF_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculate slerp-optimized interpolation between two quaternions
+RF_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount); // Calculates spherical linear interpolation between two quaternions
+RF_API rf_quaternion rf_quaternion_from_vec3_to_vec3(rf_vec3 from, rf_vec3 to); // Calculate quaternion based on the rotation from one vector to another
+RF_API rf_quaternion rf_quaternion_from_mat(rf_mat mat); // Returns a quaternion for a given rotation matrix
+RF_API rf_mat rf_quaternion_to_mat(rf_quaternion q); // Returns a matrix for a given quaternion
+RF_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle); // Returns rotation quaternion for an angle and axis. NOTE: angle must be provided in radians
+RF_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3* outAxis, float* outAngle); // Returns the rotation angle and axis for a given quaternion
+RF_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw); // Returns he quaternion equivalent to Euler angles
+RF_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q); // Return the Euler angles equivalent to quaternion (roll, pitch, yaw). NOTE: Angles are returned in a rf_vec3 struct in degrees
+RF_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat); // rf_transform a quaternion given a transformation matrix
 
 //endregion
 
 //region collision detection
 
-RF_MATH_API bool rf_check_collision_recs(rf_rec rec1, rf_rec rec2); // Check collision between two rectangles
-RF_MATH_API bool rf_check_collision_circles(rf_vec2 center1, float radius1, rf_vec2 center2, float radius2); // Check collision between two circles
-RF_MATH_API bool rf_check_collision_circle_rec(rf_vec2 center, float radius, rf_rec rec); // Check collision between circle and rectangle
-RF_MATH_API rf_rec rf_get_collision_rec(rf_rec rec1, rf_rec rec2); // Get collision rectangle for two rectangles collision
-RF_MATH_API bool rf_check_collision_point_rec(rf_vec2 point, rf_rec rec); // Check if point is inside rectangle
-RF_MATH_API bool rf_check_collision_point_circle(rf_vec2 point, rf_vec2 center, float radius); // Check if point is inside circle
-RF_MATH_API bool rf_check_collision_point_triangle(rf_vec2 point, rf_vec2 p1, rf_vec2 p2, rf_vec2 p3); // Check if point is inside a triangle
+RF_API bool rf_check_collision_recs(rf_rec rec1, rf_rec rec2); // Check collision between two rectangles
+RF_API bool rf_check_collision_circles(rf_vec2 center1, float radius1, rf_vec2 center2, float radius2); // Check collision between two circles
+RF_API bool rf_check_collision_circle_rec(rf_vec2 center, float radius, rf_rec rec); // Check collision between circle and rectangle
+RF_API rf_rec rf_get_collision_rec(rf_rec rec1, rf_rec rec2); // Get collision rectangle for two rectangles collision
+RF_API bool rf_check_collision_point_rec(rf_vec2 point, rf_rec rec); // Check if point is inside rectangle
+RF_API bool rf_check_collision_point_circle(rf_vec2 point, rf_vec2 center, float radius); // Check if point is inside circle
+RF_API bool rf_check_collision_point_triangle(rf_vec2 point, rf_vec2 p1, rf_vec2 p2, rf_vec2 p3); // Check if point is inside a triangle
 
-RF_MATH_API bool rf_check_collision_spheres(rf_vec3 center_a, float radius_a, rf_vec3 center_b, float radius_b); // Detect collision between two spheres
-RF_MATH_API bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2); // Detect collision between two bounding boxes
-RF_MATH_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius); // Detect collision between box and sphere
-RF_MATH_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius); // Detect collision between ray and sphere
-RF_MATH_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3* collision_point); // Detect collision between ray and sphere, returns collision point
-RF_MATH_API bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box); // Detect collision between ray and box
+RF_API bool rf_check_collision_spheres(rf_vec3 center_a, float radius_a, rf_vec3 center_b, float radius_b); // Detect collision between two spheres
+RF_API bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2); // Detect collision between two bounding boxes
+RF_API bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius); // Detect collision between box and sphere
+RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius); // Detect collision between ray and sphere
+RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3* collision_point); // Detect collision between ray and sphere, returns collision point
+RF_API bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box); // Detect collision between ray and box
 
-RF_MATH_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
-RF_MATH_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
-RF_MATH_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
+RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
+RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
+RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
 
 //endregion
 //endregion
@@ -1110,11 +1138,18 @@ RF_API rf_rec rf_get_image_alpha_border(rf_image image, float threshold, rf_allo
 
 //region loading & unloading functions
 RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load image from file into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_data(void* data, int data_size, rf_allocator allocator); // Load image from file data into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_data_in_format(void* data, int data_size,  rf_allocator allocator); // Load image from file data into CPU memory (RAM)
+RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator); // Load image from file data into CPU memory (RAM)
 RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
-RF_API rf_image rf_load_image_from_data_with_params(void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
+RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
 RF_API void     rf_unload_image(rf_image); // Unloads the image using its allocator
+//endregion
+
+//region gif
+RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_sizei rf_gif_frame_size(rf_gif gif);
+RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame); // Returns an image pointing to the frame in the gif
+RF_API void rf_unload_gif(rf_gif gif);
 //endregion
 
 //region image manipulation
@@ -1300,7 +1335,7 @@ RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text
 RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator); // Draw text (custom sprite font) within an image (destination)
 //endregion
 
-//region model
+//region model & materials & animations
 RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh); // Compute mesh bounding box limits
 RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator temp_allocator); // Compute mesh tangents
 RF_API void rf_mesh_compute_binormals(rf_mesh* mesh); // Compute mesh binormals
@@ -1309,7 +1344,7 @@ RF_API void rf_unload_mesh(rf_mesh mesh); // Unload mesh from memory (RAM and/or
 RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
-RF_API rf_model rf_load_model_from_gltf(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load model from files (meshes and materials)
+RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
 RF_API void rf_unload_model(rf_model model); // Unload model from memory (RAM and/or VRAM)
 
@@ -1318,7 +1353,24 @@ RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_text
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 RF_API void rf_unload_material(rf_material material); // Unload material from GPU memory (VRAM)
 
+// Animations
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load model animations from file
+RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, int frame); // Update model animation pose
+RF_API bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim); // Check model animation skeleton match
+RF_API void rf_unload_model_animation(rf_model_animation anim); // Unload animation data
+
+// mesh generation functions
 RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator); // Generate cuboid mesh
+RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator, rf_allocator temp_allocator); // Generate polygonal mesh
+RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z, rf_allocator allocator, rf_allocator temp_allocator); // Generate plane mesh (with subdivisions)
+RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator); // Generate sphere mesh (standard sphere)
+RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator); // Generate half-sphere mesh (no bottom cap)
+RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_allocator allocator, rf_allocator temp_allocator); // Generate cylinder mesh
+RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator); // Generate torus mesh
+RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator); // Generate trefoil knot mesh
+RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator); // Generate heightmap mesh from image data
+RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator); // Generate cubes-based map mesh from image data
 //endregion
 
 #endif //#ifndef RAYFORK_H

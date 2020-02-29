@@ -85,7 +85,7 @@ par_shapes_mesh* par_shapes_create_subdivided_sphere(int nsubdivisions);
 // More parametric surfaces.
 par_shapes_mesh* par_shapes_create_klein_bottle(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_trefoil_knot(int slices, int stacks,
-    float radius);
+                                                float radius);
 par_shapes_mesh* par_shapes_create_hemisphere(int slices, int stacks);
 par_shapes_mesh* par_shapes_create_plane(int slices, int stacks);
 
@@ -93,7 +93,7 @@ par_shapes_mesh* par_shapes_create_plane(int slices, int stacks);
 // point in [0,1] and produces a 3D point.
 typedef void (*par_shapes_fn)(float const*, float*, void*);
 par_shapes_mesh* par_shapes_create_parametric(par_shapes_fn, int slices,
-    int stacks, void* userdata);
+                                              int stacks, void* userdata);
 
 // Generate points for a 20-sided polyhedron that fits in the unit sphere.
 // Texture coordinates and normals are not generated.
@@ -111,7 +111,7 @@ par_shapes_mesh* par_shapes_create_cube();
 // Generate an orientable disk shape in 3-space.  Does not include normals or
 // texture coordinates.
 par_shapes_mesh* par_shapes_create_disk(float radius, int slices,
-    float const* center, float const* normal);
+                                        float const* center, float const* normal);
 
 // Create an empty shape.  Useful for building scenes with merge_and_free.
 par_shapes_mesh* par_shapes_create_empty();
@@ -125,7 +125,7 @@ par_shapes_mesh* par_shapes_create_rock(int seed, int nsubdivisions);
 // The program is a list of command-argument pairs.  See the unit test for
 // an example.  Texture coordinates and normals are not generated.
 par_shapes_mesh* par_shapes_create_lsystem(char const* program, int slices,
-    int maxdepth);
+                                           int maxdepth);
 
 // Queries ---------------------------------------------------------------------
 
@@ -138,7 +138,7 @@ void par_shapes_compute_aabb(par_shapes_mesh const* mesh, float* aabb);
 // Make a deep copy of a mesh.  To make a brand new copy, pass null to "target".
 // To avoid memory churn, pass an existing mesh to "target".
 par_shapes_mesh* par_shapes_clone(par_shapes_mesh const* mesh,
-    par_shapes_mesh* target);
+                                  par_shapes_mesh* target);
 
 // Transformations -------------------------------------------------------------
 
@@ -166,7 +166,7 @@ void par_shapes_unweld(par_shapes_mesh* mesh, bool create_indices);
 // npoints integers, which gets filled with the mapping from old vertex
 // indices to new indices.
 par_shapes_mesh* par_shapes_weld(par_shapes_mesh const*, float epsilon,
-    PAR_SHAPES_T* mapping);
+                                 PAR_SHAPES_T* mapping);
 
 // Compute smooth normals by averaging adjacent facet normals.
 void par_shapes_compute_normals(par_shapes_mesh* m);
@@ -180,7 +180,7 @@ void par_shapes_set_epsilon_degenerate_sphere(float epsilon);
 
 void par_shapes__compute_welded_normals(par_shapes_mesh* m);
 void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
-    int slices);
+                         int slices);
 
 #ifndef PAR_PI
 #define PAR_PI (3.14159265359)
@@ -194,7 +194,7 @@ void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
 #ifndef PAR_MALLOC
 #define PAR_MALLOC(T, N) ((T*) malloc(N * sizeof(T)))
 #define PAR_CALLOC(T, N) ((T*) calloc(N * sizeof(T), 1))
-#define PAR_REALLOC(T, BUF, N) ((T*) realloc(BUF, sizeof(T) * (N)))
+#define PAR_REALLOC(T, BUF, N, OLD_SZ) ((T*) realloc(BUF, sizeof(T) * (N)))
 #define PAR_FREE(BUF) free(BUF)
 #endif
 
@@ -245,7 +245,7 @@ static float par_shapes__dot3(float const* a, float const* b)
 }
 
 static void par_shapes__transform3(float* p, float const* x, float const* y,
-    float const* z)
+                                   float const* z)
 {
     float px = par_shapes__dot3(p, x);
     float py = par_shapes__dot3(p, y);
@@ -337,7 +337,7 @@ par_shapes_mesh* par_shapes_create_cylinder(int slices, int stacks)
         return 0;
     }
     return par_shapes_create_parametric(par_shapes__cylinder, slices,
-        stacks, 0);
+                                        stacks, 0);
 }
 
 par_shapes_mesh* par_shapes_create_cone(int slices, int stacks)
@@ -346,7 +346,7 @@ par_shapes_mesh* par_shapes_create_cone(int slices, int stacks)
         return 0;
     }
     return par_shapes_create_parametric(par_shapes__cone, slices,
-        stacks, 0);
+                                        stacks, 0);
 }
 
 par_shapes_mesh* par_shapes_create_parametric_sphere(int slices, int stacks)
@@ -355,7 +355,7 @@ par_shapes_mesh* par_shapes_create_parametric_sphere(int slices, int stacks)
         return 0;
     }
     par_shapes_mesh* m = par_shapes_create_parametric(par_shapes__sphere,
-        slices, stacks, 0);
+                                                      slices, stacks, 0);
     par_shapes_remove_degenerate(m, par_shapes__epsilon_degenerate_sphere);
     return m;
 }
@@ -366,7 +366,7 @@ par_shapes_mesh* par_shapes_create_hemisphere(int slices, int stacks)
         return 0;
     }
     par_shapes_mesh* m = par_shapes_create_parametric(par_shapes__hemisphere,
-        slices, stacks, 0);
+                                                      slices, stacks, 0);
     par_shapes_remove_degenerate(m, par_shapes__epsilon_degenerate_sphere);
     return m;
 }
@@ -380,7 +380,7 @@ par_shapes_mesh* par_shapes_create_torus(int slices, int stacks, float radius)
     assert(radius >= 0.1 && "Use larger radius to avoid self-intersection.");
     void* userdata = (void*) &radius;
     return par_shapes_create_parametric(par_shapes__torus, slices,
-        stacks, userdata);
+                                        stacks, userdata);
 }
 
 par_shapes_mesh* par_shapes_create_klein_bottle(int slices, int stacks)
@@ -403,7 +403,7 @@ par_shapes_mesh* par_shapes_create_klein_bottle(int slices, int stacks)
 }
 
 par_shapes_mesh* par_shapes_create_trefoil_knot(int slices, int stacks,
-    float radius)
+                                                float radius)
 {
     if (slices < 3 || stacks < 3) {
         return 0;
@@ -412,7 +412,7 @@ par_shapes_mesh* par_shapes_create_trefoil_knot(int slices, int stacks,
     assert(radius >= 0.5 && "Use larger radius to avoid self-intersection.");
     void* userdata = (void*) &radius;
     return par_shapes_create_parametric(par_shapes__trefoil, slices,
-        stacks, userdata);
+                                        stacks, userdata);
 }
 
 par_shapes_mesh* par_shapes_create_plane(int slices, int stacks)
@@ -421,11 +421,11 @@ par_shapes_mesh* par_shapes_create_plane(int slices, int stacks)
         return 0;
     }
     return par_shapes_create_parametric(par_shapes__plane, slices,
-        stacks, 0);
+                                        stacks, 0);
 }
 
 par_shapes_mesh* par_shapes_create_parametric(par_shapes_fn fn,
-    int slices, int stacks, void* userdata)
+                                              int slices, int stacks, void* userdata)
 {
     par_shapes_mesh* mesh = PAR_CALLOC(par_shapes_mesh, 1);
 
@@ -510,7 +510,7 @@ void par_shapes_export(par_shapes_mesh const* mesh, char const* filename)
             int b = 1 + *indices++;
             int c = 1 + *indices++;
             fprintf(objfile, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
-                a, a, a, b, b, b, c, c, c);
+                    a, a, a, b, b, b, c, c, c);
         }
     } else if (norms) {
         for (int nvert = 0; nvert < mesh->npoints; nvert++) {
@@ -585,11 +585,11 @@ static void par_shapes__klein(float const* uv, float* xyz, void* userdata)
     u = u * 2;
     if (u < PAR_PI) {
         xyz[0] = 3 * cosf(u) * (1 + sinf(u)) + (2 * (1 - cosf(u) / 2)) *
-            cosf(u) * cosf(v);
+                                               cosf(u) * cosf(v);
         xyz[2] = -8 * sinf(u) - 2 * (1 - cosf(u) / 2) * sinf(u) * cosf(v);
     } else {
         xyz[0] = 3 * cosf(u) * (1 + sinf(u)) + (2 * (1 - cosf(u) / 2)) *
-            cosf(v + PAR_PI);
+                                               cosf(v + PAR_PI);
         xyz[2] = -8 * sinf(u);
     }
     xyz[1] = -2 * (1 - cosf(u) / 2) * sinf(v);
@@ -664,28 +664,29 @@ void par_shapes_set_epsilon_degenerate_sphere(float epsilon) {
 void par_shapes_merge(par_shapes_mesh* dst, par_shapes_mesh const* src)
 {
     PAR_SHAPES_T offset = dst->npoints;
+    int old_dst_npoints = dst->npoints;
     int npoints = dst->npoints + src->npoints;
     int vecsize = sizeof(float) * 3;
-    dst->points = PAR_REALLOC(float, dst->points, 3 * npoints);
+    dst->points = PAR_REALLOC(float, dst->points, 3 * npoints, 3 * old_dst_npoints);
     memcpy(dst->points + 3 * dst->npoints, src->points, vecsize * src->npoints);
     dst->npoints = npoints;
     if (src->normals || dst->normals) {
-        dst->normals = PAR_REALLOC(float, dst->normals, 3 * npoints);
+        dst->normals = PAR_REALLOC(float, dst->normals, 3 * npoints, 3 * old_dst_npoints);
         if (src->normals) {
             memcpy(dst->normals + 3 * offset, src->normals,
-                vecsize * src->npoints);
+                   vecsize * src->npoints);
         }
     }
     if (src->tcoords || dst->tcoords) {
         int uvsize = sizeof(float) * 2;
-        dst->tcoords = PAR_REALLOC(float, dst->tcoords, 2 * npoints);
+        dst->tcoords = PAR_REALLOC(float, dst->tcoords, 2 * npoints, 2 * old_dst_npoints);
         if (src->tcoords) {
             memcpy(dst->tcoords + 2 * offset, src->tcoords,
-                uvsize * src->npoints);
+                   uvsize * src->npoints);
         }
     }
     int ntriangles = dst->ntriangles + src->ntriangles;
-    dst->triangles = PAR_REALLOC(PAR_SHAPES_T, dst->triangles, 3 * ntriangles);
+    dst->triangles = PAR_REALLOC(PAR_SHAPES_T, dst->triangles, 3 * ntriangles, 3 * dst->ntriangles);
     PAR_SHAPES_T* ptriangles = dst->triangles + 3 * dst->ntriangles;
     PAR_SHAPES_T const* striangles = src->triangles;
     for (int i = 0; i < src->ntriangles; i++) {
@@ -697,7 +698,7 @@ void par_shapes_merge(par_shapes_mesh* dst, par_shapes_mesh const* src)
 }
 
 par_shapes_mesh* par_shapes_create_disk(float radius, int slices,
-    float const* center, float const* normal)
+                                        float const* center, float const* normal)
 {
     par_shapes_mesh* mesh = PAR_CALLOC(par_shapes_mesh, 1);
     mesh->npoints = slices + 1;
@@ -1095,7 +1096,7 @@ typedef struct {
 } par_shapes__stackframe;
 
 static par_shapes__rule* par_shapes__pick_rule(const char* name,
-    par_shapes__rule* rules, int nrules)
+                                               par_shapes__rule* rules, int nrules)
 {
     par_shapes__rule* rule = 0;
     int total = 0;
@@ -1134,7 +1135,7 @@ static par_shapes_mesh* par_shapes__create_turtle()
 }
 
 static par_shapes_mesh* par_shapes__apply_turtle(par_shapes_mesh* mesh,
-    par_shapes_mesh* turtle, float const* pos, float const* scale)
+                                                 par_shapes_mesh* turtle, float const* pos, float const* scale)
 {
     par_shapes_mesh* m = par_shapes_clone(mesh, 0);
     for (int p = 0; p < m->npoints; p++) {
@@ -1143,7 +1144,7 @@ static par_shapes_mesh* par_shapes__apply_turtle(par_shapes_mesh* mesh,
         pt[1] *= scale[1];
         pt[2] *= scale[2];
         par_shapes__transform3(pt,
-            turtle->points + 0, turtle->points + 3, turtle->points + 6);
+                               turtle->points + 0, turtle->points + 3, turtle->points + 6);
         pt[0] += pos[0];
         pt[1] += pos[1];
         pt[2] += pos[2];
@@ -1152,7 +1153,7 @@ static par_shapes_mesh* par_shapes__apply_turtle(par_shapes_mesh* mesh,
 }
 
 void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
-    int slices)
+                         int slices)
 {
     int stacks = 1;
     int npoints = (slices + 1) * (stacks + 1);
@@ -1164,7 +1165,7 @@ void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
     memcpy(points, scene->points, sizeof(float) * scene->npoints * 3);
     float* newpts = points + scene->npoints * 3;
     memcpy(newpts, cylinder->points + (slices + 1) * 3,
-        sizeof(float) * (slices + 1) * 3);
+           sizeof(float) * (slices + 1) * 3);
     PAR_FREE(scene->points);
     scene->points = points;
 
@@ -1172,7 +1173,7 @@ void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
     int ntriangles = scene->ntriangles + 2 * slices * stacks;
     PAR_SHAPES_T* triangles = PAR_MALLOC(PAR_SHAPES_T, ntriangles * 3);
     memcpy(triangles, scene->triangles,
-        sizeof(PAR_SHAPES_T) * scene->ntriangles * 3);
+           sizeof(PAR_SHAPES_T) * scene->ntriangles * 3);
     int v = scene->npoints - (slices + 1);
     PAR_SHAPES_T* face = triangles + scene->ntriangles * 3;
     for (int stack = 0; stack < stacks; stack++) {
@@ -1195,7 +1196,7 @@ void par_shapes__connect(par_shapes_mesh* scene, par_shapes_mesh* cylinder,
 }
 
 par_shapes_mesh* par_shapes_create_lsystem(char const* text, int slices,
-    int maxdepth)
+                                           int maxdepth)
 {
     char* program;
     program = PAR_MALLOC(char, strlen(text) + 1);
@@ -1261,7 +1262,7 @@ par_shapes_mesh* par_shapes_create_lsystem(char const* text, int slices,
     }
 
     // For testing purposes, dump out the parsed program.
-    #ifdef TEST_PARSE
+#ifdef TEST_PARSE
     for (int i = 0; i < nrules; i++) {
         par_shapes__rule rule = rules[i];
         printf("rule %s.%d\n", rule.name, rule.weight);
@@ -1270,7 +1271,7 @@ par_shapes_mesh* par_shapes_create_lsystem(char const* text, int slices,
             printf("\t%s %s\n", cmd.cmd, cmd.arg);
         }
     }
-    #endif
+#endif
 
     // Instantiate the aggregated shape and the template shapes.
     par_shapes_mesh* scene = PAR_CALLOC(par_shapes_mesh, 1);
@@ -1309,15 +1310,15 @@ par_shapes_mesh* par_shapes_create_lsystem(char const* text, int slices,
         }
 
         par_shapes__command* cmd = rule->commands + (frame->pc++);
-        #ifdef DUMP_TRACE
+#ifdef DUMP_TRACE
         printf("%5s %5s %5s:%d  %03d\n", cmd->cmd, cmd->arg, rule->name,
             frame->pc - 1, stackptr);
-        #endif
+#endif
 
         float value;
         if (!strcmp(cmd->cmd, "shape")) {
             par_shapes_mesh* m = par_shapes__apply_turtle(tube, turtle,
-                position, scale);
+                                                          position, scale);
             if (!strcmp(cmd->arg, "connect")) {
                 par_shapes__connect(scene, m, slices);
             } else {
@@ -1527,28 +1528,30 @@ par_shapes_mesh* par_shapes_create_rock(int seed, int subd)
 }
 
 par_shapes_mesh* par_shapes_clone(par_shapes_mesh const* mesh,
-    par_shapes_mesh* clone)
+                                  par_shapes_mesh* clone)
 {
     if (!clone) {
         clone = PAR_CALLOC(par_shapes_mesh, 1);
     }
+    int old_clone_npoints = clone->npoints;
     clone->npoints = mesh->npoints;
-    clone->points = PAR_REALLOC(float, clone->points, 3 * clone->npoints);
+    clone->points = PAR_REALLOC(float, clone->points, 3 * clone->npoints, 3 * old_clone_npoints);
     memcpy(clone->points, mesh->points, sizeof(float) * 3 * clone->npoints);
+    int old_clone_ntriangles = clone->ntriangles;
     clone->ntriangles = mesh->ntriangles;
     clone->triangles = PAR_REALLOC(PAR_SHAPES_T, clone->triangles, 3 *
-        clone->ntriangles);
+                                                                   clone->ntriangles, 3 * old_clone_ntriangles);
     memcpy(clone->triangles, mesh->triangles,
-        sizeof(PAR_SHAPES_T) * 3 * clone->ntriangles);
+           sizeof(PAR_SHAPES_T) * 3 * clone->ntriangles);
     if (mesh->normals) {
-        clone->normals = PAR_REALLOC(float, clone->normals, 3 * clone->npoints);
+        clone->normals = PAR_REALLOC(float, clone->normals, 3 * clone->npoints, 3 * old_clone_npoints);
         memcpy(clone->normals, mesh->normals,
-            sizeof(float) * 3 * clone->npoints);
+               sizeof(float) * 3 * clone->npoints);
     }
     if (mesh->tcoords) {
-        clone->tcoords = PAR_REALLOC(float, clone->tcoords, 2 * clone->npoints);
+        clone->tcoords = PAR_REALLOC(float, clone->tcoords, 2 * clone->npoints, 3 * old_clone_npoints);
         memcpy(clone->tcoords, mesh->tcoords,
-            sizeof(float) * 2 * clone->npoints);
+               sizeof(float) * 2 * clone->npoints);
     }
     return clone;
 }
@@ -1585,7 +1588,7 @@ static int par_shapes__cmp1(const void *arg0, const void *arg1)
 }
 
 static void par_shapes__sort_points(par_shapes_mesh* mesh, int gridsize,
-    PAR_SHAPES_T* sortmap)
+                                    PAR_SHAPES_T* sortmap)
 {
     // Run qsort over a list of consecutive integers that get deferenced
     // within the comparator function; this creates a reorder mapping.
@@ -1626,14 +1629,14 @@ static void par_shapes__sort_points(par_shapes_mesh* mesh, int gridsize,
 }
 
 static void par_shapes__weld_points(par_shapes_mesh* mesh, int gridsize,
-    float epsilon, PAR_SHAPES_T* weldmap)
+                                    float epsilon, PAR_SHAPES_T* weldmap)
 {
     // Each bin contains a "pointer" (really an index) to its first point.
     // We add 1 because 0 is reserved to mean that the bin is empty.
     // Since the points are spatially sorted, there's no need to store
     // a point count in each bin.
     PAR_SHAPES_T* bins = PAR_CALLOC(PAR_SHAPES_T,
-        gridsize * gridsize * gridsize);
+                                    gridsize * gridsize * gridsize);
     int prev_binindex = -1;
     for (int p = 0; p < mesh->npoints; p++) {
         float const* pt = mesh->points + p * 3;
@@ -1766,7 +1769,7 @@ static void par_shapes__weld_points(par_shapes_mesh* mesh, int gridsize,
 }
 
 par_shapes_mesh* par_shapes_weld(par_shapes_mesh const* mesh, float epsilon,
-    PAR_SHAPES_T* weldmap)
+                                 PAR_SHAPES_T* weldmap)
 {
     par_shapes_mesh* clone = par_shapes_clone(mesh, 0);
     float aabb[6];
@@ -2068,7 +2071,7 @@ static double par__simplex_noise2(struct osn_context* ctx, double x, double y)
     if (attn_ext > 0) {
         attn_ext *= attn_ext;
         value += attn_ext * attn_ext *
-            extrapolate2(ctx, xsv_ext, ysv_ext, dx_ext, dy_ext);
+                 extrapolate2(ctx, xsv_ext, ysv_ext, dx_ext, dy_ext);
     }
 
     return value / NORM_CONSTANT_2D;

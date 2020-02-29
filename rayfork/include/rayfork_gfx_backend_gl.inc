@@ -205,21 +205,11 @@ struct rf_gfx_context
 
     bool debug_marker_supported;             // Debug marker support
 
-    int blend_mode;                          // Track current blending mode
+    rf_blend_mode blend_mode;                          // Track current blending mode
 
     // Default framebuffer size
     int framebuffer_width;                   // Default framebuffer width
     int framebuffer_height;                  // Default framebuffer height
-
-    //Note(LucaSas): Camera 3d stuff, might extract into another struct
-    rf_vec2 camera_angle;                    // rf_camera3d angle in plane XZ
-    float camera_target_distance;            // rf_camera3d distance from position to target
-
-    rf_camera3d_mode camera_mode;            // Current camera mode
-
-    //Note(LucaSas): shapes global data
-    rf_texture2d tex_shapes;
-    rf_rec rec_tex_shapes;
 
     // Default dynamic buffer for elements data. Note: A multi-buffering system is supported
     rf_renderer_memory_buffers* memory;
