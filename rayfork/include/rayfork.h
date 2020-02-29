@@ -8,6 +8,10 @@
 
 //region macros and constants
 
+#ifdef __glad_h_
+#error Macros defined in glad will overwrite opengl proc names in rayforh.h. Include rayfork.h before glad.h to fix this issue.
+#endif
+
 //If no graphics backend was set, choose OpenGL ES3
 #if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX)
     #define RAYFORK_GRAPHICS_BACKEND_GL_33
@@ -258,6 +262,12 @@ typedef enum rf_material_map_type
     RF_MAP_PREFILTER = 9,   // NOTE: Uses GL_TEXTURE_CUBE_MAP
     RF_MAP_BRDF = 10
 } rf_material_map_type;
+
+typedef enum rf_text_wrap_mode
+{
+    RF_CHAR_WRAP,
+    RF_WORD_WRAP,
+} rf_text_wrap_mode;
 
 // Pixel formats
 // NOTE: Support depends on OpenGL version and platform
@@ -558,6 +568,13 @@ struct rf_npatch_info
     int type;            //layout of the n-patch: 3x3, 1x3 or 3x1
 };
 
+typedef struct rf_utf8_codepoint rf_utf8_codepoint;
+struct rf_utf8_codepoint
+{
+    int value;
+    int bytes_processed;
+};
+
 typedef struct rf_char_info rf_char_info;
 struct rf_char_info
 {
@@ -851,6 +868,7 @@ RF_API void rf_wait(float duration); // Returns elapsed time in seconds since rf
 
 //region default io and allocator
 void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data);
+
 #if !defined(RF_NO_DEFAULT_IO)
     RF_API int rf_get_file_size(const char* filename); //Get the size of the file
     RF_API bool rf_load_file_into_buffer(const char* filename, void* buffer, int buffer_size); //Load the file into a buffer
@@ -1217,7 +1235,7 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload rend
 //endregion
 
 //region font & text
-RF_API int rf_get_next_utf8_codepoint(const char* text, int len, int* bytes_processed); //Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found or the length is exhausted
+RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len); //Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found or the length is exhausted
 RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load font from file into GPU memory (VRAM)
 RF_API rf_font rf_load_font(const void* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator); // Load font from a font file data into GPU memory (VRAM)
 RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
@@ -1229,6 +1247,7 @@ RF_API void rf_unload_font(rf_font font); // Unload rf_font from GPU memory (VRA
 
 RF_API int rf_get_glyph_index(rf_font font, int character); // Get index position for a unicode character on font
 RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing); // Measure string size for rf_font
+RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap);
 //endregion
 
 //region drawing
@@ -1303,7 +1322,8 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_
 RF_API void rf_draw_fps(int posX, int posY); // Shows current FPS
 RF_API void rf_draw_text(const char* text, int posX, int posY, int fontSize, rf_color color); // Draw text (using default font)
 RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float fontSize, float spacing, bool wordWrap, rf_color tint); // Draw text using font inside rectangle limits
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
+RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
 RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color); // Draw a line in 3D world space
 RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotation_angle, rf_color color); // Draw a circle in 3D world space
 RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color); // Draw cube

@@ -86,7 +86,7 @@ RF_INTERNAL const unsigned char rf_internal_base64_table[] =
 //region stb_image
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
 
 #define RF_SET_STBI_ALLOCATOR(allocator) rf_internal_stbi_allocator = (allocator)
 
@@ -103,7 +103,7 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
 //region stb_image_resize
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 
 #define RF_SET_STBIR_ALLOCATOR(allocator) rf_internal_stbir_allocator = (allocator)
 
@@ -124,7 +124,7 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 
 //region stb_truetype
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 
 #define RF_SET_STBTT_ALLOCATOR(allocator) rf_internal_stbtt_allocator = (allocator)
 
@@ -143,7 +143,7 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 
 //region par shapes
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* rf_internal_par_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_par_allocator;
 
 #define RF_SET_PARSHAPES_ALLOCATOR(allocator) rf_internal_par_allocator = (allocator)
 
@@ -151,15 +151,15 @@ static RF_THREAD_LOCAL rf_allocator* rf_internal_par_allocator;
 #define PAR_MALLOC(T, N)                    ((T*)RF_ALLOC(*rf_internal_par_allocator, N * sizeof(T)))
 #define PAR_CALLOC(T, N)                    ((T*)rf_internal_calloc_wrapper(*rf_internal_par_allocator, N, sizeof(T)))
 #define PAR_FREE(BUF)                       RF_FREE(*rf_internal_par_allocator, BUF)
-#define PAR_REALLOC(T, BUF, N, OLD_SZ)      ((T*) rf_internal_realloc_wrapper(BUF, sizeof(T) * (N), OLD_SZ))
+#define PAR_REALLOC(T, BUF, N, OLD_SZ)      ((T*) rf_internal_realloc_wrapper(*rf_internal_par_allocator, BUF, sizeof(T) * (N), OLD_SZ))
 
 #include "par/par_shapes.h"
 //endregion
 
 //region tinyobj loader
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-static RF_THREAD_LOCAL rf_allocator* rf_internal_tinyobj_allocator;
-static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_tinyobj_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
 
 #define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf_internal_tinyobj_allocator = allocator
 #define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf_tinyobj_io = io;
@@ -177,7 +177,7 @@ static RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
 //endregion
 
 //region cgltf
-static RF_THREAD_LOCAL rf_allocator* rf_internal_cgltf_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_cgltf_allocator;
 
 #define RF_SET_CGLTF_ALLOCATOR(allocator) rf_internal_cgltf_allocator = allocator
 
@@ -459,8 +459,8 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 #else //#if !defined(RF_NO_DEFAULT_TIME)
     //Windows only
     #ifdef _WIN32
-        static long long int rf_internal_global_performance_counter_frequency;
-        static bool rf_internal_global_performance_counter_frequency_initialised;
+        RF_INTERNAL long long int rf_internal_global_performance_counter_frequency;
+        RF_INTERNAL bool rf_internal_global_performance_counter_frequency_initialised;
 
         //If windows.h is not included
         #if !defined(_WINDOWS_)
@@ -555,9 +555,9 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
         #include <mach/mach_time.h>
         #include <unistd.h>
 
-        static bool rf_internal_global_mach_time_initialized;
-        static uint64_t rf_internal_global_mach_time_start;
-        static double rf_internal_global_mach_time_seconds_factor;
+        RF_INTERNAL bool rf_internal_global_mach_time_initialized;
+        RF_INTERNAL uint64_t rf_internal_global_mach_time_start;
+        RF_INTERNAL double rf_internal_global_mach_time_seconds_factor;
 
         RF_API double rf_get_time(void)
         {
@@ -596,7 +596,7 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 //region default io & allocator
 #include "malloc.h"
 
-void* RF_ALLOC_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
+void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
 {
     ((void)user_data);
 
@@ -3037,40 +3037,40 @@ RF_API void rf_end_blend_mode()
 RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_input_state_for_update_camera input_state)
 {
     // rf_camera3d mouse movement sensitivity
-#define rf_camera_mouse_move_sensitivity 0.003f
-#define rf_camera_mouse_scroll_sensitivity 1.5f
+    #define rf_camera_mouse_move_sensitivity 0.003f
+    #define rf_camera_mouse_scroll_sensitivity 1.5f
 
     // FREE_CAMERA
-#define rf_camera_free_mouse_sensitivity 0.01f
-#define rf_camera_free_distance_min_clamp 0.3f
-#define rf_camera_free_distance_max_clamp 120.0f
-#define rf_camera_free_min_clamp 85.0f
-#define rf_camera_free_max_clamp -85.0f
-#define rf_camera_free_smooth_zoom_sensitivity 0.05f
-#define rf_camera_free_panning_divider 5.1f
+    #define rf_camera_free_mouse_sensitivity 0.01f
+    #define rf_camera_free_distance_min_clamp 0.3f
+    #define rf_camera_free_distance_max_clamp 120.0f
+    #define rf_camera_free_min_clamp 85.0f
+    #define rf_camera_free_max_clamp -85.0f
+    #define rf_camera_free_smooth_zoom_sensitivity 0.05f
+    #define rf_camera_free_panning_divider 5.1f
 
     // ORBITAL_CAMERA
-#define rf_camera_orbital_speed 0.01f // Radians per frame
+    #define rf_camera_orbital_speed 0.01f // Radians per frame
 
     // FIRST_PERSON
     //#define CAMERA_FIRST_PERSON_MOUSE_SENSITIVITY           0.003f
-#define rf_camera_first_person_focus_distance 25.0f
-#define rf_camera_first_person_min_clamp 85.0f
-#define rf_camera_first_person_max_clamp -85.0f
+    #define rf_camera_first_person_focus_distance 25.0f
+    #define rf_camera_first_person_min_clamp 85.0f
+    #define rf_camera_first_person_max_clamp -85.0f
 
-#define rf_camera_first_person_step_trigonometric_divider 5.0f
-#define rf_camera_first_person_step_divider 30.0f
-#define rf_camera_first_person_waving_divider 200.0f
+    #define rf_camera_first_person_step_trigonometric_divider 5.0f
+    #define rf_camera_first_person_step_divider 30.0f
+    #define rf_camera_first_person_waving_divider 200.0f
 
     // THIRD_PERSON
     //#define CAMERA_THIRD_PERSON_MOUSE_SENSITIVITY           0.003f
-#define rf_camera_third_person_distance_clamp 1.2f
-#define rf_camera_third_person_min_clamp 5.0f
-#define rf_camera_third_person_max_clamp -85.0f
-#define rf_camera_third_person_offset (rf_vector3){ 0.4f, 0.0f, 0.0f }
+    #define rf_camera_third_person_distance_clamp 1.2f
+    #define rf_camera_third_person_min_clamp 5.0f
+    #define rf_camera_third_person_max_clamp -85.0f
+    #define rf_camera_third_person_offset (rf_vector3){ 0.4f, 0.0f, 0.0f }
 
     // PLAYER (used by camera)
-#define rf_player_movement_sensitivity 20.0f
+    #define rf_player_movement_sensitivity 20.0f
 
     // rf_camera3d move modes (first person and third person cameras)
     typedef enum rf_camera_move
@@ -3083,12 +3083,11 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_in
         rf_move_down
     } rf_camera_move;
 
-    static float player_eyes_position = 1.85f;
+    RF_INTERNAL float player_eyes_position = 1.85f;
 
-    static int swing_counter = 0; // Used for 1st person swinging movement
-    static rf_vec2 previous_mouse_position = {0.0f, 0.0f };
-
-    // TODO: Compute rf_internal_ctx->gl_ctx.camera_target_distance and rf_internal_ctx->gl_ctx.camera_angle here
+    RF_INTERNAL int swing_counter = 0; // Used for 1st person swinging movement
+    RF_INTERNAL rf_vec2 previous_mouse_position = {0.0f, 0.0f };
+    // TODO: CRF_INTERNAL rf_internal_ctx->gl_ctx.camera_target_distance and rf_internal_ctx->gl_ctx.camera_angle here
 
     // Mouse movement detection
     rf_vec2 mouse_position_delta = {0.0f, 0.0f };
@@ -4516,9 +4515,9 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_
 RF_API void rf_draw_fps(int posX, int posY)
 {
     // NOTE: We are rendering fps every second for better viewing on high framerates
-    static int fps = 0;
-    static int counter = 0;
-    static int refreshRate = 20;
+    RF_INTERNAL int fps = 0;
+    RF_INTERNAL int counter = 0;
+    RF_INTERNAL int refreshRate = 20;
 
     if (counter < refreshRate) counter++;
     else
@@ -4566,14 +4565,14 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
 
     for (int i = 0; i < text_len; i++)
     {
-        int next = 0;
-        letter = rf_get_next_utf8_codepoint(&text[i], text_len - i, &next);
+        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], text_len - i);
+        letter = codepoint.value;
         index = rf_get_glyph_index(font, letter);
 
         // NOTE: Normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
         // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set 'next = 1'
-        if (letter == 0x3f) next = 1;
-        i += (next - 1);
+        if (letter == 0x3f) codepoint.bytes_processed = 1;
+        i += (codepoint.bytes_processed - 1);
 
         if (letter == '\n')
         {
@@ -4598,25 +4597,32 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
     }
 }
 
-// Draw text using font inside rectangle limits
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, bool word_wrap, rf_color tint)
+// Draw text wrapped
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode)
 {
-    int text_offset_x = 0; // Offset between characters
-    int text_offset_y = 0; // Required for line break!
-    float scale_factor = 0.0f;
+    rf_rec rec = { 0, 0, wrap_width, FLT_MAX };
+    rf_draw_text_rec(font, text, text_len, rec, font_size, spacing, mode, tint);
+}
+
+// Draw text using font inside rectangle limits
+RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint)
+{
+    int   text_offset_x = 0; // Offset between characters
+    int   text_offset_y = 0; // Required for line break!
+    float scale_factor  = 0.0f;
 
     int letter = 0; // Current character
-    int index = 0; // Index position in sprite font
+    int index  = 0; // Index position in sprite font
 
     scale_factor = font_size/font.base_size;
 
     enum
     {
-        MEASURE_STATE = 0,
-        DRAW_STATE = 1
+        MEASURE_WORD_WRAP_STATE = 0,
+        MEASURE_RESULT_STATE = 1
     };
 
-    int state = word_wrap ? MEASURE_STATE : DRAW_STATE;
+    int state = wrap == RF_WORD_WRAP ? MEASURE_WORD_WRAP_STATE : MEASURE_RESULT_STATE;
     int start_line = -1; // Index where to begin drawing (where a line begins)
     int end_line = -1; // Index where to stop drawing (where a line ends)
     int lastk = -1; // Holds last value of the character position
@@ -4624,14 +4630,15 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
     for (int i = 0, k = 0; i < text_len; i++, k++)
     {
         int glyph_width = 0;
-        int next = 0;
-        letter = rf_get_next_utf8_codepoint(&text[i], text_len - i, &next);
+
+        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], text_len - i);
+        letter = codepoint.value;
         index = rf_get_glyph_index(font, letter);
 
         // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
         // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set next = 1
-        if (letter == 0x3f) next = 1;
-        i += next - 1;
+        if (letter == 0x3f) codepoint.bytes_processed = 1;
+        i += codepoint.bytes_processed - 1;
 
         if (letter != '\n')
         {
@@ -4640,12 +4647,12 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
                           (int)(font.chars[index].advance_x*scale_factor + spacing);
         }
 
-        // NOTE: When word_wrap is ON we first measure how much of the text we can draw before going outside of the rec container
+        // NOTE: When wrap is ON we first measure how much of the text we can draw before going outside of the rec container
         // We store this info in start_line and end_line, then we change states, draw the text between those two variables
         // and change states again and again recursively until the end of the text (or until we get outside of the container).
-        // When word_wrap is OFF we don't need the measure state so we go to the drawing state immediately
+        // When wrap is OFF we don't need the measure state so we go to the drawing state immediately
         // and begin drawing on the next line before we can get outside the container.
-        if (state == MEASURE_STATE)
+        if (state == MEASURE_WORD_WRAP_STATE)
         {
             // TODO: there are multiple types of spaces in UNICODE, maybe it's a good idea to add support for more
             // See: http://jkorpela.fi/chars/spaces.html
@@ -4654,8 +4661,8 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
             if ((text_offset_x + glyph_width + 1) >= rec.width)
             {
                 end_line = (end_line < 1)? i : end_line;
-                if (i == end_line) end_line -= next;
-                if ((start_line + next) == end_line) end_line = i - next;
+                if (i == end_line) end_line -= codepoint.bytes_processed;
+                if ((start_line + codepoint.bytes_processed) == end_line) end_line = i - codepoint.bytes_processed;
                 state = !state;
             }
             else if ((i + 1) == text_len)
@@ -4668,7 +4675,7 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
                 state = !state;
             }
 
-            if (state == DRAW_STATE)
+            if (state == MEASURE_RESULT_STATE)
             {
                 text_offset_x = 0;
                 i = start_line;
@@ -4684,7 +4691,7 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
         {
             if (letter == '\n')
             {
-                if (!word_wrap)
+                if (!wrap)
                 {
                     text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
                     text_offset_x = 0;
@@ -4692,7 +4699,7 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
             }
             else
             {
-                if (!word_wrap && ((text_offset_x + glyph_width + 1) >= rec.width))
+                if (!wrap && ((text_offset_x + glyph_width + 1) >= rec.width))
                 {
                     text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
                     text_offset_x = 0;
@@ -4704,15 +4711,17 @@ RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_r
                 if ((letter != ' ') && (letter != '\t'))
                 {
                     rf_draw_texture_region(font.texture, font.recs[index],
-                                           (rf_rec){rec.x + text_offset_x + font.chars[index].offset_x * scale_factor,
-                                                    rec.y + text_offset_y + font.chars[index].offset_y*scale_factor,
-                                                    font.recs[index].width*scale_factor,
-                                                    font.recs[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f,
-                                           tint);
+                                           (rf_rec) {
+                                               rec.x + text_offset_x + font.chars[index].offset_x * scale_factor,
+                                               rec.y + text_offset_y + font.chars[index].offset_y * scale_factor,
+                                               font.recs[index].width  * scale_factor,
+                                               font.recs[index].height * scale_factor
+                                           },
+                                           (rf_vec2){ 0, 0 }, 0.0f, tint);
                 }
             }
 
-            if (word_wrap && (i == end_line))
+            if (wrap && (i == end_line))
             {
                 text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
                 text_offset_x = 0;
@@ -5855,6 +5864,11 @@ RF_API void rf_unload_image(rf_image image)
 //endregion
 
 //region gif
+// Load animated GIF data
+//  - rf_image.data buffer includes all frames: [image#0][image#1][image#2][...]
+//  - Number of frames is returned through 'frames' parameter
+//  - Frames delay is returned through 'delays' parameter (int array)
+//  - All frames are returned in RGBA format
 RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_gif result = (rf_gif) {};
@@ -6724,12 +6738,12 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
 
     for (int i = 0; i < length; i++)
     {
-        int next = 0;
-        letter = rf_get_next_utf8_codepoint(&text[i], length - i, &next);
+        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], length - i);
+        letter = codepoint.value;
         index  = rf_get_glyph_index(font, letter);
 
-        if (letter == 0x3f) next = 1;
-        i += (next - 1);
+        if (letter == 0x3f) codepoint.bytes_processed = 1;
+        i += (codepoint.bytes_processed - 1);
 
         if (letter == '\n')
         {
@@ -7689,7 +7703,7 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target)
    but that character is not supported by the default font in raylib
    TODO: optimize this code for speed!!
 */
-RF_API int rf_get_next_utf8_codepoint(const char* text, int len, int* bytes_processed)
+RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len)
 {
     /*
     UTF8 specs from https://www.ietf.org/rfc/rfc3629.txt
@@ -7702,49 +7716,71 @@ RF_API int rf_get_next_utf8_codepoint(const char* text, int len, int* bytes_proc
     0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
     */
 
-    // NOTE: on decode errors we return as soon as possible
-    int code = 0x3f; // Codepoint (defaults to '?')
+    #define RF_DEFAULT_CODEPOINT (0x3f) // Codepoint defaults to '?' if invalid
 
-    if (len < 1) { *bytes_processed = 0; return code; }
+    if (len < 1)
+    {
+        return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT };
+    }
 
-    int octet = (unsigned char)(text[0]); // The first UTF8 octet
-
-    *bytes_processed = 1;
+    const int octet = (unsigned char)(text[0]); // The first UTF8 octet
 
     if (octet <= 0x7f)
     {
         // Only one octet (ASCII range x00-7F)
-        code = text[0];
+        const int code = text[0];
+
+        // Codepoints after U+10ffff are invalid
+        return (rf_utf8_codepoint) { code > 0x10ffff ? RF_DEFAULT_CODEPOINT : code, .bytes_processed = 1 };
     }
     else if ((octet & 0xe0) == 0xc0)
     {
-        if (len < 2) { *bytes_processed = 1; return code; }
+        if (len < 2)
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 1 };
+        }
 
         // Two octets
         // [0]xC2-DF    [1]UTF8-tail(x80-BF)
-        unsigned char octet1 = text[1];
+        const unsigned char octet1 = text[1];
 
-        if ((octet1 == '\0') || ((octet1 >> 6) != 2)) { *bytes_processed = 2; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet1 == '\0') || ((octet1 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 2 };
+        }
 
         if ((octet >= 0xc2) && (octet <= 0xdf))
         {
-            code = ((octet & 0x1f) << 6) | (octet1 & 0x3f);
-            *bytes_processed = 2;
+            const int code = ((octet & 0x1f) << 6) | (octet1 & 0x3f);
+
+            // Codepoints after U+10ffff are invalid
+            return (rf_utf8_codepoint) { code > 0x10ffff ? RF_DEFAULT_CODEPOINT : code, .bytes_processed = 2 };
         }
     }
     else if ((octet & 0xf0) == 0xe0)
     {
-        if (len < 2) { *bytes_processed = 1; return code; }
+        if (len < 2)
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 1 };
+        }
 
         // Three octets
-        unsigned char octet1 = text[1];
-        unsigned char octet2 = '\0';
+        const unsigned char octet1 = text[1];
 
-        if ((octet1 == '\0') || (len < 3) || ((octet1 >> 6) != 2)) { *bytes_processed = 2; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet1 == '\0') || (len < 3) || ((octet1 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 2 };
+        }
 
-        octet2 = text[2];
+        const unsigned char octet2 = text[2];
 
-        if ((octet2 == '\0') || ((octet2 >> 6) != 2)) { *bytes_processed = 3; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet2 == '\0') || ((octet2 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 3 };
+        }
 
         /*
             [0]xE0    [1]xA0-BF       [2]UTF8-tail(x80-BF)
@@ -7753,52 +7789,74 @@ RF_API int rf_get_next_utf8_codepoint(const char* text, int len, int* bytes_proc
             [0]xEE-EF [1]UTF8-tail    [2]UTF8-tail(x80-BF)
         */
         if (((octet == 0xe0) && !((octet1 >= 0xa0) && (octet1 <= 0xbf))) ||
-            ((octet == 0xed) && !((octet1 >= 0x80) && (octet1 <= 0x9f)))) { *bytes_processed = 2; return code; }
+            ((octet == 0xed) && !((octet1 >= 0x80) && (octet1 <= 0x9f))))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 2 };
+        }
 
         if ((octet >= 0xe0) && (0 <= 0xef))
         {
-            code = ((octet & 0xf) << 12) | ((octet1 & 0x3f) << 6) | (octet2 & 0x3f);
-            *bytes_processed = 3;
+            const int code = ((octet & 0xf) << 12) | ((octet1 & 0x3f) << 6) | (octet2 & 0x3f);
+
+            // Codepoints after U+10ffff are invalid
+            return (rf_utf8_codepoint) { code > 0x10ffff ? RF_DEFAULT_CODEPOINT : code, .bytes_processed = 3 };
         }
     }
     else if ((octet & 0xf8) == 0xf0)
     {
         // Four octets
-        if (octet > 0xf4) return code;
-        if (len < 2) { *bytes_processed = 1; return code; }
+        if (octet > 0xf4 || len < 2)
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 1 };
+        }
 
-        unsigned char octet1 = text[1];
-        unsigned char octet2 = '\0';
-        unsigned char octet3 = '\0';
+        const unsigned char octet1 = text[1];
 
-        if ((octet1 == '\0') || (len < 3) || ((octet1 >> 6) != 2)) { *bytes_processed = 2; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet1 == '\0') || (len < 3) || ((octet1 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 2 };
+        }
 
-        octet2 = text[2];
+        const unsigned char octet2 = text[2];
 
-        if ((octet2 == '\0') || (len < 4) || ((octet2 >> 6) != 2)) { *bytes_processed = 3; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet2 == '\0') || (len < 4) || ((octet2 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 3 };
+        }
 
-        octet3 = text[3];
+        const unsigned char octet3 = text[3];
 
-        if ((octet3 == '\0') || ((octet3 >> 6) != 2)) { *bytes_processed = 4; return code; } // Unexpected sequence
+        // Check for unexpected sequence
+        if ((octet3 == '\0') || ((octet3 >> 6) != 2))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 4 };
+        }
 
         /*
             [0]xF0       [1]x90-BF       [2]UTF8-tail  [3]UTF8-tail
             [0]xF1-F3    [1]UTF8-tail    [2]UTF8-tail  [3]UTF8-tail
             [0]xF4       [1]x80-8F       [2]UTF8-tail  [3]UTF8-tail
         */
+
+        // Check for unexpected sequence
         if (((octet == 0xf0) && !((octet1 >= 0x90) && (octet1 <= 0xbf))) ||
-            ((octet == 0xf4) && !((octet1 >= 0x80) && (octet1 <= 0x8f)))) { *bytes_processed = 2; return code; } // Unexpected sequence
+            ((octet == 0xf4) && !((octet1 >= 0x80) && (octet1 <= 0x8f))))
+        {
+            return (rf_utf8_codepoint) { RF_DEFAULT_CODEPOINT, .bytes_processed = 2 };
+        }
 
         if (octet >= 0xf0)
         {
-            code = ((octet & 0x7) << 18) | ((octet1 & 0x3f) << 12) | ((octet2 & 0x3f) << 6) | (octet3 & 0x3f);
-            *bytes_processed = 4;
+            const int code = ((octet & 0x7) << 18) | ((octet1 & 0x3f) << 12) | ((octet2 & 0x3f) << 6) | (octet3 & 0x3f);
+
+            // Codepoints after U+10ffff are invalid
+            return (rf_utf8_codepoint) { code > 0x10ffff ? RF_DEFAULT_CODEPOINT : code, .bytes_processed = 4 };
         }
     }
 
-    if (code > 0x10ffff) code = 0x3f; // Codepoints after U+10ffff are invalid
-
-    return code;
+    RF_ASSERT(false); // Unreachable
 }
 
 // Load rf_font from file into GPU memory (VRAM)
@@ -8285,92 +8343,94 @@ RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float f
     float text_width = 0.0f;
     float temp_text_width = 0.0f; // Used to count longer text line width
 
-    float text_height = (float)font.base_size;
+    float text_height  = (float)font.base_size;
     float scale_factor = font_size/(float)font.base_size;
 
     int letter = 0; // Current character
-    int index = 0; // Index position in sprite font
+    int index  = 0; // Index position in sprite font
 
     for (int i = 0; i < len; i++)
     {
         len_counter++;
 
-        int next = 0;
-        letter = rf_get_next_utf8_codepoint(&text[i], len - i, &next);
-        index = rf_get_glyph_index(font, letter);
+        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], len - i);
+        index = rf_get_glyph_index(font, codepoint.bytes_processed);
 
         // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
         // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set next = 1
-        if (letter == 0x3f) next = 1;
-        i += next - 1;
+        if (letter == 0x3f) { codepoint.bytes_processed = 1; }
+        i += codepoint.bytes_processed - 1;
 
         if (letter != '\n')
         {
-            if (font.chars[index].advance_x != 0) text_width += font.chars[index].advance_x;
-            else text_width += (font.recs[index].width + font.chars[index].offset_x);
+            if (font.chars[index].advance_x != 0) { text_width += font.chars[index].advance_x; }
+            else { text_width += (font.recs[index].width + font.chars[index].offset_x); }
         }
         else
         {
-            if (temp_text_width < text_width) temp_text_width = text_width;
+            if (temp_text_width < text_width) { temp_text_width = text_width; }
+
             len_counter = 0;
             text_width = 0;
             text_height += ((float)font.base_size*1.5f); // NOTE: Fixed line spacing of 1.5 lines
         }
 
-        if (temp_len < len_counter) temp_len = len_counter;
+        if (temp_len < len_counter) { temp_len = len_counter; }
     }
 
     if (temp_text_width < text_width) temp_text_width = text_width;
 
     return (rf_sizef) {
-            temp_text_width * scale_factor + (float)((temp_len - 1)*spacing), // Adds chars spacing to measure
-            text_height * scale_factor,
+        temp_text_width * scale_factor + (float)((temp_len - 1)*spacing), // Adds chars spacing to measure
+        text_height * scale_factor,
     };
 }
 
-// Measure string width for default font
-// Note(lulu): Merge with rf_measure_text
-/*
-RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_size, const char* text, int length, float container_width)
+RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap)
 {
-    rf_sizef unwrapped_string_size = rf_measure_text(font, text, length, font_size, 1.0f);
-    if (unwrapped_string_size.x <= container_width)
-    {
-        return unwrapped_string_size.y;
-    }
-
-    rf_rec rec = { 0, 0, container_width, FLT_MAX };
+    rf_sizef result = { 0 };
     int text_offset_x = 0; // Offset between characters
     int text_offset_y = 0; // Required for line break!
     float scale_factor = 0.0f;
-    float spacing = 1.0f;
 
     int letter = 0; // Current character
     int index = 0; // Index position in sprite font
 
-    scale_factor = font_size/font.base_size;
+    scale_factor = font_size / font.base_size;
 
+    enum
+    {
+        MEASURE_WRAP_STATE = 0,
+        MEASURE_REGULAR_STATE = 1
+    };
+
+    int state = wrap ? MEASURE_WRAP_STATE : MEASURE_REGULAR_STATE;
     int start_line = -1; // Index where to begin drawing (where a line begins)
     int end_line = -1; // Index where to stop drawing (where a line ends)
     int lastk = -1; // Holds last value of the character position
 
-    for (int i = 0, k = 0; i < length; i++, k++)
+    int max_y   = 0;
+    int first_y = 0;
+    bool first_y_set = false;
+
+    for (int i = 0, k = 0; i < text_len; i++, k++)
     {
         int glyph_width = 0;
-        int next = 0;
-        letter = rf_internal_get_next_utf8_codepoint(&text[i], &next);
+
+        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], text_len - i);
+        letter = codepoint.value;
         index = rf_get_glyph_index(font, letter);
 
-        // NOTE: normally we exit the decoding sequence as soon as a bad rf_byte is found (and return 0x3f)
+        // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
         // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set next = 1
-        if (letter == 0x3f) next = 1;
-        i += next - 1;
+        if (letter == 0x3f) codepoint.bytes_processed = 1;
+        i += codepoint.bytes_processed - 1;
 
         if (letter != '\n')
         {
-            glyph_width = (font.chars[index].advance_x == 0)?
-                         (int)(font.recs[index].width*scale_factor + spacing):
-                         (int)(font.chars[index].advance_x*scale_factor + spacing);
+            glyph_width = (font.chars[index].advance_x == 0) ?
+                          (int)(font.recs[index].width * scale_factor + extra_spacing) :
+                          (int)(font.chars[index].advance_x * scale_factor + extra_spacing);
         }
 
         // NOTE: When word_wrap is ON we first measure how much of the text we can draw before going outside of the rec container
@@ -8378,20 +8438,20 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
         // and change states again and again recursively until the end of the text (or until we get outside of the container).
         // When word_wrap is OFF we don't need the measure state so we go to the drawing state immediately
         // and begin drawing on the next line before we can get outside the container.
-        if (state == MEASURE_STATE)
+        if (state == MEASURE_WRAP_STATE)
         {
             // TODO: there are multiple types of spaces in UNICODE, maybe it's a good idea to add support for more
             // See: http://jkorpela.fi/chars/spaces.html
-            if ((letter == ' ') || (letter == '\t') || (letter == '\n')) end_line = i;
+            if ((letter == ' ') || (letter == '\t') || (letter == '\n')) { end_line = i; }
 
             if ((text_offset_x + glyph_width + 1) >= rec.width)
             {
-                end_line = (end_line < 1)? i : end_line;
-                if (i == end_line) end_line -= next;
-                if ((start_line + next) == end_line) end_line = i - next;
+                end_line = (end_line < 1) ? i : end_line;
+                if (i == end_line) { end_line -= codepoint.bytes_processed; }
+                if ((start_line + codepoint.bytes_processed) == end_line) { end_line = i - codepoint.bytes_processed; }
                 state = !state;
             }
-            else if ((i + 1) == length)
+            else if ((i + 1) == text_len)
             {
                 end_line = i;
                 state = !state;
@@ -8401,7 +8461,7 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
                 state = !state;
             }
 
-            if (state == DRAW_STATE)
+            if (state == MEASURE_REGULAR_STATE)
             {
                 text_offset_x = 0;
                 i = start_line;
@@ -8415,9 +8475,38 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
         }
         else
         {
-            if ((text_offset_y + (int)(font.base_size*scale_factor)) > rec.height) break;
+            if (letter == '\n')
+            {
+                if (!wrap)
+                {
+                    text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+                    text_offset_x = 0;
+                }
+            }
+            else
+            {
+                if (!wrap && (text_offset_x + glyph_width + 1) >= rec.width)
+                {
+                    text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
+                    text_offset_x = 0;
+                }
 
-            if (i == end_line)
+                if ((text_offset_y + (int)(font.base_size*scale_factor)) > rec.height) break;
+
+                // The right side expression is the offset of the latest character plus its width (so the end of the line)
+                // We want the highest value of that expression by the end of the function
+                result.width  = RF_MAX(result.width,  rec.x + text_offset_x - 1 + glyph_width);
+
+                if (!first_y_set)
+                {
+                    first_y = rec.y + text_offset_y;
+                    first_y_set = true;
+                }
+
+                max_y = RF_MAX(max_y, rec.y + text_offset_y + font.base_size * scale_factor);
+            }
+
+            if (wrap && i == end_line)
             {
                 text_offset_y += (int)((font.base_size + font.base_size/2)*scale_factor);
                 text_offset_x = 0;
@@ -8432,9 +8521,10 @@ RF_API float rf_measure_height_of_text_in_container(rf_font font, float font_siz
         text_offset_x += glyph_width;
     }
 
-    return text_offset_y;
+    result.height = max_y - first_y;
+
+    return result;
 }
-*/
 //endregion
 
 //region model
@@ -8951,10 +9041,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
     rf_iqm_header iqm = *((rf_iqm_header*)data);
 
-    rf_iqm_mesh*         imesh;
-    rf_iqm_triangle*     tri;
-    rf_iqm_vertex_array* va;
-    rf_iqm_joint*        ijoint;
+    rf_iqm_mesh*          imesh;
+    rf_iqm_triangle*      tri;
+    rf_iqm_vertex_array*  va;
+    rf_iqm_joint*         ijoint;
 
     float* vertex         = NULL;
     float* normal         = NULL;
@@ -9188,6 +9278,22 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     return rf_internal_load_meshes_and_materials_for_model(model, temp_allocator);
 }
 
+/***********************************************************************************
+    Function based on work by Wilhem Barbier (@wbrbr)
+
+    Features:
+      - Supports .gltf and .glb files
+      - Supports embedded (base64) or external textures
+      - Loads the albedo/diffuse texture (other maps could be added)
+      - Supports multiple mesh per model and multiple primitives per model
+
+    Some restrictions (not exhaustive):
+      - Triangle-only meshes
+      - Not supported node hierarchies or transforms
+      - Only loads the diffuse texture... but not too hard to support other maps (normal, roughness/metalness...)
+      - Only supports unsigned short indices (no unsigned char/unsigned int)
+      - Only supports float for texture coordinates (no unsigned char/unsigned short)
+    *************************************************************************************/
 // Load texture from cgltf_image
 RF_INTERNAL rf_texture2d rf_internal_load_texture_from_cgltf_image(cgltf_image* image, const char* tex_path, rf_color tint, rf_allocator temp_allocator, rf_io_callbacks io)
 {
