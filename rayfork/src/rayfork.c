@@ -409,7 +409,6 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
 RF_API rf_material rf_load_default_material(rf_allocator allocator)
 {
     rf_material material = { 0 };
-    material.allocator = allocator;
     material.maps = (rf_material_map*) RF_ALLOC(allocator, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
     memset(material.maps, 0, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
 
@@ -776,7 +775,6 @@ RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocato
 {
     rf_base64_output result;
     result.size      = rf_get_size_base64(input);
-    result.allocator = allocator;
     result.buffer    = (unsigned char*) RF_ALLOC(allocator, result.size);
     
     for (int i = 0; i < result.size / 3; i++)
@@ -813,9 +811,9 @@ RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocato
     return result;
 }
 
-RF_API void rf_unload_base64_output(rf_base64_output it)
+RF_API void rf_unload_base64_output(rf_base64_output it, rf_allocator allocator)
 {
-    RF_FREE(it.allocator, it.buffer);
+    RF_FREE(allocator, it.buffer);
 }
 //endregion
 
@@ -5520,6 +5518,124 @@ RF_API rf_color* rf_get_image_pixel_data(rf_image image, rf_allocator allocator)
     return pixels;
 }
 
+RF_API rf_vec4 rf_get_pixel_normalized()
+{
+    switch (image.format)
+    {
+        case RF_UNCOMPRESSED_GRAYSCALE:
+        {
+            pixels[i].x = (float)((unsigned char* )image.data)[i]/255.0f;
+            pixels[i].y = (float)((unsigned char* )image.data)[i]/255.0f;
+            pixels[i].z = (float)((unsigned char* )image.data)[i]/255.0f;
+            pixels[i].w = 1.0f;
+
+        }
+            break;
+
+        case RF_UNCOMPRESSED_GRAY_ALPHA:
+        {
+            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
+            pixels[i].y = (float)((unsigned char* )image.data)[k]/255.0f;
+            pixels[i].z = (float)((unsigned char* )image.data)[k]/255.0f;
+            pixels[i].w = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+
+            k += 2;
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R5G5B5A1:
+        {
+            unsigned short pixel = ((unsigned short *)image.data)[i];
+
+            pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
+            pixels[i].y = (float)((pixel & 0b0000011111000000) >> 6)*(1.0f/31);
+            pixels[i].z = (float)((pixel & 0b0000000000111110) >> 1)*(1.0f/31);
+            pixels[i].w = ((pixel & 0b0000000000000001) == 0)? 0.0f : 1.0f;
+
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R5G6B5:
+        {
+            unsigned short pixel = ((unsigned short *)image.data)[i];
+
+            pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
+            pixels[i].y = (float)((pixel & 0b0000011111100000) >> 5)*(1.0f/63);
+            pixels[i].z = (float)(pixel & 0b0000000000011111)*(1.0f/31);
+            pixels[i].w = 1.0f;
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R4G4B4A4:
+        {
+            unsigned short pixel = ((unsigned short *)image.data)[i];
+
+            pixels[i].x = (float)((pixel & 0b1111000000000000) >> 12)*(1.0f/15);
+            pixels[i].y = (float)((pixel & 0b0000111100000000) >> 8)*(1.0f/15);
+            pixels[i].z = (float)((pixel & 0b0000000011110000) >> 4)*(1.0f/15);
+            pixels[i].w = (float)(pixel & 0b0000000000001111)*(1.0f/15);
+
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R8G8B8A8:
+        {
+            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
+            pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+            pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
+            pixels[i].w = (float)((unsigned char* )image.data)[k + 3]/255.0f;
+
+            k += 4;
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R8G8B8:
+        {
+            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
+            pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+            pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
+            pixels[i].w = 1.0f;
+
+            k += 3;
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R32:
+        {
+            pixels[i].x = ((float* )image.data)[k];
+            pixels[i].y = 0.0f;
+            pixels[i].z = 0.0f;
+            pixels[i].w = 1.0f;
+
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R32G32B32:
+        {
+            pixels[i].x = ((float* )image.data)[k];
+            pixels[i].y = ((float* )image.data)[k + 1];
+            pixels[i].z = ((float* )image.data)[k + 2];
+            pixels[i].w = 1.0f;
+
+            k += 3;
+        }
+            break;
+
+        case RF_UNCOMPRESSED_R32G32B32A32:
+        {
+            pixels[i].x = ((float* )image.data)[k];
+            pixels[i].y = ((float* )image.data)[k + 1];
+            pixels[i].z = ((float* )image.data)[k + 2];
+            pixels[i].w = ((float* )image.data)[k + 3];
+
+            k += 4;
+        }
+            break;
+
+        default: break;
+    }
+}
+
 // Get pixel data from image as rf_vec4 array (float normalized)
 RF_API rf_vec4* rf_get_image_data_normalized(rf_image image, rf_allocator allocator)
 {
@@ -5528,103 +5644,9 @@ RF_API rf_vec4* rf_get_image_data_normalized(rf_image image, rf_allocator alloca
     if (image.format >= RF_COMPRESSED_DXT1_RGB) RF_LOG_V(RF_LOG_WARNING, "Pixel data retrieval not supported for compressed image formats");
     else
     {
-        for (int i = 0, k = 0; i < image.width*image.height; i++)
+        for (int i = 0, k = 0; i < image.width * image.height; i++)
         {
-            switch (image.format)
-            {
-                case RF_UNCOMPRESSED_GRAYSCALE:
-                {
-                    pixels[i].x = (float)((unsigned char* )image.data)[i]/255.0f;
-                    pixels[i].y = (float)((unsigned char* )image.data)[i]/255.0f;
-                    pixels[i].z = (float)((unsigned char* )image.data)[i]/255.0f;
-                    pixels[i].w = 1.0f;
 
-                } break;
-                case RF_UNCOMPRESSED_GRAY_ALPHA:
-                {
-                    pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-                    pixels[i].y = (float)((unsigned char* )image.data)[k]/255.0f;
-                    pixels[i].z = (float)((unsigned char* )image.data)[k]/255.0f;
-                    pixels[i].w = (float)((unsigned char* )image.data)[k + 1]/255.0f;
-
-                    k += 2;
-                } break;
-                case RF_UNCOMPRESSED_R5G5B5A1:
-                {
-                    unsigned short pixel = ((unsigned short *)image.data)[i];
-
-                    pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
-                    pixels[i].y = (float)((pixel & 0b0000011111000000) >> 6)*(1.0f/31);
-                    pixels[i].z = (float)((pixel & 0b0000000000111110) >> 1)*(1.0f/31);
-                    pixels[i].w = ((pixel & 0b0000000000000001) == 0)? 0.0f : 1.0f;
-
-                } break;
-                case RF_UNCOMPRESSED_R5G6B5:
-                {
-                    unsigned short pixel = ((unsigned short *)image.data)[i];
-
-                    pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
-                    pixels[i].y = (float)((pixel & 0b0000011111100000) >> 5)*(1.0f/63);
-                    pixels[i].z = (float)(pixel & 0b0000000000011111)*(1.0f/31);
-                    pixels[i].w = 1.0f;
-
-                } break;
-                case RF_UNCOMPRESSED_R4G4B4A4:
-                {
-                    unsigned short pixel = ((unsigned short *)image.data)[i];
-
-                    pixels[i].x = (float)((pixel & 0b1111000000000000) >> 12)*(1.0f/15);
-                    pixels[i].y = (float)((pixel & 0b0000111100000000) >> 8)*(1.0f/15);
-                    pixels[i].z = (float)((pixel & 0b0000000011110000) >> 4)*(1.0f/15);
-                    pixels[i].w = (float)(pixel & 0b0000000000001111)*(1.0f/15);
-
-                } break;
-                case RF_UNCOMPRESSED_R8G8B8A8:
-                {
-                    pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-                    pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
-                    pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
-                    pixels[i].w = (float)((unsigned char* )image.data)[k + 3]/255.0f;
-
-                    k += 4;
-                } break;
-                case RF_UNCOMPRESSED_R8G8B8:
-                {
-                    pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-                    pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
-                    pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
-                    pixels[i].w = 1.0f;
-
-                    k += 3;
-                } break;
-                case RF_UNCOMPRESSED_R32:
-                {
-                    pixels[i].x = ((float* )image.data)[k];
-                    pixels[i].y = 0.0f;
-                    pixels[i].z = 0.0f;
-                    pixels[i].w = 1.0f;
-
-                } break;
-                case RF_UNCOMPRESSED_R32G32B32:
-                {
-                    pixels[i].x = ((float* )image.data)[k];
-                    pixels[i].y = ((float* )image.data)[k + 1];
-                    pixels[i].z = ((float* )image.data)[k + 2];
-                    pixels[i].w = 1.0f;
-
-                    k += 3;
-                } break;
-                case RF_UNCOMPRESSED_R32G32B32A32:
-                {
-                    pixels[i].x = ((float* )image.data)[k];
-                    pixels[i].y = ((float* )image.data)[k + 1];
-                    pixels[i].z = ((float* )image.data)[k + 2];
-                    pixels[i].w = ((float* )image.data)[k + 3];
-
-                    k += 4;
-                } break;
-                default: break;
-            }
         }
     }
 
@@ -5757,7 +5779,6 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
             image.width     = img_width;
             image.height    = img_height;
             image.mipmaps   = 1;
-            image.allocator = allocator;
 
             if (img_bpp == 1)      image.format = RF_UNCOMPRESSED_GRAYSCALE;
             else if (img_bpp == 2) image.format = RF_UNCOMPRESSED_GRAY_ALPHA;
@@ -5798,7 +5819,6 @@ RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allo
     image.width     = img_width;
     image.height    = img_height;
     image.mipmaps   = 1;
-    image.allocator = allocator;
 
     if (img_bpp == 1)      image.format = RF_UNCOMPRESSED_GRAYSCALE;
     else if (img_bpp == 2) image.format = RF_UNCOMPRESSED_GRAY_ALPHA;
@@ -5822,7 +5842,38 @@ RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int heigh
     image.height    = height;
     image.mipmaps   = 1;
     image.format    = RF_UNCOMPRESSED_R8G8B8A8;
-    image.allocator = allocator;
+
+    int k = 0;
+
+    image.data = (unsigned char*) RF_ALLOC(allocator,image.width * image.height * 4 * sizeof(unsigned char));
+
+    for (int i = 0; i < image.width * image.height * 4; i += 4)
+    {
+        ((unsigned char* )image.data)[i    ] = pixels[k].r;
+        ((unsigned char* )image.data)[i + 1] = pixels[k].g;
+        ((unsigned char* )image.data)[i + 2] = pixels[k].b;
+        ((unsigned char* )image.data)[i + 3] = pixels[k].a;
+        k++;
+    }
+
+    return image;
+}
+
+RF_API rf_image rf_load_image_from_pixels_to_format(rf_color* pixels, int width, int height, rf_pixel_format format, rf_allocator allocator)
+{
+    if (format > RF_COMPRESSED_DXT1_RGB)
+    {
+        RF_LOG_V(RF_LOG_WARNING, "rf_image data format is compressed, can not be converted");
+
+        return (rf_image) {};
+    }
+
+    rf_image image = {
+        .data   = NULL,
+        .width  = width,
+        .height = height,
+        .format = format,
+    };
 
     int k = 0;
 
@@ -5857,9 +5908,9 @@ RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_siz
 }
 
 // Unloads the image using its allocator
-RF_API void rf_unload_image(rf_image image)
+RF_API void rf_unload_image(rf_image image, rf_allocator allocator)
 {
-    RF_FREE(image.allocator, image.data);
+    RF_FREE(allocator, image.data);
 }
 //endregion
 
@@ -5894,8 +5945,7 @@ RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator
 
     RF_SET_STBI_ALLOCATOR(&allocator);
     {
-        gif.data      = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &comp, 4);
-        gif.allocator = allocator;
+        gif.data = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &comp, 4);
     }
     RF_SET_STBI_ALLOCATOR(NULL);
 
@@ -5922,23 +5972,20 @@ RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame)
         .height    = size.height,
         .mipmaps   = 1,
         .format    = gif.format,
-        .allocator = RF_NULL_ALLOCATOR
     };
 }
 
-RF_API void rf_unload_gif(rf_gif gif)
+RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator)
 {
-    RF_FREE(gif.allocator, gif.frame_delays);
+    RF_FREE(allocator, gif.frame_delays);
     rf_unload_image(gif.image);
 }
 //endregion
 
 //region image manipulation
-// Copy an image to a new image
-RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
+RF_API rf_mipmaps_image rf_image_copy(rf_mipmaps_image image, rf_allocator allocator)
 {
-    rf_image new_image = { 0 };
-    new_image.allocator = allocator;
+    rf_mipmaps_image new_image = { 0 };
 
     int width = image.width;
     int height = image.height;
@@ -5972,71 +6019,123 @@ RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
     return new_image;
 }
 
-// Create an image from another image piece
-RF_API rf_image rf_image_from_image(rf_image image, rf_rec rec, rf_allocator allocator, rf_allocator temp_allocator)
+// Copy an image to a new image
+RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
 {
-    rf_image result = rf_image_copy(image, allocator);
+    rf_image new_image = { 0 };
 
-    rf_image_crop(&result, rec, temp_allocator);
+    int width = image.width;
+    int height = image.height;
+    int size = rf_get_buffer_size_for_pixel_format(width, height, image.format);;
 
-    return result;
+    new_image.data = RF_ALLOC(allocator, size);
+
+    if (new_image.data != NULL)
+    {
+        // NOTE: Size must be provided in bytes
+        memcpy(new_image.data, image.data, size);
+
+        new_image.width   = image.width;
+        new_image.height  = image.height;
+        new_image.format  = image.format;
+    }
+
+    return new_image;
+}
+
+// Crop an image to area defined by a rectangle
+RF_API rf_image rf_image_crop(const rf_image image, rf_rec crop, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    // Security check to avoid program crash
+    if ((image.data == NULL) || (image.width == 0) || (image.height == 0)) return (rf_image) {};
+
+    // Security checks to validate crop rectangle
+    if (crop.x < 0) { crop.width += crop.x; crop.x = 0; }
+    if (crop.y < 0) { crop.height += crop.y; crop.y = 0; }
+    if ((crop.x + crop.width) > image.width) crop.width = image.width - crop.x;
+    if ((crop.y + crop.height) > image.height) crop.height = image.height - crop.y;
+
+    if ((crop.x < image.width) && (crop.y < image.height))
+    {
+        // Start the cropping process
+        rf_color* crop_pixels = (rf_color*) RF_ALLOC(temp_allocator, (int)crop.width*(int)crop.height * sizeof(rf_color));
+        {
+            rf_color* pixels = rf_get_image_pixel_data(image, temp_allocator); // Get data as rf_color pixels array
+
+            for (int j = (int)crop.y; j < (int)(crop.y + crop.height); j++)
+            {
+                for (int i = (int)crop.x; i < (int)(crop.x + crop.width); i++)
+                {
+                    crop_pixels[(j - (int)crop.y)*(int)crop.width + (i - (int)crop.x)] = pixels[j*image.width + i];
+                }
+            }
+
+            RF_FREE(temp_allocator, pixels);
+        }
+        RF_FREE(temp_allocator, crop_pixels);
+
+        rf_image result = rf_load_image_from_pixels(crop_pixels, (int)crop.width, (int)crop.height, allocator);
+
+        // Reformat 32bit RGBA image to original format
+        rf_image_format(image, format, temp_allocator);
+    }
+    else RF_LOG_V(RF_LOG_WARNING, "rf_image can not be cropped, crop rectangle out of bounds");
 }
 
 // Resize and image to new size. Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
-RF_API void rf_image_resize(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator)
+RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Security check to avoid program crash
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
+    if ((image.data == NULL) || (image.width == 0) || (image.height == 0)) return (rf_image) {};
 
     // Get data as rf_color pixels array to work with it
-    rf_color* pixels = rf_get_image_pixel_data(*image, temp_allocator);
+    rf_color* pixels = rf_get_image_pixel_data(image, temp_allocator);
     rf_color* output = (rf_color*) RF_ALLOC(temp_allocator, new_width * new_height * sizeof(rf_color));
 
     // NOTE: rf_color data is casted to (unsigned char* ), there shouldn't been any problem...
-    stbir_resize_uint8((unsigned char* )pixels, image->width, image->height, 0, (unsigned char* )output, new_width, new_height, 0, 4);
+    stbir_resize_uint8((unsigned char* )pixels, image.width, image.height, 0, (unsigned char*) output, new_width, new_height, 0, 4);
 
-    int format = image->format;
+    rf_pixel_format format = image.format;
+    
+    rf_image temp = rf_load_image_from_pixels(output, new_width, new_height, temp_allocator);
+    rf_image result = rf_image_format(temp, format, allocator, temp_allocator); // Reformat 32bit RGBA image to original format
 
-    RF_FREE(temp_allocator, image->data);
-
-    *image = rf_load_image_from_pixels(output, new_width, new_height, image->allocator);
-    rf_image_format(image, format, temp_allocator); // Reformat 32bit RGBA image to original format
-
+    rf_unload_image(temp, temp_allocator);
     RF_FREE(temp_allocator, output);
     RF_FREE(temp_allocator, pixels);
+    
+    return result;
 }
 
 // Resize and image to new size using Nearest-Neighbor scaling algorithm
-RF_API void rf_image_resize_nn(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator)
+RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Security check to avoid program crash
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
+    if ((image.data == NULL) || (image.width == 0) || (image.height == 0)) return (rf_image) {};
 
-    rf_color* pixels = rf_get_image_pixel_data(*image, temp_allocator);
-    rf_color* output = (rf_color*) RF_ALLOC(temp_allocator, new_width*new_height * sizeof(rf_color));
+    rf_color* pixels = rf_get_image_pixel_data(image, temp_allocator);
+    rf_color* output = (rf_color*) RF_ALLOC(temp_allocator, new_width * new_height * sizeof(rf_color));
 
     // EDIT: added +1 to account for an early rounding problem
-    int x_ratio = (int)((image->width << 16)/new_width) + 1;
-    int y_ratio = (int)((image->height << 16)/new_height) + 1;
+    int x_ratio = (int)((image.width  << 16) / new_width ) + 1;
+    int y_ratio = (int)((image.height << 16) / new_height) + 1;
 
     int x2, y2;
     for (int y = 0; y < new_height; y++)
     {
         for (int x = 0; x < new_width; x++)
         {
-            x2 = ((x*x_ratio) >> 16);
-            y2 = ((y*y_ratio) >> 16);
+            x2 = ((x * x_ratio) >> 16);
+            y2 = ((y * y_ratio) >> 16);
 
-            output[(y*new_width) + x] = pixels[(y2*image->width) + x2] ;
+            output[(y * new_width) + x] = pixels[(y2 * image.width) + x2];
         }
     }
 
-    int format = image->format;
-
-    RF_FREE(temp_allocator, image->data);
-
-    *image = rf_load_image_from_pixels(output, new_width, new_height, image->allocator);
-    rf_image_format(image, format, temp_allocator); // Reformat 32bit RGBA image to original format
+    rf_pixel_format format = image.format;
+    
+    rf_image result = rf_load_image_from_pixels(output, new_width, new_height, allocator);
+    result = rf_image_format(image, format, temp_allocator); // Reformat 32bit RGBA image to original format
 
     RF_FREE(temp_allocator, output);
     RF_FREE(temp_allocator, pixels);
@@ -6122,15 +6221,15 @@ RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_heigh
 }
 
 // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
-RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator)
+RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Security check to avoid program crash
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
+    if ((image.data == NULL) || (image.width == 0) || (image.height == 0)) return (rf_image) {};
 
-    int mip_count = 1; // Required mipmap levels count (including base level)
-    int mip_width = image->width; // Base image width
-    int mip_height = image->height; // Base image height
-    int mip_size = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image->format); // rf_image data size (in bytes)
+    int mip_count  = 1; // Required mipmap levels count (including base level)
+    int mip_width  = image.width; // Base image width
+    int mip_height = image.height; // Base image height
+    int mip_size   = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image.format); // rf_image data size (in bytes)
 
     // Count mipmap levels required
     while ((mip_width != 1) || (mip_height != 1))
@@ -6145,47 +6244,40 @@ RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator)
         RF_LOG_V(RF_LOG_DEBUG, "Next mipmap level: %i x %i - current size %i", mip_width, mip_height, mip_size);
 
         mip_count++;
-        mip_size += rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image->format); // Add mipmap size (in bytes)
+        mip_size += rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image.format); // Add mipmap size (in bytes)
     }
 
-    RF_LOG_V(RF_LOG_DEBUG, "Mipmaps available: %i - Mipmaps required: %i", image->mipmaps, mip_count);
+    RF_LOG_V(RF_LOG_DEBUG, "Mipmaps available: %i - Mipmaps required: %i", image.mipmaps, mip_count);
     RF_LOG_V(RF_LOG_DEBUG, "Mipmaps total size required: %i", mip_size);
-    RF_LOG_V(RF_LOG_DEBUG, "rf_image data memory start address: 0x%x", image->data);
+    RF_LOG_V(RF_LOG_DEBUG, "rf_image data memory start address: 0x%x", image.data);
 
-    if (image->mipmaps >= mip_count)
+    if (image.mipmaps >= mip_count)
     {
         RF_LOG_V(RF_LOG_WARNING, "rf_image mipmaps already available");
-        return;
+        return (rf_image) {};
     }
 
-    void* temp = rf_internal_realloc_wrapper(image->allocator, image->data, rf_image_size(*image), mip_size);
-
-    if (temp != NULL)
-    {
-        image->data = temp; // Assign new pointer (new size) to store mipmaps data
-        RF_LOG_V(RF_LOG_DEBUG, "rf_image data memory point reallocated: 0x%x", temp);
-    }
-    else RF_LOG_V(RF_LOG_WARNING, "Mipmaps required memory could not be allocated");
+    image.data = rf_internal_realloc_wrapper(allocator, image.data, rf_image_size(image), mip_size);
 
     // Pointer to allocated memory point where store next mipmap level data
-    unsigned char* nextmip = (unsigned char*) image->data + rf_get_buffer_size_for_pixel_format(image->width, image->height, image->format);
+    unsigned char* nextmip = (unsigned char*) image.data + rf_get_buffer_size_for_pixel_format(image.width, image.height, image.format);
 
-    mip_width  = image->width / 2;
-    mip_height = image->height / 2;
-    mip_size   = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image->format);
+    mip_width  = image.width / 2;
+    mip_height = image.height / 2;
+    mip_size   = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image.format);
 
     //Looks like a good candidate to remove the temporary allocation
-    rf_image im_copy = rf_image_copy(*image, temp_allocator);
+    rf_image im_copy = rf_image_copy(image, temp_allocator);
 
     for (int i = 1; i < mip_count; i++)
     {
         RF_LOG_V(RF_LOG_DEBUG, "Gen mipmap level: %i (%i x %i) - size: %i - offset: 0x%x", i, mip_width, mip_height, mip_size, nextmip);
 
-        rf_image_resize(&im_copy, mip_width, mip_height, temp_allocator); // Uses internally Mitchell cubic downscale filter
+        rf_image mipmap = rf_image_resize(im_copy, mip_width, mip_height, allocator, temp_allocator); // Uses internally Mitchell cubic downscale filter
 
-        memcpy(nextmip, im_copy.data, mip_size);
+        memcpy(nextmip,  .data, mip_size);
         nextmip += mip_size;
-        image->mipmaps++;
+        image.mipmaps++;
 
         mip_width /= 2;
         mip_height /= 2;
@@ -6194,10 +6286,10 @@ RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator)
         if (mip_width < 1) mip_width = 1;
         if (mip_height < 1) mip_height = 1;
 
-        mip_size = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image->format);
+        mip_size = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, image.format);
     }
 
-    rf_unload_image(im_copy);
+    rf_unload_image(im_copy, temp_allocator);
 }
 
 RF_API void rf_image_to_pot(rf_image* image, rf_color fill_color, rf_allocator temp_allocator)
@@ -6245,181 +6337,197 @@ RF_API void rf_image_to_pot(rf_image* image, rf_color fill_color, rf_allocator t
 }
 
 // Convert image data to desired format
-RF_API void rf_image_format(rf_image* image, int new_format, rf_allocator temp_allocator)
+RF_API rf_image rf_image_format(rf_image image, rf_pixel_format new_format, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Security check to avoid program crash
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
-
-    if ((new_format != 0) && (image->format != new_format))
+    if (image.data == NULL || image.width == 0 || image.height == 0
+        || new_format == 0
+        || image.format == new_format
+        || image.format > RF_COMPRESSED_DXT1_RGB
+        || new_format > RF_COMPRESSED_DXT1_RGB)
     {
-        if ((image->format < RF_COMPRESSED_DXT1_RGB) && (new_format < RF_COMPRESSED_DXT1_RGB))
+        if (image.format > RF_COMPRESSED_DXT1_RGB || new_format > RF_COMPRESSED_DXT1_RGB)
         {
-            rf_vec4* pixels = rf_get_image_data_normalized(*image, temp_allocator); // Supports 8 to 32 bit per channel
-
-            RF_FREE(image->allocator, image->data); // WARNING! We loose mipmaps data --> Regenerated at the end...
-            image->data = NULL;
-            image->format = new_format;
-
-            int k = 0;
-
-            switch (image->format)
-            {
-                case RF_UNCOMPRESSED_GRAYSCALE:
-                {
-                    image->data = (unsigned char*) RF_ALLOC(image->allocator, image->width*image->height * sizeof(unsigned char));
-
-                    for (int i = 0; i < image->width*image->height; i++)
-                    {
-                        ((unsigned char* )image->data)[i] = (unsigned char)((pixels[i].x*0.299f + pixels[i].y*0.587f + pixels[i].z*0.114f)*255.0f);
-                    }
-
-                } break;
-                case RF_UNCOMPRESSED_GRAY_ALPHA:
-                {
-                    image->data = (unsigned char*) RF_ALLOC(image->allocator, image->width*image->height * 2 * sizeof(unsigned char));
-
-                    for (int i = 0; i < image->width*image->height * 2; i += 2, k++)
-                    {
-                        ((unsigned char* )image->data)[i] = (unsigned char)((pixels[k].x*0.299f + (float)pixels[k].y*0.587f + (float)pixels[k].z*0.114f)*255.0f);
-                        ((unsigned char* )image->data)[i + 1] = (unsigned char)(pixels[k].w*255.0f);
-                    }
-
-                } break;
-                case RF_UNCOMPRESSED_R5G6B5:
-                {
-                    image->data = (unsigned short*) RF_ALLOC(image->allocator, image->width*image->height * sizeof(unsigned short));
-
-                    unsigned char r = 0;
-                    unsigned char g = 0;
-                    unsigned char b = 0;
-
-                    for (int i = 0; i < image->width*image->height; i++)
-                    {
-                        r = (unsigned char)(round(pixels[i].x * 31.0f));
-                        g = (unsigned char)(round(pixels[i].y*63.0f));
-                        b = (unsigned char)(round(pixels[i].z * 31.0f));
-
-                        ((unsigned short *)image->data)[i] = (unsigned short)r << 11 | (unsigned short)g << 5 | (unsigned short)b;
-                    }
-
-                } break;
-                case RF_UNCOMPRESSED_R8G8B8:
-                {
-                    image->data = (unsigned char*) RF_ALLOC(image->allocator, image->width*image->height * 3 * sizeof(unsigned char));
-
-                    for (int i = 0, kk = 0; i < image->width * image->height * 3; i += 3, kk++)
-                    {
-                        ((unsigned char* )image->data)[i] = (unsigned char)(pixels[kk].x * 255.0f);
-                        ((unsigned char* )image->data)[i + 1] = (unsigned char)(pixels[kk].y * 255.0f);
-                        ((unsigned char* )image->data)[i + 2] = (unsigned char)(pixels[kk].z * 255.0f);
-                    }
-                } break;
-                case RF_UNCOMPRESSED_R5G5B5A1:
-                {
-                    int ALPHA_THRESHOLD = 50;
-
-                    image->data = (unsigned short*) RF_ALLOC(image->allocator, image->width*image->height * sizeof(unsigned short));
-
-                    unsigned char r = 0;
-                    unsigned char g = 0;
-                    unsigned char b = 0;
-                    unsigned char a = 0;
-
-                    for (int i = 0; i < image->width*image->height; i++)
-                    {
-                        r = (unsigned char)(round(pixels[i].x * 31.0f));
-                        g = (unsigned char)(round(pixels[i].y * 31.0f));
-                        b = (unsigned char)(round(pixels[i].z * 31.0f));
-                        a = (pixels[i].w > ((float)ALPHA_THRESHOLD/255.0f))? 1 : 0;
-
-                        ((unsigned short *)image->data)[i] = (unsigned short)r << 11 | (unsigned short)g << 6 | (unsigned short)b << 1 | (unsigned short)a;
-                    }
-
-                } break;
-                case RF_UNCOMPRESSED_R4G4B4A4:
-                {
-                    image->data = (unsigned short*) RF_ALLOC(image->allocator, image->width*image->height * sizeof(unsigned short));
-
-                    unsigned char r = 0;
-                    unsigned char g = 0;
-                    unsigned char b = 0;
-                    unsigned char a = 0;
-
-                    for (int i = 0; i < image->width*image->height; i++)
-                    {
-                        r = (unsigned char)(round(pixels[i].x*15.0f));
-                        g = (unsigned char)(round(pixels[i].y*15.0f));
-                        b = (unsigned char)(round(pixels[i].z*15.0f));
-                        a = (unsigned char)(round(pixels[i].w*15.0f));
-
-                        ((unsigned short *)image->data)[i] = (unsigned short)r << 12 | (unsigned short)g << 8 | (unsigned short)b << 4 | (unsigned short)a;
-                    }
-
-                } break;
-                case RF_UNCOMPRESSED_R8G8B8A8:
-                {
-                    image->data = (unsigned char*) RF_ALLOC(image->allocator, image->width*image->height * 4 * sizeof(unsigned char));
-
-                    for (int i = 0, kk = 0; i < image->width * image->height * 4; i += 4, kk++)
-                    {
-                        ((unsigned char* )image->data)[i] = (unsigned char)(pixels[kk].x * 255.0f);
-                        ((unsigned char* )image->data)[i + 1] = (unsigned char)(pixels[kk].y * 255.0f);
-                        ((unsigned char* )image->data)[i + 2] = (unsigned char)(pixels[kk].z * 255.0f);
-                        ((unsigned char* )image->data)[i + 3] = (unsigned char)(pixels[kk].w * 255.0f);
-                    }
-                } break;
-                case RF_UNCOMPRESSED_R32:
-                {
-                    // WARNING: rf_image is converted to GRAYSCALE eqeuivalent 32bit
-
-                    image->data = (float*) RF_ALLOC(image->allocator, image->width*image->height * sizeof(float));
-
-                    for (int i = 0; i < image->width*image->height; i++)
-                    {
-                        ((float* )image->data)[i] = (float)(pixels[i].x*0.299f + pixels[i].y*0.587f + pixels[i].z*0.114f);
-                    }
-                } break;
-                case RF_UNCOMPRESSED_R32G32B32:
-                {
-                    image->data = (float*) RF_ALLOC(image->allocator, image->width*image->height * 3 * sizeof(float));
-
-                    for (int i = 0, kk = 0; i < image->width * image->height * 3; i += 3, kk++)
-                    {
-                        ((float* )image->data)[i] = pixels[kk].x;
-                        ((float* )image->data)[i + 1] = pixels[kk].y;
-                        ((float* )image->data)[i + 2] = pixels[kk].z;
-                    }
-                } break;
-                case RF_UNCOMPRESSED_R32G32B32A32:
-                {
-                    image->data = (float*) RF_ALLOC(image->allocator, image->width*image->height * 4 * sizeof(float));
-
-                    for (int i = 0, kk = 0; i < image->width * image->height * 4; i += 4, kk++)
-                    {
-                        ((float* )image->data)[i] = pixels[kk].x;
-                        ((float* )image->data)[i + 1] = pixels[kk].y;
-                        ((float* )image->data)[i + 2] = pixels[kk].z;
-                        ((float* )image->data)[i + 3] = pixels[kk].w;
-                    }
-                } break;
-                default: break;
-            }
-
-            RF_FREE(temp_allocator, pixels);
-            pixels = NULL;
-
-            // In case original image had mipmaps, generate mipmaps for formated image
-            // NOTE: Original mipmaps are replaced by new ones, if custom mipmaps were used, they are lost
-            if (image->mipmaps > 1)
-            {
-                image->mipmaps = 1;
-
-                if (image->data != NULL) rf_image_gen_mipmaps(image, temp_allocator);
-
-            }
+            RF_LOG_V(RF_LOG_WARNING, "rf_image data format is compressed, can not be converted");
         }
-        else RF_LOG_V(RF_LOG_WARNING, "rf_image data format is compressed, can not be converted");
+
+        return (rf_image) {};
     }
+
+    rf_image result = {
+        .width = image.width,
+        .height = image.height,
+        .format = new_format,
+    };
+
+    //Todo(LucaSas): Good candidate for removing the temp_allocator. Get the normalized data one by one, no need for temp buffer
+    rf_vec4* pixels = rf_get_image_data_normalized(image, temp_allocator); // Supports 8 to 32 bit per channel
+    {
+        int k = 0;
+        switch (result.format)
+        {
+            case RF_UNCOMPRESSED_GRAYSCALE:
+            {
+                result.data = (unsigned char*) RF_ALLOC(allocator, image.width * image.height * sizeof(unsigned char));
+
+                for (int i = 0; i < image.width * image.height; i++)
+                {
+                    ((unsigned char*)image.data)[i] = (unsigned char)((pixels[i].x * 0.299f + pixels[i].y * 0.587f + pixels[i].z * 0.114f) * 255.0f);
+                }
+
+            }
+                break;
+
+            case RF_UNCOMPRESSED_GRAY_ALPHA:
+            {
+                result.data = (unsigned char*) RF_ALLOC(allocator, image.width * image.height * 2 * sizeof(unsigned char));
+
+                for (int i = 0; i < image.width * image.height * 2; i += 2, k++)
+                {
+                    ((unsigned char* )image.data)[i    ] = (unsigned char)((pixels[k].x * 0.299f + (float)pixels[k].y * 0.587f + (float)pixels[k].z * 0.114f) * 255.0f);
+                    ((unsigned char* )image.data)[i + 1] = (unsigned char) (pixels[k].w * 255.0f);
+                }
+
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R5G6B5:
+            {
+                result.data = (unsigned short*) RF_ALLOC(allocator, image.width * image.height * sizeof(unsigned short));
+
+                unsigned char r = 0;
+                unsigned char g = 0;
+                unsigned char b = 0;
+
+                for (int i = 0; i < image.width * image.height; i++)
+                {
+                    r = (unsigned char)(round(pixels[i].x * 31.0f));
+                    g = (unsigned char)(round(pixels[i].y * 63.0f));
+                    b = (unsigned char)(round(pixels[i].z * 31.0f));
+
+                    ((unsigned short *)image.data)[i] = (unsigned short)r << 11 | (unsigned short)g << 5 | (unsigned short)b;
+                }
+
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R8G8B8:
+            {
+                result.data = (unsigned char*) RF_ALLOC(allocator, image.width * image.height * 3 * sizeof(unsigned char));
+
+                for (int i = 0, kk = 0; i < image.width * image.height * 3; i += 3, kk++)
+                {
+                    ((unsigned char*)image.data)[i    ] = (unsigned char)(pixels[kk].x * 255.0f);
+                    ((unsigned char*)image.data)[i + 1] = (unsigned char)(pixels[kk].y * 255.0f);
+                    ((unsigned char*)image.data)[i + 2] = (unsigned char)(pixels[kk].z * 255.0f);
+                }
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R5G5B5A1:
+            {
+                int ALPHA_THRESHOLD = 50;
+
+                result.data = (unsigned short*) RF_ALLOC(allocator, image.width * image.height * sizeof(unsigned short));
+
+                unsigned char r = 0;
+                unsigned char g = 0;
+                unsigned char b = 0;
+                unsigned char a = 0;
+
+                for (int i = 0; i < image.width * image.height; i++)
+                {
+                    r = (unsigned char)(round(pixels[i].x * 31.0f));
+                    g = (unsigned char)(round(pixels[i].y * 31.0f));
+                    b = (unsigned char)(round(pixels[i].z * 31.0f));
+                    a = (pixels[i].w > ((float)ALPHA_THRESHOLD / 255.0f)) ? 1 : 0;
+
+                    ((unsigned short*)image.data)[i] = (unsigned short)r << 11 | (unsigned short)g << 6 | (unsigned short)b << 1 | (unsigned short)a;
+                }
+
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R4G4B4A4:
+            {
+                result.data = (unsigned short*) RF_ALLOC(allocator, image.width * image.height * sizeof(unsigned short));
+
+                unsigned char r = 0;
+                unsigned char g = 0;
+                unsigned char b = 0;
+                unsigned char a = 0;
+
+                for (int i = 0; i < image.width * image.height; i++)
+                {
+                    r = (unsigned char)(round(pixels[i].x * 15.0f));
+                    g = (unsigned char)(round(pixels[i].y * 15.0f));
+                    b = (unsigned char)(round(pixels[i].z * 15.0f));
+                    a = (unsigned char)(round(pixels[i].w * 15.0f));
+
+                    ((unsigned short *)image.data)[i] = (unsigned short)r << 12 | (unsigned short)g << 8 | (unsigned short)b << 4 | (unsigned short)a;
+                }
+
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R8G8B8A8:
+            {
+                result.data = (unsigned char*) RF_ALLOC(allocator, image.width * image.height * 4 * sizeof(unsigned char));
+
+                for (int i = 0, kk = 0; i < image.width * image.height * 4; i += 4, kk++)
+                {
+                    ((unsigned char*)image.data)[i    ] = (unsigned char)(pixels[kk].x * 255.0f);
+                    ((unsigned char*)image.data)[i + 1] = (unsigned char)(pixels[kk].y * 255.0f);
+                    ((unsigned char*)image.data)[i + 2] = (unsigned char)(pixels[kk].z * 255.0f);
+                    ((unsigned char*)image.data)[i + 3] = (unsigned char)(pixels[kk].w * 255.0f);
+                }
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R32:
+            {
+                result.data = (float*) RF_ALLOC(allocator, image.width * image.height * sizeof(float));
+
+                for (int i = 0; i < image.width*image.height; i++)
+                {
+                    ((float*)image.data)[i] = (float)(pixels[i].x * 0.299f + pixels[i].y * 0.587f + pixels[i].z * 0.114f);
+                }
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R32G32B32:
+            {
+                result.data = (float*) RF_ALLOC(allocator, image.width * image.height * 3 * sizeof(float));
+
+                for (int i = 0, kk = 0; i < image.width * image.height * 3; i += 3, kk++)
+                {
+                    ((float*)image.data)[i    ] = pixels[kk].x;
+                    ((float*)image.data)[i + 1] = pixels[kk].y;
+                    ((float*)image.data)[i + 2] = pixels[kk].z;
+                }
+            }
+                break;
+
+            case RF_UNCOMPRESSED_R32G32B32A32:
+            {
+                result.data = (float*) RF_ALLOC(allocator, image.width * image.height * 4 * sizeof(float));
+
+                for (int i = 0, kk = 0; i < image.width * image.height * 4; i += 4, kk++)
+                {
+                    ((float*)image.data)[i    ] = pixels[kk].x;
+                    ((float*)image.data)[i + 1] = pixels[kk].y;
+                    ((float*)image.data)[i + 2] = pixels[kk].z;
+                    ((float*)image.data)[i + 3] = pixels[kk].w;
+                }
+            }
+                break;
+
+            default: break;
+        }
+    }
+    RF_FREE(temp_allocator, pixels);
+
+    return result;
 }
 
 // Apply alpha mask to image. Note 1: Returned image is GRAY_ALPHA (16bit) or RGBA (32bit). Note 2: alphaMask should be same size as image
@@ -6557,48 +6665,6 @@ RF_API void rf_image_alpha_crop(rf_image* image, float threshold, rf_allocator t
 
     // Check for not empty image brefore cropping
     if (!((x_max < x_min) || (y_max < y_min))) rf_image_crop(image, crop, temp_allocator);
-}
-
-// Crop an image to area defined by a rectangle
-RF_API void rf_image_crop(rf_image* image, rf_rec crop, rf_allocator temp_allocator)
-{
-    // Security check to avoid program crash
-    if ((image->data == NULL) || (image->width == 0) || (image->height == 0)) return;
-
-    // Security checks to validate crop rectangle
-    if (crop.x < 0) { crop.width += crop.x; crop.x = 0; }
-    if (crop.y < 0) { crop.height += crop.y; crop.y = 0; }
-    if ((crop.x + crop.width) > image->width) crop.width = image->width - crop.x;
-    if ((crop.y + crop.height) > image->height) crop.height = image->height - crop.y;
-
-    if ((crop.x < image->width) && (crop.y < image->height))
-    {
-        // Start the cropping process
-        rf_color* pixels = rf_get_image_pixel_data(*image, temp_allocator); // Get data as rf_color pixels array
-        rf_color* crop_pixels = (rf_color*) RF_ALLOC(temp_allocator, (int)crop.width*(int)crop.height * sizeof(rf_color));
-
-        for (int j = (int)crop.y; j < (int)(crop.y + crop.height); j++)
-        {
-            for (int i = (int)crop.x; i < (int)(crop.x + crop.width); i++)
-            {
-                crop_pixels[(j - (int)crop.y)*(int)crop.width + (i - (int)crop.x)] = pixels[j*image->width + i];
-            }
-        }
-
-        RF_FREE(temp_allocator, pixels);
-
-        int format = image->format;
-
-        RF_FREE(image->allocator, image->data);
-
-        *image = rf_load_image_from_pixels(crop_pixels, (int)crop.width, (int)crop.height, image->allocator);
-
-        RF_FREE(temp_allocator, crop_pixels);
-
-        // Reformat 32bit RGBA image to original format
-        rf_image_format(image, format, temp_allocator);
-    }
-    else RF_LOG_V(RF_LOG_WARNING, "rf_image can not be cropped, crop rectangle out of bounds");
 }
 
 // Dither image data to 16bpp or lower (Floyd-Steinberg dithering) Note: In case selected bpp do not represent an known 16bit format, dithered data is stored in the LSB part of the unsigned short

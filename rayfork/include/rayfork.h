@@ -509,9 +509,25 @@ struct rf_image
     void* data;    //image raw data
     int   width;   //image base width
     int   height;  //image base height
-    int   mipmaps; //Mipmap levels, 1 by default
     rf_pixel_format format;  //Data format (rf_pixel_format type)
-    rf_allocator allocator; //Allocator used for the image
+};
+
+typedef struct rf_mipmaps_image rf_mipmaps_image;
+struct rf_mipmaps_image
+{
+    union
+    {
+        rf_image image;
+        struct
+        {
+            void* data;    //image raw data
+            int   width;   //image base width
+            int   height;  //image base height
+            rf_pixel_format format;  //Data format (rf_pixel_format type)
+        };
+    };
+
+    int   mipmaps; //Mipmap levels, 1 by default
 };
 
 typedef struct rf_gif rf_gif;
@@ -529,9 +545,7 @@ struct rf_gif
             void* data;    //rf_image raw data
             int   width;   //rf_image base width
             int   height;  //rf_image base height
-            int   mipmaps; //Mipmap levels, 1 by default
             rf_pixel_format format;  //Data format (rf_pixel_format type)
-            rf_allocator allocator; //Allocator used for the image
         };
     };
 };
@@ -593,8 +607,6 @@ struct rf_font
     rf_texture2d texture; // Characters texture atlas
     rf_rec* recs;   // Characters rectangles in texture
     rf_char_info* chars;   // Characters info data
-
-    rf_allocator allocator;
 };
 
 typedef struct rf_load_font_async_result rf_load_font_async_result;
@@ -647,8 +659,6 @@ struct rf_mesh
     // OpenGL identifiers
     unsigned int vao_id;  // OpenGL Vertex Array Object id
     unsigned int* vbo_id; // OpenGL Vertex Buffer Objects id (default vertex data)
-
-    rf_allocator allocator;
 };
 
 typedef struct rf_input_state_for_update_camera rf_input_state_for_update_camera;
@@ -683,8 +693,6 @@ struct rf_material
     rf_shader shader;     // rf_material shader
     rf_material_map* maps; // rf_material maps array (RF_MAX_MATERIAL_MAPS)
     float* params;     // rf_material generic parameters (if required)
-
-    rf_allocator allocator;
 };
 
 typedef struct rf_transform rf_transform;
@@ -717,8 +725,6 @@ struct rf_model
     int bone_count;       // Number of bones
     rf_bone_info* bones;     // Bones information (skeleton)
     rf_transform* bind_pose; // Bones base transformation (pose)
-
-    rf_allocator allocator;
 };
 
 typedef struct rf_model_animation rf_model_animation;
@@ -728,7 +734,6 @@ struct rf_model_animation
     rf_bone_info* bones;        // Bones information (skeleton)
     int frame_count;            // Number of animation frames
     rf_transform** frame_poses; // Poses array by frame
-    rf_allocator allocator;
 };
 
 typedef struct rf_model_animation_array rf_model_animation_array;
@@ -736,7 +741,6 @@ struct rf_model_animation_array
 {
     int                 anims_count;
     rf_model_animation* anims;
-    rf_allocator        allocator;
 };
 
 // rf_ray type (useful for raycast)
@@ -768,7 +772,6 @@ struct rf_base64_output
 {
     int size;
     unsigned char* buffer;
-    rf_allocator allocator;
 };
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
@@ -1159,7 +1162,7 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
 RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator); // Load image from file data into CPU memory (RAM)
 RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
 RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
-RF_API void     rf_unload_image(rf_image); // Unloads the image using its allocator
+RF_API void     rf_unload_image(rf_image image, rf_allocator allocator); // Unloads the image using its allocator
 //endregion
 
 //region gif
@@ -1171,8 +1174,10 @@ RF_API void rf_unload_gif(rf_gif gif);
 //endregion
 
 //region image manipulation
-RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator); // Copy an image to a new image
-RF_API rf_image rf_image_from_image(rf_image image, rf_rec rec, rf_allocator allocator, rf_allocator temp_allocator); // Create an image from another image piece
+RF_API rf_mipmaps_image rf_mipmaps_image_copy(rf_mipmaps_image image, rf_allocator allocator); // Copy an image with mipmaps
+
+RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator); // Copy an image
+RF_API rf_image rf_image_crop(rf_image image, rf_rec rec, rf_allocator allocator, rf_allocator temp_allocator); // Crop an image to area defined by a rectangle
 
 RF_API void rf_image_resize(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size. Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
 RF_API void rf_image_resize_nn(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size using Nearest-Neighbor scaling algorithm
@@ -1181,14 +1186,13 @@ RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_heigh
 RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator); // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
 
 RF_API void rf_image_to_pot(rf_image* image, rf_color fill_color, rf_allocator temp_allocator); // Convert image to POT (power-of-two). Note: It could be useful on OpenGL ES 2.0 (RPI, HTML5)
-RF_API void rf_image_format(rf_image* image, int new_format, rf_allocator temp_allocator); // Convert image data to desired format
+RF_API rf_image rf_image_format(rf_image image, rf_pixel_format new_format, rf_allocator allocator, rf_allocator temp_allocator); // Convert image data to desired format
 
 RF_API void rf_image_alpha_mask(rf_image* image, rf_image alpha_mask, rf_allocator temp_allocator); // Apply alpha mask to image. Note 1: Returned image is GRAY_ALPHA (16bit) or RGBA (32bit). Note 2: alphaMask should be same size as image
 RF_API void rf_image_alpha_clear(rf_image* image, rf_color color, float threshold, rf_allocator temp_allocator); // Clear alpha channel to desired color. Note: Threshold defines the alpha limit, 0.0f to 1.0f
 RF_API void rf_image_alpha_premultiply(rf_image* image, rf_allocator temp_allocator); // Premultiply alpha channel
 RF_API void rf_image_alpha_crop(rf_image* image, float threshold, rf_allocator temp_allocator); // Crop image depending on alpha value
 
-RF_API void rf_image_crop(rf_image* image, rf_rec crop, rf_allocator temp_allocator); // Crop an image to area defined by a rectangle
 RF_API void rf_image_dither(rf_image* image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator temp_allocator); // Dither image data to 16bpp or lower (Floyd-Steinberg dithering) Note: In case selected bpp do not represent an known 16bit format, dithered data is stored in the LSB part of the unsigned short
 
 RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color, rf_allocator allocator, rf_allocator temp_allocator); // Create an image from text (default font)
