@@ -5518,119 +5518,137 @@ RF_API rf_color* rf_get_image_pixel_data(rf_image image, rf_allocator allocator)
     return pixels;
 }
 
-RF_API rf_vec4 rf_get_pixel_normalized()
+typedef struct rf_pixel_normalized rf_pixel_normalized;
+struct rf_pixel_normalized
 {
-    switch (image.format)
+    union
+    {
+        rf_vec4 data;
+        struct
+        {
+            float x, y, z, w;
+        };
+    };
+
+    int size;
+};
+
+RF_API int rf_get_pixel_size_for_format() {}
+
+RF_API rf_vec4 rf_get_pixel_normalized(const void* data, int data_len, rf_pixel_format format)
+{
+    rf_vec4 result = {};
+
+    switch (format)
     {
         case RF_UNCOMPRESSED_GRAYSCALE:
         {
-            pixels[i].x = (float)((unsigned char* )image.data)[i]/255.0f;
-            pixels[i].y = (float)((unsigned char* )image.data)[i]/255.0f;
-            pixels[i].z = (float)((unsigned char* )image.data)[i]/255.0f;
-            pixels[i].w = 1.0f;
-
+            result.x = (float)((unsigned char* )image.data)[i]/255.0f;
+            result.y = (float)((unsigned char* )image.data)[i]/255.0f;
+            result.z = (float)((unsigned char* )image.data)[i]/255.0f;
+            result.w = 1.0f;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_GRAY_ALPHA:
         {
-            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-            pixels[i].y = (float)((unsigned char* )image.data)[k]/255.0f;
-            pixels[i].z = (float)((unsigned char* )image.data)[k]/255.0f;
-            pixels[i].w = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+            result.x = (float)((unsigned char* )image.data)[k]/255.0f;
+            result.y = (float)((unsigned char* )image.data)[k]/255.0f;
+            result.z = (float)((unsigned char* )image.data)[k]/255.0f;
+            result.w = (float)((unsigned char* )image.data)[k + 1]/255.0f;
 
             k += 2;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R5G5B5A1:
         {
             unsigned short pixel = ((unsigned short *)image.data)[i];
 
-            pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
-            pixels[i].y = (float)((pixel & 0b0000011111000000) >> 6)*(1.0f/31);
-            pixels[i].z = (float)((pixel & 0b0000000000111110) >> 1)*(1.0f/31);
-            pixels[i].w = ((pixel & 0b0000000000000001) == 0)? 0.0f : 1.0f;
+            result.x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
+            result.y = (float)((pixel & 0b0000011111000000) >> 6)*(1.0f/31);
+            result.z = (float)((pixel & 0b0000000000111110) >> 1)*(1.0f/31);
+            result.w = ((pixel & 0b0000000000000001) == 0)? 0.0f : 1.0f;
 
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R5G6B5:
         {
             unsigned short pixel = ((unsigned short *)image.data)[i];
 
-            pixels[i].x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
-            pixels[i].y = (float)((pixel & 0b0000011111100000) >> 5)*(1.0f/63);
-            pixels[i].z = (float)(pixel & 0b0000000000011111)*(1.0f/31);
-            pixels[i].w = 1.0f;
+            result.x = (float)((pixel & 0b1111100000000000) >> 11)*(1.0f/31);
+            result.y = (float)((pixel & 0b0000011111100000) >> 5)*(1.0f/63);
+            result.z = (float)(pixel & 0b0000000000011111)*(1.0f/31);
+            result.w = 1.0f;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R4G4B4A4:
         {
             unsigned short pixel = ((unsigned short *)image.data)[i];
 
-            pixels[i].x = (float)((pixel & 0b1111000000000000) >> 12)*(1.0f/15);
-            pixels[i].y = (float)((pixel & 0b0000111100000000) >> 8)*(1.0f/15);
-            pixels[i].z = (float)((pixel & 0b0000000011110000) >> 4)*(1.0f/15);
-            pixels[i].w = (float)(pixel & 0b0000000000001111)*(1.0f/15);
+            result.x = (float)((pixel & 0b1111000000000000) >> 12)*(1.0f/15);
+            result.y = (float)((pixel & 0b0000111100000000) >> 8)*(1.0f/15);
+            result.z = (float)((pixel & 0b0000000011110000) >> 4)*(1.0f/15);
+            result.w = (float)(pixel & 0b0000000000001111)*(1.0f/15);
 
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R8G8B8A8:
         {
-            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-            pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
-            pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
-            pixels[i].w = (float)((unsigned char* )image.data)[k + 3]/255.0f;
+            result.x = (float)((unsigned char* )image.data)[k]/255.0f;
+            result.y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+            result.z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
+            result.w = (float)((unsigned char* )image.data)[k + 3]/255.0f;
 
             k += 4;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R8G8B8:
         {
-            pixels[i].x = (float)((unsigned char* )image.data)[k]/255.0f;
-            pixels[i].y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
-            pixels[i].z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
-            pixels[i].w = 1.0f;
+            result.x = (float)((unsigned char* )image.data)[k]/255.0f;
+            result.y = (float)((unsigned char* )image.data)[k + 1]/255.0f;
+            result.z = (float)((unsigned char* )image.data)[k + 2]/255.0f;
+            result.w = 1.0f;
 
             k += 3;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R32:
         {
-            pixels[i].x = ((float* )image.data)[k];
-            pixels[i].y = 0.0f;
-            pixels[i].z = 0.0f;
-            pixels[i].w = 1.0f;
+            result.x = ((float* )image.data)[k];
+            result.y = 0.0f;
+            result.z = 0.0f;
+            result.w = 1.0f;
 
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R32G32B32:
         {
-            pixels[i].x = ((float* )image.data)[k];
-            pixels[i].y = ((float* )image.data)[k + 1];
-            pixels[i].z = ((float* )image.data)[k + 2];
-            pixels[i].w = 1.0f;
+            result.x = ((float* )image.data)[k];
+            result.y = ((float* )image.data)[k + 1];
+            result.z = ((float* )image.data)[k + 2];
+            result.w = 1.0f;
 
             k += 3;
         }
-            break;
+        break;
 
         case RF_UNCOMPRESSED_R32G32B32A32:
         {
-            pixels[i].x = ((float* )image.data)[k];
-            pixels[i].y = ((float* )image.data)[k + 1];
-            pixels[i].z = ((float* )image.data)[k + 2];
-            pixels[i].w = ((float* )image.data)[k + 3];
+            result.x = ((float* )image.data)[k];
+            result.y = ((float* )image.data)[k + 1];
+            result.z = ((float* )image.data)[k + 2];
+            result.w = ((float* )image.data)[k + 3];
 
             k += 4;
         }
-            break;
+        break;
 
         default: break;
     }
