@@ -46,11 +46,6 @@
     #define RF_LIT(type) (type)
 #endif
 
-#ifndef RF_ASSERT
-    #include "assert.h"
-    #define RF_ASSERT(condition) assert(condition)
-#endif
-
 #ifndef RF_NO_THREAD_LOCALS
     #if __cplusplus >= 201103L
         #define RF_THREAD_LOCAL thread_local
@@ -63,13 +58,18 @@
     #endif
 #endif
 
-#ifndef RF_LOG
-    #define RF_LOG(type, msg)
+#ifndef RF_LOG_IMPL
+    #define RF_LOG_IMPL(type, msg)
 #endif
 
-#ifndef RF_LOG_V
-    #define RF_LOG_V(type, msg, ...)
+#ifndef RF_LOG_IMPL_V
+    #define RF_LOG_IMPL_V(type, msg, ...)
 #endif
+
+#define RF_LOG(type, msg) { RF_LOG_IMPL(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg) }
+#define RF_LOG_V(type, msg, ...) { RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __VA_ARGS__) }
+#define RF_LOG_ERROR(error_type, msg) { RF_LOG(RF_LOG_TYPE_ERROR, "[ERROR]" msg) }
+#define RF_LOG_ERROR_V(error_type, msg, ...) { RF_LOG_V(RF_LOG_TYPE_ERROR, "[ERROR]" msg, __VA_ARGS__) }
 
 #define RF_NULL_ALLOCATOR    (RF_LIT(rf_allocator) { 0 })
 #define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_malloc_wrapper })
@@ -78,13 +78,6 @@
 #define RF_FREE(allocator, pointer) ((allocator).request(RF_AM_FREE, 0, (pointer), (allocator).user_data))
 
 #define RF_UNLOCKED_FPS (0)
-
-#define RF_LOG_TRACE   (0)
-#define RF_LOG_DEBUG   (1)
-#define RF_LOG_INFO    (2)
-#define RF_LOG_WARNING (3)
-#define RF_LOG_ERROR   (4)
-#define RF_LOG_FATAL   (5)
 
 // Some Basic Colors
 // NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
@@ -173,6 +166,24 @@
 //endregion
 
 //region enums
+
+typedef enum rf_error_type
+{
+    RF_BAD_ARGUMENT,
+    RF_BAD_ALLOC,
+    RF_BAD_IO,
+    RF_OUT_OF_BOUNDS,
+    RF_STBI_FAILED,
+    RF_UNSUPPORTED
+} rf_error_type;
+
+typedef enum rf_log_type
+{
+    RF_LOG_TYPE_DEBUG, // Useful mostly to rayfork devs
+    RF_LOG_TYPE_INFO, // Information
+    RF_LOG_TYPE_WARNING, // Warnings about things to be careful about
+    RF_LOG_TYPE_ERROR, // Errors that prevented functions from doing everything they advertised
+} rf_log_type;
 
 // Matrix modes (equivalent to OpenGL)
 typedef enum rf_matrix_mode
@@ -270,7 +281,6 @@ typedef enum rf_text_wrap_mode
 } rf_text_wrap_mode;
 
 // Pixel formats
-// NOTE: Support depends on OpenGL version and platform
 typedef enum rf_pixel_format
 {
     RF_UNCOMPRESSED_GRAYSCALE = 1, // 8 bit per pixel (no alpha)
@@ -295,6 +305,18 @@ typedef enum rf_pixel_format
     RF_COMPRESSED_ASTC_4x4_RGBA, // 8 bpp
     RF_COMPRESSED_ASTC_8x8_RGBA // 2 bpp
 } rf_pixel_format;
+
+typedef enum rf_pixel_format rf_compressed_pixel_format;
+typedef enum rf_pixel_format rf_uncompressed_pixel_format;
+
+typedef enum rf_desired_channels
+{
+    RF_ANY_CHANNELS = 0,
+    RF_1BYTE_GRAYSCALE = 1,
+    RF_2BYTE_GRAY_ALPHA = 2,
+    RF_3BYTE_R8G8B8 = 3,
+    RF_4BYTE_R8G8B8A8 = 4,
+} rf_desired_channels;
 
 // rf_texture parameters: filter mode
 // NOTE 1: Filtering considers mipmaps if available in the texture
@@ -494,13 +516,26 @@ struct rf_allocator
 };
 
 //RGBA (32bit)
-typedef struct rf_color rf_color;
-struct rf_color
+typedef union rf_color rf_color;
+union rf_color
 {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
-    unsigned char a;
+    unsigned char rgba[4];
+
+    struct
+    {
+        unsigned char r;
+        unsigned char g;
+        unsigned char b;
+        unsigned char a;
+    };
+};
+
+typedef struct rf_image_info rf_image_info;
+struct rf_image_info
+{
+    int width;
+    int height;
+    rf_pixel_format format;
 };
 
 typedef struct rf_image rf_image;
@@ -510,6 +545,7 @@ struct rf_image
     int   width;   //image base width
     int   height;  //image base height
     rf_pixel_format format;  //Data format (rf_pixel_format type)
+    bool  valid;
 };
 
 typedef struct rf_mipmaps_image rf_mipmaps_image;
@@ -524,6 +560,7 @@ struct rf_mipmaps_image
             int   width;   //image base width
             int   height;  //image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
+            bool  valid;
         };
     };
 
@@ -546,6 +583,7 @@ struct rf_gif
             int   width;   //rf_image base width
             int   height;  //rf_image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
+            bool  valid;
         };
     };
 };
@@ -559,6 +597,7 @@ struct rf_texture2d
     int height;      //rf_texture base height
     int mipmaps;     //Mipmap levels, 1 by default
     int format;      //Data format (rf_pixel_format type)
+    bool  valid;
 };
 
 typedef struct rf_render_texture2d rf_render_texture2d;
@@ -569,6 +608,7 @@ struct rf_render_texture2d
     rf_texture2d texture; //rf_color buffer attachment texture
     rf_texture2d depth;   //Depth buffer attachment texture
     bool depth_texture;   //Track if depth attachment is a texture or renderbuffer
+    bool  valid;
 };
 
 typedef struct rf_npatch_info rf_npatch_info;
@@ -580,6 +620,7 @@ struct rf_npatch_info
     int right;           //right border offset
     int bottom;          //bottom border offset
     int type;            //layout of the n-patch: 3x3, 1x3 or 3x1
+    bool  valid;
 };
 
 typedef struct rf_utf8_codepoint rf_utf8_codepoint;
@@ -1151,17 +1192,24 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size); // Generate
 //region image
 //region extract image data functions
 RF_API int rf_image_size(rf_image image); // Returns the size of the image in bytes
-RF_API rf_color* rf_get_image_pixel_data(rf_image image, rf_allocator allocator); // Get pixel data from image in the form of rf_color struct array
-RF_API rf_vec4* rf_get_image_data_normalized(rf_image image, rf_allocator allocator); // Get pixel data from image as rf_vec4 array (float normalized)
+RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator); // Get pixel data from image in the form of rf_color struct array
+RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator); // Get pixel data from image as rf_vec4 array (float normalized)
 RF_API rf_color* rf_image_extract_palette(rf_image image, int max_palette_size, int* extract_count, rf_allocator allocator, rf_allocator temp_allocator); // Extract color palette from image to maximum size.
 RF_API rf_rec rf_get_image_alpha_border(rf_image image, float threshold, rf_allocator temp_allocator); // Get image alpha border rectangle
 //endregion
 
 //region loading & unloading functions
+RF_API bool rf_supports_image_file_type(const char* filename);
+
+RF_API rf_image rf_load_image_from_data_into_buffer(const void* data, int data_size, void* buffer, int buffer_size, rf_desired_channels channels, rf_allocator temp_allocator);
+RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load image from file data into CPU memory (RAM)
+
 RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load image from file into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator); // Load image from file data into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_pixels(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
+
 RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
+RF_API rf_image rf_load_image_from_rgba32_to_format(rf_color* pixels, int width, int height, rf_uncompressed_pixel_format format, rf_allocator allocator);
+RF_API rf_image rf_load_image_from_rgba32(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
+
 RF_API void     rf_unload_image(rf_image image, rf_allocator allocator); // Unloads the image using its allocator
 //endregion
 

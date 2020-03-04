@@ -69,7 +69,7 @@ int main()
     rf_texture2d texture = rf_load_texture("../../../examples/assets/cubicmap_atlas.png"); // Load map texture
     model.materials[0].maps[RF_MAP_DIFFUSE].texture = texture; // Set map diffuse texture
 
-    rf_color* mapPixels = rf_get_image_pixel_data(imMap);
+    rf_color* mapPixels = rf_image_pixels_to_rgba32(imMap);
     rf_unload_image(imMap); // Unload image from RAM
 
     rf_vec3 mapPosition = {-16.0f, 0.0f, -8.0f };  // Set model position

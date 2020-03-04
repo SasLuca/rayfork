@@ -1831,7 +1831,7 @@ static rf_wave rf_load_wav(const char* filename)
 
     if (wavFile == NULL)
     {
-        RF_LOG(RF_LOG_WARNING, "[%s] WAV file could not be opened", filename);
+        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] WAV file could not be opened", filename);
         rf_wave.data = NULL;
     }
     else
@@ -1843,7 +1843,7 @@ static rf_wave rf_load_wav(const char* filename)
         if (strncmp(wavRiffHeader.chunkID, "RIFF", 4) ||
             strncmp(wavRiffHeader.format, "WAVE", 4))
         {
-                RF_LOG(RF_LOG_WARNING, "[%s] Invalid RIFF or WAVE Header", filename);
+                RF_LOG(RF_LOG_TYPE_WARNING, "[%s] Invalid RIFF or WAVE Header", filename);
         }
         else
         {
@@ -1854,7 +1854,7 @@ static rf_wave rf_load_wav(const char* filename)
             if ((wavFormat.subChunkID[0] != 'f') || (wavFormat.subChunkID[1] != 'm') ||
                 (wavFormat.subChunkID[2] != 't') || (wavFormat.subChunkID[3] != ' '))
             {
-                RF_LOG(RF_LOG_WARNING, "[%s] Invalid Wave format", filename);
+                RF_LOG(RF_LOG_TYPE_WARNING, "[%s] Invalid Wave format", filename);
             }
             else
             {
@@ -1868,7 +1868,7 @@ static rf_wave rf_load_wav(const char* filename)
                 if ((wavData.subChunkID[0] != 'd') || (wavData.subChunkID[1] != 'a') ||
                     (wavData.subChunkID[2] != 't') || (wavData.subChunkID[3] != 'a'))
                 {
-                    RF_LOG(RF_LOG_WARNING, "[%s] Invalid data header", filename);
+                    RF_LOG(RF_LOG_TYPE_WARNING, "[%s] Invalid data header", filename);
                 }
                 else
                 {
@@ -1886,7 +1886,7 @@ static rf_wave rf_load_wav(const char* filename)
                     // NOTE: Only support 8 bit, 16 bit and 32 bit sample sizes
                     if ((rf_wave.sample_size != 8) && (rf_wave.sample_size != 16) && (rf_wave.sample_size != 32))
                     {
-                        RF_LOG(RF_LOG_WARNING, "[%s] WAV sample size (%ibit) not supported, converted to 16bit", filename, rf_wave.sample_size);
+                        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] WAV sample size (%ibit) not supported, converted to 16bit", filename, rf_wave.sample_size);
                         rf_format_wave(&rf_wave, rf_wave.sample_rate, 16, rf_wave.channels);
                     }
 
@@ -1894,13 +1894,13 @@ static rf_wave rf_load_wav(const char* filename)
                     if (rf_wave.channels > 2)
                     {
                         rf_format_wave(&rf_wave, rf_wave.sample_rate, rf_wave.sample_size, 2);
-                        RF_LOG(RF_LOG_WARNING, "[%s] WAV channels number (%i) not supported, converted to 2 channels", filename, rf_wave.channels);
+                        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] WAV channels number (%i) not supported, converted to 2 channels", filename, rf_wave.channels);
                     }
 
                     // NOTE: subChunkSize comes in bytes, we need to translate it to number of samples
                     rf_wave.sample_count = (wavData.subChunkSize/(rf_wave.sample_size/8))/rf_wave.channels;
 
-                    RF_LOG(RF_LOG_INFO, "[%s] WAV file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+                    RF_LOG(RF_LOG_TYPE_INFO, "[%s] WAV file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
                 }
             }
         }
@@ -1942,7 +1942,7 @@ static int rf_save_wav(rf_wave rf_wave, const char* filename)
 
     FILE *wavFile = fopen(filename, "wb");
 
-    if (wavFile == NULL) RF_LOG(RF_LOG_WARNING, "[%s] WAV audio file could not be created", filename);
+    if (wavFile == NULL) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] WAV audio file could not be created", filename);
     else
     {
         RiffHeader riffHeader;
@@ -2001,7 +2001,7 @@ static rf_wave rf_load_ogg(const char* filename)
 
     stb_vorbis *oggFile = stb_vorbis_open_filename(filename, NULL, NULL);
 
-    if (oggFile == NULL) RF_LOG(RF_LOG_WARNING, "[%s] OGG file could not be opened", filename);
+    if (oggFile == NULL) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] OGG file could not be opened", filename);
     else
     {
         stb_vorbis_info info = stb_vorbis_get_info(oggFile);
@@ -2012,16 +2012,16 @@ static rf_wave rf_load_ogg(const char* filename)
         rf_wave.sample_count = (unsigned int)stb_vorbis_stream_length_in_samples(oggFile)*info.channels;  // Independent by channel
 
         float totalSeconds = stb_vorbis_stream_length_in_seconds(oggFile);
-        if (totalSeconds > 10) RF_LOG(RF_LOG_WARNING, "[%s] Ogg audio length is larger than 10 seconds (%f), that's a big file in memory, consider music streaming", filename, totalSeconds);
+        if (totalSeconds > 10) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] Ogg audio length is larger than 10 seconds (%f), that's a big file in memory, consider music streaming", filename, totalSeconds);
 
         rf_wave.data = (short*) RF_MALLOC(rf_wave.sample_count*rf_wave.channels*sizeof(short));
 
         // NOTE: Returns the number of samples to process (be careful! we ask for number of shorts!)
         int numSamplesOgg = stb_vorbis_get_samples_short_interleaved(oggFile, info.channels, (short *)rf_wave.data, rf_wave.sample_count*rf_wave.channels);
 
-        RF_LOG(RF_LOG_DEBUG, "[%s] Samples obtained: %i", filename, numSamplesOgg);
+        RF_LOG(RF_LOG_TYPE_DEBUG, "[%s] Samples obtained: %i", filename, numSamplesOgg);
 
-        RF_LOG(RF_LOG_INFO, "[%s] OGG file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+        RF_LOG(RF_LOG_TYPE_INFO, "[%s] OGG file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
         stb_vorbis_close(oggFile);
     }
@@ -2045,10 +2045,10 @@ static rf_wave rf_load_flac(const char* filename)
     rf_wave.sample_size = 16;
 
     // NOTE: Only support up to 2 channels (mono, stereo)
-    if (rf_wave.channels > 2) RF_LOG(RF_LOG_WARNING, "[%s] FLAC channels number (%i) not supported", filename, rf_wave.channels);
+    if (rf_wave.channels > 2) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] FLAC channels number (%i) not supported", filename, rf_wave.channels);
 
-    if (rf_wave.data == NULL) RF_LOG(RF_LOG_WARNING, "[%s] FLAC data could not be loaded", filename);
-    else RF_LOG(RF_LOG_INFO, "[%s] FLAC file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+    if (rf_wave.data == NULL) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] FLAC data could not be loaded", filename);
+    else RF_LOG(RF_LOG_TYPE_INFO, "[%s] FLAC file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
     return rf_wave;
 }
@@ -2072,10 +2072,10 @@ static rf_wave rf_load_mp3(const char* filename)
     rf_wave.sample_size = 32;
 
     // NOTE: Only support up to 2 channels (mono, stereo)
-    if (rf_wave.channels > 2) RF_LOG(RF_LOG_WARNING, "[%s] MP3 channels number (%i) not supported", filename, rf_wave.channels);
+    if (rf_wave.channels > 2) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] MP3 channels number (%i) not supported", filename, rf_wave.channels);
 
-    if (rf_wave.data == NULL) RF_LOG(RF_LOG_WARNING, "[%s] MP3 data could not be loaded", filename);
-    else RF_LOG(RF_LOG_INFO, "[%s] MP3 file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
+    if (rf_wave.data == NULL) RF_LOG(RF_LOG_TYPE_WARNING, "[%s] MP3 data could not be loaded", filename);
+    else RF_LOG(RF_LOG_TYPE_INFO, "[%s] MP3 file loaded successfully (%i Hz, %i bit, %s)", filename, rf_wave.sample_rate, rf_wave.sample_size, (rf_wave.channels == 1)? "Mono" : "Stereo");
 
     return rf_wave;
 }

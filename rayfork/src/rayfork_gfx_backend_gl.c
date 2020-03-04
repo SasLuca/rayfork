@@ -875,7 +875,7 @@ RF_INTERNAL unsigned int rf_internal_compile_shader(const char* shader_str, int 
 
     if (success != GL_TRUE)
     {
-        RF_LOG_V(RF_LOG_WARNING, "[SHDR ID %i] Failed to compile shader...", shader);
+        RF_LOG_V(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Failed to compile shader...", shader);
         int max_len = 0;
         int length;
         _RF_GL.glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_len);
@@ -885,9 +885,9 @@ RF_INTERNAL unsigned int rf_internal_compile_shader(const char* shader_str, int 
 
         _RF_GL.glGetShaderInfoLog(shader, 1024, &length, log);
 
-        RF_LOG_V(RF_LOG_INFO, "%s", log);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "%s", log);
     }
-    else RF_LOG_V(RF_LOG_INFO, "[SHDR ID %i] rf_shader compiled successfully", shader);
+    else RF_LOG_V(RF_LOG_TYPE_INFO, "[SHDR ID %i] rf_shader compiled successfully", shader);
 
     return shader;
 }
@@ -921,7 +921,7 @@ RF_INTERNAL unsigned int rf_internal_load_shader_program(unsigned int v_shader_i
 
     if (success == GL_FALSE)
     {
-        RF_LOG_V(RF_LOG_WARNING, "[SHDR ID %i] Failed to link shader program...", program);
+        RF_LOG_V(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Failed to link shader program...", program);
 
         int max_len = 0;
         int length;
@@ -932,13 +932,13 @@ RF_INTERNAL unsigned int rf_internal_load_shader_program(unsigned int v_shader_i
 
         _RF_GL.glGetProgramInfoLog(program, 1024, &length, log);
 
-        RF_LOG_V(RF_LOG_INFO, "%s", log);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "%s", log);
 
         _RF_GL.glDeleteProgram(program);
 
         program = 0;
     }
-    else RF_LOG_V(RF_LOG_INFO, "[SHDR ID %i] rf_shader program loaded successfully", program);
+    else RF_LOG_V(RF_LOG_TYPE_INFO, "[SHDR ID %i] rf_shader program loaded successfully", program);
 
     return program;
 }
@@ -1012,7 +1012,7 @@ RF_INTERNAL rf_shader rf_internal_load_default_shader()
 
     if (shader.id > 0)
     {
-        RF_LOG_V(RF_LOG_INFO, "[SHDR ID %i] Default shader loaded successfully", shader.id);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "[SHDR ID %i] Default shader loaded successfully", shader.id);
 
         // Set default shader locations: attributes locations
         shader.locs[RF_LOC_VERTEX_POSITION] = _RF_GL.glGetAttribLocation(shader.id, "vertex_position");
@@ -1028,7 +1028,7 @@ RF_INTERNAL rf_shader rf_internal_load_default_shader()
         // changed for external custom shaders, we just use direct bindings above
         //rf_internal_set_shader_default_locations(&shader);
     }
-    else RF_LOG_V(RF_LOG_WARNING, "[SHDR ID %i] Default shader could not be loaded", shader.id);
+    else RF_LOG_V(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Default shader could not be loaded", shader.id);
 
     return shader;
 }
@@ -1109,7 +1109,7 @@ RF_INTERNAL void rf_internal_load_buffers_default()
         rf_internal_ctx->gfx_ctx.memory->vertex_data[i].c_counter = 0;
     }
 
-    RF_LOG(RF_LOG_INFO, "Internal buffers initialized successfully (CPU)");
+    RF_LOG(RF_LOG_TYPE_INFO, "Internal buffers initialized successfully (CPU)");
 
     // Upload to GPU (VRAM) vertex data and initialize VAOs/VBOs
     //--------------------------------------------------------------------------------------------
@@ -1150,7 +1150,7 @@ RF_INTERNAL void rf_internal_load_buffers_default()
         #endif
     }
 
-    RF_LOG(RF_LOG_INFO, "Internal buffers uploaded successfully (GPU)");
+    RF_LOG(RF_LOG_TYPE_INFO, "Internal buffers uploaded successfully (GPU)");
 
     // Unbind the current VAO
     _RF_GL.glBindVertexArray(0);
@@ -1486,7 +1486,7 @@ RF_INTERNAL void rf_internal_setup_frame_buffer(int width, int height)
     // Calculate rf_internal_ctx->render_width and rf_internal_ctx->render_height, we have the global_display size (input params) and the desired screen size (global var)
     if ((rf_internal_ctx->screen_width > rf_internal_ctx->display_width) || (rf_internal_ctx->screen_height > rf_internal_ctx->display_height))
     {
-        RF_LOG_V(RF_LOG_WARNING, "DOWNSCALING: Required screen size (%ix%i) is bigger than global_display size (%ix%i)", rf_internal_ctx->screen_width, rf_internal_ctx->screen_height, rf_internal_ctx->display_width, rf_internal_ctx->display_height);
+        RF_LOG_V(RF_LOG_TYPE_WARNING, "DOWNSCALING: Required screen size (%ix%i) is bigger than global_display size (%ix%i)", rf_internal_ctx->screen_width, rf_internal_ctx->screen_height, rf_internal_ctx->display_width, rf_internal_ctx->display_height);
 
         // Downscaling to fit global_display with border-bars
         float width_ratio = (float)rf_internal_ctx->display_width/(float)rf_internal_ctx->screen_width;
@@ -1516,12 +1516,12 @@ RF_INTERNAL void rf_internal_setup_frame_buffer(int width, int height)
         rf_internal_ctx->render_width = rf_internal_ctx->display_width;
         rf_internal_ctx->render_height = rf_internal_ctx->display_height;
 
-        RF_LOG_V(RF_LOG_WARNING, "Downscale matrix generated, content will be rendered at: %i x %i", rf_internal_ctx->render_width, rf_internal_ctx->render_height);
+        RF_LOG_V(RF_LOG_TYPE_WARNING, "Downscale matrix generated, content will be rendered at: %i x %i", rf_internal_ctx->render_width, rf_internal_ctx->render_height);
     }
     else if ((rf_internal_ctx->screen_width < rf_internal_ctx->display_width) || (rf_internal_ctx->screen_height < rf_internal_ctx->display_height))
     {
         // Required screen size is smaller than global_display size
-        RF_LOG_V(RF_LOG_INFO, "UPSCALING: Required screen size: %i x %i -> Display size: %i x %i", rf_internal_ctx->screen_width, rf_internal_ctx->screen_height, rf_internal_ctx->display_width, rf_internal_ctx->display_height);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "UPSCALING: Required screen size: %i x %i -> Display size: %i x %i", rf_internal_ctx->screen_width, rf_internal_ctx->screen_height, rf_internal_ctx->display_width, rf_internal_ctx->display_height);
 
         // Upscaling to fit global_display with border-bars
         float display_ratio = (float)rf_internal_ctx->display_width/(float)rf_internal_ctx->display_height;
@@ -1618,23 +1618,23 @@ RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int 
             extensions_str++;
         }
 
-        if (rf_internal_ctx->gfx_ctx.tex_npot_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] NPOT textures extension detected, full NPOT textures supported");
-        else RF_LOG(RF_LOG_WARNING, "[EXTENSION] NPOT textures extension not found, limited NPOT support (no-mipmaps, no-repeat)");
+        if (rf_internal_ctx->gfx_ctx.tex_npot_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] NPOT textures extension detected, full NPOT textures supported");
+        else RF_LOG(RF_LOG_TYPE_WARNING, "[EXTENSION] NPOT textures extension not found, limited NPOT support (no-mipmaps, no-repeat)");
     }
     #endif
 
-    RF_LOG_V(RF_LOG_INFO, "Number of supported extensions: %i", num_ex);
+    RF_LOG_V(RF_LOG_TYPE_INFO, "Number of supported extensions: %i", num_ex);
 
-    if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported)  RF_LOG(RF_LOG_INFO, "[EXTENSION] DXT compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] ETC1 compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] ETC2/EAC compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] PVRT compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] ASTC compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported)  RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] DXT compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC1 compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC2/EAC compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] PVRT compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ASTC compressed textures supported");
 
-    if (rf_internal_ctx->gfx_ctx.tex_anisotropic_filter_supported) RF_LOG_V(RF_LOG_INFO, "[EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_internal_ctx->gfx_ctx.max_anisotropic_level);
-    if (rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported)       RF_LOG(RF_LOG_INFO, "[EXTENSION] Mirror clamp wrap texture mode supported");
+    if (rf_internal_ctx->gfx_ctx.tex_anisotropic_filter_supported) RF_LOG_V(RF_LOG_TYPE_INFO, "[EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_internal_ctx->gfx_ctx.max_anisotropic_level);
+    if (rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported)       RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Mirror clamp wrap texture mode supported");
 
-    if (rf_internal_ctx->gfx_ctx.debug_marker_supported) RF_LOG(RF_LOG_INFO, "[EXTENSION] Debug Marker supported");
+    if (rf_internal_ctx->gfx_ctx.debug_marker_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Debug Marker supported");
 
     // Initialize buffers, default shaders and default textures
     //----------------------------------------------------------
@@ -1642,8 +1642,8 @@ RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int 
     unsigned char pixels[4] = { 255, 255, 255, 255 };   // 1 pixel RGBA (4 bytes)
     rf_internal_ctx->gfx_ctx.default_texture_id = rf_gfx_load_texture(pixels, 1, 1, RF_UNCOMPRESSED_R8G8B8A8, 1);
 
-    if (rf_internal_ctx->gfx_ctx.default_texture_id != 0) RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] Base white texture loaded successfully", rf_internal_ctx->gfx_ctx.default_texture_id);
-    else RF_LOG(RF_LOG_WARNING, "Base white texture could not be loaded");
+    if (rf_internal_ctx->gfx_ctx.default_texture_id != 0) RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Base white texture loaded successfully", rf_internal_ctx->gfx_ctx.default_texture_id);
+    else RF_LOG(RF_LOG_TYPE_WARNING, "Base white texture could not be loaded");
 
     // Init default rf_shader (customized for GL 3.3 and ES2)
     rf_internal_ctx->gfx_ctx.default_shader = rf_internal_load_default_shader();
@@ -1705,7 +1705,7 @@ RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int 
     rf_internal_ctx->gfx_ctx.framebuffer_width = width;
     rf_internal_ctx->gfx_ctx.framebuffer_height = height;
 
-    RF_LOG(RF_LOG_INFO, "OpenGL default states initialized successfully");
+    RF_LOG(RF_LOG_TYPE_INFO, "OpenGL default states initialized successfully");
 
     // Setup default viewport
     rf_set_viewport(width, height);
@@ -1734,7 +1734,7 @@ RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
 
         if (shader.id == 0)
         {
-            RF_LOG(RF_LOG_WARNING, "Custom shader could not be loaded");
+            RF_LOG(RF_LOG_TYPE_WARNING, "Custom shader could not be loaded");
             shader = rf_internal_ctx->gfx_ctx.default_shader;
         }
 
@@ -1763,7 +1763,7 @@ RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
         // Get the location of the named uniform
         unsigned int location = _RF_GL.glGetUniformLocation(shader.id, name);
 
-        RF_LOG_V(RF_LOG_DEBUG, "[SHDR ID %i] Active uniform [%s] set at location: %i", shader.id, name, location);
+        RF_LOG_V(RF_LOG_TYPE_DEBUG, "[SHDR ID %i] Active uniform [%s] set at location: %i", shader.id, name, location);
     }
 
     return shader;
@@ -1775,7 +1775,7 @@ RF_API void rf_gfx_unload_shader(rf_shader shader)
     if (shader.id > 0)
     {
         rf_gfx_delete_shader(shader.id);
-        RF_LOG_V(RF_LOG_INFO, "[SHDR ID %i] Unloaded shader program data", shader.id);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "[SHDR ID %i] Unloaded shader program data", shader.id);
     }
 }
 
@@ -1785,8 +1785,8 @@ RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name
     int location = -1;
     location = _RF_GL.glGetUniformLocation(shader.id, uniform_name);
 
-    if (location == -1) RF_LOG_V(RF_LOG_WARNING, "[SHDR ID %i][%s] rf_shader uniform could not be found", shader.id, uniform_name);
-    else RF_LOG_V(RF_LOG_INFO, "[SHDR ID %i][%s] rf_shader uniform set at location: %i", shader.id, uniform_name, location);
+    if (location == -1) RF_LOG_V(RF_LOG_TYPE_WARNING, "[SHDR ID %i][%s] rf_shader uniform could not be found", shader.id, uniform_name);
+    else RF_LOG_V(RF_LOG_TYPE_INFO, "[SHDR ID %i][%s] rf_shader uniform set at location: %i", shader.id, uniform_name, location);
 
     return location;
 }
@@ -1813,7 +1813,7 @@ RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const v
         case RF_UNIFORM_IVEC3: _RF_GL.glUniform3iv(uniform_loc, count, (int* )value); break;
         case RF_UNIFORM_IVEC4: _RF_GL.glUniform4iv(uniform_loc, count, (int* )value); break;
         case RF_UNIFORM_SAMPLER2D: _RF_GL.glUniform1iv(uniform_loc, count, (int* )value); break;
-        default: RF_LOG(RF_LOG_WARNING, "rf_shader uniform could not be set data type not recognized");
+        default: RF_LOG(RF_LOG_TYPE_WARNING, "rf_shader uniform could not be set data type not recognized");
     }
 
     //_RF_GL.glUseProgram(0);      // Avoid reseting current shader program, in case other uniforms are set
@@ -2253,7 +2253,7 @@ RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode w
             }
             else
             {
-                RF_LOG(RF_LOG_WARNING, "Clamp mirror wrap mode not supported");
+                RF_LOG(RF_LOG_TYPE_WARNING, "Clamp mirror wrap mode not supported");
             }
         } break;
 
@@ -2322,7 +2322,7 @@ RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mo
             }
             else
             {
-                RF_LOG_V(RF_LOG_WARNING, "[TEX ID %i] No mipmaps available for TRILINEAR texture filtering", texture.id);
+                RF_LOG_V(RF_LOG_TYPE_WARNING, "[TEX ID %i] No mipmaps available for TRILINEAR texture filtering", texture.id);
 
                 // GL_LINEAR - tex filter: BILINEAR, no mipmaps
                 _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -2340,12 +2340,12 @@ RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mo
             }
             else if (rf_internal_ctx->gfx_ctx.max_anisotropic_level > 0.0f)
             {
-                RF_LOG_V(RF_LOG_WARNING, "[TEX ID %i] Maximum anisotropic filter level supported is %i_x", id, rf_internal_ctx->gfx_ctx.max_anisotropic_level);
+                RF_LOG_V(RF_LOG_TYPE_WARNING, "[TEX ID %i] Maximum anisotropic filter level supported is %i_x", id, rf_internal_ctx->gfx_ctx.max_anisotropic_level);
                 _RF_GL.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_value);
             }
             else
             {
-                RF_LOG(RF_LOG_WARNING, "Anisotropic filtering not supported");
+                RF_LOG(RF_LOG_TYPE_WARNING, "Anisotropic filtering not supported");
             }
         } break;
     }
@@ -2428,7 +2428,7 @@ RF_API void rf_gfx_delete_render_textures(rf_render_texture2d target)
 
     if (target.id > 0) _RF_GL.glDeleteFramebuffers(1, &target.id);
 
-    RF_LOG_V(RF_LOG_INFO, "[FBO ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
+    RF_LOG_V(RF_LOG_TYPE_INFO, "[FBO ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
 }
 
 // Unload shader from GPU memory
@@ -2441,7 +2441,7 @@ RF_API void rf_gfx_delete_shader(unsigned int id)
 RF_API void rf_gfx_delete_vertex_arrays(unsigned int id)
 {
     if (id != 0) _RF_GL.glDeleteVertexArrays(1, &id);
-    RF_LOG_V(RF_LOG_INFO, "[VAO ID %i] Unloaded model data from VRAM (GPU)", id);
+    RF_LOG_V(RF_LOG_TYPE_INFO, "[VAO ID %i] Unloaded model data from VRAM (GPU)", id);
 }
 
 // Unload vertex data (VBO) from GPU memory
@@ -2450,7 +2450,7 @@ RF_API void rf_gfx_delete_buffers(unsigned int id)
     if (id != 0)
     {
         _RF_GL.glDeleteBuffers(1, &id);
-        RF_LOG_V(RF_LOG_INFO, "[VBO ID %i] Unloaded model vertex data from VRAM (GPU)", id);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "[VBO ID %i] Unloaded model vertex data from VRAM (GPU)", id);
     }
 }
 
@@ -2513,7 +2513,7 @@ RF_API void rf_gfx_close()
 
     _RF_GL.glDeleteTextures(1, &rf_internal_ctx->gfx_ctx.default_texture_id); // Unload default texture
 
-    RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] Unloaded texture data (base white texture) from VRAM", rf_internal_ctx->gfx_ctx.default_texture_id);
+    RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Unloaded texture data (base white texture) from VRAM", rf_internal_ctx->gfx_ctx.default_texture_id);
 }
 
 // Update and draw internal buffers
@@ -2554,30 +2554,30 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) && ((format == RF_COMPRESSED_DXT1_RGB) || (format == RF_COMPRESSED_DXT1_RGBA) ||
                                                       (format == RF_COMPRESSED_DXT3_RGBA) || (format == RF_COMPRESSED_DXT5_RGBA)))
     {
-        RF_LOG(RF_LOG_WARNING, "DXT compressed texture format not supported");
+        RF_LOG(RF_LOG_TYPE_WARNING, "DXT compressed texture format not supported");
         return id;
     }
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) && (format == RF_COMPRESSED_ETC1_RGB))
     {
-        RF_LOG(RF_LOG_WARNING, "ETC1 compressed texture format not supported");
+        RF_LOG(RF_LOG_TYPE_WARNING, "ETC1 compressed texture format not supported");
         return id;
     }
 
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) && ((format == RF_COMPRESSED_ETC2_RGB) || (format == RF_COMPRESSED_ETC2_EAC_RGBA)))
     {
-        RF_LOG(RF_LOG_WARNING, "ETC2 compressed texture format not supported");
+        RF_LOG(RF_LOG_TYPE_WARNING, "ETC2 compressed texture format not supported");
         return id;
     }
 
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) && ((format == RF_COMPRESSED_PVRT_RGB) || (format == RF_COMPRESSED_PVRT_RGBA)))
     {
-        RF_LOG(RF_LOG_WARNING, "PVRT compressed texture format not supported");
+        RF_LOG(RF_LOG_TYPE_WARNING, "PVRT compressed texture format not supported");
         return id;
     }
 
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) && ((format == RF_COMPRESSED_ASTC_4x4_RGBA) || (format == RF_COMPRESSED_ASTC_8x8_RGBA)))
     {
-        RF_LOG(RF_LOG_WARNING, "ASTC compressed texture format not supported");
+        RF_LOG(RF_LOG_TYPE_WARNING, "ASTC compressed texture format not supported");
         return id;
     }
 
@@ -2593,7 +2593,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     int mip_height = height;
     int mip_offset = 0;          // Mipmap data offset
 
-    RF_LOG_V(RF_LOG_DEBUG, "Load texture from data memory address: 0x%x", data);
+    RF_LOG_V(RF_LOG_TYPE_DEBUG, "Load texture from data memory address: 0x%x", data);
 
     // Load the different mipmap levels
     for (int i = 0; i < mipmap_count; i++)
@@ -2603,7 +2603,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
         unsigned int glInternalFormat, glFormat, glType;
         rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
 
-        RF_LOG_V(RF_LOG_DEBUG, "Load mipmap level %i (%i x %i), size: %i, offset: %i", i, mip_width, mip_height, mip_size, mip_offset);
+        RF_LOG_V(RF_LOG_TYPE_DEBUG, "Load mipmap level %i (%i x %i), size: %i, offset: %i", i, mip_width, mip_height, mip_size, mip_offset);
 
         if (glInternalFormat != -1)
         {
@@ -2672,8 +2672,8 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     // Unbind current texture
     _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
 
-    if (id > 0) RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] rf_texture created successfully (%ix%i - %i mipmaps)", id, width, height, mipmap_count);
-    else RF_LOG(RF_LOG_WARNING, "rf_texture could not be created");
+    if (id > 0) RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] rf_texture created successfully (%ix%i - %i mipmaps)", id, width, height, mipmap_count);
+    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture could not be created");
 
     return id;
 }
@@ -2789,7 +2789,7 @@ RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, int fo
     {
         _RF_GL.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glFormat, glType, (unsigned char* )data);
     }
-    else RF_LOG(RF_LOG_WARNING, "rf_texture format updating not supported");
+    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format updating not supported");
 }
 
 // Get OpenGL internal formats and data type from raylib rf_pixel_format
@@ -2827,7 +2827,7 @@ RF_API void rf_gfx_get_gl_texture_formats(int format, unsigned int* glInternalFo
         case RF_UNCOMPRESSED_R32G32B32A32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGBA32F; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;
         #endif
 
-        default: RF_LOG(RF_LOG_WARNING, "rf_texture format not supported"); break;
+        default: RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format not supported"); break;
     }
 }
 
@@ -2852,14 +2852,14 @@ RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture)
     {
         //glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);   // Hint for mipmaps generation algorythm: GL_FASTEST, GL_NICEST, GL_DONT_CARE
         _RF_GL.glGenerateMipmap(GL_TEXTURE_2D);    // Generate mipmaps automatically
-        RF_LOG_V(RF_LOG_INFO, "[TEX ID %i] Mipmaps generated automatically", texture->id);
+        RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Mipmaps generated automatically", texture->id);
 
         _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         _RF_GL.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);   // Activate Trilinear filtering for mipmaps
 
         texture->mipmaps =  1 + (int)floor(log(texture->width > texture->height ? texture->width : texture->height)/log(2));
     }
-    else RF_LOG_V(RF_LOG_WARNING, "[TEX ID %i] Mipmaps can not be generated", texture->id);
+    else RF_LOG_V(RF_LOG_TYPE_WARNING, "[TEX ID %i] Mipmaps can not be generated", texture->id);
 
     _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -2894,7 +2894,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
         pixels = (unsigned char* ) RF_ALLOC(allocator, size);
         _RF_GL.glGetTexImage(GL_TEXTURE_2D, 0, glFormat, glType, pixels);
     }
-    else RF_LOG(RF_LOG_WARNING, "rf_texture data retrieval not suported for pixel format");
+    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture data retrieval not suported for pixel format");
 
     _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);
     #endif
@@ -3007,7 +3007,7 @@ RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, int
 
     // Check if fbo is complete with attachments (valid)
     //-----------------------------------------------------------------------------------------------------
-    if (rf_gfx_render_texture_complete(target)) RF_LOG_V(RF_LOG_INFO, "[FBO ID %i] Framebuffer object created successfully", target.id);
+    if (rf_gfx_render_texture_complete(target)) RF_LOG_V(RF_LOG_TYPE_INFO, "[FBO ID %i] Framebuffer object created successfully", target.id);
     //-----------------------------------------------------------------------------------------------------
 
     _RF_GL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -3044,14 +3044,14 @@ RF_API bool rf_gfx_render_texture_complete(rf_render_texture target)
     {
         switch (status)
         {
-            case GL_FRAMEBUFFER_UNSUPPORTED: RF_LOG(RF_LOG_WARNING, "Framebuffer is unsupported"); break;
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: RF_LOG(RF_LOG_WARNING, "Framebuffer has incomplete attachment"); break;
+            case GL_FRAMEBUFFER_UNSUPPORTED: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer is unsupported"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has incomplete attachment"); break;
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: RF_LOG(RF_LOG_WARNING, "Framebuffer has incomplete dimensions"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has incomplete dimensions"); break;
             #endif
 
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: RF_LOG(RF_LOG_WARNING, "Framebuffer has a missing attachment"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has a missing attachment"); break;
             default: break;
         }
     }
@@ -3069,7 +3069,7 @@ RF_API void rf_gfx_load_mesh(rf_mesh* mesh, bool dynamic)
     if (mesh->vao_id > 0)
     {
         // Check if mesh has already been loaded in GPU
-        RF_LOG(RF_LOG_WARNING, "Trying to re-load an already loaded mesh");
+        RF_LOG(RF_LOG_TYPE_WARNING, "Trying to re-load an already loaded mesh");
         return;
     }
 
@@ -3177,8 +3177,8 @@ RF_API void rf_gfx_load_mesh(rf_mesh* mesh, bool dynamic)
         _RF_GL.glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short)*mesh->triangle_count * 3, mesh->indices, draw_hint);
     }
 
-    if (mesh->vao_id > 0) RF_LOG_V(RF_LOG_INFO, "[VAO ID %i] rf_mesh uploaded successfully to VRAM (GPU)", mesh->vao_id);
-    else RF_LOG(RF_LOG_WARNING, "rf_mesh could not be uploaded to VRAM (GPU)");
+    if (mesh->vao_id > 0) RF_LOG_V(RF_LOG_TYPE_INFO, "[VAO ID %i] rf_mesh uploaded successfully to VRAM (GPU)", mesh->vao_id);
+    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_mesh could not be uploaded to VRAM (GPU)");
 }
 
 // Update vertex or index data on GPU (upload new data to one buffer)
