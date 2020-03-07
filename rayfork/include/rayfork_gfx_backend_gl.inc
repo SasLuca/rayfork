@@ -48,9 +48,6 @@ struct rf_renderer_memory_buffers
 {
     rf_dynamic_buffer vertex_data[RF_MAX_BATCH_BUFFERING];
     rf_draw_call      draw_calls[RF_MAX_DRAWCALL_REGISTERED];
-
-    rf_char_info      default_font_chars[RF_DEFAULT_FONT_CHARS_COUNT];
-    rf_rec            default_font_recs[RF_DEFAULT_FONT_CHARS_COUNT];
 };
 
 typedef struct rf_opengl_procs rf_opengl_procs;

@@ -12,12 +12,12 @@
 #error Macros defined in glad will overwrite opengl proc names in rayforh.h. Include rayfork.h before glad.h to fix this issue.
 #endif
 
-//If no graphics backend was set, choose OpenGL ES3
+// If no graphics backend was set, choose OpenGL ES3
 #if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX)
     #define RAYFORK_GRAPHICS_BACKEND_GL_33
 #endif
 
-//Check to make sure only one graphics backend was selected
+// Check to make sure only one graphics backend was selected
 #if (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
     (defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_METAL) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
     (defined(RAYFORK_GRAPHICS_BACKEND_METAL) && (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_GL_DIRECTX))) || \
@@ -25,7 +25,7 @@
     #error You can only set one graphics backend but 2 were detected.
 #endif
 
-//Prefix for all the public functions
+// Prefix for all the public functions
 #ifndef RF_API
     #ifdef __cplusplus
         #define RF_API extern "C"
@@ -34,12 +34,7 @@
     #endif
 #endif
 
-//Prefix for all the private functions
-#ifndef RF_INTERNAL
-    #define RF_INTERNAL static
-#endif
-
-//Used to make constant literals work even in C++ mode
+// Used to make constant literals work even in C++ mode
 #ifdef __cplusplus
     #define RF_LIT(type) type
 #else
@@ -172,7 +167,7 @@ typedef enum rf_error_type
     RF_BAD_ARGUMENT,
     RF_BAD_ALLOC,
     RF_BAD_IO,
-    RF_OUT_OF_BOUNDS,
+    RF_BAD_BUFFER_SIZE,
     RF_STBI_FAILED,
     RF_UNSUPPORTED
 } rf_error_type;
@@ -290,9 +285,11 @@ typedef enum rf_pixel_format
     RF_UNCOMPRESSED_R5G5B5A1, // 16 bpp (1 bit alpha)
     RF_UNCOMPRESSED_R4G4B4A4, // 16 bpp (4 bit alpha)
     RF_UNCOMPRESSED_R8G8B8A8, // 32 bpp
+    RF_UNCOMPRESSED_RGBA32 = RF_UNCOMPRESSED_R8G8B8A8, //32 bpp
     RF_UNCOMPRESSED_R32, // 32 bpp (1 channel - float)
     RF_UNCOMPRESSED_R32G32B32, // 32 * 3 bpp (3 channels - float)
     RF_UNCOMPRESSED_R32G32B32A32, // 32 * 4 bpp (4 channels - float)
+    RF_UNCOMPRESSED_NORMALIZED = RF_UNCOMPRESSED_R32G32B32A32, // 32 * 4 bpp (4 channels - float)
     RF_COMPRESSED_DXT1_RGB, // 4 bpp (no alpha)
     RF_COMPRESSED_DXT1_RGBA, // 4 bpp (1 bit alpha)
     RF_COMPRESSED_DXT3_RGBA, // 8 bpp
@@ -530,22 +527,14 @@ union rf_color
     };
 };
 
-typedef struct rf_image_info rf_image_info;
-struct rf_image_info
-{
-    int width;
-    int height;
-    rf_pixel_format format;
-};
-
 typedef struct rf_image rf_image;
 struct rf_image
 {
-    void* data;    //image raw data
-    int   width;   //image base width
-    int   height;  //image base height
-    rf_pixel_format format;  //Data format (rf_pixel_format type)
-    bool  valid;
+    void*           data;    // image raw data
+    int             width;   // image base width
+    int             height;  // image base height
+    rf_pixel_format format;  // Data format (rf_pixel_format type)
+    bool            valid;   // True if the image is valid and can be used
 };
 
 typedef struct rf_mipmaps_image rf_mipmaps_image;
@@ -560,11 +549,10 @@ struct rf_mipmaps_image
             int   width;   //image base width
             int   height;  //image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
-            bool  valid;
         };
     };
 
-    int   mipmaps; //Mipmap levels, 1 by default
+    int mipmaps; //Mipmap levels, 1 by default
 };
 
 typedef struct rf_gif rf_gif;
@@ -583,7 +571,6 @@ struct rf_gif
             int   width;   //rf_image base width
             int   height;  //rf_image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
-            bool  valid;
         };
     };
 };
@@ -597,7 +584,6 @@ struct rf_texture2d
     int height;      //rf_texture base height
     int mipmaps;     //Mipmap levels, 1 by default
     int format;      //Data format (rf_pixel_format type)
-    bool  valid;
 };
 
 typedef struct rf_render_texture2d rf_render_texture2d;
@@ -608,7 +594,6 @@ struct rf_render_texture2d
     rf_texture2d texture; //rf_color buffer attachment texture
     rf_texture2d depth;   //Depth buffer attachment texture
     bool depth_texture;   //Track if depth attachment is a texture or renderbuffer
-    bool  valid;
 };
 
 typedef struct rf_npatch_info rf_npatch_info;
@@ -620,7 +605,6 @@ struct rf_npatch_info
     int right;           //right border offset
     int bottom;          //bottom border offset
     int type;            //layout of the n-patch: 3x3, 1x3 or 3x1
-    bool  valid;
 };
 
 typedef struct rf_utf8_codepoint rf_utf8_codepoint;
@@ -819,6 +803,14 @@ struct rf_base64_output
 #include "rayfork_gfx_backend_gl.inc"
 #endif
 
+typedef struct rf_default_font_buffer rf_default_font_buffers;
+struct rf_default_font_buffer
+{
+    rf_char_info   chars[RF_DEFAULT_FONT_CHARS_COUNT];
+    rf_rec         recs[RF_DEFAULT_FONT_CHARS_COUNT];
+    unsigned short
+};
+
 typedef struct rf_context rf_context;
 struct rf_context
 {
@@ -870,8 +862,6 @@ struct rf_context
     int render_offset_y; // Offset Y from render area (must be divided by 2)
     rf_mat screen_scaling; // rf_mat to scale screen
 
-    rf_font default_font; // Default font provided by raylib
-
     rf_gfx_context gfx_ctx;
 
     double current_time; // Current time measure
@@ -894,6 +884,9 @@ struct rf_context
     void (*wait_proc)(float); // Wait for some milliseconds (pauses program execution).
     double (*get_time_proc)(void); // Returns elapsed time in seconds since rf_context_init.
     int (*get_random_value_proc)(int min, int max); //A callback for a function that returns a random value in a range
+
+    rf_font default_font; // Default font provided by raylib
+    unsigned short default_font_pixels[128 * 128]; // Default font buffer
 };
 
 //endregion
@@ -955,10 +948,11 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 //region base64
 RF_API int rf_get_size_base64(const unsigned char* input);
 RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator);
-RF_API void rf_unload_base64_output(rf_base64_output it);
 //endregion
 
 //region color
+RF_API bool rf_color_equal_rgb(rf_color a, rf_color b); // Returns true if the two colors have the same values for the rgb components
+RF_API bool rf_color_equal(rf_color a, rf_color b); // Returns true if the two colors have the same values
 RF_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
 RF_API rf_vec4 rf_color_normalize(rf_color color); // Returns color normalized as float [0..1]
 RF_API rf_color rf_color_from_normalized(rf_vec4 normalized); // Returns color from normalized values [0..1]
@@ -1078,9 +1072,9 @@ RF_API bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radi
 RF_API bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3* collision_point); // Detect collision between ray and sphere, returns collision point
 RF_API bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box); // Detect collision between ray and box
 
-RF_API rf_ray_hit_info rf_get_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
-RF_API rf_ray_hit_info rf_get_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
-RF_API rf_ray_hit_info rf_get_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
+RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
+RF_API rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
+RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
 
 //endregion
 //endregion
@@ -1189,13 +1183,35 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size); // Generate
 //endregion
 //endregion
 
+//region pixel format
+RF_API const char* rf_pixel_format_string(rf_pixel_format format);
+RF_API bool rf_is_uncompressed_format(rf_pixel_format format);
+RF_API bool rf_is_compressed_format(rf_pixel_format format);
+RF_API int rf_bits_per_pixel(rf_pixel_format format);
+RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format);
+
+RF_API void rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size);
+RF_API void rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size);
+RF_API void rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format);
+
+RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format);
+RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format);
+RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format);
+//endregion
+
 //region image
 //region extract image data functions
 RF_API int rf_image_size(rf_image image); // Returns the size of the image in bytes
+RF_API int rf_image_size_in_format(rf_image image, rf_pixel_format format);
+
+RF_API void rf_image_pixels_to_rgba32_in_buffer(rf_image image, rf_color* dst, int dst_size);
+RF_API void rf_image_pixels_to_normalized_in_buffer(rf_image image, rf_vec4* dst, int dst_size);
+
 RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator); // Get pixel data from image in the form of rf_color struct array
 RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator); // Get pixel data from image as rf_vec4 array (float normalized)
-RF_API rf_color* rf_image_extract_palette(rf_image image, int max_palette_size, int* extract_count, rf_allocator allocator, rf_allocator temp_allocator); // Extract color palette from image to maximum size.
-RF_API rf_rec rf_get_image_alpha_border(rf_image image, float threshold, rf_allocator temp_allocator); // Get image alpha border rectangle
+
+RF_API void rf_image_extract_palette(rf_image image, rf_color* dst, int dst_size); // Extract color palette from image to maximum size.
+RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold); // Get image alpha border rectangle
 //endregion
 
 //region loading & unloading functions
@@ -1203,12 +1219,7 @@ RF_API bool rf_supports_image_file_type(const char* filename);
 
 RF_API rf_image rf_load_image_from_data_into_buffer(const void* data, int data_size, void* buffer, int buffer_size, rf_desired_channels channels, rf_allocator temp_allocator);
 RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load image from file data into CPU memory (RAM)
-
 RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load image from file into CPU memory (RAM)
-
-RF_API rf_image rf_load_image_from_data_in_format(const void* data, int data_size, int width, int height, int format, rf_allocator allocator); // Load image from raw data with parameters
-RF_API rf_image rf_load_image_from_rgba32_to_format(rf_color* pixels, int width, int height, rf_uncompressed_pixel_format format, rf_allocator allocator);
-RF_API rf_image rf_load_image_from_rgba32(rf_color* pixels, int width, int height, rf_allocator allocator); // Load image from rf_color array data (RGBA - 32bit)
 
 RF_API void     rf_unload_image(rf_image image, rf_allocator allocator); // Unloads the image using its allocator
 //endregion
@@ -1218,17 +1229,17 @@ RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator alloc
 RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_sizei rf_gif_frame_size(rf_gif gif);
 RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame); // Returns an image pointing to the frame in the gif
-RF_API void rf_unload_gif(rf_gif gif);
+RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator);
 //endregion
 
 //region image manipulation
 RF_API rf_mipmaps_image rf_mipmaps_image_copy(rf_mipmaps_image image, rf_allocator allocator); // Copy an image with mipmaps
 
 RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator); // Copy an image
-RF_API rf_image rf_image_crop(rf_image image, rf_rec rec, rf_allocator allocator, rf_allocator temp_allocator); // Crop an image to area defined by a rectangle
+RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator); // Crop an image to area defined by a rectangle
 
-RF_API void rf_image_resize(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size. Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
-RF_API void rf_image_resize_nn(rf_image* image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size using Nearest-Neighbor scaling algorithm
+RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator); // Resize and image to new size. Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
+RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size using Nearest-Neighbor scaling algorithm
 RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_height, int offset_x, int offset_y, rf_color color, rf_allocator temp_allocator); // Resize canvas and fill with color. Note: Resize offset is relative to the top-left corner of the original image
 
 RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator); // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image

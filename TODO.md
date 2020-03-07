@@ -1,17 +1,26 @@
 # Todo list
 
-- Review error handling. Maybe make error checking functions for structs (eg: rf_image_is_valid(rf_image))
-- Review all string literals, especially shaders and uniform names
+### @LucaSas 
+
+- Finish image loading refactor.
+- Finish allocator refactor & review error handling.
 - Make allocator macro that just wraps over a buffer (simple stack allocator)
-- Check all `todo` and `note` comments 
-- Update examples.
-- Make (some) dependencies optional.
-- Group functions and check their order.
+- Fix loading materials with tinyobjloader.
+- Rayfork Audio.
+- Check all `todo` and `note` comments.
 - Rewrite readme and add documentation.
-- Investigate `spacing` argument for `rf_draw_text` and other text functions.
-- use new tinyobjloader with io callbacks.
-- Rename everything from camelCase to snake_case.
-- Add clang tidy maybe???
-- Add a clang format file if that was a thing.
+- Add cstr versions for all text functions
+
+### @bicycleghost
+
+- Add DDS, PKM, KTX, PVR, ASTC image loading.
+- Update examples.
 - Add individual build scripts or make files for every example.
-- Add DDS, PKM, KTX, PVR, ASTC
+- Group functions and check their order.
+- Rename everything from `camelCase` to `snake_case`.
+
+### Optional stuff
+
+- Put all examples in another repo.
+- Make (some) dependencies optional.
+- Add clang tidy and/or clang format.
