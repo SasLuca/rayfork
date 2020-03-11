@@ -18,11 +18,11 @@ struct bunny
     rf_color color;
 };
 
-rf_context   rf_ctx;
-rf_renderer_memory_buffers    rf_mem;
-rf_texture2d bunny_texture;
-bunny*       bunnies;
-int          bunnies_count;
+rf_context                  rf_ctx;
+rf_renderer_memory_buffers  rf_mem;
+rf_texture2d                bunny_texture;
+bunny*                      bunnies;
+int                         bunnies_count;
 
 int random_value_in_range(int min, int max)
 {

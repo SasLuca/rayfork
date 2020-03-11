@@ -2933,33 +2933,23 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
 }
 
 // Read screen pixel data (color buffer)
-RF_API unsigned char* rf_gfx_read_screen_pixels(int width, int height, rf_allocator allocator, rf_allocator temp_allocator)
+RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
 {
-    unsigned char* screen_data = (unsigned char* ) RF_ALLOC(temp_allocator, width * height * 4 *  sizeof(unsigned char));
-    memset(screen_data, 0, width * height * 4 * sizeof(unsigned char));
-
     // NOTE 1: glReadPixels returns image flipped vertically -> (0,0) is the bottom left corner of the framebuffer
     // NOTE 2: We are getting alpha channel! Be careful, it can be transparent if not cleared properly!
-    _RF_GL.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, screen_data);
-
-    // Flip image vertically!
-    unsigned char* img_data = (unsigned char*) RF_ALLOC(allocator, width * height * sizeof(unsigned char) * 4);
+    _RF_GL.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst);
 
     for (int y = height - 1; y >= 0; y--)
     {
-        for (int x = 0; x < (width * 4); x++)
+        for (int x = 0; x < width; x++)
         {
-            img_data[((height - 1) - y) * width * 4 + x] = screen_data[(y * width * 4) + x];  // Flip line
+            dst[((height - 1) - y) * width + x] = dst[(y * width) + x]; // Flip line
 
             // Set alpha component value to 255 (no trasparent image retrieval)
             // NOTE: Alpha value has already been applied to RGB in framebuffer, we don't need it!
-            if (((x + 1) % 4) == 0) img_data[((height - 1) - y) * width * 4 + x] = 255;
+            if (((x + 1) % 4) == 0) dst[((height - 1) - y) * width + x] = 255;
         }
     }
-
-    RF_FREE(temp_allocator, screen_data);
-
-    return img_data;     // NOTE: image data should be freed
 }
 
 // Load a texture to be used for rendering (fbo with default color and depth attachments)

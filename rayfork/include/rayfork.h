@@ -534,7 +534,7 @@ struct rf_image
     int             width;   // image base width
     int             height;  // image base height
     rf_pixel_format format;  // Data format (rf_pixel_format type)
-    bool            valid;   // True if the image is valid and can be used
+    int             valid;   // True if the image is valid and can be used
 };
 
 typedef struct rf_mipmaps_image rf_mipmaps_image;
@@ -545,10 +545,11 @@ struct rf_mipmaps_image
         rf_image image;
         struct
         {
-            void* data;    //image raw data
-            int   width;   //image base width
-            int   height;  //image base height
+            void*           data;    //image raw data
+            int             width;   //image base width
+            int             height;  //image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
+            int             valid;
         };
     };
 
@@ -567,10 +568,11 @@ struct rf_gif
 
         struct
         {
-            void* data;    //rf_image raw data
-            int   width;   //rf_image base width
-            int   height;  //rf_image base height
+            void*           data;    //rf_image raw data
+            int             width;   //rf_image base width
+            int             height;  //rf_image base height
             rf_pixel_format format;  //Data format (rf_pixel_format type)
+            int             valid;
         };
     };
 };
@@ -584,6 +586,7 @@ struct rf_texture2d
     int height;      //rf_texture base height
     int mipmaps;     //Mipmap levels, 1 by default
     int format;      //Data format (rf_pixel_format type)
+    bool valid;
 };
 
 typedef struct rf_render_texture2d rf_render_texture2d;
@@ -803,12 +806,13 @@ struct rf_base64_output
 #include "rayfork_gfx_backend_gl.inc"
 #endif
 
-typedef struct rf_default_font_buffer rf_default_font_buffers;
-struct rf_default_font_buffer
+typedef struct rf_default_font_buffers rf_default_font_buffers;
+struct rf_default_font_buffers
 {
+    unsigned short pixels[128 * 128]; // Default font buffer
     rf_char_info   chars[RF_DEFAULT_FONT_CHARS_COUNT];
     rf_rec         recs[RF_DEFAULT_FONT_CHARS_COUNT];
-    unsigned short
+    unsigned short chars_pixels[128 * 128];
 };
 
 typedef struct rf_context rf_context;
@@ -862,6 +866,9 @@ struct rf_context
     int render_offset_y; // Offset Y from render area (must be divided by 2)
     rf_mat screen_scaling; // rf_mat to scale screen
 
+    rf_font default_font;
+    rf_default_font_buffers* default_font_buffers;
+
     rf_gfx_context gfx_ctx;
 
     double current_time; // Current time measure
@@ -884,9 +891,6 @@ struct rf_context
     void (*wait_proc)(float); // Wait for some milliseconds (pauses program execution).
     double (*get_time_proc)(void); // Returns elapsed time in seconds since rf_context_init.
     int (*get_random_value_proc)(int min, int max); //A callback for a function that returns a random value in a range
-
-    rf_font default_font; // Default font provided by raylib
-    unsigned short default_font_pixels[128 * 128]; // Default font buffer
 };
 
 //endregion
@@ -921,7 +925,7 @@ RF_API rf_font rf_get_default_font(); // Get the default font, useful to be used
 RF_API rf_shader rf_get_default_shader(); // Get default shader
 RF_API rf_texture2d rf_get_default_texture(); // Get default internal texture (white texture)
 RF_API rf_context* rf_get_context(); //Get the context pointer
-RF_API rf_image rf_get_screen_data(rf_allocator allocator, rf_allocator temp_allocator); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
+RF_API rf_image rf_get_screen_data(rf_color* dst, int dst_count); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
 //endregion
 
 //region setters
@@ -973,7 +977,6 @@ RF_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); 
 //endregion
 
 //region vec and matrix math
-RF_API int rf_get_buffer_size_for_pixel_format(int width, int height, int format); //Get the buffer size of an image of a specific width and height in a given format
 RF_API float rf_clamp(float value, float min, float max); // Clamp float value
 RF_API float rf_lerp(float start, float end, float amount); // Calculate linear interpolation between two floats
 
@@ -1161,7 +1164,7 @@ RF_API void rf_gfx_unload_texture(unsigned int id); // Unload texture from GPU m
 
 RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture); // Generate mipmap data for selected texture
 RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator); // Read texture pixel data
-RF_API unsigned char* rf_gfx_read_screen_pixels(int width, int height, rf_allocator allocator, rf_allocator temp_allocator); // Read screen pixel data (color buffer)
+RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height); // Read screen pixel data (color buffer)
 
 // Render texture management (fbo)
 RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, int format, int depth_bits, bool use_depth_texture); // Load a render texture (with color and depth attachments)
@@ -1189,102 +1192,131 @@ RF_API bool rf_is_uncompressed_format(rf_pixel_format format);
 RF_API bool rf_is_compressed_format(rf_pixel_format format);
 RF_API int rf_bits_per_pixel(rf_pixel_format format);
 RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format);
+RF_API int rf_pixel_buffer_size(rf_pixel_format format, int width, int height);
 
-RF_API void rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size);
-RF_API void rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size);
-RF_API void rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format);
+RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size);
+RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size);
+RF_API bool rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format);
 
 RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format);
 //endregion
 
+//region mipmaps_image
+RF_API int rf_mipmaps_image_size(rf_mipmaps_image image);
+
+// Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
+RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);
+
+RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator);
+//endregion
+
 //region image
 //region extract image data functions
-RF_API int rf_image_size(rf_image image); // Returns the size of the image in bytes
+RF_API int rf_image_size(rf_image image);
 RF_API int rf_image_size_in_format(rf_image image, rf_pixel_format format);
 
-RF_API void rf_image_pixels_to_rgba32_in_buffer(rf_image image, rf_color* dst, int dst_size);
-RF_API void rf_image_pixels_to_normalized_in_buffer(rf_image image, rf_vec4* dst, int dst_size);
+RF_API bool rf_image_get_pixels_in_rgba32_to_buffer(rf_image image, rf_color* dst, int dst_size);
+RF_API bool rf_image_get_pixels_in_normalized_to_buffer(rf_image image, rf_vec4* dst, int dst_size);
 
-RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator); // Get pixel data from image in the form of rf_color struct array
-RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator); // Get pixel data from image as rf_vec4 array (float normalized)
+RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator);
+RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator);
 
-RF_API void rf_image_extract_palette(rf_image image, rf_color* dst, int dst_size); // Extract color palette from image to maximum size.
-RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold); // Get image alpha border rectangle
+RF_API void rf_image_extract_palette(rf_image image, rf_color* dst, int dst_size);
+RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold);
 //endregion
 
 //region loading & unloading functions
 RF_API bool rf_supports_image_file_type(const char* filename);
 
-RF_API rf_image rf_load_image_from_data_into_buffer(const void* data, int data_size, void* buffer, int buffer_size, rf_desired_channels channels, rf_allocator temp_allocator);
-RF_API rf_image rf_load_image_from_data(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load image from file data into CPU memory (RAM)
-RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load image from file into CPU memory (RAM)
+RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, int src_size, void* dst, int dst_size, rf_desired_channels channels, rf_allocator temp_allocator);
+RF_API rf_image rf_load_image_from_file_data(const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
 
-RF_API void     rf_unload_image(rf_image image, rf_allocator allocator); // Unloads the image using its allocator
-//endregion
+RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, int src_size, void* dst, int dst_size, rf_desired_channels channels, rf_allocator temp_allocator);
+RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
 
-//region gif
-RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_sizei rf_gif_frame_size(rf_gif gif);
-RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame); // Returns an image pointing to the frame in the gif
-RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator);
+RF_API rf_image rf_load_image_from_format_to_buffer(const void* src, int src_size, int src_width, int src_height, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format);
+RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+
+RF_API void rf_unload_image(rf_image image, rf_allocator allocator);
 //endregion
 
 //region image manipulation
-RF_API rf_mipmaps_image rf_mipmaps_image_copy(rf_mipmaps_image image, rf_allocator allocator); // Copy an image with mipmaps
+RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator);
+RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, int dst_size);
+RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator);
+RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new_height, void* dst, int dst_size, rf_allocator temp_allocator);
+RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_resize_nn_to_buffer(rf_image image, int new_width, int new_height, void* dst, int dst_size);
+RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator allocator);
+RF_API rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_format dst_format, void* dst, int dst_size);
+RF_API rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new_format, rf_allocator allocator);
+RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mask, void* dst, int dst_size);
+RF_API rf_image rf_image_alpha_clear(rf_image image, rf_color color, float threshold, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator);
+RF_API rf_image rf_image_dither(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color tint, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_flip_vertical(rf_image image);
+RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_flip_horizontal(rf_image image);
+RF_API rf_image rf_image_rotate_cw_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_rotate_cw(rf_image image);
+RF_API rf_image rf_image_rotate_ccw_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_rotate_ccw(rf_image image);
+RF_API rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, void* dst, int dst_size);
+RF_API rf_image rf_image_color_tint(rf_image image, rf_color color);
+RF_API rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_color_invert(rf_image image);
+RF_API rf_image rf_image_color_grayscale_to_buffer(rf_image image, void* dst, int dst_size);
+RF_API rf_image rf_image_color_grayscale(rf_image image);
+RF_API rf_image rf_image_color_contrast_to_buffer(rf_image image, float contrast, void* dst, int dst_size);
+RF_API rf_image rf_image_color_contrast(rf_image image, int contrast);
+RF_API rf_image rf_image_color_brightness_to_buffer(rf_image image, int brightness, void* dst, int dst_size);
+RF_API rf_image rf_image_color_brightness(rf_image image, int brightness);
+RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color, rf_color replace, void* dst, int dst_size);
+RF_API rf_image rf_image_color_replace(rf_image image, rf_color color, rf_color replace);
 
-RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator); // Copy an image
-RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator); // Crop an image to area defined by a rectangle
+RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_allocator allocator);
+RF_API rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_color top, rf_color bottom, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_color bottom, rf_allocator allocator);
+RF_API rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_color left, rf_color right, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_gradient_h(int width, int height, rf_color left, rf_color right, rf_allocator allocator);
+RF_API rf_image rf_gen_image_gradient_radial_to_buffer(int width, int height, float density, rf_color inner, rf_color outer, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_gradient_radial(int width, int height, float density, rf_color inner, rf_color outer, rf_allocator allocator);
+RF_API rf_image rf_gen_image_checked_to_buffer(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_checked(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_allocator allocator);
+RF_API rf_image rf_gen_image_white_noise_to_buffer(int width, int height, float factor, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_white_noise(int width, int height, float factor, rf_allocator allocator);
+RF_API rf_image rf_gen_image_perlin_noise_to_buffer(int width, int height, int offset_x, int offset_y, float scale, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, int offset_y, float scale, rf_allocator allocator);
+RF_API rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_size, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_allocator allocator);
 
-RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator); // Resize and image to new size. Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
-RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator temp_allocator); // Resize and image to new size using Nearest-Neighbor scaling algorithm
-RF_API void rf_image_resize_canvas(rf_image* image, int new_width, int new_height, int offset_x, int offset_y, rf_color color, rf_allocator temp_allocator); // Resize canvas and fill with color. Note: Resize offset is relative to the top-left corner of the original image
-
-RF_API void rf_image_gen_mipmaps(rf_image* image, rf_allocator temp_allocator); // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
-
-RF_API void rf_image_to_pot(rf_image* image, rf_color fill_color, rf_allocator temp_allocator); // Convert image to POT (power-of-two). Note: It could be useful on OpenGL ES 2.0 (RPI, HTML5)
-RF_API rf_image rf_image_format(rf_image image, rf_pixel_format new_format, rf_allocator allocator, rf_allocator temp_allocator); // Convert image data to desired format
-
-RF_API void rf_image_alpha_mask(rf_image* image, rf_image alpha_mask, rf_allocator temp_allocator); // Apply alpha mask to image. Note 1: Returned image is GRAY_ALPHA (16bit) or RGBA (32bit). Note 2: alphaMask should be same size as image
-RF_API void rf_image_alpha_clear(rf_image* image, rf_color color, float threshold, rf_allocator temp_allocator); // Clear alpha channel to desired color. Note: Threshold defines the alpha limit, 0.0f to 1.0f
-RF_API void rf_image_alpha_premultiply(rf_image* image, rf_allocator temp_allocator); // Premultiply alpha channel
-RF_API void rf_image_alpha_crop(rf_image* image, float threshold, rf_allocator temp_allocator); // Crop image depending on alpha value
-
-RF_API void rf_image_dither(rf_image* image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator temp_allocator); // Dither image data to 16bpp or lower (Floyd-Steinberg dithering) Note: In case selected bpp do not represent an known 16bit format, dithered data is stored in the LSB part of the unsigned short
-
-RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color, rf_allocator allocator, rf_allocator temp_allocator); // Create an image from text (default font)
-RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color tint, rf_allocator allocator, rf_allocator temp_allocator); // Create an image from text (custom sprite font)
-
-RF_API void rf_image_flip_vertical(rf_image* image, rf_allocator temp_allocator); // Flip image vertically
-RF_API void rf_image_flip_horizontal(rf_image* image, rf_allocator temp_allocator); // Flip image horizontally
-RF_API void rf_image_rotate_cw(rf_image* image, rf_allocator temp_allocator); // Rotate image clockwise 90deg
-RF_API void rf_image_rotate_ccw(rf_image* image, rf_allocator temp_allocator); // Rotate image counter-clockwise 90deg
-RF_API void rf_image_color_tint(rf_image* image, rf_color color, rf_allocator temp_allocator); // Modify image color: tint
-RF_API void rf_image_color_invert(rf_image* image, rf_allocator temp_allocator); // Modify image color: invert
-RF_API void rf_image_color_grayscale(rf_image* image, rf_allocator temp_allocator); // Modify image color: grayscale
-RF_API void rf_image_color_contrast(rf_image* image, float contrast, rf_allocator temp_allocator); // Modify image color: contrast (-100 to 100)
-RF_API void rf_image_color_brightness(rf_image* image, int brightness, rf_allocator temp_allocator); // Modify image color: brightness (-255 to 255)
-RF_API void rf_image_color_replace(rf_image* image, rf_color color, rf_color replace, rf_allocator temp_allocator); // Modify image color: replace color
-
-// rf_image generation functions
-
-RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: plain color
-RF_API rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_color bottom, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: vertical gradient
-RF_API rf_image rf_gen_image_gradient_h(int width, int height, rf_color left, rf_color right, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: horizontal gradient
-RF_API rf_image rf_gen_image_gradient_radial(int width, int height, float density, rf_color inner, rf_color outer, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: radial gradient
-RF_API rf_image rf_gen_image_checked(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: checked
-RF_API rf_image rf_gen_image_white_noise(int width, int height, float factor, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: white noise
-RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, int offset_y, float scale, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: perlin noise
-RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_allocator allocator, rf_allocator temp_allocator); // Generate image: cellular algorithm. Bigger tileSize means bigger cells
-
+RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator);
+RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator);
+RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator);
+RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator);
+RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator);
 //endregion
+//endregion
+
+//region gif
+RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_sizei rf_gif_frame_size(rf_gif gif);
+RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame);
+RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator);
 //endregion
 
 //region texture
 RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io); // Load texture from file into GPU memory (VRAM)
-RF_API rf_texture2d rf_load_texture_from_data(const void* data, int data_len, rf_allocator temp_allocator); // Load texture from an image file data using stb
+RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, int dst_size, rf_allocator temp_allocator); // Load texture from an image file data using stb
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture from image data
 RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_cubemap_layout_type layout_type, rf_allocator temp_allocator); // Load cubemap from image, multiple image cubemap layouts supported
 RF_API rf_render_texture2d rf_load_render_texture(int width, int height); // Load texture for rendering (framebuffer)
@@ -1301,12 +1333,15 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload rend
 RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len); //Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found or the length is exhausted
 RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load font from file into GPU memory (VRAM)
 RF_API rf_font rf_load_font(const void* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator); // Load font from a font file data into GPU memory (VRAM)
-RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result fontJobResult);
+
 RF_API rf_char_info* rf_load_font_data(const void* font_data, int font_data_size, int font_size, int* font_chars, int chars_count, rf_font_type type, rf_allocator allocator, rf_allocator temp_allocator); // Load font data for further use
 RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstChar, rf_allocator allocator, rf_allocator temp_allocator); // Load font from rf_image (XNA style)
 RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** char_recs, int chars_count, int font_size, int padding, bool use_skyline_rect_packing, rf_allocator allocator, rf_allocator temp_allocator); // Generate image font atlas using chars info
-RF_API void rf_unload_font(rf_font font); // Unload rf_font from GPU memory (VRAM)
+
+RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int font_size, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result font_job_result, rf_allocator font_job_allocator);
+
+RF_API void rf_unload_font(rf_font font, rf_allocator allocator); // Unload rf_font from GPU memory (VRAM)
 
 RF_API int rf_get_glyph_index(rf_font font, int character); // Get index position for a unicode character on font
 RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing); // Measure string size for rf_font
@@ -1420,30 +1455,32 @@ RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font,
 
 //region model & materials & animations
 RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh); // Compute mesh bounding box limits
-RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator temp_allocator); // Compute mesh tangents
+RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_allocator temp_allocator); // Compute mesh tangents
 RF_API void rf_mesh_compute_binormals(rf_mesh* mesh); // Compute mesh binormals
-RF_API void rf_unload_mesh(rf_mesh mesh); // Unload mesh from memory (RAM and/or VRAM)
+RF_API void rf_unload_mesh(rf_mesh mesh, rf_allocator allocator); // Unload mesh from memory (RAM and/or VRAM)
 
 RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
-RF_API void rf_unload_model(rf_model model); // Unload model from memory (RAM and/or VRAM)
+RF_API void rf_unload_model(rf_model model, rf_allocator allocator); // Unload model from memory (RAM and/or VRAM)
 
 RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator); // Load materials from model file
 RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
-RF_API void rf_unload_material(rf_material material); // Unload material from GPU memory (VRAM)
+RF_API void rf_unload_material(rf_material material, rf_allocator allocator); // Unload material from GPU memory (VRAM)
 
 // Animations
+
 RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator); // Load model animations from file
 RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, int frame); // Update model animation pose
 RF_API bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim); // Check model animation skeleton match
-RF_API void rf_unload_model_animation(rf_model_animation anim); // Unload animation data
+RF_API void rf_unload_model_animation(rf_model_animation anim, rf_allocator allocator); // Unload animation data
 
 // mesh generation functions
+
 RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator); // Generate cuboid mesh
 RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator, rf_allocator temp_allocator); // Generate polygonal mesh
 RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z, rf_allocator allocator, rf_allocator temp_allocator); // Generate plane mesh (with subdivisions)
