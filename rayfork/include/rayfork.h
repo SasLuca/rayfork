@@ -148,7 +148,7 @@
     #define RF_MAX_FONT_CHARS (256) //Max number of characters in a font
 #endif
 
-#define RF_DEFAULT_FONT_CHARS_COUNT (224) //Number of characters in the default font
+#define RF_RAYLIB_FONT_CHARS_COUNT (224) // Number of characters in the raylib font
 
 // Default vertex attribute names on shader to set location points
 #define RF_DEFAULT_ATTRIB_POSITION_NAME    "vertex_position"    // shader-location = 0
@@ -620,21 +620,25 @@ struct rf_utf8_codepoint
 typedef struct rf_char_info rf_char_info;
 struct rf_char_info
 {
-    int value;    //Character value (Unicode)
-    int offset_x;  //Character offset X when drawing
-    int offset_y;  //Character offset Y when drawing
-    int advance_x; //Character advance position X
-    rf_image image;  //Character image data
+    union
+    {
+        rf_rec rec;    // Characters rectangles in texture
+        struct { float x, y, width, height; };
+    };
+
+    int    value;     // Character value (Unicode)
+    int    offset_x;  // Character offset X when drawing
+    int    offset_y;  // Character offset Y when drawing
+    int    advance_x; // Character advance position X
 };
 
 typedef struct rf_font rf_font;
 struct rf_font
 {
-    int base_size;      // Base size (default chars height)
-    int chars_count;    // Number of characters
-    rf_texture2d texture; // Characters texture atlas
-    rf_rec* recs;   // Characters rectangles in texture
-    rf_char_info* chars;   // Characters info data
+    int           base_size;    // Base size (default chars height)
+    int           chars_count;  // Number of characters
+    rf_texture2d  texture;      // Characters texture atlas
+    rf_char_info* chars_info;        // Characters info data
 };
 
 typedef struct rf_load_font_async_result rf_load_font_async_result;
@@ -810,8 +814,8 @@ typedef struct rf_default_font_buffers rf_default_font_buffers;
 struct rf_default_font_buffers
 {
     unsigned short pixels[128 * 128]; // Default font buffer
-    rf_char_info   chars[RF_DEFAULT_FONT_CHARS_COUNT];
-    rf_rec         recs[RF_DEFAULT_FONT_CHARS_COUNT];
+    rf_char_info   chars[RF_RAYLIB_FONT_CHARS_COUNT];
+    rf_rec         recs[RF_RAYLIB_FONT_CHARS_COUNT];
     unsigned short chars_pixels[128 * 128];
 };
 
@@ -1334,7 +1338,7 @@ RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len); 
 RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load font from file into GPU memory (VRAM)
 RF_API rf_font rf_load_font(const void* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator); // Load font from a font file data into GPU memory (VRAM)
 
-RF_API rf_char_info* rf_load_font_data(const void* font_data, int font_data_size, int font_size, int* font_chars, int chars_count, rf_font_type type, rf_allocator allocator, rf_allocator temp_allocator); // Load font data for further use
+RF_API bool rf_load_font_data(const void* font_data, int font_data_size, int font_size, int* chars, int chars_count, rf_font_type type, rf_char_info* dst, int dst_count); // Load font data for further use
 RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstChar, rf_allocator allocator, rf_allocator temp_allocator); // Load font from rf_image (XNA style)
 RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** char_recs, int chars_count, int font_size, int padding, bool use_skyline_rect_packing, rf_allocator allocator, rf_allocator temp_allocator); // Generate image font atlas using chars info
 

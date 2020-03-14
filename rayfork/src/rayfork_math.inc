@@ -386,14 +386,9 @@ RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
 //endregion
 
 //region misc
-RF_API float rf_next_potf(float it)
+RF_API float rf_next_pot(float it)
 {
     return powf(2, ceilf(logf(it) / logf(2)));
-}
-
-RF_API float rf_next_poti(int it)
-{
-    return powf(2, ceilf(logf((float)it) / logf(2)));
 }
 
 // Clamp float value

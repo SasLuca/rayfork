@@ -100,30 +100,30 @@ RF_INTERNAL rf_context* rf_internal_ctx;
 //region stb_image
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbi_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_stbi_allocator;
 
 #define RF_SET_STBI_ALLOCATOR(allocator) rf_internal_stbi_allocator = (allocator)
 
 //#define STBI_NO_GIF
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)                     RF_ALLOC(*rf_internal_stbi_allocator, sz)
-#define STBI_FREE(p)                        RF_FREE(*rf_internal_stbi_allocator, p)
-#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_internal_realloc_wrapper(*rf_internal_stbi_allocator, p, oldsz, newsz)
+#define STBI_MALLOC(sz)                     RF_ALLOC(rf_internal_stbi_allocator, sz)
+#define STBI_FREE(p)                        RF_FREE(rf_internal_stbi_allocator, p)
+#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_internal_realloc_wrapper(rf_internal_stbi_allocator, p, oldsz, newsz)
 #define STBI_ASSERT(it)                     RF_ASSERT(it)
-#define STBIDEF                             static
+#define STBIDEF                             RF_INTERNAL
 #include "stb/stb_image.h"
 //endregion
 
 //region stb_image_resize
 
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_stbir_allocator;
 
 #define RF_SET_STBIR_ALLOCATOR(allocator) rf_internal_stbir_allocator = (allocator)
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(*rf_internal_stbir_allocator, sz))
-#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(*rf_internal_stbir_allocator, p))
+#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(rf_internal_stbir_allocator, sz))
+#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(rf_internal_stbir_allocator, p))
 #define STBIR_ASSERT(it)     RF_ASSERT(it)
 #define STBIRDEF             RF_INTERNAL
 #include "stb/stb_image_resize.h"
@@ -138,14 +138,14 @@ RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbir_allocator;
 
 //region stb_truetype
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_stbtt_allocator;
 
 #define RF_SET_STBTT_ALLOCATOR(allocator) rf_internal_stbtt_allocator = (allocator)
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
-#define STBTT_malloc(sz, u) RF_ALLOC(*rf_internal_stbtt_allocator, sz)
-#define STBTT_free(p, u)    RF_FREE(*rf_internal_stbtt_allocator, p)
+#define STBTT_malloc(sz, u) RF_ALLOC(rf_internal_stbtt_allocator, sz)
+#define STBTT_free(p, u)    RF_FREE(rf_internal_stbtt_allocator, p)
 #define STBTT_assert(it)    RF_ASSERT(it)
 #include "stb/stb_truetype.h"
 //endregion
@@ -157,47 +157,47 @@ RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_stbtt_allocator;
 
 //region par shapes
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_par_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_par_allocator;
 
 #define RF_SET_PARSHAPES_ALLOCATOR(allocator) rf_internal_par_allocator = (allocator)
 
 #define PAR_SHAPES_IMPLEMENTATION
-#define PAR_MALLOC(T, N)                    ((T*)RF_ALLOC(*rf_internal_par_allocator, N * sizeof(T)))
-#define PAR_CALLOC(T, N)                    ((T*)rf_internal_calloc_wrapper(*rf_internal_par_allocator, N, sizeof(T)))
-#define PAR_FREE(BUF)                       RF_FREE(*rf_internal_par_allocator, BUF)
-#define PAR_REALLOC(T, BUF, N, OLD_SZ)      ((T*) rf_internal_realloc_wrapper(*rf_internal_par_allocator, BUF, sizeof(T) * (N), OLD_SZ))
+#define PAR_MALLOC(T, N)                    ((T*)RF_ALLOC(rf_internal_par_allocator, N * sizeof(T)))
+#define PAR_CALLOC(T, N)                    ((T*)rf_internal_calloc_wrapper(rf_internal_par_allocator, N, sizeof(T)))
+#define PAR_FREE(BUF)                       RF_FREE(rf_internal_par_allocator, BUF)
+#define PAR_REALLOC(T, BUF, N, OLD_SZ)      ((T*) rf_internal_realloc_wrapper(rf_internal_par_allocator, BUF, sizeof(T) * (N), OLD_SZ))
 
 #include "par/par_shapes.h"
 //endregion
 
 //region tinyobj loader
 //Global thread-local alloctor for stb image. Everytime we call a function from stbi we set the allocator and then set it to null afterwards.
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_tinyobj_allocator;
-RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks* rf_tinyobj_io;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_tinyobj_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks rf_tinyobj_io;
 
 #define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf_internal_tinyobj_allocator = allocator
 #define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf_tinyobj_io = io;
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
-#define TINYOBJ_MALLOC(size)             RF_ALLOC(*rf_internal_tinyobj_allocator, size)
-#define TINYOBJ_REALLOC(p, oldsz, newsz) rf_internal_realloc_wrapper(*rf_internal_tinyobj_allocator, p, oldsz, newsz)
-#define TINYOBJ_CALLOC(amount, size)     rf_internal_calloc_wrapper(*rf_internal_tinyobj_allocator, amount, size)
-#define TINYOBJ_FREE(p)                  RF_FREE(*rf_internal_tinyobj_allocator, p)
+#define TINYOBJ_MALLOC(size)             RF_ALLOC(rf_internal_tinyobj_allocator, size)
+#define TINYOBJ_REALLOC(p, oldsz, newsz) rf_internal_realloc_wrapper(rf_internal_tinyobj_allocator, p, oldsz, newsz)
+#define TINYOBJ_CALLOC(amount, size)     rf_internal_calloc_wrapper(rf_internal_tinyobj_allocator, amount, size)
+#define TINYOBJ_FREE(p)                  RF_FREE(rf_internal_tinyobj_allocator, p)
 
-#define TINYOBJ_GET_FILE_SIZE(filename) (rf_tinyobj_io->get_file_size_proc(filename))
-#define TINYOBJ_LOAD_FILE_IN_BUFFER(filename, buffer, buffer_size) (rf_tinyobj_io->read_file_into_buffer_proc(filename, buffer, buffer_size))
+#define TINYOBJ_GET_FILE_SIZE(filename) (rf_tinyobj_io.get_file_size_proc(filename))
+#define TINYOBJ_LOAD_FILE_IN_BUFFER(filename, buffer, buffer_size) (rf_tinyobj_io.read_file_into_buffer_proc(filename, buffer, buffer_size))
 
 #include "tinyobjloader-c/tinyobj_loader_c.h"
 //endregion
 
 //region cgltf
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator* rf_internal_cgltf_allocator;
+RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf_internal_cgltf_allocator;
 
 #define RF_SET_CGLTF_ALLOCATOR(allocator) rf_internal_cgltf_allocator = allocator
 
 #define CGLTF_IMPLEMENTATION
-#define CGLTF_MALLOC(size) RF_ALLOC(*rf_internal_cgltf_allocator, size)
-#define CGLTF_FREE(ptr)    RF_FREE(*rf_internal_cgltf_allocator, ptr)
+#define CGLTF_MALLOC(size) RF_ALLOC(rf_internal_cgltf_allocator, size)
+#define CGLTF_FREE(ptr)    RF_FREE(rf_internal_cgltf_allocator, ptr)
 
 #include "cgltf/cgltf.h"
 
@@ -1794,11 +1794,11 @@ RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator
 
     int comp = 0;
 
-    RF_SET_STBI_ALLOCATOR(&allocator);
+    RF_SET_STBI_ALLOCATOR(allocator);
     {
         gif.data = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &comp, 4);
     }
-    RF_SET_STBI_ALLOCATOR(NULL);
+    RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     gif.format = RF_UNCOMPRESSED_R8G8B8A8;
 
@@ -2071,6 +2071,16 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target)
 //endregion
 
 //region font & text
+#define RF_SDF_CHAR_PADDING       (4)
+#define RF_SDF_ON_EDGE_VALUE      (128)
+#define RF_SDF_PIXEL_DIST_SCALE   (64.0f)
+#define RF_BITMAP_ALPHA_THRESHOLD (80)
+
+// Default hardcoded values for ttf file loading
+#define RF_DEFAULT_TTF_FONT_SIZE (32) // rf_font first character (32 - space)
+#define RF_DEFAULT_TTF_NUMCHARS  (95) // ASCII 32..126 is 95 glyphs
+#define RF_DEFAULT_FIRST_CHAR    (32) // Expected first char for image sprite font
+
 /*
    Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found or the length is exhausted
    When a invalid UTF8 rf_byte is encountered we exit as soon as possible and a '?'(0x3f) codepoint is returned
@@ -2238,11 +2248,6 @@ RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len)
 // Load rf_font from file into GPU memory (VRAM)
 RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
-    // Default hardcoded values for ttf file loading
-    #define RF_DEFAULT_TTF_FONT_SIZE (32) // rf_font first character (32 - space)
-    #define RF_DEFAULT_TTF_NUMCHARS  (95) // ASCII 32..126 is 95 glyphs
-    #define RF_DEFAULT_FIRST_CHAR    (32) // Expected first char for image sprite font
-
     rf_font font = {0};
 
     if (rf_internal_is_file_extension(filename, ".ttf") || rf_internal_is_file_extension(filename, ".otf"))
@@ -2295,130 +2300,52 @@ RF_API rf_font rf_load_font(const void* font_file_data, int font_file_data_size,
     return font;
 }
 
-//Note: Must call rf_finish_load_font_thread_safe on the gl thread afterwards to finish loading the font
-RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int font_size, int chars_count, rf_allocator allocator, rf_allocator temp_allocator)
-{
-    rf_font font = {0};
-
-    font.base_size = font_size;
-    font.chars_count = (chars_count > 0)? chars_count : 95;
-    font.chars = rf_load_font_data(font_file_data, font_file_data_size, font.base_size, font.chars_count, RF_FONT_DEFAULT, allocator, temp_allocator);
-
-    rf_image atlas = rf_gen_image_font_atlas(font.chars, &font.recs, font.chars_count, font.base_size, 2, 0, allocator, temp_allocator);
-
-    // Update chars[i].image to use alpha, required to be used on rf_image_draw_text()
-    for (int i = 0; i < font.chars_count; i++)
-    {
-        rf_unload_image(font.chars[i].image);
-        font.chars[i].image = rf_image_from_image(atlas, font.recs[i], allocator, temp_allocator);
-    }
-
-    return (rf_load_font_async_result) { font, atlas };
-}
-
-RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result font_job_result, rf_allocator font_job_allocator)
-{
-    font_job_result.font.texture = rf_load_texture_from_image(font_job_result.atlas);
-    rf_unload_image(font_job_result.atlas, font_job_allocator);
-
-    return font_job_result.font;
-}
-
 // Load font data for further use. Note: Requires TTF font and can generate SDF data
-RF_API rf_char_info* rf_load_font_data(const void* font_data, int font_data_size, int font_size, int chars_count, rf_font_type type, rf_allocator allocator, rf_allocator temp_allocator)
+RF_API bool rf_load_font_data(const void* font_data, int font_data_size, int font_size, int* chars, int chars_count, rf_font_type type, rf_char_info* dst, int dst_count)
 {
-    // NOTE: Using some SDF generation default values,
-    // trades off precision with ability to handle *smaller* sizes
-    #define RF_SDF_CHAR_PADDING       (4)
-    #define RF_SDF_ON_EDGE_VALUE      (128)
-    #define RF_SDF_PIXEL_DIST_SCALE   (64.0f)
-    #define RF_BITMAP_ALPHA_THRESHOLD (80)
+    bool success = false;
 
-    rf_char_info* chars = NULL;
-
-    // Load font data (including pixel data) from TTF file
-    // NOTE: Loaded information should be enough to generate font image atlas,
-    // using any packaging method
-
-    unsigned char* font_buffer = (unsigned char*) RF_ALLOC(temp_allocator, font_data_size);
-    memcpy(font_buffer, font_data, font_data_size);
-
-    // Init font for data reading
-    stbtt_fontinfo font_info;
-    if (!stbtt_InitFont(&font_info, font_buffer, 0)) RF_LOG(RF_LOG_TYPE_WARNING, "Failed to init font!");
-
-    // Calculate font scale factor
-    float scale_factor = stbtt_ScaleForPixelHeight(&font_info, (float)font_size);
-
-    // Calculate font basic metrics
-    // NOTE: ascent is equivalent to font baseline
-    int ascent, descent, line_gap;
-    stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &line_gap);
-
-    // In case no chars count provided, default to 95
-    chars_count = (chars_count > 0)? chars_count : 95;
-
-    // Fill font_chars in case not provided externally
-    // NOTE: By default we fill chars_count consecutevely, starting at 32 (Space)
-    int gen_font_chars = false;
-    if (font_chars == NULL)
+    if (dst_count >= chars_count)
     {
-        font_chars = (int*) RF_ALLOC(temp_allocator, chars_count * sizeof(int));
-        for (int i = 0; i < chars_count; i++) font_chars[i] = i + 32;
-        gen_font_chars = true;
-    }
+        // The stbtt functions called here should not require any allocations
+        RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
 
-    chars = (rf_char_info*) RF_ALLOC(allocator, chars_count * sizeof(rf_char_info));
-
-    // NOTE: Using simple packaging, one char after another
-    for (int i = 0; i < chars_count; i++)
-    {
-        int chw = 0, chh = 0; // Character width and height (on generation)
-        int ch = font_chars[i]; // Character value to get info for
-        chars[i].value = ch;
-
-        //  Render a unicode codepoint to a bitmap
-        //      stbtt_GetCodepointBitmap()           -- allocates and returns a bitmap
-        //      stbtt_GetCodepointBitmap_box()        -- how big the bitmap must be
-        //      stbtt_MakeCodepointBitmap()          -- renders into bitmap you provide
-
-        if (type != RF_FONT_SDF) chars[i].image.data = stbtt_GetCodepointBitmap(&font_info, scale_factor, scale_factor, ch, &chw, &chh, &chars[i].offset_x, &chars[i].offset_y);
-        else if (ch != 32) chars[i].image.data = stbtt_GetCodepointSDF(&font_info, scale_factor, ch, RF_SDF_CHAR_PADDING, RF_SDF_ON_EDGE_VALUE, RF_SDF_PIXEL_DIST_SCALE, &chw, &chh, &chars[i].offset_x, &chars[i].offset_y);
-        else chars[i].image.data = NULL;
-
-        if (type == RF_FONT_BITMAP)
+        // Init font for data reading
+        stbtt_fontinfo font_info = {0};
+        if (stbtt_InitFont(&font_info, font_data, 0))
         {
-            // Aliased bitmap (black & white) font generation, avoiding anti-aliasing
-            // NOTE: For optimum results, bitmap font should be generated at base pixel size
-            for (int p = 0; p < chw*chh; p++)
+            chars_count = chars_count == 0 ? 95 : chars_count;
+
+            // Calculate font scale factor
+            float scale_factor = stbtt_ScaleForPixelHeight(&font_info, (float)font_size);
+
+            // Calculate font basic metrics
+            // NOTE: ascent is equivalent to font baseline
+            int ascent, descent, line_gap;
+            stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &line_gap);
+
+            // NOTE: Using simple packaging, one char after another
+            for (int i = 0; i < chars_count; i++)
             {
-                if (((unsigned char* )chars[i].image.data)[p] < RF_BITMAP_ALPHA_THRESHOLD) ((unsigned char* )chars[i].image.data)[p] = 0;
-                else ((unsigned char* )chars[i].image.data)[p] = 255;
+                int char_width  = 0;
+                int char_height = 0;
+
+                dst[i].value = chars == NULL ? i + 32 : chars[i];
+                stbtt_GetCodepointBitmapBox(&font_info, scale_factor, scale_factor, dst[i].value, &char_width, &char_height, &dst[i].offset_x, &dst[i].offset_y);
+                dst[i].width  = char_width;
+                dst[i].height = char_height;
+                dst[i].offset_y += (int)((float)ascent * scale_factor);
+
+                stbtt_GetCodepointHMetrics(&font_info, dst[i].value, &dst[i].advance_x, NULL);
+                dst[i].advance_x *= scale_factor;
             }
+
+            success = true;
         }
-
-        // Load characters images
-        chars[i].image.width = chw;
-        chars[i].image.height = chh;
-        chars[i].image.format = RF_UNCOMPRESSED_GRAYSCALE;
-
-        chars[i].offset_y += (int)((float)ascent * scale_factor);
-
-        // Get bounding box for character (may be offset to account for chars that dip above or below the line)
-        int ch_x1, ch_y1, ch_x2, ch_y2;
-        stbtt_GetCodepointBitmapBox(&font_info, ch, scale_factor, scale_factor, &ch_x1, &ch_y1, &ch_x2, &ch_y2);
-
-        RF_LOG_V(RF_LOG_TYPE_DEBUG, "Character box measures: %i, %i, %i, %i", ch_x1, ch_y1, ch_x2 - ch_x1, ch_y2 - ch_y1);
-        RF_LOG_V(RF_LOG_TYPE_DEBUG, "Character offset_y: %i", (int)((float)ascent * scale_factor) + ch_y1);
-
-        stbtt_GetCodepointHMetrics(&font_info, ch, &chars[i].advance_x, NULL);
-        chars[i].advance_x *= scale_factor;
+        else RF_LOG(RF_LOG_TYPE_WARNING, "Failed to init font!");
     }
 
-    RF_FREE(temp_allocator, font_buffer);
-    if (gen_font_chars) RF_FREE(temp_allocator, font_chars);
-
-    return chars;
+    return success;
 }
 
 // Load an rf_image font file (XNA style)
@@ -2540,122 +2467,119 @@ RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstCh
 }
 
 // Generate image font atlas using chars info. Note: Packing method: 0-Default, 1-Skyline
-RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** char_recs, int chars_count, int font_size, int padding, bool use_skyline_rect_packing, rf_allocator allocator, rf_allocator temp_allocator)
+RF_API rf_image rf_gen_image_font_atlas(rf_char_info* chars, int chars_count, int font_size, int padding, bool use_skyline_rect_packing, rf_rec largest_char, unsigned short* dst, int dst_count, rf_allocator temp_allocator)
 {
     //Note: We switch the allocator and the buffer of this image at the end of the function before returning. The code is a bit weird, would be a good candidate for refactoring
     rf_image atlas = {0};
 
-    *char_recs = NULL;
-
     // In case no chars count provided we suppose default of 95
     chars_count = (chars_count > 0) ? chars_count : 95;
-
-    // NOTE: Rectangles memory is loaded here!
-    rf_rec* recs = (rf_rec*) RF_ALLOC(allocator, chars_count * sizeof(rf_rec));
 
     // Calculate image size based on required pixel area
     // NOTE 1: rf_image is forced to be squared and POT... very conservative!
     // NOTE 2: SDF font characters already contain an internal padding,
     // so image size would result bigger than default font type
     float required_area = 0;
-    for (int i = 0; i < chars_count; i++) required_area += ((chars[i].image.width + 2*padding)*(chars[i].image.height + 2*padding));
-    float guess_size = sqrtf(required_area)*1.3f;
-    int image_size = (int)powf(2, ceilf(logf((float)guess_size)/logf(2))); // Calculate next POT
-
-    atlas.width = image_size; // Atlas bitmap width
-    atlas.height = image_size; // Atlas bitmap height
-    atlas.data = (unsigned char*) RF_ALLOC(temp_allocator, atlas.width * atlas.height); // Create a bitmap to store characters (8 bpp)
-    memset(atlas.data, 0, atlas.width * atlas.height);
-    atlas.format = RF_UNCOMPRESSED_GRAYSCALE;
-    atlas.allocator = temp_allocator; // Note: we switch the allocator later in this function before we return
-
-    // DEBUG: We can see padding in the generated image setting a gray background...
-    //for (int i = 0; i < atlas.width*atlas.height; i++) ((unsigned char* )atlas.data)[i] = 100;
-
-    if (!use_skyline_rect_packing) // Use basic packing algorythm
+    for (int i = 0; i < chars_count; i++)
     {
-        int offset_x = padding;
-        int offset_y = padding;
-
-        // NOTE: Using simple packaging, one char after another
-        for (int i = 0; i < chars_count; i++)
-        {
-            // Copy pixel data from fc.data to atlas
-            for (int y = 0; y < chars[i].image.height; y++)
-            {
-                for (int x = 0; x < chars[i].image.width; x++)
-                {
-                    ((unsigned char* )atlas.data)[(offset_y + y)*atlas.width + (offset_x + x)] = ((unsigned char* )chars[i].image.data)[y*chars[i].image.width + x];
-                }
-            }
-
-            // Fill chars rectangles in atlas info
-            recs[i].x = (float)offset_x;
-            recs[i].y = (float)offset_y;
-            recs[i].width = (float)chars[i].image.width;
-            recs[i].height = (float)chars[i].image.height;
-
-            // Move atlas position X for next character drawing
-            offset_x += (chars[i].image.width + 2*padding);
-
-            if (offset_x >= (atlas.width - chars[i].image.width - padding))
-            {
-                offset_x = padding;
-
-                // NOTE: Be careful on offset_y for SDF fonts, by default SDF
-                // use an internal padding of 4 pixels, it means char rectangle
-                // height is bigger than font_size, it could be up to (font_size + 8)
-                offset_y += (font_size + 2*padding);
-
-                if (offset_y > (atlas.height - font_size - padding)) break;
-            }
-        }
+        required_area += ((chars[i].width + 2 * padding) * (chars[i].height + 2 * padding));
     }
-    else if (use_skyline_rect_packing) // Use Skyline rect packing algorythm (stb_pack_rect)
+
+    float guess_size = sqrtf(required_area) * 1.3f;
+    int image_size = (int) rf_next_pot(guess_size);
+
+    if (dst_count >= image_size * image_size)
     {
-        RF_LOG(RF_LOG_TYPE_DEBUG, "Using Skyline packing algorythm!");
+        // DEBUG: We can see padding in the generated image setting a gray background...
+        //for (int i = 0; i < atlas.width*atlas.height; i++) ((unsigned char* )atlas.data)[i] = 100;
 
-        stbrp_context context = {0};
-        stbrp_node* nodes = (stbrp_node*) RF_ALLOC(temp_allocator, chars_count * sizeof(*nodes));
-
-        stbrp_init_target(&context, atlas.width, atlas.height, nodes, chars_count);
-        stbrp_rect* rects = (stbrp_rect*) RF_ALLOC(temp_allocator, chars_count * sizeof(stbrp_rect));
-
-        // Fill rectangles for packaging
-        for (int i = 0; i < chars_count; i++)
+        if (!use_skyline_rect_packing) // Use basic packing algorythm
         {
-            rects[i].id = i;
-            rects[i].w = chars[i].image.width + 2 * padding;
-            rects[i].h = chars[i].image.height + 2 * padding;
-        }
+            int offset_x = padding;
+            int offset_y = padding;
 
-        // Package rectangles into atlas
-        stbrp_pack_rects(&context, rects, chars_count);
-
-        for (int i = 0; i < chars_count; i++)
-        {
-            // It return char rectangles in atlas
-            recs[i].x = rects[i].x + (float) padding;
-            recs[i].y = rects[i].y + (float) padding;
-            recs[i].width = (float) chars[i].image.width;
-            recs[i].height = (float) chars[i].image.height;
-
-            if (rects[i].was_packed)
+            // NOTE: Using simple packaging, one char after another
+            for (int i = 0; i < chars_count; i++)
             {
                 // Copy pixel data from fc.data to atlas
-                for (int y = 0; y < chars[i].image.height; y++)
+                for (int y = 0; y < chars[i].height; y++)
                 {
-                    for (int x = 0; x < chars[i].image.width; x++)
+                    for (int x = 0; x < chars[i].width; x++)
                     {
-                        ((unsigned char *) atlas.data)[(rects[i].y + padding + y) * atlas.width + (rects[i].x + padding + x)] = ((unsigned char *) chars[i].image.data)[y * chars[i].image.width + x];
+                        ((unsigned char*)atlas.data)[(offset_y + y) * atlas.width + (offset_x + x)] = ((unsigned char*)chars[i].image.data)[y * chars[i].width + x];
                     }
                 }
+
+                // Fill chars rectangles in atlas info
+                recs[i].x = (float)offset_x;
+                recs[i].y = (float)offset_y;
+
+                // Move atlas position X for next character drawing
+                offset_x += (chars[i].image.width + 2*padding);
+
+                if (offset_x >= (atlas.width - chars[i].image.width - padding))
+                {
+                    offset_x = padding;
+
+                    // NOTE: Be careful on offset_y for SDF fonts, by default SDF
+                    // use an internal padding of 4 pixels, it means char rectangle
+                    // height is bigger than font_size, it could be up to (font_size + 8)
+                    offset_y += (font_size + 2*padding);
+
+                    if (offset_y > (atlas.height - font_size - padding)) break;
+                }
             }
-            else RF_LOG_V(RF_LOG_TYPE_WARNING, "Character could not be packed: %i", i);
+        }
+        else if (use_skyline_rect_packing) // Use Skyline rect packing algorythm (stb_pack_rect)
+        {
+            RF_LOG(RF_LOG_TYPE_DEBUG, "Using Skyline packing algorythm!");
+
+            stbrp_context context = {0};
+            stbrp_node* nodes = (stbrp_node*) RF_ALLOC(temp_allocator, chars_count * sizeof(*nodes));
+
+            stbrp_init_target(&context, atlas.width, atlas.height, nodes, chars_count);
+            stbrp_rect* rects = (stbrp_rect*) RF_ALLOC(temp_allocator, chars_count * sizeof(stbrp_rect));
+
+            // Fill rectangles for packaging
+            for (int i = 0; i < chars_count; i++)
+            {
+                rects[i].id = i;
+                rects[i].w = chars[i].image.width + 2 * padding;
+                rects[i].h = chars[i].image.height + 2 * padding;
+            }
+
+            // Package rectangles into atlas
+            stbrp_pack_rects(&context, rects, chars_count);
+
+            for (int i = 0; i < chars_count; i++)
+            {
+                // It return char rectangles in atlas
+                recs[i].x = rects[i].x + (float) padding;
+                recs[i].y = rects[i].y + (float) padding;
+                recs[i].width = (float) chars[i].image.width;
+                recs[i].height = (float) chars[i].image.height;
+
+                if (rects[i].was_packed)
+                {
+                    // Copy pixel data from fc.data to atlas
+                    for (int y = 0; y < chars[i].image.height; y++)
+                    {
+                        for (int x = 0; x < chars[i].image.width; x++)
+                        {
+                            ((unsigned char *) atlas.data)[(rects[i].y + padding + y) * atlas.width + (rects[i].x + padding + x)] = ((unsigned char *) chars[i].image.data)[y * chars[i].image.width + x];
+                        }
+                    }
+                }
+                else RF_LOG_V(RF_LOG_TYPE_WARNING, "Character could not be packed: %i", i);
+            }
+
+            RF_FREE(temp_allocator, recs);
+            RF_FREE(temp_allocator, nodes);
         }
 
-        RF_FREE(temp_allocator, recs);
-        RF_FREE(temp_allocator, nodes);
+        atlas.width  = image_size; // Atlas bitmap width
+        atlas.height = image_size; // Atlas bitmap height
+        atlas.format = RF_UNCOMPRESSED_GRAY_ALPHA;
     }
 
     // TODO: Crop image if required for smaller size
@@ -2671,30 +2595,51 @@ RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** char
 
     atlas.data = data_gray_alpha;
     atlas.format = RF_UNCOMPRESSED_GRAY_ALPHA;
-    atlas.allocator = allocator;
-
-    rf_unload_image(atlas, temp_allocator);
-
-    *char_recs = recs;
 
     return atlas;
 }
 
+
+//Note: Must call rf_finish_load_font_thread_safe on the gl thread afterwards to finish loading the font
+RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int font_size, int chars_count, rf_allocator allocator, rf_allocator temp_allocator)
+{
+    rf_font font = {0};
+
+    font.base_size = font_size;
+    font.chars_count = (chars_count > 0)? chars_count : 95;
+    font.chars = rf_load_font_data(font_file_data, font_file_data_size, font.base_size, font.chars_count, RF_FONT_DEFAULT, allocator, temp_allocator);
+
+    rf_image atlas = rf_gen_image_font_atlas(font.chars, &font.recs, font.chars_count, font.base_size, 2, 0, allocator, temp_allocator);
+
+    // Update chars[i].image to use alpha, required to be used on rf_image_draw_text()
+    for (int i = 0; i < font.chars_count; i++)
+    {
+        rf_unload_image(font.chars[i].image);
+        font.chars[i].image = rf_image_from_image(atlas, font.recs[i], allocator, temp_allocator);
+    }
+
+    return (rf_load_font_async_result) { font, atlas };
+}
+
+RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result font_job_result, rf_allocator font_job_allocator)
+{
+    font_job_result.font.texture = rf_load_texture_from_image(font_job_result.atlas);
+    rf_unload_image(font_job_result.atlas, font_job_allocator);
+
+    return font_job_result.font;
+}
+
+
 // Unload rf_font from GPU memory (VRAM)
 RF_API void rf_unload_font(rf_font font, rf_allocator allocator)
 {
-    for (int i = 0; i < font.chars_count; i++)
-    {
-        RF_FREE(allocator, font.chars[i].image.data);
-    }
-
     rf_unload_texture(font.texture);
 
     RF_FREE(allocator, font.chars);
-    RF_FREE(allocator, font.recs);
 
     RF_LOG(RF_LOG_TYPE_DEBUG, "Unloaded sprite font data");
 }
+
 
 // Returns index position for a unicode character on spritefont
 RF_API int rf_get_glyph_index(rf_font font, int character)
