@@ -1,3 +1,7 @@
+# Notice
+Rayfork is still under very early development and it is not recommended that you use it at the moment.
+A major update will be available in March 2020 which will provide a higher level of stability and plenty of bug fixes and tests.
+
 # Rayfork
 A set of single header libraries forked from the awesome Raylib game framework: https://www.raylib.com/
 
@@ -19,11 +23,7 @@ The functions in rayfork use a global pointer to this context struct that the us
 The libraries will remain single header in order to make it easy for people to integrate them with their own build system.
 All dependencies are listed and the developer can reason about them and decide whether to include them.
 
-For more on the principles of how we develop these libraries check this article: https://handmade.network/wiki/7138-how_to_write_better_game_libraries
-
-# Notice
-Rayfork is still under very early development. If you plan to use it in a project be advised that there can be big changes over time
-and that there can be bugs in the library resulted from the massive refactoring. 
+For more on the principles of how we develop these libraries check this article: https://handmade.network/wiki/7138-how_to_write_better_game_libraries 
 
 # How to use
 To use rayfork simply include the header and it's dependencies in your project and include the file like so:
