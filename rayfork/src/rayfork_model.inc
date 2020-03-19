@@ -159,6 +159,19 @@ RF_API void rf_mesh_compute_binormals(rf_mesh* mesh)
 RF_API void rf_unload_mesh(rf_mesh mesh, rf_allocator allocator)
 {
     rf_gfx_unload_mesh(mesh);
+
+    RF_FREE(allocator, mesh.vertices);
+    RF_FREE(allocator, mesh.texcoords);
+    RF_FREE(allocator, mesh.normals);
+    RF_FREE(allocator, mesh.colors);
+    RF_FREE(allocator, mesh.tangents);
+    RF_FREE(allocator, mesh.texcoords2);
+    RF_FREE(allocator, mesh.indices);
+
+    RF_FREE(allocator, mesh.anim_vertices);
+    RF_FREE(allocator, mesh.anim_normals);
+    RF_FREE(allocator, mesh.bone_weights);
+    RF_FREE(allocator, mesh.bone_ids);
     RF_FREE(allocator, mesh.vbo_id);
 }
 
@@ -243,7 +256,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         return (rf_model) {0};
     }
 
-    RF_SET_TINYOBJ_ALLOCATOR(&temp_allocator); // Set to NULL at the end of the function
+    RF_SET_TINYOBJ_ALLOCATOR(temp_allocator); // Set to NULL at the end of the function
     {
         unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
         int ret            = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, &material_count, (const char*) data, data_size, flags);
@@ -412,7 +425,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         tinyobj_shapes_free(meshes, mesh_count);
         tinyobj_materials_free(materials, material_count);
     }
-    RF_SET_TINYOBJ_ALLOCATOR(NULL);
+    RF_SET_TINYOBJ_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // NOTE: At this point we have all model data loaded
     RF_LOG_V(RF_LOG_TYPE_INFO, "[%s] rf_model loaded successfully in RAM (CPU)", file_name);
@@ -790,10 +803,10 @@ RF_INTERNAL rf_texture2d rf_internal_load_texture_from_cgltf_image(cgltf_image* 
             {
                 rf_base64_output data = rf_decode_base64((const unsigned char*)image->uri + i + 1, temp_allocator);
 
-                RF_SET_STBI_ALLOCATOR(&temp_allocator);
+                RF_SET_STBI_ALLOCATOR(temp_allocator);
                 int w, h;
                 unsigned char* raw = stbi_load_from_memory(data.buffer, data.size, &w, &h, NULL, 4);
-                RF_SET_STBI_ALLOCATOR(NULL);
+                RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
                 rf_image rimage = {
                     .data      = raw,
@@ -838,9 +851,9 @@ RF_INTERNAL rf_texture2d rf_internal_load_texture_from_cgltf_image(cgltf_image* 
         }
 
         int w, h;
-        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        RF_SET_STBI_ALLOCATOR(temp_allocator);
         unsigned char* raw = stbi_load_from_memory(data, image->buffer_view->size, &w, &h, NULL, 4);
-        RF_SET_STBI_ALLOCATOR(NULL);
+        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         rf_image rimage = {
             .data      = raw,
@@ -887,7 +900,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         }\
     }
 
-    RF_SET_CGLTF_ALLOCATOR(&temp_allocator);
+    RF_SET_CGLTF_ALLOCATOR(temp_allocator);
     rf_model model = {0};
 
     cgltf_options options = {
@@ -904,7 +917,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
     if (!io.read_file_into_buffer_proc(filename, data, data_size))
     {
         RF_FREE(temp_allocator, data);
-        RF_SET_CGLTF_ALLOCATOR(&temp_allocator);
+        RF_SET_CGLTF_ALLOCATOR(temp_allocator);
         return model;
     }
 
@@ -944,7 +957,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         {
             model.materials[i] = rf_load_default_material(allocator);
             rf_color tint = (rf_color){ 255, 255, 255, 255 };
-            const char* tex_path = rf_internal_get_directory_path(filename);
+            const char* tex_path = rf_internal_get_directory_path_from_file_path(filename);
 
             //Ensure material follows raylib support for PBR (metallic/roughness flow)
             if (cgltf_data->materials[i].has_pbr_metallic_roughness)
@@ -1076,7 +1089,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         RF_LOG_V(RF_LOG_TYPE_WARNING, "[%s] glTF cgltf_data could not be loaded", file_name);
     }
 
-    RF_SET_CGLTF_ALLOCATOR(NULL);
+    RF_SET_CGLTF_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     return model;
 }
@@ -1129,7 +1142,7 @@ RF_API void rf_unload_model(rf_model model, rf_allocator allocator)
 // Load materials from model file
 RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator)
 {
-    RF_SET_TINYOBJ_ALLOCATOR(&allocator);
+    RF_SET_TINYOBJ_ALLOCATOR(allocator);
 
     rf_material* materials = NULL;
     unsigned int count = 0;
@@ -1562,7 +1575,7 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
 
         par_shapes_free_mesh(cube);
     }
-    //RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    //RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1643,7 +1656,7 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z
 
     #define rf_custom_mesh_gen_plane //Todo: Investigate this macro
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         par_shapes_mesh* plane = par_shapes_create_plane(res_x, res_z); // No normals/texcoords generated!!!
         par_shapes_scale(plane, width, length, 1.0f);
@@ -1677,7 +1690,7 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z
 
         par_shapes_free_mesh(plane);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1692,7 +1705,7 @@ RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_alloca
     mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         par_shapes_mesh* sphere = par_shapes_create_parametric_sphere(slices, rings);
         par_shapes_scale(sphere, radius, radius, radius);
@@ -1721,7 +1734,7 @@ RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_alloca
 
         par_shapes_free_mesh(sphere);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1736,7 +1749,7 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_a
     mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         par_shapes_mesh* sphere = par_shapes_create_hemisphere(slices, rings);
         par_shapes_scale(sphere, radius, radius, radius);
@@ -1765,7 +1778,7 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_a
 
         par_shapes_free_mesh(sphere);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1780,7 +1793,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
     mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         // Instance a cylinder that sits on the Z=0 plane using the given tessellation
         // levels across the UV domain.  Think of "slices" like a number of pizza
@@ -1837,7 +1850,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
 
         par_shapes_free_mesh(cylinder);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1855,7 +1868,7 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
     if (radius > 1.0f)      radius = 1.0f;
     else if (radius < 0.1f) radius = 0.1f;
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         // Create a donut that sits on the Z=0 plane with the specified inner radius
         // The outer radius can be controlled with par_shapes_scale
@@ -1885,7 +1898,7 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
 
         par_shapes_free_mesh(torus);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1903,7 +1916,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
     if (radius > 3.0f)      radius = 3.0f;
     else if (radius < 0.5f) radius = 0.5f;
 
-    RF_SET_PARSHAPES_ALLOCATOR(&temp_allocator);
+    RF_SET_PARSHAPES_ALLOCATOR(temp_allocator);
     {
         par_shapes_mesh* knot = par_shapes_create_trefoil_knot(rad_seg, sides, radius);
         par_shapes_scale(knot, size, size, size);
@@ -1931,7 +1944,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
 
         par_shapes_free_mesh(knot);
     }
-    RF_SET_PARSHAPES_ALLOCATOR(NULL);
+    RF_SET_PARSHAPES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);

@@ -2,11 +2,12 @@
 
 ### @LucaSas 
 
-- Finish image loading refactor.
-- Finish allocator refactor & review error handling.
+- Add RF_ASSERT_DEF macro
+- Review error handling.
 - Make allocator macro that just wraps over a buffer (simple stack allocator)
 - Fix loading materials with tinyobjloader.
 - Rayfork Audio.
+- Add SDF font support
 - Check all `todo` and `note` comments.
 - Rewrite readme and add documentation.
 - Add cstr versions for all text functions

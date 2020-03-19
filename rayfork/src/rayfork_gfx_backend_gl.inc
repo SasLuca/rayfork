@@ -1,5 +1,4 @@
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-#include "rayfork.h"
 
 //Declare the internal global pointer
 extern rf_context* rf_internal_ctx;
@@ -1625,16 +1624,16 @@ RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int 
 
     RF_LOG_V(RF_LOG_TYPE_INFO, "Number of supported extensions: %i", num_ex);
 
-    if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported)  RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] DXT compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC1 compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC2/EAC compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] PVRT compressed textures supported");
-    if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ASTC compressed textures supported");
+    if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported)  { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] DXT compressed textures supported"); }
+    if (rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC1 compressed textures supported"); }
+    if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ETC2/EAC compressed textures supported"); }
+    if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] PVRT compressed textures supported"); }
+    if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] ASTC compressed textures supported"); }
 
-    if (rf_internal_ctx->gfx_ctx.tex_anisotropic_filter_supported) RF_LOG_V(RF_LOG_TYPE_INFO, "[EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_internal_ctx->gfx_ctx.max_anisotropic_level);
-    if (rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported)       RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Mirror clamp wrap texture mode supported");
+    if (rf_internal_ctx->gfx_ctx.tex_anisotropic_filter_supported) { RF_LOG_V(RF_LOG_TYPE_INFO, "[EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_internal_ctx->gfx_ctx.max_anisotropic_level); }
+    if (rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported)       { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Mirror clamp wrap texture mode supported"); }
 
-    if (rf_internal_ctx->gfx_ctx.debug_marker_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Debug Marker supported");
+    if (rf_internal_ctx->gfx_ctx.debug_marker_supported) { RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] Debug Marker supported"); }
 
     // Initialize buffers, default shaders and default textures
     //----------------------------------------------------------
@@ -1642,8 +1641,8 @@ RF_API void rf_init(rf_context* rf_ctx, rf_renderer_memory_buffers* memory, int 
     unsigned char pixels[4] = { 255, 255, 255, 255 };   // 1 pixel RGBA (4 bytes)
     rf_internal_ctx->gfx_ctx.default_texture_id = rf_gfx_load_texture(pixels, 1, 1, RF_UNCOMPRESSED_R8G8B8A8, 1);
 
-    if (rf_internal_ctx->gfx_ctx.default_texture_id != 0) RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Base white texture loaded successfully", rf_internal_ctx->gfx_ctx.default_texture_id);
-    else RF_LOG(RF_LOG_TYPE_WARNING, "Base white texture could not be loaded");
+    if (rf_internal_ctx->gfx_ctx.default_texture_id != 0) { RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Base white texture loaded successfully", rf_internal_ctx->gfx_ctx.default_texture_id); }
+    else { RF_LOG(RF_LOG_TYPE_WARNING, "Base white texture could not be loaded"); }
 
     // Init default rf_shader (customized for GL 3.3 and ES2)
     rf_internal_ctx->gfx_ctx.default_shader = rf_internal_load_default_shader();
@@ -2598,7 +2597,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     // Load the different mipmap levels
     for (int i = 0; i < mipmap_count; i++)
     {
-        unsigned int mip_size = rf_get_buffer_size_for_pixel_format(mip_width, mip_height, format);
+        unsigned int mip_size = rf_pixel_buffer_size(format, mip_width, mip_height);
 
         unsigned int glInternalFormat, glFormat, glType;
         rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
@@ -2731,7 +2730,7 @@ RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, b
 RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format)
 {
     unsigned int cubemap_id = 0;
-    unsigned int data_size = rf_get_buffer_size_for_pixel_format(size, size, format);
+    unsigned int data_size = rf_pixel_buffer_size(format, size, size);
 
     _RF_GL.glGenTextures(1, &cubemap_id);
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_id);
@@ -2887,7 +2886,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
 
     unsigned int glInternalFormat, glFormat, glType;
     rf_gfx_get_gl_texture_formats(texture.format, &glInternalFormat, &glFormat, &glType);
-    unsigned int size = rf_get_buffer_size_for_pixel_format(texture.width, texture.height, texture.format);
+    unsigned int size = rf_pixel_buffer_size(texture.format, texture.width, texture.height);
 
     if ((glInternalFormat != -1) && (texture.format < RF_COMPRESSED_DXT1_RGB))
     {
@@ -2947,7 +2946,7 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
 
             // Set alpha component value to 255 (no trasparent image retrieval)
             // NOTE: Alpha value has already been applied to RGB in framebuffer, we don't need it!
-            if (((x + 1) % 4) == 0) dst[((height - 1) - y) * width + x] = 255;
+            if (((x + 1) % 4) == 0) dst[((height - 1) - y) * width + x].a = 255;
         }
     }
 }
@@ -3352,22 +3351,9 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
     rf_internal_ctx->gfx_ctx.modelview = mat_view;
 }
 
-// Unload mesh data from CPU and GPU
+// Unload mesh data from the GPU
 RF_API void rf_gfx_unload_mesh(rf_mesh mesh)
 {
-    RF_FREE(mesh.allocator, mesh.vertices);
-    RF_FREE(mesh.allocator, mesh.texcoords);
-    RF_FREE(mesh.allocator, mesh.normals);
-    RF_FREE(mesh.allocator, mesh.colors);
-    RF_FREE(mesh.allocator, mesh.tangents);
-    RF_FREE(mesh.allocator, mesh.texcoords2);
-    RF_FREE(mesh.allocator, mesh.indices);
-
-    RF_FREE(mesh.allocator, mesh.anim_vertices);
-    RF_FREE(mesh.allocator, mesh.anim_normals);
-    RF_FREE(mesh.allocator, mesh.bone_weights);
-    RF_FREE(mesh.allocator, mesh.bone_ids);
-
     rf_gfx_delete_buffers(mesh.vbo_id[0]);   // vertex
     rf_gfx_delete_buffers(mesh.vbo_id[1]);   // texcoords
     rf_gfx_delete_buffers(mesh.vbo_id[2]);   // normals

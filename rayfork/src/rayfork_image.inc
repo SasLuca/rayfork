@@ -196,9 +196,9 @@ RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, int src_
         int img_width = 0, img_height = 0, img_bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        RF_SET_STBI_ALLOCATOR(temp_allocator);
         void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-        RF_SET_STBI_ALLOCATOR(NULL);
+        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (output_buffer)
         {
@@ -242,9 +242,9 @@ RF_API rf_image rf_load_image_from_file_data(const void* src, int src_size, rf_a
         int width = 0, height = 0, bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        RF_SET_STBI_ALLOCATOR(temp_allocator);
         void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &bpp, RF_ANY_CHANNELS);
-        RF_SET_STBI_ALLOCATOR(NULL);
+        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (stbi_result && bpp)
         {
@@ -289,9 +289,9 @@ RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, int 
         int img_width = 0, img_height = 0, img_bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        RF_SET_STBI_ALLOCATOR(temp_allocator);
         void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-        RF_SET_STBI_ALLOCATOR(NULL);
+        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (output_buffer)
         {
@@ -330,9 +330,9 @@ RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, int src_size, 
         int width = 0, height = 0, bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(&temp_allocator);
+        RF_SET_STBI_ALLOCATOR(temp_allocator);
         void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &bpp, RF_ANY_CHANNELS);
-        RF_SET_STBI_ALLOCATOR(NULL);
+        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (stbi_result && bpp)
         {
@@ -609,9 +609,9 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
                     default: break;
                 }
 
-                RF_SET_STBIR_ALLOCATOR(&temp_allocator);
+                RF_SET_STBIR_ALLOCATOR(temp_allocator);
                 stbir_resize_uint8((unsigned char*) image.data, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, stbir_format);
-                RF_SET_STBIR_ALLOCATOR(NULL);
+                RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
 
                 result.data   = dst;
                 result.width  = new_width;
@@ -629,9 +629,9 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
                     bool format_success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, pixels, pixels_size);
                     RF_ASSERT(format_success);
 
-                    RF_SET_STBIR_ALLOCATOR(&temp_allocator);
+                    RF_SET_STBIR_ALLOCATOR(temp_allocator);
                     stbir_resize_uint8((unsigned char*)pixels, image.width, image.height, 0, (unsigned char*) pixels, new_width, new_height, 0, 4);
-                    RF_SET_STBIR_ALLOCATOR(NULL);
+                    RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
 
                     format_success = rf_format_pixels(pixels, pixels_size, RF_UNCOMPRESSED_R8G8B8A8, dst, dst_size, image.format);
                     RF_ASSERT(format_success);
@@ -816,7 +816,7 @@ RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mas
     {
         if (image.width == alpha_mask.width && image.height == alpha_mask.height)
         {
-            if (rf_is_compressed_format(image.format) && rf_is_compressed_format(alpha_mask.format))
+            if (rf_is_compressed_format(image.format) && alpha_mask.format == RF_UNCOMPRESSED_GRAYSCALE)
             {
                 if (dst_size >= rf_image_size_in_format(image, RF_UNCOMPRESSED_GRAY_ALPHA))
                 {
@@ -826,7 +826,8 @@ RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mas
                         unsigned char mask_pixel = 0;
                         rf_format_one_pixel(((unsigned char*)alpha_mask.data) + i, alpha_mask.format, &mask_pixel, RF_UNCOMPRESSED_GRAYSCALE);
 
-                        ((unsigned char*)dst)[k] = mask_pixel;
+                        // Todo: Finish implementing this function
+                        //((unsigned char*)dst)[k] = mask_pixel;
                     }
 
                     result.data   = dst;
@@ -975,18 +976,19 @@ RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int 
                     RF_LOG(RF_LOG_TYPE_WARNING, "rf_image format is already 16bpp or lower, dithering could have no effect");
                 }
 
-                // Define new image format, check if desired bpp match internal known format
-                if ((r_bpp == 5) && (g_bpp == 6) && (b_bpp == 5) && (a_bpp == 0)) image.format = RF_UNCOMPRESSED_R5G6B5;
-                else if ((r_bpp == 5) && (g_bpp == 5) && (b_bpp == 5) && (a_bpp == 1)) image.format = RF_UNCOMPRESSED_R5G5B5A1;
-                else if ((r_bpp == 4) && (g_bpp == 4) && (b_bpp == 4) && (a_bpp == 4)) image.format = RF_UNCOMPRESSED_R4G4B4A4;
-                else
-                {
-                    image.format = 0;
-                    RF_LOG_V(RF_LOG_TYPE_WARNING, "Unsupported dithered OpenGL internal format: %ibpp (R%i_g%i_b%i_a%i)", (r_bpp + g_bpp + b_bpp + a_bpp), r_bpp, g_bpp, b_bpp, a_bpp);
-                }
-
-                // NOTE: We will store the dithered data as unsigned short (16bpp)
-                image.data = (unsigned short*) RF_ALLOC(image.allocator, image.width * image.height * sizeof(unsigned short));
+                // Todo: Finish implementing this function
+//                // Define new image format, check if desired bpp match internal known format
+//                if ((r_bpp == 5) && (g_bpp == 6) && (b_bpp == 5) && (a_bpp == 0)) image.format = RF_UNCOMPRESSED_R5G6B5;
+//                else if ((r_bpp == 5) && (g_bpp == 5) && (b_bpp == 5) && (a_bpp == 1)) image.format = RF_UNCOMPRESSED_R5G5B5A1;
+//                else if ((r_bpp == 4) && (g_bpp == 4) && (b_bpp == 4) && (a_bpp == 4)) image.format = RF_UNCOMPRESSED_R4G4B4A4;
+//                else
+//                {
+//                    image.format = 0;
+//                    RF_LOG_V(RF_LOG_TYPE_WARNING, "Unsupported dithered OpenGL internal format: %ibpp (R%i_g%i_b%i_a%i)", (r_bpp + g_bpp + b_bpp + a_bpp), r_bpp, g_bpp, b_bpp, a_bpp);
+//                }
+//
+//                // NOTE: We will store the dithered data as unsigned short (16bpp)
+//                image.data = (unsigned short*) RF_ALLOC(image.allocator, image.width * image.height * sizeof(unsigned short));
 
                 rf_color old_pixel = RF_WHITE;
                 rf_color new_pixel  = RF_WHITE;
@@ -1105,13 +1107,15 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
         {
             if (letter != ' ')
             {
-                rf_rec src_rec = {0, 0, font.chars[index].image.width, font.chars[index].image.height };
-                rf_rec dst_rec = {(float)(position_x + font.chars[index].offset_x), (float)font.chars[index].offset_y,font.chars[index].image.width, font.chars[index].image.height };
-                rf_image_draw(&im_text, font.chars[index].image, src_rec,dst_rec, tint, temp_allocator);
+                rf_rec src_rec = {0, 0, font.chars_info[index].width, font.chars_info[index].height };
+                rf_rec dst_rec = {(float)(position_x + font.chars_info[index].offset_x), (float)font.chars_info[index].offset_y,font.chars_info[index].width, font.chars_info[index].height };
+
+                // Todo: Finish implementing this function
+                //rf_image_draw(&im_text, font.chars_info[index].image, src_rec,dst_rec, tint, temp_allocator);
             }
 
-            if (font.chars[index].advance_x == 0) position_x += (int)(font.recs[index].width + spacing);
-            else position_x += font.chars[index].advance_x + (int)spacing;
+            if (font.chars_info[index].advance_x == 0) position_x += (int)(font.chars_info[index].width + spacing);
+            else position_x += font.chars_info[index].advance_x + (int)spacing;
         }
     }
 

@@ -53,26 +53,33 @@
     #endif
 #endif
 
-#ifndef RF_LOG_IMPL
-    #define RF_LOG_IMPL(type, msg)
-#endif
-
 #ifndef RF_LOG_IMPL_V
-    #define RF_LOG_IMPL_V(type, msg, ...)
+    #define RF_LOG_IMPL_V(type, msg, file, line, proc_name, ...)
 #endif
 
-#define RF_LOG(type, msg) { RF_LOG_IMPL(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg) }
-#define RF_LOG_V(type, msg, ...) { RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __VA_ARGS__) }
-#define RF_LOG_ERROR(error_type, msg) { RF_LOG(RF_LOG_TYPE_ERROR, "[ERROR]" msg) }
-#define RF_LOG_ERROR_V(error_type, msg, ...) { RF_LOG_V(RF_LOG_TYPE_ERROR, "[ERROR]" msg, __VA_ARGS__) }
-
-#define RF_NULL_ALLOCATOR    (RF_LIT(rf_allocator) { 0 })
-#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_malloc_wrapper })
+#define RF_LOG_V(type, msg, ...) RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define RF_LOG(type, msg) RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__)
+#define RF_LOG_ERROR(error_type, msg) RF_LOG(RF_LOG_TYPE_ERROR, "[ERROR]" msg)
+#define RF_LOG_ERROR_V(error_type, msg, ...) RF_LOG_V(RF_LOG_TYPE_ERROR, "[ERROR]" msg, __VA_ARGS__)
 
 #define RF_ALLOC(allocator, amount) ((allocator).request(RF_AM_ALLOC, (amount), NULL, (allocator).user_data))
 #define RF_FREE(allocator, pointer) ((allocator).request(RF_AM_FREE, 0, (pointer), (allocator).user_data))
 
 #define RF_UNLOCKED_FPS (0)
+
+#define RF_SDF_CHAR_PADDING           (4)
+#define RF_SDF_ON_EDGE_VALUE          (128)
+#define RF_SDF_PIXEL_DIST_SCALE       (64.0f)
+#define RF_SDF_BITMAP_ALPHA_THRESHOLD (80)
+
+// Default hardcoded values for ttf file loading
+#define RF_DEFAULT_TTF_FONT_SIZE     (32) // rf_font first character (32 - space)
+#define RF_DEFAULT_FONT_CHARS        "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+#define RF_DEFAULT_FONT_FIRST_CHAR   (32)
+#define RF_DEFAULT_FONT_LAST_CHAR    (126)
+#define RF_DEFAULT_FONT_CHARS_COUNT  (95) // ASCII 32..126 is 95 glyphs
+#define RF_DEFAULT_FONT_PADDING      (2)
+#define RF_GLYPH_NOT_FOUND           (-1)
 
 // Some Basic Colors
 // NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
@@ -169,6 +176,7 @@ typedef enum rf_error_type
     RF_BAD_IO,
     RF_BAD_BUFFER_SIZE,
     RF_STBI_FAILED,
+    RF_STBTT_FAILED,
     RF_UNSUPPORTED
 } rf_error_type;
 
@@ -382,12 +390,12 @@ typedef enum rf_ninepatch_type
 } rf_ninepatch_type;
 
 // rf_font type, defines generation method
-typedef enum rf_font_type
+typedef enum rf_font_gen
 {
-    RF_FONT_DEFAULT = 0, // Default font generation, anti-aliased
-    RF_FONT_BITMAP, // Bitmap font generation, no anti-aliasing
-    RF_FONT_SDF // SDF font generation, requires external shader
-} rf_font_type;
+    RF_FONT_GEN_ANTI_ALIAS = 0, // Default font generation, anti-aliased
+    RF_FONT_GEN_NO_ANTI_ALIAS, // Bitmap font generation, no anti-aliasing
+    RF_FONT_GEN_SDF // SDF font generation, requires external shader
+} rf_font_gen;
 
 typedef enum rf_allocator_mode
 {
@@ -626,27 +634,71 @@ struct rf_char_info
         struct { float x, y, width, height; };
     };
 
-    int    value;     // Character value (Unicode)
-    int    offset_x;  // Character offset X when drawing
-    int    offset_y;  // Character offset Y when drawing
-    int    advance_x; // Character advance position X
+    int    glyph_index; // Index of glyph in font
+    int    codepoint;   // Character value (Unicode)
+    int    offset_x;    // Character offset X when drawing
+    int    offset_y;    // Character offset Y when drawing
+    int    advance_x;   // Character advance position X
+};
+
+typedef struct rf_ttf_font_builder rf_ttf_font_builder;
+struct rf_ttf_font_builder
+{
+    // Font details
+    const void* data;
+    int font_size;
+    rf_font_gen font_gen;
+
+    // Chars info
+    const char* chars;
+    rf_char_info* chars_info;
+    int chars_count;
+
+    // Atlas
+    int largest_glyph_size;
+    int atlas_pixel_count;
+    rf_image atlas;
+
+    // Font metrics
+    float scale_factor;
+    int ascent;
+    int descent;
+    int line_gap;
+
+    // Take directly from stb true type because we don't want to include it in our public API
+    struct
+    {
+        void* userdata;
+        unsigned char* data;
+        int fontstart;
+        int numGlyphs;
+        int loca, head, glyf, hhea, hmtx, kern, gpos, svg;
+        int index_map;
+        int indexToLocFormat;
+
+        struct
+        {
+            unsigned char* data;
+            int cursor;
+            int size;
+        } cff, charstrings, gsubrs, subrs, fontdicts, fdselect;
+    } internal_stb_font_info;
+
+    bool valid;
 };
 
 typedef struct rf_font rf_font;
 struct rf_font
 {
-    int           base_size;    // Base size (default chars height)
-    int           chars_count;  // Number of characters
-    rf_texture2d  texture;      // Characters texture atlas
-    rf_char_info* chars_info;        // Characters info data
+    int           base_size;
+    int           chars_count;
+    rf_texture2d  texture;
+    rf_char_info* chars_info;
+
+    bool  valid;
 };
 
-typedef struct rf_load_font_async_result rf_load_font_async_result;
-struct rf_load_font_async_result
-{
-    rf_font font;
-    rf_image atlas;
-};
+typedef int rf_glyph_index;
 
 typedef struct rf_camera3d rf_camera3d;
 struct rf_camera3d
@@ -815,7 +867,6 @@ struct rf_default_font_buffers
 {
     unsigned short pixels[128 * 128]; // Default font buffer
     rf_char_info   chars[RF_RAYLIB_FONT_CHARS_COUNT];
-    rf_rec         recs[RF_RAYLIB_FONT_CHARS_COUNT];
     unsigned short chars_pixels[128 * 128];
 };
 
@@ -912,7 +963,12 @@ RF_API void rf_wait(float duration); // Returns elapsed time in seconds since rf
 //endregion
 
 //region default io and allocator
-void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data);
+#define RF_NULL_ALLOCATOR (RF_LIT(rf_allocator) {0})
+
+#if !defined(RF_NO_DEFAULT_ALLOCATOR)
+    RF_API void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data);
+    #define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_malloc_wrapper })
+#endif
 
 #if !defined(RF_NO_DEFAULT_IO)
     RF_API int rf_get_file_size(const char* filename); //Get the size of the file
@@ -1063,6 +1119,7 @@ RF_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat); // rf
 //endregion
 
 //region collision detection
+RF_API bool rf_rec_match(rf_rec a, rf_rec b);
 
 RF_API bool rf_check_collision_recs(rf_rec rec1, rf_rec rec2); // Check collision between two rectangles
 RF_API bool rf_check_collision_circles(rf_vec2 center1, float radius1, rf_vec2 center2, float radius2); // Check collision between two circles
@@ -1334,21 +1391,19 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload rend
 //endregion
 
 //region font & text
-RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len); //Returns next codepoint in a UTF8 encoded text, scanning until '\0' is found or the length is exhausted
-RF_API rf_font rf_load_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load font from file into GPU memory (VRAM)
-RF_API rf_font rf_load_font(const void* font_file_data, int font_file_data_size, int fontSize, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator); // Load font from a font file data into GPU memory (VRAM)
+RF_API rf_ttf_font_builder rf_make_ttf_font_builder(const void* font_file_data, int font_size, rf_font_gen gen, const char* chars, int chars_count);
+RF_API void rf_compute_glyph_metrics_ttf(rf_ttf_font_builder* font_builder, rf_char_info* dst, int dst_count);
+RF_API void rf_generate_ttf_font_atlas(rf_ttf_font_builder* font_builder, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
+RF_API rf_font rf_build_ttf_font(rf_ttf_font_builder font_builder);
 
-RF_API bool rf_load_font_data(const void* font_data, int font_data_size, int font_size, int* chars, int chars_count, rf_font_type type, rf_char_info* dst, int dst_count); // Load font data for further use
-RF_API rf_font rf_load_font_from_image(rf_image image, rf_color key, int firstChar, rf_allocator allocator, rf_allocator temp_allocator); // Load font from rf_image (XNA style)
-RF_API rf_image rf_gen_image_font_atlas(const rf_char_info* chars, rf_rec** char_recs, int chars_count, int font_size, int padding, bool use_skyline_rect_packing, rf_allocator allocator, rf_allocator temp_allocator); // Generate image font atlas using chars info
+RF_API rf_font rf_load_ttf_font_with_chars(const void* font_file_data, int font_size, const char* chars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_font rf_load_ttf_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API void rf_unload_font(rf_font font, rf_allocator allocator);
 
-RF_API rf_load_font_async_result rf_load_font_async(const unsigned char* font_file_data, int font_file_data_size, int font_size, int* fontChars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_font rf_finish_load_font_async(rf_load_font_async_result font_job_result, rf_allocator font_job_allocator);
-
-RF_API void rf_unload_font(rf_font font, rf_allocator allocator); // Unload rf_font from GPU memory (VRAM)
-
-RF_API int rf_get_glyph_index(rf_font font, int character); // Get index position for a unicode character on font
-RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing); // Measure string size for rf_font
+RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len);
+RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character);
+RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing);
 RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap);
 //endregion
 
