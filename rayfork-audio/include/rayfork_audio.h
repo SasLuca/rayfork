@@ -1,6 +1,6 @@
 /**********************************************************************************************
 *
-*   rayfork_audio - A fork of the amazing raudio
+*   rayfork-audio - A fork of the amazing raudio
 *
 *   FEATURES:
 *       - Manage audio device (init/close)

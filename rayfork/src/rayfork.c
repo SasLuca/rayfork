@@ -275,10 +275,12 @@ RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
 }
 
 // Load the raylib default font
-RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_allocator)
+RF_API void rf_load_default_font(rf_default_font_buffers* default_font_buffers)
 {
     // NOTE: Using UTF8 encoding table for Unicode U+0000..U+00FF Basic Latin + Latin-1 Supplement
     // http://www.utf8-chartable.de/unicode-utf8-table.pl
+
+    rf_internal_ctx->default_font_buffers = default_font_buffers;
 
     rf_internal_ctx->default_font.chars_count = 224; // Number of chars included in our default font
 
@@ -346,34 +348,40 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
 
     // Re-construct image from rf_internal_ctx->default_font_data and generate OpenGL texture
     //----------------------------------------------------------------------
-    const int im_width = 128;
-    const int im_height = 128;
-
-    rf_color image_pixels[128 * 128] = {0};
-
-    int counter = 0; // rf_font data elements counter
-
-    // Fill img_data with rf_internal_ctx->default_font_data (convert from bit to pixel!)
-    for (int i = 0; i < im_width * im_height; i += 32)
     {
-        for (int j = 31; j >= 0; j--)
+        rf_color font_pixels[128 * 128] = {0};
+
+        int counter = 0; // rf_font data elements counter
+
+        // Fill with rf_internal_ctx->default_font_data (convert from bit to pixel!)
+        for (int i = 0; i < 128 * 128; i += 32)
         {
-            const int bit_check = (default_font_data[counter]) & (1u << j);
-            if (bit_check) image_pixels[i + j] = RF_WHITE;
+            for (int j = 31; j >= 0; j--)
+            {
+                const int bit_check = (default_font_data[counter]) & (1u << j);
+                if (bit_check) font_pixels[i + j] = RF_WHITE;
+            }
+
+            counter++;
+
+            if (counter > 512) counter = 0; // Security check...
         }
 
-        counter++;
+        bool format_success = rf_format_pixels(font_pixels, 128 * 128 * sizeof(rf_color), RF_UNCOMPRESSED_R8G8B8A8,
+                                               rf_internal_ctx->default_font_buffers->pixels, 128 * 128 * 2, RF_UNCOMPRESSED_GRAY_ALPHA);
 
-        if (counter > 512) counter = 0; // Security check...
+        RF_ASSERT(format_success);
     }
 
-    bool format_success = rf_format_pixels(image_pixels, 128 * 128 * sizeof(rf_color), RF_UNCOMPRESSED_R8G8B8A8,
-                     rf_internal_ctx->default_font_buffers->pixels, 128 * 128 * 2, RF_UNCOMPRESSED_GRAY_ALPHA);
-    RF_ASSERT(format_success);
+    rf_image font_image = {
+        .data = rf_internal_ctx->default_font_buffers->pixels,
+        .format = RF_UNCOMPRESSED_GRAY_ALPHA,
+        .width = 128,
+        .height = 128,
+        .valid = true,
+    };
 
-    rf_image im_font = { .data = rf_internal_ctx->default_font_buffers->pixels, .format = RF_UNCOMPRESSED_GRAY_ALPHA, .width = 128, .height = 128 };
-
-    rf_internal_ctx->default_font.texture = rf_load_texture_from_image(im_font);
+    rf_internal_ctx->default_font.texture = rf_load_texture_from_image(font_image);
 
     // Allocate space for our characters info data
     rf_internal_ctx->default_font.chars_info = rf_internal_ctx->default_font_buffers->chars;
@@ -409,24 +417,10 @@ RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_alloc
         rf_internal_ctx->default_font.chars_info[i].offset_x = 0;
         rf_internal_ctx->default_font.chars_info[i].offset_y = 0;
         rf_internal_ctx->default_font.chars_info[i].advance_x = 0;
-
-        // Fill character image data
-        {
-            rf_rec   char_img_rec    = rf_internal_ctx->default_font.chars_info[i].rec;
-            int      char_img_width  = char_img_rec.width;
-            int      char_img_height = char_img_rec.height;
-            int      char_img_size   = rf_pixel_buffer_size(im_font.format, char_img_width, char_img_height);
-            void*    char_img_pixels = rf_internal_ctx->default_font_buffers->chars_pixels + char_pixels_iter;
-
-            rf_internal_ctx->default_font.chars_info[i] = (rf_char_info)
-            {
-
-            };
-            char_pixels_iter += char_img_size;
-        }
     }
 
     rf_internal_ctx->default_font.base_size = (int)rf_internal_ctx->default_font.chars_info[0].height;
+    rf_internal_ctx->default_font.valid = true;
 
     RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Default font loaded successfully", rf_internal_ctx->default_font.texture.id);
 }
@@ -2587,7 +2581,7 @@ RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float f
             len_counter++;
 
             rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], len - i);
-            index = rf_get_glyph_index(font, codepoint.bytes_processed);
+            index = rf_get_glyph_index(font, codepoint.value);
 
             // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
             // but we need to draw all of the bad bytes using the '?' symbol so to not skip any we set next = 1

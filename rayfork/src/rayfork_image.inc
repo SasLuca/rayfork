@@ -1107,8 +1107,8 @@ RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, f
         {
             if (letter != ' ')
             {
-                rf_rec src_rec = {0, 0, font.chars_info[index].width, font.chars_info[index].height };
-                rf_rec dst_rec = {(float)(position_x + font.chars_info[index].offset_x), (float)font.chars_info[index].offset_y,font.chars_info[index].width, font.chars_info[index].height };
+                rf_rec src_rec = { 0, 0, font.chars_info[index].width, font.chars_info[index].height };
+                rf_rec dst_rec = { (float)(position_x + font.chars_info[index].offset_x), (float)font.chars_info[index].offset_y,font.chars_info[index].width, font.chars_info[index].height };
 
                 // Todo: Finish implementing this function
                 //rf_image_draw(&im_text, font.chars_info[index].image, src_rec,dst_rec, tint, temp_allocator);

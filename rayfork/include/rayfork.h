@@ -953,7 +953,7 @@ struct rf_context
 //region setups and defaults
 RF_API void rf_setup_viewport(int width, int height); // Set viewport for a provided width and height
 RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
-RF_API void rf_load_default_font(rf_allocator allocator, rf_allocator temp_allocator); // Load the raylib default font
+RF_API void rf_load_default_font(rf_default_font_buffers* default_font_buffers);
 RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 //endregion
 

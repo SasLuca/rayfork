@@ -32,17 +32,17 @@ To use rayfork simply include the header and it's dependencies in your project a
 #define RF_RENDERER_IMPL //You must define this in at least one .c/.cpp files to include the implementation
 #define RF_GRAPHICS_API_OPENGL_33 //Choose a graphics API
 #define RF_AUDIO_IMPL //You must define this in at least one .c/.cpp files to include the implementation
-#include "rayfork_audio.h" //Include rayfork audio (note: it's usually better to include rayfork_audio first)
+#include "rayfork_audio.h" //Include rayfork audio (note: it's usually better to include rayfork-audio first)
 #include "rayfork.h" //Include rayfork
 
 rf_context rf_ctx; //Create a context variable
-rf_audio_context rf_audio_ctx; //Create a context variable for rayfork_audio. Note that in the case of rayfork_audio the context struct must be in the same translation unit as the implementation
+rf_audio_context rf_audio_ctx; //Create a context variable for rayfork-audio. Note that in the case of rayfork-audio the context struct must be in the same translation unit as the implementation
 
 void init()
 {
     rf_context_init(&rf_ctx, screen_width, screen_height); //init rayfork
     rf_load_font_default(); //Optionally load the default raylib font
-    rf_audio_init(&rf_audio_ctx); //init rayfork_audio
+    rf_audio_init(&rf_audio_ctx); //init rayfork-audio
 }
 ```
 

@@ -1,0 +1,3 @@
+[submodule "rayfork-examples"]
+	path = rayfork-examples
+	url = https://github.com/SasLuca/rayfork-examples

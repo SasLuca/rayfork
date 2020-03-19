@@ -2,28 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 project(rayfork C)
 
 if (RAYFORK_EXAMPLES)
-    include_directories(examples/dependencies/)
-    include_directories(examples/dependencies/sokol)
-    include_directories(examples/dependencies/glad)
-
     include_directories(rayfork)
-
-    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-    add_subdirectory(examples/dependencies/glfw EXCLUDE_FROM_ALL)
-
-    add_subdirectory(examples/basic_window)
-    add_subdirectory(examples/basic_shapes)
-    add_subdirectory(examples/input_keys)
-    add_subdirectory(examples/collision_area)
-    add_subdirectory(examples/geometric_shapes)
-    add_subdirectory(examples/raw_audio_stream)
-    add_subdirectory(examples/hot_code_reloading)
-    add_subdirectory(examples/bunnymark)
-    add_subdirectory(examples/first_person_maze)
-    add_subdirectory(examples/text_measuring)
+    add_subdirectory(rayfork-examples)
 endif()
 
 add_subdirectory(rayfork)
