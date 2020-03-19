@@ -506,9 +506,11 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
             if (!rf_internal_global_performance_counter_frequency_initialised)
             {
                 rf_internal_global_performance_counter_frequency_initialised = true;
+                QueryPerformanceFrequency(&rf_internal_global_performance_counter_frequency);
             }
 
             long long int qpc_result = {0};
+            QueryPerformanceCounter(&qpc_result);
 
             return (double) qpc_result / (double) rf_internal_global_performance_counter_frequency;
         }
