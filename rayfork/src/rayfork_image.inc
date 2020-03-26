@@ -363,7 +363,6 @@ RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, int src_size, 
     return result;
 }
 
-
 RF_API rf_image rf_load_image_from_format_to_buffer(const void* src, int src_size, int src_width, int src_height, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     rf_image result = {0};
@@ -2180,4 +2179,642 @@ RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font,
     rf_unload_image(im_text, temp_allocator);
 }
 //endregion
+//endregion
+
+//region mipmaps
+RF_API int rf_mipmaps_image_size(rf_mipmaps_image image)
+{
+    int size   = 0;
+    int width  = image.width;
+    int height = image.height;
+
+    for (int i = 0; i < image.mipmaps; i++)
+    {
+        size += rf_pixel_buffer_size(image.format, width, height);
+
+        width  /= 2;
+        height /= 2;
+
+        // Security check for NPOT textures
+        if (width  < 1) width  = 1;
+        if (height < 1) height = 1;
+    }
+
+    return size;
+}
+
+// Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
+RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator)
+{
+    rf_mipmaps_image result = {0};
+
+    if (image.valid)
+    {
+        int possible_mip_count  = 1;
+        int mipmaps_size        = rf_pixel_buffer_size(image.format, image.width, image.height);
+
+        // Count mipmap levels required
+        {
+            int mip_width  = image.width;
+            int mip_height = image.height;
+
+            while (mip_width != 1 || mip_height != 1 || possible_mip_count == gen_mipmaps_count)
+            {
+                if (mip_width  != 1) mip_width  /= 2;
+                if (mip_height != 1) mip_height /= 2;
+
+                // Safety check for NPOT textures
+                if (mip_width  < 1) mip_width  = 1;
+                if (mip_height < 1) mip_height = 1;
+
+                mipmaps_size += rf_pixel_buffer_size(image.format, mip_width, mip_height);
+
+                possible_mip_count++;
+            }
+        }
+
+        if (possible_mip_count == gen_mipmaps_count)
+        {
+            if (dst_size == mipmaps_size)
+            {
+                // Pointer to current mip location in the dst buffer
+                unsigned char* dst_iter = dst;
+
+                // Copy the image to the dst as the first mipmap level
+                memcpy(dst_iter, image.data, rf_image_size(image));
+                dst_iter += rf_image_size(image);
+
+                // Create a rgba32 buffer for the mipmap result, half the image size is enough for any mipmap level
+                int temp_mipmap_buffer_size = rf_pixel_buffer_size(RF_UNCOMPRESSED_R8G8B8A8, image.width / 2, image.height / 2);
+                void* temp_mipmap_buffer = RF_ALLOC(temp_allocator, temp_mipmap_buffer_size);
+
+                if (temp_mipmap_buffer)
+                {
+                    int mip_width  = image.width  / 2;
+                    int mip_height = image.height / 2;
+                    int mip_count = 1;
+                    for (; mip_count < gen_mipmaps_count; mip_count++)
+                    {
+                        rf_image mipmap = rf_image_resize_to_buffer(image, mip_width, mip_height, temp_mipmap_buffer, temp_mipmap_buffer_size, temp_allocator);
+
+                        if (mipmap.valid)
+                        {
+                            int dst_iter_size = dst_size - ((int)(dst_iter - ((unsigned char*)(dst))));
+
+                            bool success = rf_format_pixels(mipmap.data, rf_image_size(mipmap), mipmap.format, dst_iter, dst_iter_size, image.format);
+                            RF_ASSERT(success);
+                        }
+                        else break;
+
+                        mip_width  /= 2;
+                        mip_height /= 2;
+
+                        // Security check for NPOT textures
+                        if (mip_width  < 1) mip_width  = 1;
+                        if (mip_height < 1) mip_height = 1;
+
+                        // Compute next mipmap location in the dst buffer
+                        dst_iter += rf_pixel_buffer_size(image.format, mip_width, mip_height);
+                    }
+
+                    if (mip_count == gen_mipmaps_count)
+                    {
+                        result = (rf_mipmaps_image){
+                            .data = dst,
+                            .width = image.width,
+                            .height = image.height,
+                            .mipmaps = gen_mipmaps_count,
+                            .format = image.format,
+                            .valid = true
+                        };
+                    }
+                }
+
+                RF_FREE(temp_allocator, temp_mipmap_buffer);
+            }
+        }
+        else RF_LOG_V(RF_LOG_TYPE_WARNING, "rf_image mipmaps already available");
+    }
+
+    return result;
+}
+
+RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator)
+{
+    RF_FREE(allocator, image.data);
+}
+//endregion
+
+//region dds
+
+/*
+ Required extension:
+ GL_EXT_texture_compression_s3tc
+
+ Supported tokens (defined by extensions)
+ GL_COMPRESSED_RGB_S3TC_DXT1_EXT      0x83F0
+ GL_COMPRESSED_RGBA_S3TC_DXT1_EXT     0x83F1
+ GL_COMPRESSED_RGBA_S3TC_DXT3_EXT     0x83F2
+ GL_COMPRESSED_RGBA_S3TC_DXT5_EXT     0x83F3
+*/
+
+#define RF_FOURCC_DXT1 0x31545844  // Equivalent to "DXT1" in ASCII
+#define RF_FOURCC_DXT3 0x33545844  // Equivalent to "DXT3" in ASCII
+#define RF_FOURCC_DXT5 0x35545844  // Equivalent to "DXT5" in ASCII
+
+typedef struct rf_dds_pixel_format rf_dds_pixel_format;
+struct rf_dds_pixel_format
+{
+    unsigned int size;
+    unsigned int flags;
+    unsigned int four_cc;
+    unsigned int rgb_bit_count;
+    unsigned int r_bit_mask;
+    unsigned int g_bit_mask;
+    unsigned int b_bit_mask;
+    unsigned int a_bit_mask;
+};
+
+// DDS Header (must be 124 bytes)
+typedef struct rf_dds_header rf_dds_header;
+struct rf_dds_header
+{
+    char id[4];
+    unsigned int size;
+    unsigned int flags;
+    unsigned int height;
+    unsigned int width;
+    unsigned int pitch_or_linear_size;
+    unsigned int depth;
+    unsigned int mipmap_count;
+    unsigned int reserved_1[11];
+    rf_dds_pixel_format ddspf;
+    unsigned int caps;
+    unsigned int caps_2;
+    unsigned int caps_3;
+    unsigned int caps_4;
+    unsigned int reserved_2;
+};
+
+RF_API int rf_get_dds_image_size(const void* src, int src_size)
+{
+    int result = 0;
+
+    if (src && src_size >= sizeof(rf_dds_header))
+    {
+        rf_dds_header header = *(rf_dds_header*)src;
+
+        // Verify the type of file
+        if (rf_internal_strings_match(header.id, sizeof(header.id), "DDS ", 4))
+        {
+            if (header.ddspf.rgb_bit_count == 16) // 16bit mode, no compressed
+            {
+                if (header.ddspf.flags == 0x40) // no alpha channel
+                {
+                    result = header.width * header.height * sizeof(unsigned short);
+                }
+                else if (header.ddspf.flags == 0x41) // with alpha channel
+                {
+                    if (header.ddspf.a_bit_mask == 0x8000) // 1bit alpha
+                    {
+                        result = header.width * header.height * sizeof(unsigned short);
+                    }
+                    else if (header.ddspf.a_bit_mask == 0xf000) // 4bit alpha
+                    {
+                        result = header.width * header.height * sizeof(unsigned short);
+                    }
+                }
+            }
+            else if (header.ddspf.flags == 0x40 && header.ddspf.rgb_bit_count == 24) // DDS_RGB, no compressed
+            {
+                // Not sure if this case exists...
+                result = header.width * header.height * 3 * sizeof(unsigned char);
+            }
+            else if (header.ddspf.flags == 0x41 && header.ddspf.rgb_bit_count == 32) // DDS_RGBA, no compressed
+            {
+                result = header.width * header.height * 4 * sizeof(unsigned char);
+            }
+            else if (((header.ddspf.flags == 0x04) || (header.ddspf.flags == 0x05)) && (header.ddspf.four_cc > 0)) // Compressed
+            {
+                int size;       // DDS result data size
+
+                // Calculate data size, including all mipmaps
+                if (header.mipmap_count > 1) size = header.pitch_or_linear_size * 2;
+                else size = header.pitch_or_linear_size;
+
+                result = size * sizeof(unsigned char);
+            }
+        }
+    }
+
+    return result;
+}
+
+RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, int src_size, void* dst, int dst_size)
+{
+    rf_mipmaps_image result = { 0 };
+
+    if (src && dst && dst_size > 0 && src_size >= sizeof(rf_dds_header))
+    {
+        rf_dds_header header = *(rf_dds_header*)src;
+
+        src = ((char*)src) + sizeof(rf_dds_header);
+        src_size -= sizeof(rf_dds_header);
+
+        // Verify the type of file
+        if (rf_internal_strings_match(header.id, sizeof(header.id), "DDS ", 4))
+        {
+            result.width   = header.width;
+            result.height  = header.height;
+            result.mipmaps = (header.mipmap_count == 0) ? 1 : header.mipmap_count;
+
+            if (header.ddspf.rgb_bit_count == 16) // 16bit mode, no compressed
+            {
+                if (header.ddspf.flags == 0x40) // no alpha channel
+                {
+                    int dds_result_size = header.width * header.height * sizeof(unsigned short);
+
+                    if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                    {
+                        memcpy(dst, src, dds_result_size);
+                        result.format = RF_UNCOMPRESSED_R5G6B5;
+                        result.data   = dst;
+                        result.valid  = true;
+                    }
+                }
+                else if (header.ddspf.flags == 0x41) // with alpha channel
+                {
+                    if (header.ddspf.a_bit_mask == 0x8000) // 1bit alpha
+                    {
+                        int dds_result_size = header.width * header.height * sizeof(unsigned short);
+
+                        if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                        {
+                            memcpy(dst, src, dds_result_size);
+
+                            unsigned char alpha = 0;
+
+                            // Data comes as A1R5G5B5, it must be reordered to R5G5B5A1
+                            for (int i = 0; i < result.width * result.height; i++)
+                            {
+                                alpha = ((unsigned short *)result.data)[i] >> 15;
+                                ((unsigned short*)result.data)[i] = ((unsigned short *)result.data)[i] << 1;
+                                ((unsigned short*)result.data)[i] += alpha;
+                            }
+
+                            result.format = RF_UNCOMPRESSED_R5G5B5A1;
+                            result.data   = dst;
+                            result.valid  = true;
+                        }
+                    }
+                    else if (header.ddspf.a_bit_mask == 0xf000) // 4bit alpha
+                    {
+                        int dds_result_size = header.width * header.height * sizeof(unsigned short);
+
+                        if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                        {
+                            memcpy(dst, src, dds_result_size);
+
+                            unsigned char alpha = 0;
+
+                            // Data comes as A4R4G4B4, it must be reordered R4G4B4A4
+                            for (int i = 0; i < result.width * result.height; i++)
+                            {
+                                alpha = ((unsigned short*)result.data)[i] >> 12;
+                                ((unsigned short*)result.data)[i] = ((unsigned short*)result.data)[i] << 4;
+                                ((unsigned short*)result.data)[i] += alpha;
+                            }
+
+                            result.format = RF_UNCOMPRESSED_R4G4B4A4;
+                            result.data   = dst;
+                            result.valid  = true;
+                        }
+                    }
+                }
+            }
+            else if (header.ddspf.flags == 0x40 && header.ddspf.rgb_bit_count == 24) // DDS_RGB, no compressed, not sure if this case exists...
+            {
+                int dds_result_size = header.width * header.height * 3;
+
+                if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                {
+                    memcpy(dst, src, dds_result_size);
+                    result.format = RF_UNCOMPRESSED_R8G8B8;
+                    result.data   = dst;
+                    result.valid  = true;
+                }
+            }
+            else if (header.ddspf.flags == 0x41 && header.ddspf.rgb_bit_count == 32) // DDS_RGBA, no compressed
+            {
+                int dds_result_size = header.width * header.height * 4;
+
+                if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                {
+                    memcpy(dst, src, dds_result_size);
+
+                    unsigned char blue = 0;
+
+                    // Data comes as A8R8G8B8, it must be reordered R8G8B8A8 (view next comment)
+                    // DirecX understand ARGB as a 32bit DWORD but the actual memory byte alignment is BGRA
+                    // So, we must realign B8G8R8A8 to R8G8B8A8
+                    for (int i = 0; i < header.width * header.height * 4; i += 4)
+                    {
+                        blue = ((unsigned char*)dst)[i];
+                        ((unsigned char*)dst)[i + 0] = ((unsigned char*)dst)[i + 2];
+                        ((unsigned char*)dst)[i + 2] = blue;
+                    }
+
+                    result.format = RF_UNCOMPRESSED_R8G8B8A8;
+                    result.data   = dst;
+                    result.valid  = true;
+                }
+            }
+            else if (((header.ddspf.flags == 0x04) || (header.ddspf.flags == 0x05)) && (header.ddspf.four_cc > 0)) // Compressed
+            {
+                int dds_result_size = (header.mipmap_count > 1) ? (header.pitch_or_linear_size * 2) : header.pitch_or_linear_size;
+
+                if (src_size >= dds_result_size && dst_size >= dds_result_size)
+                {
+                    memcpy(dst, src, dds_result_size);
+
+                    switch (header.ddspf.four_cc)
+                    {
+                        case RF_FOURCC_DXT1: result.format = header.ddspf.flags == 0x04 ? RF_COMPRESSED_DXT1_RGB : RF_COMPRESSED_DXT1_RGBA; break;
+                        case RF_FOURCC_DXT3: result.format = RF_COMPRESSED_DXT3_RGBA; break;
+                        case RF_FOURCC_DXT5: result.format = RF_COMPRESSED_DXT5_RGBA; break;
+                        default: break;
+                    }
+
+                    result.data  = dst;
+                    result.valid = true;
+                }
+            }
+        }
+        else RF_LOG_ERROR(RF_BAD_FORMAT, "DDS file does not seem to be a valid result");
+    }
+
+    return result;
+}
+
+RF_API rf_mipmaps_image rf_load_dds_image(const void* src, int src_size, rf_allocator allocator)
+{
+    rf_mipmaps_image result = {0};
+
+    int dst_size = rf_get_dds_image_size(src, src_size);
+    void* dst = RF_ALLOC(allocator, dst_size);
+
+    result = rf_load_dds_image_to_buffer(src, src_size, dst, dst_size);
+
+    return result;
+}
+
+RF_API rf_mipmaps_image rf_load_dds_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_mipmaps_image result = {0};
+
+    int src_size = io.get_file_size_proc(file);
+    void* src = RF_ALLOC(temp_allocator, src_size);
+
+    if (io.read_file_into_buffer_proc(file, src, src_size))
+    {
+        result = rf_load_dds_image(src, src_size, allocator);
+    }
+
+    RF_FREE(temp_allocator, src);
+
+    return result;
+}
+//endregion
+
+//region pkm
+
+/*
+ Required extensions:
+ GL_OES_compressed_ETC1_RGB8_texture  (ETC1) (OpenGL ES 2.0)
+ GL_ARB_ES3_compatibility  (ETC2/EAC) (OpenGL ES 3.0)
+
+ Supported tokens (defined by extensions)
+ GL_ETC1_RGB8_OES                 0x8D64
+ GL_COMPRESSED_RGB8_ETC2          0x9274
+ GL_COMPRESSED_RGBA8_ETC2_EAC     0x9278
+
+ Formats list
+ version 10: format: 0=ETC1_RGB, [1=ETC1_RGBA, 2=ETC1_RGB_MIP, 3=ETC1_RGBA_MIP] (not used)
+ version 20: format: 0=ETC1_RGB, 1=ETC2_RGB, 2=ETC2_RGBA_OLD, 3=ETC2_RGBA, 4=ETC2_RGBA1, 5=ETC2_R, 6=ETC2_RG, 7=ETC2_SIGNED_R, 8=ETC2_SIGNED_R
+
+ NOTE: The extended width and height are the widths rounded up to a multiple of 4.
+ NOTE: ETC is always 4bit per pixel (64 bit for each 4x4 block of pixels)
+*/
+
+// PKM file (ETC1) Header (16 bytes)
+typedef struct rf_pkm_header rf_pkm_header;
+struct rf_pkm_header
+{
+    char id[4];                 // "PKM "
+    char version[2];            // "10" or "20"
+    unsigned short format;      // Data format (big-endian) (Check list below)
+    unsigned short width;       // Texture width (big-endian) (origWidth rounded to multiple of 4)
+    unsigned short height;      // Texture height (big-endian) (origHeight rounded to multiple of 4)
+    unsigned short orig_width;  // Original width (big-endian)
+    unsigned short orig_height; // Original height (big-endian)
+};
+
+RF_API int rf_get_pkm_image_size(const void* src, int src_size)
+{
+    int result = 0;
+
+    if (src && src_size > sizeof(rf_pkm_header))
+    {
+        rf_pkm_header header = *(rf_pkm_header*)src;
+
+        // Verify the type of file
+        if (rf_internal_strings_match(header.id, sizeof(header.id), "PKM ", 4))
+        {
+            // Note: format, width and height come as big-endian, data must be swapped to little-endian
+            header.format = ((header.format & 0x00FF) << 8) | ((header.format & 0xFF00) >> 8);
+            header.width  = ((header.width  & 0x00FF) << 8) | ((header.width  & 0xFF00) >> 8);
+            header.height = ((header.height & 0x00FF) << 8) | ((header.height & 0xFF00) >> 8);
+
+            int bpp = 4;
+            if (header.format == 3) bpp = 8;
+
+            result = header.width * header.height * bpp / 8;  // Total data size in bytes
+        }
+        else RF_LOG_ERROR(RF_BAD_FORMAT, "PKM file does not seem to be a valid image");
+    }
+
+    return result;
+}
+
+// Load image from .pkm
+RF_API rf_image rf_load_pkm_image_to_buffer(const void* src, int src_size, void* dst, int dst_size)
+{
+    rf_image result = {0};
+
+    if (src && src_size > sizeof(rf_pkm_header))
+    {
+        rf_pkm_header header = *(rf_pkm_header*)src;
+
+        src = ((char*)src) + sizeof(rf_pkm_header);
+        src_size -= sizeof(rf_pkm_header);
+
+        // Verify the type of file
+        if (rf_internal_strings_match(header.id, sizeof(header.id), "PKM ", 4))
+        {
+            // Note: format, width and height come as big-endian, data must be swapped to little-endian
+            result.format = ((header.format & 0x00FF) << 8) | ((header.format & 0xFF00) >> 8);
+            result.width  = ((header.width  & 0x00FF) << 8) | ((header.width  & 0xFF00) >> 8);
+            result.height = ((header.height & 0x00FF) << 8) | ((header.height & 0xFF00) >> 8);
+
+            int bpp = 4;
+            if (header.format == 3) bpp = 8;
+
+            int size = header.width * header.height * bpp / 8;  // Total data size in bytes
+
+            if (dst_size >= size && src_size >= size)
+            {
+                memcpy(dst, src, size);
+
+                     if (header.format == 0) result.format = RF_COMPRESSED_ETC1_RGB;
+                else if (header.format == 1) result.format = RF_COMPRESSED_ETC2_RGB;
+                else if (header.format == 3) result.format = RF_COMPRESSED_ETC2_EAC_RGBA;
+
+                result.valid = true;
+            }
+        }
+        else RF_LOG_ERROR(RF_BAD_FORMAT, "PKM file does not seem to be a valid image");
+    }
+
+    return result;
+}
+
+RF_API rf_image rf_load_pkm_image(const void* src, int src_size, rf_allocator allocator)
+{
+    rf_image result = {0};
+
+    if (src && src_size > 0)
+    {
+        int dst_size = rf_get_pkm_image_size(src, src_size);
+        void* dst    = RF_ALLOC(allocator, dst_size);
+
+        result = rf_load_pkm_image_to_buffer(src, src_size, dst, dst_size);
+    }
+
+    return result;
+}
+
+RF_API rf_image rf_load_pkm_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+{
+    rf_image result = {0};
+
+    int src_size = io.get_file_size_proc(file);
+    void* src = RF_ALLOC(temp_allocator, src_size);
+
+    if (io.read_file_into_buffer_proc(file, src, src_size))
+    {
+        result = rf_load_pkm_image(src, src_size, allocator);
+    }
+
+    RF_FREE(temp_allocator, src);
+
+    return result;
+}
+
+//endregion
+
+//region ktx
+
+/*
+ Required extensions:
+ GL_OES_compressed_ETC1_RGB8_texture  (ETC1)
+ GL_ARB_ES3_compatibility  (ETC2/EAC)
+
+ Supported tokens (defined by extensions)
+ GL_ETC1_RGB8_OES                 0x8D64
+ GL_COMPRESSED_RGB8_ETC2          0x9274
+ GL_COMPRESSED_RGBA8_ETC2_EAC     0x9278
+
+ KTX file Header (64 bytes)
+ v1.1 - https://www.khronos.org/opengles/sdk/tools/KTX/file_format_spec/
+ v2.0 - http://github.khronos.org/KTX-Specification/
+
+ NOTE: Before start of every mipmap data block, we have: unsigned int dataSize
+ TODO: Support KTX 2.2 specs!
+*/
+
+typedef struct rf_ktx_header rf_ktx_header;
+struct rf_ktx_header
+{
+    char id[12];                          // Identifier: "«KTX 11»\r\n\x1A\n"
+    unsigned int endianness;              // Little endian: 0x01 0x02 0x03 0x04
+    unsigned int gl_type;                 // For compressed textures, gl_type must equal 0
+    unsigned int gl_type_size;            // For compressed texture data, usually 1
+    unsigned int gl_format;               // For compressed textures is 0
+    unsigned int gl_internal_format;      // Compressed internal format
+    unsigned int gl_base_internal_format; // Same as gl_format (RGB, RGBA, ALPHA...)
+    unsigned int width;                   // Texture image width in pixels
+    unsigned int height;                  // Texture image height in pixels
+    unsigned int depth;                   // For 2D textures is 0
+    unsigned int elements;                // Number of array elements, usually 0
+    unsigned int faces;                   // Cubemap faces, for no-cubemap = 1
+    unsigned int mipmap_levels;           // Non-mipmapped textures = 1
+    unsigned int key_value_data_size;     // Used to encode any arbitrary data...
+};
+
+RF_API int rf_get_ktx_image_size(const void* src, int src_size)
+{
+    int result = 0;
+
+    if (src && src_size >= sizeof(rf_ktx_header))
+    {
+        rf_ktx_header header = *(rf_ktx_header*)src;
+
+        // We look for "KTX 11" in "«KTX 11»\r\n\x1A\n"
+        if (rf_internal_strings_match(header.id + 1, 6, "KTX 11", 6))
+        {
+            src = (char*)src + header.key_value_data_size;
+            src_size -= header.key_value_data_size;
+
+
+        }
+    }
+
+    return result;
+}
+
+RF_API rf_image rf_load_image_from_ktx(const void* src, int src_size, void* dst, int dst_size)
+{
+    rf_image image = { 0 };
+
+    rf_ktx_header ktx_header = { 0 };
+    memcpy(&ktx_header, data, sizeof(rf_ktx_header));
+
+    if ((ktx_header.id[1] != 'K') || (ktx_header.id[2] != 'T') || (ktx_header.id[3] != 'X') ||
+        (ktx_header.id[4] != ' ') || (ktx_header.id[5] != '1') || (ktx_header.id[6] != '1'))
+    {
+        RF_LOG_V(LOG_WARNING, "[%s] KTX file does not seem to be a valid file", "fileName");
+    }
+    else
+    {
+        image.width = ktx_header.width;
+        image.height = ktx_header.height;
+        image.mipmaps = ktx_header.mipmap_levels;
+
+        src = (char*)src + ktx_header.key_value_data_size;
+
+        int dataSize;
+        memcpy(&dataSize, data + file_iterator, sizeof(unsigned int));
+        file_iterator += sizeof(unsigned int);
+
+        image.data = (unsigned char *) RF_ALLOC(allocator, dataSize * sizeof(unsigned char));
+
+        memcpy(image.data, data + file_iterator, dataSize);
+
+        if (ktx_header.gl_internal_format == 0x8D64) image.format = RF_COMPRESSED_ETC1_RGB;
+        else if (ktx_header.gl_internal_format == 0x9274) image.format = RF_COMPRESSED_ETC2_RGB;
+        else if (ktx_header.gl_internal_format == 0x9278) image.format = RF_COMPRESSED_ETC2_EAC_RGBA;
+    }
+
+    return image;
+}
 //endregion

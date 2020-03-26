@@ -175,9 +175,10 @@ typedef enum rf_error_type
     RF_BAD_ALLOC,
     RF_BAD_IO,
     RF_BAD_BUFFER_SIZE,
+    RF_BAD_FORMAT,
     RF_STBI_FAILED,
     RF_STBTT_FAILED,
-    RF_UNSUPPORTED
+    RF_UNSUPPORTED,
 } rf_error_type;
 
 typedef enum rf_log_type
@@ -561,7 +562,7 @@ struct rf_mipmaps_image
         };
     };
 
-    int mipmaps; //Mipmap levels, 1 by default
+    int mipmaps; // Mipmap levels, 1 by default
 };
 
 typedef struct rf_gif rf_gif;
@@ -1262,15 +1263,6 @@ RF_API bool rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixe
 RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format);
-//endregion
-
-//region mipmaps_image
-RF_API int rf_mipmaps_image_size(rf_mipmaps_image image);
-
-// Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
-RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);
-
-RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator);
 //endregion
 
 //region image
