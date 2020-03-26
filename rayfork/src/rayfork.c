@@ -605,7 +605,7 @@ RF_API void rf_set_time_functions(void (*wait_proc)(float), double (*get_time_pr
 
 //region default io & allocator
 #if !defined(RF_NO_DEFAULT_ALLOCATOR)
-#include "malloc.h"
+#include "stdlib.h"
 
 void* rf_malloc_wrapper(rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data)
 {
