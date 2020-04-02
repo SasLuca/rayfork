@@ -282,7 +282,7 @@ RF_API void rf_load_default_font(rf_default_font_buffers* default_font_buffers)
 
     rf_internal_ctx->default_font_buffers = default_font_buffers;
 
-    rf_internal_ctx->default_font.chars_count = 224; // Number of chars included in our default font
+    rf_internal_ctx->default_font.glyphs_count = 224; // Number of chars included in our default font
 
     // Default font is directly defined here (data generated from a sprite font image)
     // This way, we reconstruct rf_font without creating large global variables
@@ -384,23 +384,23 @@ RF_API void rf_load_default_font(rf_default_font_buffers* default_font_buffers)
     rf_internal_ctx->default_font.texture = rf_load_texture_from_image(font_image);
 
     // Allocate space for our characters info data
-    rf_internal_ctx->default_font.chars_info = rf_internal_ctx->default_font_buffers->chars;
+    rf_internal_ctx->default_font.glyphs = rf_internal_ctx->default_font_buffers->chars;
 
     int current_line     = 0;
     int current_pos_x    = chars_divisor;
     int test_pos_x       = chars_divisor;
     int char_pixels_iter = 0;
 
-    for (int i = 0; i < rf_internal_ctx->default_font.chars_count; i++)
+    for (int i = 0; i < rf_internal_ctx->default_font.glyphs_count; i++)
     {
-        rf_internal_ctx->default_font.chars_info[i].codepoint = 32 + i; // First char is 32
+        rf_internal_ctx->default_font.glyphs[i].codepoint = 32 + i; // First char is 32
 
-        rf_internal_ctx->default_font.chars_info[i].x      = (float) current_pos_x;
-        rf_internal_ctx->default_font.chars_info[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
-        rf_internal_ctx->default_font.chars_info[i].width  = (float) chars_width[i];
-        rf_internal_ctx->default_font.chars_info[i].height = (float) chars_height;
+        rf_internal_ctx->default_font.glyphs[i].x      = (float) current_pos_x;
+        rf_internal_ctx->default_font.glyphs[i].y      = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+        rf_internal_ctx->default_font.glyphs[i].width  = (float) chars_width[i];
+        rf_internal_ctx->default_font.glyphs[i].height = (float) chars_height;
 
-        test_pos_x += (int) (rf_internal_ctx->default_font.chars_info[i].width + (float)chars_divisor);
+        test_pos_x += (int) (rf_internal_ctx->default_font.glyphs[i].width + (float)chars_divisor);
 
         if (test_pos_x >= rf_internal_ctx->default_font.texture.width)
         {
@@ -408,18 +408,18 @@ RF_API void rf_load_default_font(rf_default_font_buffers* default_font_buffers)
             current_pos_x = 2 * chars_divisor + chars_width[i];
             test_pos_x = current_pos_x;
 
-            rf_internal_ctx->default_font.chars_info[i].x = (float) (chars_divisor);
-            rf_internal_ctx->default_font.chars_info[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
+            rf_internal_ctx->default_font.glyphs[i].x = (float) (chars_divisor);
+            rf_internal_ctx->default_font.glyphs[i].y = (float) (chars_divisor + current_line * (chars_height + chars_divisor));
         }
         else current_pos_x = test_pos_x;
 
         // NOTE: On default font character offsets and xAdvance are not required
-        rf_internal_ctx->default_font.chars_info[i].offset_x = 0;
-        rf_internal_ctx->default_font.chars_info[i].offset_y = 0;
-        rf_internal_ctx->default_font.chars_info[i].advance_x = 0;
+        rf_internal_ctx->default_font.glyphs[i].offset_x = 0;
+        rf_internal_ctx->default_font.glyphs[i].offset_y = 0;
+        rf_internal_ctx->default_font.glyphs[i].advance_x = 0;
     }
 
-    rf_internal_ctx->default_font.base_size = (int)rf_internal_ctx->default_font.chars_info[0].height;
+    rf_internal_ctx->default_font.base_size = (int)rf_internal_ctx->default_font.glyphs[0].height;
     rf_internal_ctx->default_font.valid = true;
 
     RF_LOG_V(RF_LOG_TYPE_INFO, "[TEX ID %i] Default font loaded successfully", rf_internal_ctx->default_font.texture.id);
@@ -1917,6 +1917,7 @@ RF_API rf_image rf_get_texture_data(rf_texture2d texture, rf_allocator allocator
             image.width = texture.width;
             image.height = texture.height;
             image.format = texture.format;
+            image.valid = true;
 
             // NOTE: Data retrieved on OpenGL ES 2.0 should be RGBA
             // coming from FBO color buffer, but it seems original
@@ -1984,18 +1985,15 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target)
 
 //region font & text
 
-RF_API rf_ttf_font_builder rf_make_ttf_font_builder(const void* font_file_data, int font_size, rf_font_gen gen, const char* chars, int chars_count)
+RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size)
 {
-    rf_ttf_font_builder result = {0};
+    rf_ttf_font_info result = {0};
 
-    if (font_file_data)
+    if (ttf_data && font_size > 0)
     {
         stbtt_fontinfo font_info = {0};
-        if (stbtt_InitFont(&font_info, font_file_data, 0))
+        if (stbtt_InitFont(&font_info, ttf_data, 0))
         {
-            chars       = (chars == NULL) ? RF_DEFAULT_FONT_CHARS : chars;
-            chars_count = chars_count == 0 ? RF_DEFAULT_FONT_CHARS_COUNT : chars_count;
-
             // Calculate font scale factor
             float scale_factor = stbtt_ScaleForPixelHeight(&font_info, (float)font_size);
 
@@ -2004,13 +2002,10 @@ RF_API rf_ttf_font_builder rf_make_ttf_font_builder(const void* font_file_data, 
             int ascent, descent, line_gap;
             stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &line_gap);
 
-            result = (rf_ttf_font_builder)
+            result = (rf_ttf_font_info)
             {
-                .data = font_file_data,
+                .ttf_data = ttf_data,
                 .font_size = font_size,
-                .font_gen = gen,
-                .chars = chars,
-                .chars_count = chars_count,
                 .scale_factor = scale_factor,
                 .ascent = ascent,
                 .descent = descent,
@@ -2021,172 +2016,181 @@ RF_API rf_ttf_font_builder rf_make_ttf_font_builder(const void* font_file_data, 
             RF_ASSERT(sizeof(stbtt_fontinfo) == sizeof(result.internal_stb_font_info));
             memcpy(&result.internal_stb_font_info, &font_info, sizeof(stbtt_fontinfo));
         }
-        else RF_LOG_ERROR(RF_STBTT_FAILED, "Failed to init font!");
+        else RF_LOG_ERROR(RF_STBTT_FAILED, "STB failed to parse ttf font.");
     }
 
     return result;
 }
 
-RF_API void rf_compute_glyph_metrics_ttf(rf_ttf_font_builder* font_builder, rf_char_info* dst, int dst_count)
+RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_metrics* dst, int dst_count)
 {
-    if (font_builder && font_builder->valid)
+    if (font_info && font_info->valid)
     {
-        if (dst && dst_count >= font_builder->chars_count)
+        if (dst && dst_count >= codepoints_count)
         {
             // The stbtt functions called here should not require any allocations
             RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
 
-            font_builder->chars_info = dst;
-            font_builder->largest_glyph_size = 0;
+            font_info->largest_glyph_size = 0;
 
             float required_area = 0;
 
             // NOTE: Using simple packaging, one char after another
-            for (int i = 0; i < font_builder->chars_count; i++)
+            for (int i = 0; i < codepoints_count; i++)
             {
-                int char_width  = 0;
-                int char_height = 0;
+                stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_info->internal_stb_font_info;
 
-                stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_builder->internal_stb_font_info;
-
-                dst[i].codepoint = font_builder->chars[i];
+                dst[i].codepoint = codepoints[i];
                 dst[i].glyph_index = stbtt_FindGlyphIndex(stbtt_ctx, dst[i].codepoint);
 
-                stbtt_GetGlyphBitmapBox(stbtt_ctx, dst[i].glyph_index, font_builder->scale_factor, font_builder->scale_factor, &char_width, &char_height, &dst[i].offset_x, &dst[i].offset_y);
+                int begin_x = 0;
+                int begin_y = 0;
+                int end_x   = 0;
+                int end_y   = 0;
+                stbtt_GetGlyphBitmapBox(stbtt_ctx, dst[i].glyph_index, font_info->scale_factor, font_info->scale_factor, &begin_x, &begin_y, &end_x, &end_y);
 
-                dst[i].width  = char_width;
-                dst[i].height = char_height;
-                dst[i].offset_y += (int)((float)font_builder->ascent * font_builder->scale_factor);
+                dst[i].width  = end_x - begin_x;
+                dst[i].height = end_y - begin_y;
+                dst[i].offset_x = begin_x;
+                dst[i].offset_y = begin_y;
+                dst[i].offset_y += (int) ((float)font_info->ascent * font_info->scale_factor);
 
                 stbtt_GetCodepointHMetrics(stbtt_ctx, dst[i].codepoint, &dst[i].advance_x, NULL);
-                dst[i].advance_x *= font_builder->scale_factor;
+                dst[i].advance_x *= font_info->scale_factor;
 
-                const int char_size = char_width * char_height;
-                if (char_size > font_builder->largest_glyph_size) font_builder->largest_glyph_size = char_size;
-
-                // Calculate the area of all glyphs + padding
-                required_area += ((char_width + RF_DEFAULT_FONT_PADDING * 2) * (char_height + RF_DEFAULT_FONT_PADDING * 2)); // The padding is added for both the X and Y axis which is why we multiply by 2
+                const int char_size = dst[i].width * dst[i].height;
+                if (char_size > font_info->largest_glyph_size) font_info->largest_glyph_size = char_size;
             }
-
-            // Calculate the area required for an atlas containing all glyphs
-            int guess_size = (int) rf_next_pot(sqrtf(required_area) * 1.3f);
-            int padding_size = (RF_DEFAULT_FONT_PADDING * 2) * font_builder->chars_count;
-            font_builder->atlas_pixel_count = (guess_size + padding_size) * 2;
-        }
-        else
-        {
-            font_builder->valid = false;
         }
     }
 }
 
-RF_API void rf_generate_ttf_font_atlas(rf_ttf_font_builder* font_builder, unsigned short* dst, int dst_count, rf_allocator temp_allocator)
+// Note: the atlas is square and this value is the width of the atlas
+RF_API int rf_compute_ttf_font_atlas_size(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count)
 {
-    if (font_builder && font_builder->valid)
+    int result = 0;
+
+    for (int i = 0; i < glyphs_count; i++)
     {
-        // We set this back to true if the function is succesful
-        font_builder->valid = false;
-        if (dst && dst_count >= font_builder->atlas_pixel_count)
+        // Calculate the area of all glyphs + padding
+        // The padding is applied both on the (left and right) and (top and bottom) of the glyph, which is why we multiply by 2
+        result += ((glyph_metrics[i].width + 2 * padding) * (glyph_metrics[i].height + 2 * padding));
+    }
+
+    // Calculate the width required for a square atlas containing all glyphs
+    result = rf_next_pot(sqrtf(result) * 1.3f);
+
+    return result;
+}
+
+RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_size, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator)
+{
+    rf_image result = {0};
+
+    if (font_info && font_info->valid)
+    {
+        int atlas_pixel_count = atlas_size * atlas_size;
+
+        if (dst && dst_count >= atlas_pixel_count)
         {
-            // We set the whole atlas pixels to 0
-            memset(dst, 0, dst_count * sizeof(unsigned short));
+            memset(dst, 0, atlas_pixel_count * 2);
+
+            int largest_glyph_size = 0;
+            for (int i = 0; i < glyphs_count; i++)
+            {
+                int area = glyphs[i].width * glyphs[i].height;
+                if (area > largest_glyph_size)
+                {
+                    largest_glyph_size = area;
+                }
+            }
 
             // Allocate a grayscale buffer large enough to store the largest glyph
-            unsigned char* temp_glyph = RF_ALLOC(temp_allocator, font_builder->largest_glyph_size);
+            unsigned char* glyph_buffer = RF_ALLOC(temp_allocator, largest_glyph_size);
 
             // Use basic packing algorithm to generate the atlas
-            if (temp_glyph)
+            if (glyph_buffer)
             {
-                // The atlas is square
-                const int atlas_width  = font_builder->atlas_pixel_count / 2;
-                const int atlas_height = font_builder->atlas_pixel_count / 2;
-
                 // We update these for every pixel in the loop
                 int offset_x = RF_DEFAULT_FONT_PADDING;
                 int offset_y = RF_DEFAULT_FONT_PADDING;
 
                 // Set the allocator for stbtt
                 RF_SET_STBTT_ALLOCATOR(temp_allocator);
-
-                // Using simple packaging, one char after another
-                for (int i = 0; i < font_builder->chars_count; i++)
                 {
-                    // Extract these variables to shorter names
-                    stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_builder->internal_stb_font_info;
-                    rf_char_info*   chars     = font_builder->chars_info;
-
-                    // Get glyph bitmap
-                    stbtt_MakeGlyphBitmap(stbtt_ctx, temp_glyph, chars[i].width, chars[i].height, 0, font_builder->scale_factor, font_builder->scale_factor, chars[i].glyph_index);
-
-                    // Copy pixel data from fc.data to atlas
-                    for (int y = 0; y < chars[i].height; y++)
+                    // Using simple packaging, one char after another
+                    for (int i = 0; i < glyphs_count; i++)
                     {
-                        for (int x = 0; x < chars[i].width; x++)
-                        {
-                            const unsigned char glyph_pixel = temp_glyph[y * ((int)chars[i].width) + x];
-                            const int index = (offset_y + y) * atlas_width + (offset_x + x);
+                        // Extract these variables to shorter names
+                        stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_info->internal_stb_font_info;
 
-                            // atlas.data is in RF_UNCOMPRESSED_GRAY_ALPHA which is 2 bytes
-                            // for fonts we write the glyph_pixel in the alpha channel which is byte 2
-                            ((unsigned char*)dst)[index + 0] = 255;
-                            ((unsigned char*)dst)[index + 1] = glyph_pixel;
+                        // Get glyph bitmap
+                        stbtt_MakeGlyphBitmap(stbtt_ctx, glyph_buffer, glyphs[i].width, glyphs[i].height, glyphs[i].width, font_info->scale_factor, font_info->scale_factor, glyphs[i].glyph_index);
+
+                        // Copy pixel data from fc.data to atlas
+                        for (int y = 0; y < glyphs[i].height; y++)
+                        {
+                            for (int x = 0; x < glyphs[i].width; x++)
+                            {
+                                unsigned char glyph_pixel = glyph_buffer[y * ((int)glyphs[i].width) + x];
+                                if (antialias == RF_FONT_NO_ANTI_ALIAS && glyph_pixel > RF_BITMAP_ALPHA_THRESHOLD) glyph_pixel = 0;
+
+                                int dst_index = (offset_y + y) * atlas_size + (offset_x + x);
+                                // dst is in RF_UNCOMPRESSED_GRAY_ALPHA which is 2 bytes
+                                // for fonts we write the glyph_pixel in the alpha channel which is byte 2
+                                ((unsigned char*)(&dst[dst_index]))[0] = 255;
+                                ((unsigned char*)(&dst[dst_index]))[1] = glyph_pixel;
+                            }
+                        }
+
+                        // Fill chars rectangles in atlas info
+                        glyphs[i].x = (float)offset_x;
+                        glyphs[i].y = (float)offset_y;
+
+                        // Move atlas position X for next character drawing
+                        offset_x += (glyphs[i].width + 2 * padding);
+                        if (offset_x >= (atlas_size - glyphs[i].width - 2 * padding))
+                        {
+                            offset_x  = padding;
+                            offset_y += font_info->font_size + padding;
+
+                            if (offset_y > (atlas_size - font_info->font_size - padding)) break;
+                            //else error dst buffer is not big enough
                         }
                     }
-
-                    // Fill chars rectangles in atlas info
-                    chars[i].x = (float)offset_x;
-                    chars[i].y = (float)offset_y;
-
-                    // Move atlas position X for next character drawing
-                    offset_x += (chars[i].width + RF_DEFAULT_FONT_PADDING * 2);
-
-                    if (offset_x >= (atlas_width - chars[i].width - RF_DEFAULT_FONT_PADDING))
-                    {
-                        offset_x = RF_DEFAULT_FONT_PADDING;
-
-                        // NOTE: Be careful on offset_y for SDF fonts, by default SDF
-                        // use an internal padding of 4 pixels, it means char rectangle
-                        // height is bigger than font_size, it could be up to (font_size + 8)
-                        offset_y += (font_builder->font_size + RF_DEFAULT_FONT_PADDING * 2);
-
-                        if (offset_y > (atlas_height - font_builder->font_size - RF_DEFAULT_FONT_PADDING)) break;
-                    }
                 }
+                RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
 
-                font_builder->atlas.data   = dst;
-                font_builder->atlas.width  = font_builder->atlas_pixel_count / 2;
-                font_builder->atlas.height = font_builder->atlas_pixel_count / 2;
-                font_builder->atlas.format = RF_UNCOMPRESSED_GRAY_ALPHA;
-                font_builder->atlas.valid  = true;
-                font_builder->valid        = true;
+                result.data   = dst;
+                result.width  = atlas_size;
+                result.height = atlas_size;
+                result.format = RF_UNCOMPRESSED_GRAY_ALPHA;
+                result.valid  = true;
             }
 
-            RF_FREE(temp_allocator, temp_glyph);
+            RF_FREE(temp_allocator, glyph_buffer);
         }
     }
 
-    RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
+    return result;
 }
 
-RF_API rf_font rf_build_ttf_font(rf_ttf_font_builder font_builder)
+RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_metrics* glyphs, int glyphs_count)
 {
     rf_font result = {0};
 
-    if (font_builder.valid && font_builder.atlas.valid)
-    {
-        rf_texture2d texture = rf_load_texture_from_image(font_builder.atlas);
+    rf_texture2d texture = rf_load_texture_from_image(atlas);
 
-        if (texture.valid)
+    if (texture.valid)
+    {
+        result = (rf_font)
         {
-            result = (rf_font)
-            {
-                .chars_count = font_builder.chars_count,
-                .texture = texture,
-                .chars_info = font_builder.chars_info,
-                .base_size = font_builder.font_size,
-                .valid = true,
-            };
-        }
+            .glyphs = glyphs,
+            .glyphs_count = glyphs_count,
+            .texture = texture,
+            .base_size = font_size,
+            .valid = true,
+        };
     }
 
     return result;
@@ -2195,37 +2199,33 @@ RF_API rf_font rf_build_ttf_font(rf_ttf_font_builder font_builder)
 // Load rf_font from TTF font file with generation parameters
 // NOTE: You can pass an array with desired characters, those characters should be available in the font
 // if array is NULL, default char set is selected 32..126
-RF_API rf_font rf_load_ttf_font_with_chars(const void* font_file_data, int font_size, const char* chars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator)
+RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* codepoints, int char_count, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_font result = {0};
 
-    rf_ttf_font_builder font_builder = rf_make_ttf_font_builder(font_file_data, font_size, RF_FONT_GEN_ANTI_ALIAS,
-                                                                chars, chars_count);
+    rf_ttf_font_info font_info = rf_parse_ttf_font(font_file_data, font_size);
 
     // Get the glyph metrics
-    rf_char_info* chars_info_buf = RF_ALLOC(allocator, chars_count * sizeof(rf_char_info));
-    rf_compute_glyph_metrics_ttf(&font_builder, chars_info_buf, chars_count);
+    rf_glyph_metrics* glyph_metrics = RF_ALLOC(allocator, char_count * sizeof(rf_glyph_metrics));
+    rf_compute_ttf_font_glyph_metrics(&font_info, codepoints, char_count, glyph_metrics, char_count);
 
     // Build the atlas and font
-    unsigned short* atlas_buf = RF_ALLOC(temp_allocator, font_builder.atlas_pixel_count * sizeof(unsigned short));
-    rf_generate_ttf_font_atlas(&font_builder, atlas_buf, font_builder.atlas_pixel_count, temp_allocator);
+    int atlas_size = rf_compute_ttf_font_atlas_size(RF_DEFAULT_FONT_PADDING, glyph_metrics, char_count);
+    int atlas_pixel_count = atlas_size * atlas_size;
+    unsigned short* atlas_buffer = RF_ALLOC(temp_allocator, atlas_pixel_count * sizeof(unsigned short));
+    rf_image atlas = rf_generate_ttf_font_atlas(&font_info, atlas_size, RF_DEFAULT_FONT_PADDING, glyph_metrics, char_count, antialias, atlas_buffer, atlas_pixel_count, temp_allocator);
 
     // Get the font
-    result = rf_build_ttf_font(font_builder);
+    result = rf_ttf_font_from_atlas(font_size, atlas, glyph_metrics, char_count);
 
     // Free the atlas bitmap
-    RF_FREE(temp_allocator, atlas_buf);
+    RF_FREE(temp_allocator, atlas_buffer);
 
     return result;
 }
 
-RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_allocator allocator, rf_allocator temp_allocator)
-{
-    return rf_load_ttf_font_with_chars(font_file_data, font_size, 0, 0, allocator, temp_allocator);
-}
-
 // Load rf_font from file into GPU memory (VRAM)
-RF_API rf_font rf_load_ttf_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_font font = {0};
 
@@ -2234,9 +2234,13 @@ RF_API rf_font rf_load_ttf_font_from_file(const char* filename, rf_allocator all
         int file_size = io.get_file_size_proc(filename);
         void* data = RF_ALLOC(temp_allocator, file_size);
 
-        font = rf_load_ttf_font_from_data(data, RF_DEFAULT_TTF_FONT_SIZE, allocator, temp_allocator);
+        if (io.read_file_into_buffer_proc(filename, data, file_size))
+        {
+            font = rf_load_ttf_font_from_data(data, RF_DEFAULT_FONT_SIZE, antialias, (int[]) RF_DEFAULT_CODEPOINTS, RF_DEFAULT_CODEPOINTS_COUNT, allocator, temp_allocator);
 
-        rf_set_texture_filter(font.texture, RF_FILTER_POINT); // By default we set point filter (best performance)
+            // By default we set point filter (best performance)
+            rf_set_texture_filter(font.texture, RF_FILTER_POINT);
+        }
 
         RF_FREE(temp_allocator, data);
     }
@@ -2250,7 +2254,7 @@ RF_API void rf_unload_font(rf_font font, rf_allocator allocator)
     if (font.valid)
     {
         rf_unload_texture(font.texture);
-        RF_FREE(allocator, font.chars_info);
+        RF_FREE(allocator, font.glyphs);
     }
 }
 
@@ -2423,9 +2427,9 @@ RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character)
 {
     int index = RF_GLYPH_NOT_FOUND;
 
-    for (int i = 0; i < font.chars_count; i++)
+    for (int i = 0; i < font.glyphs_count; i++)
     {
-        if (font.chars_info[i].codepoint == character)
+        if (font.glyphs[i].codepoint == character)
         {
             index = i;
             break;
@@ -2468,8 +2472,8 @@ RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float f
 
             if (letter != '\n')
             {
-                if (font.chars_info[index].advance_x != 0) { text_width += font.chars_info[index].advance_x; }
-                else { text_width += (font.chars_info[index].width + font.chars_info[index].offset_x); }
+                if (font.glyphs[index].advance_x != 0) { text_width += font.glyphs[index].advance_x; }
+                else { text_width += (font.glyphs[index].width + font.glyphs[index].offset_x); }
             }
             else
             {
@@ -2537,9 +2541,9 @@ RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len
 
             if (letter != '\n')
             {
-                glyph_width = (font.chars_info[index].advance_x == 0) ?
-                              (int)(font.chars_info[index].width * scale_factor + extra_spacing) :
-                              (int)(font.chars_info[index].advance_x * scale_factor + extra_spacing);
+                glyph_width = (font.glyphs[index].advance_x == 0) ?
+                              (int)(font.glyphs[index].width * scale_factor + extra_spacing) :
+                              (int)(font.glyphs[index].advance_x * scale_factor + extra_spacing);
             }
 
             // NOTE: When word_wrap is ON we first measure how much of the text we can draw before going outside of the rec container

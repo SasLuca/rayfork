@@ -1795,15 +1795,15 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
         {
             if (letter != ' ')
             {
-                rf_draw_texture_region(font.texture, font.chars_info[index].rec,
-                                       (rf_rec){position.x + text_offset_x + font.chars_info[index].offset_x * scale_factor,
-                                                position.y + text_offset_y + font.chars_info[index].offset_y*scale_factor,
-                                                font.chars_info[index].width*scale_factor,
-                                                font.chars_info[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f, tint);
+                rf_draw_texture_region(font.texture, font.glyphs[index].rec,
+                                       (rf_rec){position.x + text_offset_x + font.glyphs[index].offset_x * scale_factor,
+                                                position.y + text_offset_y + font.glyphs[index].offset_y*scale_factor,
+                                                font.glyphs[index].width*scale_factor,
+                                                font.glyphs[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f, tint);
             }
 
-            if (font.chars_info[index].advance_x == 0) text_offset_x += ((float)font.chars_info[index].width*scale_factor + spacing);
-            else text_offset_x += ((float)font.chars_info[index].advance_x*scale_factor + spacing);
+            if (font.glyphs[index].advance_x == 0) text_offset_x += ((float)font.glyphs[index].width*scale_factor + spacing);
+            else text_offset_x += ((float)font.glyphs[index].advance_x*scale_factor + spacing);
         }
     }
 }
@@ -1853,9 +1853,9 @@ RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_re
 
         if (letter != '\n')
         {
-            glyph_width = (font.chars_info[index].advance_x == 0)?
-                          (int)(font.chars_info[index].width*scale_factor + spacing):
-                          (int)(font.chars_info[index].advance_x*scale_factor + spacing);
+            glyph_width = (font.glyphs[index].advance_x == 0)?
+                          (int)(font.glyphs[index].width*scale_factor + spacing):
+                          (int)(font.glyphs[index].advance_x*scale_factor + spacing);
         }
 
         // NOTE: When wrap is ON we first measure how much of the text we can draw before going outside of the rec container
@@ -1921,12 +1921,12 @@ RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_re
                 // Draw glyph
                 if ((letter != ' ') && (letter != '\t'))
                 {
-                    rf_draw_texture_region(font.texture, font.chars_info[index].rec,
+                    rf_draw_texture_region(font.texture, font.glyphs[index].rec,
                                            (rf_rec) {
-                                               rec.x + text_offset_x + font.chars_info[index].offset_x * scale_factor,
-                                               rec.y + text_offset_y + font.chars_info[index].offset_y * scale_factor,
-                                               font.chars_info[index].width  * scale_factor,
-                                               font.chars_info[index].height * scale_factor
+                                               rec.x + text_offset_x + font.glyphs[index].offset_x * scale_factor,
+                                               rec.y + text_offset_y + font.glyphs[index].offset_y * scale_factor,
+                                               font.glyphs[index].width  * scale_factor,
+                                               font.glyphs[index].height * scale_factor
                                            },
                                            (rf_vec2){ 0, 0 }, 0.0f, tint);
                 }

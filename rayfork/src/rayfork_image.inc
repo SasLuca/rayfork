@@ -284,7 +284,7 @@ RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, int 
 {
     rf_image result = {0};
 
-    if (src && src_size)
+    if (src && src_size > 0)
     {
         int img_width = 0, img_height = 0, img_bpp = 0;
 
@@ -391,7 +391,7 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
     {
         int file_size = io.get_file_size_proc(filename);
 
-        if (file_size)
+        if (file_size > 0)
         {
             unsigned char* image_file_buffer = (unsigned char*) RF_ALLOC(temp_allocator, file_size);
 
@@ -1062,86 +1062,6 @@ RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int 
     return result;
 }
 
-// Create an image from text (default font)
-RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color, rf_allocator allocator, rf_allocator temp_allocator)
-{
-    int size = 10; // Default rf_font chars height in pixel
-    if (font_size < size) font_size = size;
-    int spacing = font_size / size;
-
-    rf_image im_text = rf_image_text_ex(rf_get_default_font(), text, text_len, (float)font_size, (float)spacing, color, allocator, temp_allocator);
-
-    return im_text;
-}
-
-// Create an image from text (custom sprite font)
-RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color tint, rf_allocator allocator, rf_allocator temp_allocator)
-{
-    int length = strlen(text);
-
-    int index; // Index position in sprite font
-    int letter = 0; // Current character
-    int position_x = 0; // rf_image drawing position
-
-    // NOTE: Text image is generated at font base size, later scaled to desired font size
-    rf_sizef im_size = rf_measure_text(font, text, text_len, (float)font.base_size, spacing);
-
-    // Create image to store text
-    rf_image im_text = rf_gen_image_color((int)im_size.width, (int)im_size.height, RF_BLANK, temp_allocator);
-
-    for (int i = 0; i < length; i++)
-    {
-        rf_utf8_codepoint codepoint = rf_get_next_utf8_codepoint(&text[i], length - i);
-        letter = codepoint.value;
-        index  = rf_get_glyph_index(font, letter);
-
-        if (letter == 0x3f) codepoint.bytes_processed = 1;
-        i += (codepoint.bytes_processed - 1);
-
-        if (letter == '\n')
-        {
-            // TODO: Support line break
-        }
-        else
-        {
-            if (letter != ' ')
-            {
-                rf_rec src_rec = { 0, 0, font.chars_info[index].width, font.chars_info[index].height };
-                rf_rec dst_rec = { (float)(position_x + font.chars_info[index].offset_x), (float)font.chars_info[index].offset_y,font.chars_info[index].width, font.chars_info[index].height };
-
-                // Todo: Finish implementing this function
-                //rf_image_draw(&im_text, font.chars_info[index].image, src_rec,dst_rec, tint, temp_allocator);
-            }
-
-            if (font.chars_info[index].advance_x == 0) position_x += (int)(font.chars_info[index].width + spacing);
-            else position_x += font.chars_info[index].advance_x + (int)spacing;
-        }
-    }
-
-    // Scale image depending on text size
-    if (font_size > im_size.height)
-    {
-        float scale_factor = font_size / im_size.height;
-        RF_LOG_V(RF_LOG_TYPE_INFO, "rf_image text scaled by factor: %f", scale_factor);
-
-        // Using nearest-neighbor scaling algorithm for default font
-        if (font.texture.id == rf_get_default_font().texture.id)
-        {
-            rf_image old_im_text = im_text;
-            im_text = rf_image_resize_nn(old_im_text, (int)(im_size.width * scale_factor), (int)(im_size.height * scale_factor), allocator);
-            rf_unload_image(old_im_text, temp_allocator);
-        }
-        else
-        {
-            rf_image old_im_text = im_text;
-            im_text = rf_image_resize(old_im_text, (int)(im_size.width * scale_factor), (int)(im_size.height * scale_factor), allocator, temp_allocator);
-            rf_unload_image(old_im_text, temp_allocator);
-        }
-    }
-
-    return im_text;
-}
-
 // Flip image vertically
 RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, int dst_size)
 {
@@ -1565,11 +1485,11 @@ RF_API rf_image rf_image_color_replace(rf_image image, rf_color color, rf_color 
 }
 
 // Generate image: plain color
-RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, int dst_size)
+RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, int dst_count)
 {
     rf_image result = {0};
 
-    for (int i = 0; i < dst_size; i++)
+    for (int i = 0; i < dst_count; i++)
     {
         dst[i] = color;
     }
@@ -1592,7 +1512,7 @@ RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_all
 
     if (dst)
     {
-        result = rf_gen_image_color_to_buffer(width, height, color, dst, dst_size);
+        result = rf_gen_image_color_to_buffer(width, height, color, dst, width * height);
     }
 
     return result;
@@ -2159,25 +2079,6 @@ RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, 
     rf_image_draw_rectangle(dst, (rf_rec) { rec.x, rec.y + rec.height - thick, rec.width, thick }, color, temp_allocator);
 }
 
-// Draw text (default font) within an image (destination)
- RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator)
-{
-    // NOTE: For default font, sapcing is set to desired font size / default font size (10)
-    rf_image_draw_text_ex(dst, position, rf_get_default_font(), text, text_len, (float)font_size, (float)font_size/10, color, temp_allocator);
-}
-
-// Draw text (custom sprite font) within an image (destination)
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator)
-{
-    rf_image im_text = rf_image_text_ex(font, text, text_len, font_size, spacing, color, temp_allocator, temp_allocator);
-
-    rf_rec src_rec = { 0.0f, 0.0f, (float)im_text.width, (float)im_text.height };
-    rf_rec dst_rec = { position.x, position.y, (float)im_text.width, (float)im_text.height };
-
-    rf_image_draw(dst, im_text, src_rec, dst_rec, RF_WHITE, temp_allocator);
-
-    rf_unload_image(im_text, temp_allocator);
-}
 //endregion
 //endregion
 
@@ -2782,39 +2683,39 @@ RF_API int rf_get_ktx_image_size(const void* src, int src_size)
     return result;
 }
 
-RF_API rf_image rf_load_image_from_ktx(const void* src, int src_size, void* dst, int dst_size)
-{
-    rf_image image = { 0 };
-
-    rf_ktx_header ktx_header = { 0 };
-    memcpy(&ktx_header, data, sizeof(rf_ktx_header));
-
-    if ((ktx_header.id[1] != 'K') || (ktx_header.id[2] != 'T') || (ktx_header.id[3] != 'X') ||
-        (ktx_header.id[4] != ' ') || (ktx_header.id[5] != '1') || (ktx_header.id[6] != '1'))
-    {
-        RF_LOG_V(LOG_WARNING, "[%s] KTX file does not seem to be a valid file", "fileName");
-    }
-    else
-    {
-        image.width = ktx_header.width;
-        image.height = ktx_header.height;
-        image.mipmaps = ktx_header.mipmap_levels;
-
-        src = (char*)src + ktx_header.key_value_data_size;
-
-        int dataSize;
-        memcpy(&dataSize, data + file_iterator, sizeof(unsigned int));
-        file_iterator += sizeof(unsigned int);
-
-        image.data = (unsigned char *) RF_ALLOC(allocator, dataSize * sizeof(unsigned char));
-
-        memcpy(image.data, data + file_iterator, dataSize);
-
-        if (ktx_header.gl_internal_format == 0x8D64) image.format = RF_COMPRESSED_ETC1_RGB;
-        else if (ktx_header.gl_internal_format == 0x9274) image.format = RF_COMPRESSED_ETC2_RGB;
-        else if (ktx_header.gl_internal_format == 0x9278) image.format = RF_COMPRESSED_ETC2_EAC_RGBA;
-    }
-
-    return image;
-}
+//RF_API rf_image rf_load_image_from_ktx(const void* src, int src_size, void* dst, int dst_size)
+//{
+//    rf_image image = { 0 };
+//
+//    rf_ktx_header ktx_header = { 0 };
+//    memcpy(&ktx_header, data, sizeof(rf_ktx_header));
+//
+//    if ((ktx_header.id[1] != 'K') || (ktx_header.id[2] != 'T') || (ktx_header.id[3] != 'X') ||
+//        (ktx_header.id[4] != ' ') || (ktx_header.id[5] != '1') || (ktx_header.id[6] != '1'))
+//    {
+//        RF_LOG_V(LOG_WARNING, "[%s] KTX file does not seem to be a valid file", "fileName");
+//    }
+//    else
+//    {
+//        image.width = ktx_header.width;
+//        image.height = ktx_header.height;
+//        image.mipmaps = ktx_header.mipmap_levels;
+//
+//        src = (char*)src + ktx_header.key_value_data_size;
+//
+//        int dataSize;
+//        memcpy(&dataSize, data + file_iterator, sizeof(unsigned int));
+//        file_iterator += sizeof(unsigned int);
+//
+//        image.data = (unsigned char *) RF_ALLOC(allocator, dataSize * sizeof(unsigned char));
+//
+//        memcpy(image.data, data + file_iterator, dataSize);
+//
+//        if (ktx_header.gl_internal_format == 0x8D64) image.format = RF_COMPRESSED_ETC1_RGB;
+//        else if (ktx_header.gl_internal_format == 0x9274) image.format = RF_COMPRESSED_ETC2_RGB;
+//        else if (ktx_header.gl_internal_format == 0x9278) image.format = RF_COMPRESSED_ETC2_EAC_RGBA;
+//    }
+//
+//    return image;
+//}
 //endregion

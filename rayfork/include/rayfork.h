@@ -67,19 +67,19 @@
 
 #define RF_UNLOCKED_FPS (0)
 
-#define RF_SDF_CHAR_PADDING           (4)
-#define RF_SDF_ON_EDGE_VALUE          (128)
-#define RF_SDF_PIXEL_DIST_SCALE       (64.0f)
-#define RF_SDF_BITMAP_ALPHA_THRESHOLD (80)
+#define RF_SDF_CHAR_PADDING       (4)
+#define RF_SDF_ON_EDGE_VALUE      (128)
+#define RF_SDF_PIXEL_DIST_SCALE   (64.0f)
+#define RF_BITMAP_ALPHA_THRESHOLD (80)
 
 // Default hardcoded values for ttf file loading
-#define RF_DEFAULT_TTF_FONT_SIZE     (32) // rf_font first character (32 - space)
-#define RF_DEFAULT_FONT_CHARS        "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-#define RF_DEFAULT_FONT_FIRST_CHAR   (32)
-#define RF_DEFAULT_FONT_LAST_CHAR    (126)
-#define RF_DEFAULT_FONT_CHARS_COUNT  (95) // ASCII 32..126 is 95 glyphs
-#define RF_DEFAULT_FONT_PADDING      (2)
-#define RF_GLYPH_NOT_FOUND           (-1)
+#define RF_DEFAULT_FONT_SIZE        (64)
+#define RF_DEFAULT_CODEPOINTS       { ' ','!','\\','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~' }
+#define RF_DEFAULT_FONT_FIRST_CHAR  (32)
+#define RF_DEFAULT_FONT_LAST_CHAR   (126)
+#define RF_DEFAULT_CODEPOINTS_COUNT (RF_DEFAULT_FONT_LAST_CHAR - RF_DEFAULT_FONT_FIRST_CHAR) // ASCII 32..126 is 95 glyphs
+#define RF_DEFAULT_FONT_PADDING     (2)
+#define RF_GLYPH_NOT_FOUND          (-1)
 
 // Some Basic Colors
 // NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
@@ -385,18 +385,17 @@ typedef enum rf_camera_type
 // Type of n-patch
 typedef enum rf_ninepatch_type
 {
-    RF_NPT_9PATCH = 0, // Npatch defined by 3x3 tiles
-    RF_NPT_3PATCH_VERTICAL, // Npatch defined by 1x3 tiles
+    RF_NPT_9PATCH = 0,       // Npatch defined by 3x3 tiles
+    RF_NPT_3PATCH_VERTICAL,  // Npatch defined by 1x3 tiles
     RF_NPT_3PATCH_HORIZONTAL // Npatch defined by 3x1 tiles
 } rf_ninepatch_type;
 
 // rf_font type, defines generation method
-typedef enum rf_font_gen
+typedef enum rf_font_anti_alias
 {
-    RF_FONT_GEN_ANTI_ALIAS = 0, // Default font generation, anti-aliased
-    RF_FONT_GEN_NO_ANTI_ALIAS, // Bitmap font generation, no anti-aliasing
-    RF_FONT_GEN_SDF // SDF font generation, requires external shader
-} rf_font_gen;
+    RF_FONT_ANTI_ALIAS = 0, // Default font generation, anti-aliased
+    RF_FONT_NO_ANTI_ALIAS,  // Bitmap font generation, no anti-aliasing
+} rf_font_antialias;
 
 typedef enum rf_allocator_mode
 {
@@ -626,8 +625,8 @@ struct rf_utf8_codepoint
     int bytes_processed;
 };
 
-typedef struct rf_char_info rf_char_info;
-struct rf_char_info
+typedef struct rf_glyph_metrics rf_glyph_metrics;
+struct rf_glyph_metrics
 {
     union
     {
@@ -642,31 +641,21 @@ struct rf_char_info
     int    advance_x;   // Character advance position X
 };
 
-typedef struct rf_ttf_font_builder rf_ttf_font_builder;
-struct rf_ttf_font_builder
+typedef struct rf_ttf_font_info rf_ttf_font_info;
+struct rf_ttf_font_info
 {
     // Font details
-    const void* data;
-    int font_size;
-    rf_font_gen font_gen;
-
-    // Chars info
-    const char* chars;
-    rf_char_info* chars_info;
-    int chars_count;
-
-    // Atlas
-    int largest_glyph_size;
-    int atlas_pixel_count;
-    rf_image atlas;
+    const void* ttf_data;
+    int         font_size;
+    int         largest_glyph_size;
 
     // Font metrics
     float scale_factor;
-    int ascent;
-    int descent;
-    int line_gap;
+    int   ascent;
+    int   descent;
+    int   line_gap;
 
-    // Take directly from stb true type because we don't want to include it in our public API
+    // Take directly from stb_truetype because we don't want to include it's heaeder in our public API
     struct
     {
         void* userdata;
@@ -691,10 +680,10 @@ struct rf_ttf_font_builder
 typedef struct rf_font rf_font;
 struct rf_font
 {
-    int           base_size;
-    int           chars_count;
-    rf_texture2d  texture;
-    rf_char_info* chars_info;
+    int               base_size;
+    rf_texture2d      texture;
+    rf_glyph_metrics* glyphs;
+    int               glyphs_count;
 
     bool  valid;
 };
@@ -867,7 +856,7 @@ typedef struct rf_default_font_buffers rf_default_font_buffers;
 struct rf_default_font_buffers
 {
     unsigned short pixels[128 * 128]; // Default font buffer
-    rf_char_info   chars[RF_RAYLIB_FONT_CHARS_COUNT];
+    rf_glyph_metrics   chars[RF_RAYLIB_FONT_CHARS_COUNT];
     unsigned short chars_pixels[128 * 128];
 };
 
@@ -1334,7 +1323,7 @@ RF_API rf_image rf_image_color_brightness(rf_image image, int brightness);
 RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color, rf_color replace, void* dst, int dst_size);
 RF_API rf_image rf_image_color_replace(rf_image image, rf_color color, rf_color replace);
 
-RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, int dst_size);
+RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, int dst_count);
 RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_allocator allocator);
 RF_API rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_color top, rf_color bottom, rf_color* dst, int dst_size);
 RF_API rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_color bottom, rf_allocator allocator);
@@ -1354,8 +1343,6 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_a
 RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator);
 RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator);
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator);
-RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator);
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator);
 //endregion
 //endregion
 
@@ -1383,16 +1370,18 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload rend
 //endregion
 
 //region font & text
-RF_API rf_ttf_font_builder rf_make_ttf_font_builder(const void* font_file_data, int font_size, rf_font_gen gen, const char* chars, int chars_count);
-RF_API void rf_compute_glyph_metrics_ttf(rf_ttf_font_builder* font_builder, rf_char_info* dst, int dst_count);
-RF_API void rf_generate_ttf_font_atlas(rf_ttf_font_builder* font_builder, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
-RF_API rf_font rf_build_ttf_font(rf_ttf_font_builder font_builder);
+RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size);
+RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_metrics* dst, int dst_count);
+RF_API int rf_compute_ttf_font_atlas_size(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count);
+RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_size, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
+RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_metrics* glyph_metrics, int glyphs_count);
 
-RF_API rf_font rf_load_ttf_font_with_chars(const void* font_file_data, int font_size, const char* chars, int chars_count, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_font rf_load_ttf_font_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, int char_count, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+
 RF_API void rf_unload_font(rf_font font, rf_allocator allocator);
 
+RF_API int rf_count_utf8(const char* text, int len);
 RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len);
 RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character);
 RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing);
@@ -1500,8 +1489,6 @@ RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_r
 RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator); // Draw a source image within a destination image (tint applied to source)
 RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator); // Draw rectangle within an image
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator); // Draw rectangle lines within an image
-RF_API void rf_image_draw_text(rf_image* dst, rf_vec2 position, const char* text, int text_len, int font_size, rf_color color, rf_allocator temp_allocator); // Draw text (default font) within an image (destination)
-RF_API void rf_image_draw_text_ex(rf_image* dst, rf_vec2 position, rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color color, rf_allocator temp_allocator); // Draw text (custom sprite font) within an image (destination)
 //endregion
 
 //region model & materials & animations
