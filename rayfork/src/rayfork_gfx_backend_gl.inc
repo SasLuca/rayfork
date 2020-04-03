@@ -1433,49 +1433,49 @@ RF_INTERNAL void rf_internal_set_gl_extension_if_available(const char* gl_ext, i
     #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // Check NPOT textures support
         // NOTE: Only check on OpenGL ES, OpenGL 3.3 has NPOT textures full support as core feature
-        if (rf_internal_strings_match(gl_ext, len, "GL_OES_texture_npot", sizeof("GL_OES_texture_npot"))) rf_internal_ctx->gfx_ctx.tex_npot_supported = true;
+        if (rf_internal_strings_match(gl_ext, len, "GL_OES_texture_npot", sizeof("GL_OES_texture_npot") - 1)) rf_internal_ctx->gfx_ctx.tex_npot_supported = true;
 
         // Check texture float support
-        if (rf_internal_strings_match(gl_ext, len, "GL_OES_texture_float", sizeof("GL_OES_texture_float"))) rf_internal_ctx->gfx_ctx.tex_float_supported = true;
+        if (rf_internal_strings_match(gl_ext, len, "GL_OES_texture_float", sizeof("GL_OES_texture_float") - 1)) rf_internal_ctx->gfx_ctx.tex_float_supported = true;
 
         // Check depth texture support
-        if ((rf_internal_strings_match(gl_ext, len, "GL_OES_depth_texture", sizeof("GL_OES_depth_texture"))) ||
-            (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_depth_texture", sizeof("GL_WEBGL_depth_texture")))) rf_internal_ctx->gfx_ctx.tex_depth_supported = true;
+        if ((rf_internal_strings_match(gl_ext, len, "GL_OES_depth_texture", sizeof("GL_OES_depth_texture") - 1)) ||
+            (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_depth_texture", sizeof("GL_WEBGL_depth_texture") - 1))) rf_internal_ctx->gfx_ctx.tex_depth_supported = true;
 
-        if (rf_internal_strings_match(gl_ext, len, "GL_OES_depth24", sizeof("GL_OES_depth24"))) rf_internal_ctx->gfx_ctx.max_depth_bits = 24;
-        if (rf_internal_strings_match(gl_ext, len, "GL_OES_depth32", sizeof("GL_OES_depth32"))) rf_internal_ctx->gfx_ctx.max_depth_bits = 32;
+        if (rf_internal_strings_match(gl_ext, len, "GL_OES_depth24", sizeof("GL_OES_depth24") - 1)) rf_internal_ctx->gfx_ctx.max_depth_bits = 24;
+        if (rf_internal_strings_match(gl_ext, len, "GL_OES_depth32", sizeof("GL_OES_depth32") - 1)) rf_internal_ctx->gfx_ctx.max_depth_bits = 32;
     #endif
 
     // DDS texture compression support
-    if ((rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_compression_s3tc", sizeof("GL_EXT_texture_compression_s3tc"))) ||
-        (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_compressed_texture_s3tc", sizeof("GL_WEBGL_compressed_texture_s3tc"))) ||
-        (rf_internal_strings_match(gl_ext, len, "GL_WEBKIT_WEBGL_compressed_texture_s3tc", sizeof("GL_WEBKIT_WEBGL_compressed_texture_s3tc")))) rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported = true;
+    if ((rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_compression_s3tc", sizeof("GL_EXT_texture_compression_s3tc") - 1)) ||
+        (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_compressed_texture_s3tc", sizeof("GL_WEBGL_compressed_texture_s3tc") - 1)) ||
+        (rf_internal_strings_match(gl_ext, len, "GL_WEBKIT_WEBGL_compressed_texture_s3tc", sizeof("GL_WEBKIT_WEBGL_compressed_texture_s3tc") - 1))) rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported = true;
 
     // ETC1 texture compression support
-    if ((rf_internal_strings_match(gl_ext, len, "GL_OES_compressed_ETC1_RGB8_texture", sizeof("GL_OES_compressed_ETC1_RGB8_texture"))) ||
-        (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_compressed_texture_etc1", sizeof("GL_WEBGL_compressed_texture_etc1")))) rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported = true;
+    if ((rf_internal_strings_match(gl_ext, len, "GL_OES_compressed_ETC1_RGB8_texture", sizeof("GL_OES_compressed_ETC1_RGB8_texture") - 1)) ||
+        (rf_internal_strings_match(gl_ext, len, "GL_WEBGL_compressed_texture_etc1", sizeof("GL_WEBGL_compressed_texture_etc1") - 1))) rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported = true;
 
     // ETC2/EAC texture compression support
-    if (rf_internal_strings_match(gl_ext, len, "GL_ARB_ES3_compatibility", sizeof("GL_ARB_ES3_compatibility"))) rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported = true;
+    if (rf_internal_strings_match(gl_ext, len, "GL_ARB_ES3_compatibility", sizeof("GL_ARB_ES3_compatibility") - 1)) rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported = true;
 
     // PVR texture compression support
-    if (rf_internal_strings_match(gl_ext, len, "GL_IMG_texture_compression_pvrtc", sizeof("GL_IMG_texture_compression_pvrtc"))) rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported = true;
+    if (rf_internal_strings_match(gl_ext, len, "GL_IMG_texture_compression_pvrtc", sizeof("GL_IMG_texture_compression_pvrtc") - 1)) rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported = true;
 
     // ASTC texture compression support
-    if (rf_internal_strings_match(gl_ext, len, "GL_KHR_texture_compression_astc_hdr", sizeof("GL_KHR_texture_compression_astc_hdr"))) rf_internal_ctx->gfx_ctx.tex_comp_astc_supported = true;
+    if (rf_internal_strings_match(gl_ext, len, "GL_KHR_texture_compression_astc_hdr", sizeof("GL_KHR_texture_compression_astc_hdr") - 1)) rf_internal_ctx->gfx_ctx.tex_comp_astc_supported = true;
 
     // Anisotropic texture filter support
-    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_filter_anisotropic", sizeof("GL_EXT_texture_filter_anisotropic")))
+    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_filter_anisotropic", sizeof("GL_EXT_texture_filter_anisotropic") - 1))
     {
         rf_internal_ctx->gfx_ctx.tex_anisotropic_filter_supported = true;
         _RF_GL.glGetFloatv(0x84FF, &rf_internal_ctx->gfx_ctx.max_anisotropic_level);   // GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT
     }
 
     // Clamp mirror wrap mode supported
-    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_mirror_clamp", sizeof("GL_EXT_texture_mirror_clamp"))) rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported = true;
+    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_texture_mirror_clamp", sizeof("GL_EXT_texture_mirror_clamp") - 1)) rf_internal_ctx->gfx_ctx.tex_mirror_clamp_supported = true;
 
     // Debug marker support
-    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_debug_marker", sizeof("GL_EXT_debug_marker"))) rf_internal_ctx->gfx_ctx.debug_marker_supported = true;
+    if (rf_internal_strings_match(gl_ext, len, "GL_EXT_debug_marker", sizeof("GL_EXT_debug_marker") - 1)) rf_internal_ctx->gfx_ctx.debug_marker_supported = true;
 }
 
 // Compute framebuffer size relative to screen size and global_display size
@@ -2550,8 +2550,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     unsigned int id = 0;
 
     // Check texture format support by OpenGL 1.1 (compressed textures not supported)
-    if ((!rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) && ((format == RF_COMPRESSED_DXT1_RGB) || (format == RF_COMPRESSED_DXT1_RGBA) ||
-                                                      (format == RF_COMPRESSED_DXT3_RGBA) || (format == RF_COMPRESSED_DXT5_RGBA)))
+    if ((!rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) && ((format == RF_COMPRESSED_DXT1_RGB) || (format == RF_COMPRESSED_DXT1_RGBA) || (format == RF_COMPRESSED_DXT3_RGBA) || (format == RF_COMPRESSED_DXT5_RGBA)))
     {
         RF_LOG(RF_LOG_TYPE_WARNING, "DXT compressed texture format not supported");
         return id;
@@ -2597,7 +2596,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     // Load the different mipmap levels
     for (int i = 0; i < mipmap_count; i++)
     {
-        unsigned int mip_size = rf_pixel_buffer_size(format, mip_width, mip_height);
+        unsigned int mip_size = mip_width * mip_height * rf_bytes_per_pixel(format);
 
         unsigned int glInternalFormat, glFormat, glType;
         rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
@@ -2730,7 +2729,7 @@ RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, b
 RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format)
 {
     unsigned int cubemap_id = 0;
-    unsigned int data_size = rf_pixel_buffer_size(format, size, size);
+    unsigned int data_size = size * size * rf_bytes_per_pixel(format);
 
     _RF_GL.glGenTextures(1, &cubemap_id);
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_id);
@@ -2886,7 +2885,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
 
     unsigned int glInternalFormat, glFormat, glType;
     rf_gfx_get_gl_texture_formats(texture.format, &glInternalFormat, &glFormat, &glType);
-    unsigned int size = rf_pixel_buffer_size(texture.format, texture.width, texture.height);
+    unsigned int size = texture.width * texture.height * rf_bytes_per_pixel(texture.format);
 
     if ((glInternalFormat != -1) && (texture.format < RF_COMPRESSED_DXT1_RGB))
     {

@@ -1,3 +1,4 @@
+
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
@@ -74,12 +75,14 @@
 
 // Default hardcoded values for ttf file loading
 #define RF_DEFAULT_FONT_SIZE        (64)
-#define RF_DEFAULT_CODEPOINTS       { ' ','!','\\','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~' }
+#define RF_DEFAULT_CODEPOINTS       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
 #define RF_DEFAULT_FONT_FIRST_CHAR  (32)
 #define RF_DEFAULT_FONT_LAST_CHAR   (126)
-#define RF_DEFAULT_CODEPOINTS_COUNT (RF_DEFAULT_FONT_LAST_CHAR - RF_DEFAULT_FONT_FIRST_CHAR) // ASCII 32..126 is 95 glyphs
+#define RF_DEFAULT_CODEPOINTS_COUNT (95) // ASCII 32..126 is 95 glyphs
 #define RF_DEFAULT_FONT_PADDING     (2)
 #define RF_GLYPH_NOT_FOUND          (-1)
+#define RF_DEFAULT_CODEPOINT        (0x3f) // Codepoint defaults to '?' if invalid
+#define RF_DEFAULT_KEY_COLOR        (RF_MAGENTA)
 
 // Some Basic Colors
 // NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
@@ -146,13 +149,6 @@
 
 #if !defined(RF_MAX_MESH_VBO)
     #define RF_MAX_MESH_VBO (7) // Maximum number of vbo per mesh
-#endif
-
-#define RF_MAX_TEXT_UNICODE_CHARS (512) // Maximum number of unicode codepoints
-
-//Note(LucaSas): Check this number
-#if !defined(RF_MAX_FONT_CHARS)
-    #define RF_MAX_FONT_CHARS (256) //Max number of characters in a font
 #endif
 
 #define RF_RAYLIB_FONT_CHARS_COUNT (224) // Number of characters in the raylib font
@@ -506,6 +502,13 @@ struct rf_rec
 
 //endregion
 
+typedef int rf_bool;
+enum
+{
+    RF_FALSE = 0,
+    RF_TRUE  = 1,
+};
+
 typedef struct rf_io_callbacks rf_io_callbacks;
 struct rf_io_callbacks
 {
@@ -542,7 +545,7 @@ struct rf_image
     int             width;   // image base width
     int             height;  // image base height
     rf_pixel_format format;  // Data format (rf_pixel_format type)
-    int             valid;   // True if the image is valid and can be used
+    rf_bool         valid;   // True if the image is valid and can be used
 };
 
 typedef struct rf_mipmaps_image rf_mipmaps_image;
@@ -553,11 +556,11 @@ struct rf_mipmaps_image
         rf_image image;
         struct
         {
-            void*           data;    //image raw data
-            int             width;   //image base width
-            int             height;  //image base height
-            rf_pixel_format format;  //Data format (rf_pixel_format type)
-            int             valid;
+            void*           data;    // image raw data
+            int             width;   // image base width
+            int             height;  // image base height
+            rf_pixel_format format;  // Data format (rf_pixel_format type)
+            rf_bool         valid;
         };
     };
 
@@ -576,11 +579,11 @@ struct rf_gif
 
         struct
         {
-            void*           data;    //rf_image raw data
-            int             width;   //rf_image base width
-            int             height;  //rf_image base height
-            rf_pixel_format format;  //Data format (rf_pixel_format type)
-            int             valid;
+            void*           data;    // rf_image raw data
+            int             width;   // rf_image base width
+            int             height;  // rf_image base height
+            rf_pixel_format format;  // Data format (rf_pixel_format type)
+            rf_bool         valid;
         };
     };
 };
@@ -589,12 +592,12 @@ typedef struct rf_texture2d rf_texture2d;
 typedef struct rf_texture2d rf_texture_cubemap;
 struct rf_texture2d
 {
-    unsigned int id; //OpenGL texture id
-    int width;       //rf_texture base width
-    int height;      //rf_texture base height
-    int mipmaps;     //Mipmap levels, 1 by default
-    int format;      //Data format (rf_pixel_format type)
-    bool valid;
+    unsigned int id; // OpenGL texture id
+    int width;       // rf_texture base width
+    int height;      // rf_texture base height
+    int mipmaps;     // Mipmap levels, 1 by default
+    int format;      // Data format (rf_pixel_format type)
+    rf_bool valid;
 };
 
 typedef struct rf_render_texture2d rf_render_texture2d;
@@ -604,7 +607,7 @@ struct rf_render_texture2d
     unsigned int id;      //OpenGL Framebuffer Object (FBO) id
     rf_texture2d texture; //rf_color buffer attachment texture
     rf_texture2d depth;   //Depth buffer attachment texture
-    bool depth_texture;   //Track if depth attachment is a texture or renderbuffer
+    int          depth_texture;   //Track if depth attachment is a texture or renderbuffer
 };
 
 typedef struct rf_npatch_info rf_npatch_info;
@@ -618,11 +621,30 @@ struct rf_npatch_info
     int type;            //layout of the n-patch: 3x3, 1x3 or 3x1
 };
 
-typedef struct rf_utf8_codepoint rf_utf8_codepoint;
-struct rf_utf8_codepoint
+typedef struct rf_decoded_utf8_stats rf_decoded_utf8_stats;
+struct rf_decoded_utf8_stats
 {
-    int value;
     int bytes_processed;
+    int invalid_bytes;
+    int valid_rune_count;
+    int total_rune_count;
+};
+
+typedef struct rf_decoded_rune rf_decoded_rune;
+struct rf_decoded_rune
+{
+    int     codepoint;
+    int     bytes_processed;
+    rf_bool valid;
+};
+
+typedef struct rf_decoded_string rf_decoded_string;
+struct rf_decoded_string
+{
+    int* codepoints;
+    int  count;
+    int  invalid_bytes_count;
+    rf_bool valid;
 };
 
 typedef struct rf_glyph_metrics rf_glyph_metrics;
@@ -634,11 +656,11 @@ struct rf_glyph_metrics
         struct { float x, y, width, height; };
     };
 
-    int    glyph_index; // Index of glyph in font
-    int    codepoint;   // Character value (Unicode)
-    int    offset_x;    // Character offset X when drawing
-    int    offset_y;    // Character offset Y when drawing
-    int    advance_x;   // Character advance position X
+    int glyph_index; // Index of glyph in font
+    int codepoint;   // Character value (Unicode)
+    int offset_x;    // Character offset X when drawing
+    int offset_y;    // Character offset Y when drawing
+    int advance_x;   // Character advance position X
 };
 
 typedef struct rf_ttf_font_info rf_ttf_font_info;
@@ -674,7 +696,7 @@ struct rf_ttf_font_info
         } cff, charstrings, gsubrs, subrs, fontdicts, fdselect;
     } internal_stb_font_info;
 
-    bool valid;
+    rf_bool valid;
 };
 
 typedef struct rf_font rf_font;
@@ -684,8 +706,7 @@ struct rf_font
     rf_texture2d      texture;
     rf_glyph_metrics* glyphs;
     int               glyphs_count;
-
-    bool  valid;
+    rf_bool           valid;
 };
 
 typedef int rf_glyph_index;
@@ -696,17 +717,17 @@ struct rf_camera3d
     rf_vec3 position; // Camera position
     rf_vec3 target;   // Camera target it looks-at
     rf_vec3 up;       // Camera up vector (rotation over its axis)
-    float fovy;       // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
-    int type;         // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
+    float   fovy;     // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
+    int     type;     // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
 };
 
 typedef struct rf_camera2d rf_camera2d;
 struct rf_camera2d
 {
-    rf_vec2 offset; // Camera offset (displacement from target)
-    rf_vec2 target; // Camera target (rotation and zoom origin)
-    float rotation; // Camera rotation in degrees
-    float zoom;     // Camera zoom (scaling), should be 1.0f by default
+    rf_vec2 offset;   // Camera offset (displacement from target)
+    rf_vec2 target;   // Camera target (rotation and zoom origin)
+    float   rotation; // Camera rotation in degrees
+    float   zoom;     // Camera zoom (scaling), should be 1.0f by default
 };
 
 typedef struct rf_mesh rf_mesh;
@@ -727,11 +748,11 @@ struct rf_mesh
     // Animation vertex data
     float* anim_vertices; // Animated vertex positions (after bones transformations)
     float* anim_normals;  // Animated normals (after bones transformations)
-    int* bone_ids;        // Vertex bone ids, up to 4 bones influence by vertex (skinning)
+    int*   bone_ids;      // Vertex bone ids, up to 4 bones influence by vertex (skinning)
     float* bone_weights;  // Vertex bone weight, up to 4 bones influence by vertex (skinning)
 
     // OpenGL identifiers
-    unsigned int vao_id;  // OpenGL Vertex Array Object id
+    unsigned int  vao_id; // OpenGL Vertex Array Object id
     unsigned int* vbo_id; // OpenGL Vertex Buffer Objects id (default vertex data)
 };
 
@@ -740,10 +761,10 @@ struct rf_input_state_for_update_camera
 {
     rf_vec2     mouse_position;
     int         mouse_wheel_move;                  //mouse wheel movement Y
-    bool        is_camera_pan_control_key_down;    //MOUSE_MIDDLE_BUTTON
-    bool        is_camera_alt_control_key_down;    //KEY_LEFT_ALT
-    bool        is_camera_smooth_zoom_control_key; //KEY_LEFT_CONTROL
-    bool        direction_keys[6];                 //'W', 'S', 'D', 'A', 'E', 'Q'
+    rf_bool     is_camera_pan_control_key_down;    //MOUSE_MIDDLE_BUTTON
+    rf_bool     is_camera_alt_control_key_down;    //KEY_LEFT_ALT
+    rf_bool     is_camera_smooth_zoom_control_key; //KEY_LEFT_CONTROL
+    rf_bool     direction_keys[6];                 //'W', 'S', 'D', 'A', 'E', 'Q'
 };
 
 typedef struct rf_shader rf_shader;
@@ -849,7 +870,7 @@ struct rf_base64_output
 };
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-#include "rayfork_gfx_backend_gl.inc"
+#include "rayfork_gfx_backend_gl.h"
 #endif
 
 typedef struct rf_default_font_buffers rf_default_font_buffers;
@@ -1243,7 +1264,6 @@ RF_API bool rf_is_uncompressed_format(rf_pixel_format format);
 RF_API bool rf_is_compressed_format(rf_pixel_format format);
 RF_API int rf_bits_per_pixel(rf_pixel_format format);
 RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format);
-RF_API int rf_pixel_buffer_size(rf_pixel_format format, int width, int height);
 
 RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size);
 RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size);
@@ -1344,6 +1364,37 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec ds
 RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator);
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator);
 //endregion
+
+//region mipmaps
+RF_API int rf_mipmaps_image_size(rf_mipmaps_image image);
+
+// Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
+RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);
+
+RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator);
+//endregion
+
+//region dds
+
+RF_API int rf_get_dds_image_size(const void* src, int src_size);
+RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, int src_size, void* dst, int dst_size);
+RF_API rf_mipmaps_image rf_load_dds_image(const void* src, int src_size, rf_allocator allocator);
+RF_API rf_mipmaps_image rf_load_dds_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+//endregion
+
+//region pkm
+
+RF_API int rf_get_pkm_image_size(const void* src, int src_size);
+RF_API rf_image rf_load_pkm_image_to_buffer(const void* src, int src_size, void* dst, int dst_size);
+RF_API rf_image rf_load_pkm_image(const void* src, int src_size, rf_allocator allocator);
+RF_API rf_image rf_load_pkm_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+
+//endregion
+
+//region ktx
+RF_API int rf_get_ktx_image_size(const void* src, int src_size);
+RF_API rf_image rf_load_image_from_ktx(const void* src, int src_size, void* dst, int dst_size);
+//endregion
 //endregion
 
 //region gif
@@ -1369,23 +1420,36 @@ RF_API void rf_unload_texture(rf_texture2d texture); // Unload texture from GPU 
 RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload render texture from GPU memory (VRAM)
 //endregion
 
-//region font & text
+//region font
+//region ttf font
 RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size);
 RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_metrics* dst, int dst_count);
-RF_API int rf_compute_ttf_font_atlas_size(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count);
-RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_size, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
+RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count);
+RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
 RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_metrics* glyph_metrics, int glyphs_count);
 
 RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, int char_count, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+//endregion
+
+//region image font
+RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_metrics* dst, int codepoints_count);
+RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_metrics* glyphs, int glyphs_count);
+RF_API rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator allocator);
+RF_API rf_font rf_load_image_font_from_file(const char* path, rf_color key, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+//endregion
 
 RF_API void rf_unload_font(rf_font font, rf_allocator allocator);
-
-RF_API int rf_count_utf8(const char* text, int len);
-RF_API rf_utf8_codepoint rf_get_next_utf8_codepoint(const char* text, int len);
 RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character);
 RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing);
 RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap);
+//endregion
+
+//region utf8
+RF_API rf_decoded_rune rf_decode_utf8_rune(const char* text, int len);
+RF_API rf_decoded_utf8_stats rf_count_utf8_runes(const char* text, int len);
+RF_API rf_decoded_string rf_decode_utf8_string_to_buffer(const char* text, int len, int* dst, int dst_count);
+RF_API rf_decoded_string rf_decode_utf8_string(const char* text, int len, rf_allocator allocator);
 //endregion
 
 //region drawing
