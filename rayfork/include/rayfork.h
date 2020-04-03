@@ -78,7 +78,7 @@
 #define RF_DEFAULT_CODEPOINTS       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
 #define RF_DEFAULT_FONT_FIRST_CHAR  (32)
 #define RF_DEFAULT_FONT_LAST_CHAR   (126)
-#define RF_DEFAULT_CODEPOINTS_COUNT (95) // ASCII 32..126 is 95 glyphs
+#define RF_DEFAULT_CODEPOINTS_COUNT (96) // ASCII 32 up to 126 is 96 glyphs (note that the range is inclusive)
 #define RF_DEFAULT_FONT_PADDING     (2)
 #define RF_GLYPH_NOT_FOUND          (-1)
 #define RF_DEFAULT_CODEPOINT        (0x3f) // Codepoint defaults to '?' if invalid
