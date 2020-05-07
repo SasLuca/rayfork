@@ -50,10 +50,12 @@ struct rf_renderer_memory_buffers
     rf_draw_call      draw_calls[RF_MAX_DRAWCALL_REGISTERED];
 };
 
-#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
-#define RF_GL_APIENTRY __stdcall
-#else
-#define RF_GL_APIENTRY
+#if !defined(RF_GL_APIENTRY)
+    #if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
+        #define RF_GL_APIENTRY __stdcall
+    #else
+        #define RF_GL_APIENTRY
+    #endif
 #endif
 
 typedef struct rf_opengl_procs rf_opengl_procs;
@@ -152,6 +154,7 @@ struct rf_opengl_procs
     const unsigned char* (RF_GL_APIENTRY *glGetStringi)(unsigned int name, unsigned int index);
 
     void (RF_GL_APIENTRY *glPolygonMode)(unsigned int face, unsigned int mode); //OpenGL 33 only
+    int (RF_GL_APIENTRY *glGetError)();
 };
 
 typedef struct rf_gfx_context rf_gfx_context;
@@ -316,6 +319,7 @@ RF_API void rf_init(struct rf_context* rf_ctx, rf_renderer_memory_buffers* memor
     ((void (RF_GL_APIENTRY *)(unsigned int pname, int* data))RF_OPENGL_PROC_EXT(ext, GetIntegerv)),\
     ((const unsigned char* (RF_GL_APIENTRY *)(unsigned int name, unsigned int index))RF_OPENGL_PROC_EXT(ext, GetStringi)),\
     ((void (RF_GL_APIENTRY *)(unsigned int face, unsigned int mode))RF_OPENGL_PROC_EXT(ext, PolygonMode)), /*OpenGL 33 only*/ \
+    glGetError, \
 }
 
 #else

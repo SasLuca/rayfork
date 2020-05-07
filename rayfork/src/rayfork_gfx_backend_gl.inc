@@ -2543,9 +2543,9 @@ RF_API void rf_gfx_set_debug_marker(const char* text)
 }
 
 // Convert image data to OpenGL texture (returns OpenGL valid Id)
-RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int format, int mipmap_count)
+RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count)
 {
-    _RF_GL.glBindTexture(GL_TEXTURE_2D, 0);    // Free any old binding
+    _RF_GL.glBindTexture(GL_TEXTURE_2D, 0); // Free any old binding
 
     unsigned int id = 0;
 
@@ -2555,6 +2555,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
         RF_LOG(RF_LOG_TYPE_WARNING, "DXT compressed texture format not supported");
         return id;
     }
+
     if ((!rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) && (format == RF_COMPRESSED_ETC1_RGB))
     {
         RF_LOG(RF_LOG_TYPE_WARNING, "ETC1 compressed texture format not supported");
@@ -2596,16 +2597,22 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int f
     // Load the different mipmap levels
     for (int i = 0; i < mipmap_count; i++)
     {
-        unsigned int mip_size = mip_width * mip_height * rf_bytes_per_pixel(format);
-
-        unsigned int glInternalFormat, glFormat, glType;
-        rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
+        int mip_size = rf_pixel_buffer_size(mip_width, mip_height, format);
+        
+        rf_gfx_pixel_format glformat = rf_gfx_get_internal_texture_formats(format);
 
         RF_LOG_V(RF_LOG_TYPE_DEBUG, "Load mipmap level %i (%i x %i), size: %i, offset: %i", i, mip_width, mip_height, mip_size, mip_offset);
 
-        if (glInternalFormat != -1)
+        if (glformat.valid)
         {
-            if (format < RF_COMPRESSED_DXT1_RGB) _RF_GL.glTexImage2D(GL_TEXTURE_2D, i, glInternalFormat, mip_width, mip_height, 0, glFormat, glType, (unsigned char* )data + mip_offset);
+            if (rf_is_uncompressed_format(format))
+            {
+                _RF_GL.glTexImage2D(GL_TEXTURE_2D, i, glformat.internal_format, mip_width, mip_height, 0, glformat.format, glformat.type, (unsigned char* )data + mip_offset);
+            }
+            else
+            {
+                _RF_GL.glCompressedTexImage2D(GL_TEXTURE_2D, i, glformat.internal_format, mip_width, mip_height, 0, mip_size, (unsigned char *)data + mip_offset);
+            }
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
                 if (format == RF_UNCOMPRESSED_GRAYSCALE)
@@ -2726,24 +2733,23 @@ RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, b
 // Load texture cubemap
 // NOTE: Cubemap data is expected to be 6 images in a single column,
 // expected the following convention: +X, -X, +Y, -Y, +Z, -Z
-RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format)
+RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format)
 {
     unsigned int cubemap_id = 0;
     unsigned int data_size = size * size * rf_bytes_per_pixel(format);
 
     _RF_GL.glGenTextures(1, &cubemap_id);
     _RF_GL.glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap_id);
+    
+    rf_gfx_pixel_format glformat = rf_gfx_get_internal_texture_formats(format);
 
-    unsigned int glInternalFormat, glFormat, glType;
-    rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
-
-    if (glInternalFormat != -1)
+    if (glformat.valid)
     {
         // Load cubemap faces
         for (unsigned int i = 0; i < 6; i++)
         {
-            if (format < RF_COMPRESSED_DXT1_RGB) _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, glFormat, glType, (unsigned char* )data + i * data_size);
-            else _RF_GL.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glInternalFormat, size, size, 0, data_size, (unsigned char* )data + i*data_size);
+            if (rf_is_uncompressed_format(format)) _RF_GL.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glformat.internal_format, size, size, 0, glformat.format, glformat.type, (unsigned char* )data + i * data_size);
+            else _RF_GL.glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glformat.internal_format, size, size, 0, data_size, (unsigned char* )data + i*data_size);
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
                 if (format == RF_UNCOMPRESSED_GRAYSCALE)
@@ -2776,57 +2782,71 @@ RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format
 
 // Update already loaded texture in GPU with new data
 // NOTE: We don't know safely if internal texture format is the expected one...
-RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, int format, const void* data)
+RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* data)
 {
     _RF_GL.glBindTexture(GL_TEXTURE_2D, id);
+    
+    rf_gfx_pixel_format gfx_format = rf_gfx_get_internal_texture_formats(format);
 
-    unsigned int glInternalFormat, glFormat, glType;
-    rf_gfx_get_gl_texture_formats(format, &glInternalFormat, &glFormat, &glType);
-
-    if ((glInternalFormat != -1) && (format < RF_COMPRESSED_DXT1_RGB))
+    if (gfx_format.valid && rf_is_uncompressed_format(format))
     {
-        _RF_GL.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glFormat, glType, (unsigned char* )data);
+        _RF_GL.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, gfx_format.internal_format, gfx_format.type, (unsigned char*) data);
     }
     else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format updating not supported");
 }
 
 // Get OpenGL internal formats and data type from raylib rf_pixel_format
-RF_API void rf_gfx_get_gl_texture_formats(int format, unsigned int* glInternalFormat, unsigned int* glFormat, unsigned int* glType)
+RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format)
 {
-    *glInternalFormat = -1;
-    *glFormat = -1;
-    *glType = -1;
+    rf_gfx_pixel_format result = {.valid = true};
 
     switch (format)
     {
         #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // NOTE: on OpenGL ES 2.0 (WebGL), internalFormat must match format and options allowed are: GL_LUMINANCE, GL_RGB, GL_RGBA
-        case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_LUMINANCE_ALPHA; *glFormat = GL_LUMINANCE_ALPHA; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G6B5: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
-        case RF_UNCOMPRESSED_R8G8B8: *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G5B5A1: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case RF_UNCOMPRESSED_R4G4B4A4: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case RF_UNCOMPRESSED_R8G8B8A8: *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_LUMINANCE; *glFormat = GL_LUMINANCE; *glType = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
-        case RF_UNCOMPRESSED_R32G32B32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGB; *glFormat = GL_RGB; *glType = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
-        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGBA; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_GRAYSCALE: result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_GRAY_ALPHA: result.internal_format = GL_LUMINANCE_ALPHA; result.format = GL_LUMINANCE_ALPHA; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G6B5: result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
+        case RF_UNCOMPRESSED_R8G8B8: result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G5B5A1: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case RF_UNCOMPRESSED_R4G4B4A4: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case RF_UNCOMPRESSED_R8G8B8A8: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_R32G32B32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
+        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
 
         #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
-        case RF_UNCOMPRESSED_GRAYSCALE: *glInternalFormat = GL_R8; *glFormat = GL_RED; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_GRAY_ALPHA: *glInternalFormat = GL_RG8; *glFormat = GL_RG; *glType = GL_UNSIGNED_BYTE; break;
-            //case RF_UNCOMPRESSED_R5G6B5: *glInternalFormat = GL_RGB565; *glFormat = GL_RGB; *glType = GL_UNSIGNED_SHORT_5_6_5; break;
-        case RF_UNCOMPRESSED_R8G8B8: *glInternalFormat = GL_RGB8; *glFormat = GL_RGB; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G5B5A1: *glInternalFormat = GL_RGB5_A1; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case RF_UNCOMPRESSED_R4G4B4A4: *glInternalFormat = GL_RGBA4; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case RF_UNCOMPRESSED_R8G8B8A8: *glInternalFormat = GL_RGBA8; *glFormat = GL_RGBA; *glType = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_R32F; *glFormat = GL_RED; *glType = GL_FLOAT; break;
-        case RF_UNCOMPRESSED_R32G32B32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGB32F; *glFormat = GL_RGB; *glType = GL_FLOAT; break;
-        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) *glInternalFormat = GL_RGBA32F; *glFormat = GL_RGBA; *glType = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_GRAYSCALE: result.internal_format = GL_R8; result.format = GL_RED; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_GRAY_ALPHA: result.internal_format = GL_RG8; result.format = GL_RG; result.type = GL_UNSIGNED_BYTE; break;
+            //case RF_UNCOMPRESSED_R5G6B5: result.internal_format = GL_RGB565; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
+        case RF_UNCOMPRESSED_R8G8B8: result.internal_format = GL_RGB8; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R5G5B5A1: result.internal_format = GL_RGB5_A1; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case RF_UNCOMPRESSED_R4G4B4A4: result.internal_format = GL_RGBA4; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case RF_UNCOMPRESSED_R8G8B8A8: result.internal_format = GL_RGBA8; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
+        case RF_UNCOMPRESSED_R32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_R32F; result.format = GL_RED; result.type = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_R32G32B32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_RGB32F; result.format = GL_RGB; result.type = GL_FLOAT; break;
+        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_internal_ctx->gfx_ctx.tex_float_supported) result.internal_format = GL_RGBA32F; result.format = GL_RGBA; result.type = GL_FLOAT; break;
         #endif
 
-        default: RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format not supported"); break;
+        case RF_COMPRESSED_DXT1_RGB: if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT; break;
+        case RF_COMPRESSED_DXT1_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+        case RF_COMPRESSED_DXT3_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+        case RF_COMPRESSED_DXT5_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+        case RF_COMPRESSED_ETC1_RGB: if (rf_internal_ctx->gfx_ctx.tex_comp_etc1_supported) result.internal_format = GL_ETC1_RGB8_OES; break;                      // NOTE: Requires OpenGL ES 2.0 or OpenGL 4.3
+        case RF_COMPRESSED_ETC2_RGB: if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGB8_ETC2; break;               // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case RF_COMPRESSED_ETC2_EAC_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGBA8_ETC2_EAC; break;     // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case RF_COMPRESSED_PVRT_RGB: if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG; break;    // NOTE: Requires PowerVR GPU
+        case RF_COMPRESSED_PVRT_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG; break;  // NOTE: Requires PowerVR GPU
+        case RF_COMPRESSED_ASTC_4x4_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_4x4_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+        case RF_COMPRESSED_ASTC_8x8_RGBA: if (rf_internal_ctx->gfx_ctx.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_8x8_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+
+        default: 
+            RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format not supported");
+            result.valid = false; 
+            break;
     }
+    
+    return result;
 }
 
 // Unload texture from GPU memory
@@ -2882,15 +2902,14 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
     // GL_PACK_ALIGNMENT affects operations that read from OpenGL memory (_RF_GL.glReadPixels, _RF_GL.glGetTexImage, etc.)
     // GL_UNPACK_ALIGNMENT affects operations that write to OpenGL memory (glTexImage, etc.)
     _RF_GL.glPixelStorei(GL_PACK_ALIGNMENT, 1);
-
-    unsigned int glInternalFormat, glFormat, glType;
-    rf_gfx_get_gl_texture_formats(texture.format, &glInternalFormat, &glFormat, &glType);
+    
+    rf_gfx_pixel_format format = rf_gfx_get_internal_texture_formats(texture.format);
     unsigned int size = texture.width * texture.height * rf_bytes_per_pixel(texture.format);
 
-    if ((glInternalFormat != -1) && (texture.format < RF_COMPRESSED_DXT1_RGB))
+    if (format.valid && rf_is_uncompressed_format(texture.format))
     {
         pixels = (unsigned char* ) RF_ALLOC(allocator, size);
-        _RF_GL.glGetTexImage(GL_TEXTURE_2D, 0, glFormat, glType, pixels);
+        _RF_GL.glGetTexImage(GL_TEXTURE_2D, 0, format.format, format.type, pixels);
     }
     else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture data retrieval not suported for pixel format");
 
@@ -2952,7 +2971,7 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
 
 // Load a texture to be used for rendering (fbo with default color and depth attachments)
 // NOTE: If colorFormat or depth_bits are no supported, no attachment is done
-RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, int format, int depth_bits, bool use_depth_texture)
+RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, bool use_depth_texture)
 {
     rf_render_texture2d target = { 0 };
 
@@ -2964,7 +2983,7 @@ RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, int
 
     // Create fbo color texture attachment
     //-----------------------------------------------------------------------------------------------------
-    if ((format != -1) && (format < RF_COMPRESSED_DXT1_RGB))
+    if (rf_is_uncompressed_format(format))
     {
         // WARNING: Some texture formats are not supported for fbo color attachment
         target.texture.id = rf_gfx_load_texture(NULL, width, height, format, 1);

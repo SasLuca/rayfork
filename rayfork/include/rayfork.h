@@ -2,7 +2,6 @@
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
-#include "stddef.h"
 #include "stdbool.h"
 #include "string.h"
 #include "math.h"
@@ -11,6 +10,10 @@
 
 #ifdef __glad_h_
 #error Macros defined in glad will overwrite opengl proc names in rayforh.h. Include rayfork.h before glad.h to fix this issue.
+#endif
+
+#if !defined(RAYFORK_AUDIO_ON) || defined(RAYFORK_AUDIO_OFF)
+#define RAYFORK_AUDIO_ON
 #endif
 
 // If no graphics backend was set, choose OpenGL ES3
@@ -458,12 +461,12 @@ struct rf_vec4
     };
 };
 
-//rf_mat type (OpenGL style 4x4 - right handed, column major)
+// The matrix is OpenGL style 4x4 - right handed, column major
 typedef struct rf_mat rf_mat;
 struct rf_mat
 {
-    float m0, m4, m8, m12;
-    float m1, m5, m9, m13;
+    float m0, m4, m8,  m12;
+    float m1, m5, m9,  m13;
     float m2, m6, m10, m14;
     float m3, m7, m11, m15;
 };
@@ -474,30 +477,24 @@ struct rf_float16
     float v[16];
 };
 
-typedef struct rf_rec rf_rec;
-struct rf_rec
+typedef union rf_rec rf_rec;
+union rf_rec
 {
-    union
+    struct
+    {
+        float x;
+        float y;
+        float width;
+        float height;
+    };
+
+    struct
     {
         rf_vec2 pos;
-
-        struct
-        {
-            float x;
-            float y;
-        };
-    };
-
-    union
-    {
         rf_sizef size;
-
-        struct
-        {
-            float width;
-            float height;
-        };
     };
+
+    rf_vec4 v;
 };
 
 //endregion
@@ -513,7 +510,7 @@ typedef struct rf_io_callbacks rf_io_callbacks;
 struct rf_io_callbacks
 {
     int (*get_file_size_proc)(const char* filename);
-    bool (*read_file_into_buffer_proc)(const char* filename, void* buffer, int buffer_size); //Returns true if operation was successful
+    bool (*read_file_into_buffer_proc)(const char* filename, void* buffer, int buffer_size); // Returns true if operation was successful
 };
 
 typedef struct rf_allocator rf_allocator;
@@ -523,7 +520,7 @@ struct rf_allocator
     void* (*request) (rf_allocator_mode mode, int size_to_alloc, void* pointer_to_free, void* user_data);
 };
 
-//RGBA (32bit)
+// R8G8B8A8 format
 typedef union rf_color rf_color;
 union rf_color
 {
@@ -588,6 +585,15 @@ struct rf_gif
     };
 };
 
+typedef struct rf_gfx_pixel_format rf_gfx_pixel_format;
+struct rf_gfx_pixel_format
+{
+    unsigned int internal_format;
+    unsigned int format;
+    unsigned int type;
+    rf_bool valid;
+};
+
 typedef struct rf_texture2d rf_texture2d;
 typedef struct rf_texture2d rf_texture_cubemap;
 struct rf_texture2d
@@ -596,7 +602,7 @@ struct rf_texture2d
     int width;       // rf_texture base width
     int height;      // rf_texture base height
     int mipmaps;     // Mipmap levels, 1 by default
-    int format;      // Data format (rf_pixel_format type)
+    rf_pixel_format format;      // Data format (rf_pixel_format type)
     rf_bool valid;
 };
 
@@ -647,8 +653,8 @@ struct rf_decoded_string
     rf_bool valid;
 };
 
-typedef struct rf_glyph_metrics rf_glyph_metrics;
-struct rf_glyph_metrics
+typedef struct rf_glyph_info rf_glyph_info;
+struct rf_glyph_info
 {
     union
     {
@@ -656,7 +662,6 @@ struct rf_glyph_metrics
         struct { float x, y, width, height; };
     };
 
-    int glyph_index; // Index of glyph in font
     int codepoint;   // Character value (Unicode)
     int offset_x;    // Character offset X when drawing
     int offset_y;    // Character offset Y when drawing
@@ -702,11 +707,11 @@ struct rf_ttf_font_info
 typedef struct rf_font rf_font;
 struct rf_font
 {
-    int               base_size;
-    rf_texture2d      texture;
-    rf_glyph_metrics* glyphs;
-    int               glyphs_count;
-    rf_bool           valid;
+    int            base_size;
+    rf_texture2d   texture;
+    rf_glyph_info* glyphs;
+    int            glyphs_count;
+    rf_bool        valid;
 };
 
 typedef int rf_glyph_index;
@@ -877,7 +882,7 @@ typedef struct rf_default_font_buffers rf_default_font_buffers;
 struct rf_default_font_buffers
 {
     unsigned short pixels[128 * 128]; // Default font buffer
-    rf_glyph_metrics   chars[RF_RAYLIB_FONT_CHARS_COUNT];
+    rf_glyph_info   chars[RF_RAYLIB_FONT_CHARS_COUNT];
     unsigned short chars_pixels[128 * 128];
 };
 
@@ -959,6 +964,118 @@ struct rf_context
     int (*get_random_value_proc)(int min, int max); //A callback for a function that returns a random value in a range
 };
 
+//endregion
+
+//region audio
+// Wave type, defines audio wave data
+typedef struct rf_wave rf_wave;
+struct rf_wave
+{
+    unsigned int sample_count; // Total number of samples
+    unsigned int sample_rate;  // Frequency (samples per second)
+    unsigned int sample_size;  // Bit depth (bits per sample): 8, 16, 32 (24 not supported)
+    unsigned int channels;     // Number of channels (1-mono, 2-stereo)
+    void* data;                // Buffer data pointer
+};
+
+typedef struct rf_audio_buffer rf_audio_buffer;
+
+// Audio stream type
+// NOTE: Useful to create custom audio streams not bound to a specific file
+typedef struct rf_audio_stream rf_audio_stream;
+struct rf_audio_stream
+{
+    unsigned int sample_rate; // Frequency (samples per second)
+    unsigned int sample_size; // Bit depth (bits per sample): 8, 16, 32 (24 not supported)
+    unsigned int channels;    // Number of channels (1-mono, 2-stereo)
+
+    rf_audio_buffer* buffer;  // Pointer to internal data used by the audio system
+};
+
+// Sound source type
+typedef struct rf_short_audio_stream rf_short_audio_stream;
+struct rf_short_audio_stream
+{
+    unsigned int    sample_count; // Total number of samples
+    rf_audio_stream stream;       // Audio stream
+};
+
+// Music stream type (audio file streaming from memory)
+// NOTE: Anything longer than ~10 seconds should be streamed
+typedef struct rf_long_audio_stream rf_long_audio_stream;
+struct rf_long_audio_stream
+{
+    int   ctx_type; // Type of music context (audio filetype)
+    void* ctx_data; // Audio context data, depends on type
+
+    unsigned int sample_count; // Total number of samples
+    unsigned int loop_count;   // Loops count (times music will play), 0 means infinite loop
+
+    rf_audio_stream stream;    // Audio stream
+};
+
+// Audio device management functions
+typedef struct rf_audio_context rf_audio_context; // Forward declaration
+
+extern void rf_audio_init(rf_audio_context* audio_ctx);            // Initialize audio device and context
+extern void rf_audio_set_context_ptr(rf_audio_context* audio_ctx); // Sets the global context ptr
+extern void rf_audio_cleanup(void);                                // Close the audio device and context
+extern bool rf_is_audio_device_ready(void);                        // Check if audio device has been initialized successfully
+extern void rf_set_master_volume(float volume);                    // Set master volume (listener)
+
+// Wave/Sound loading/unloading functions
+extern rf_wave rf_load_wave_from_file(const char* filename);                                                             // Load wave data from file
+extern rf_short_audio_stream rf_load_short_audio_stream_from_file(const char* filename);                                 // Load sound from file
+extern rf_short_audio_stream rf_load_short_audio_stream_from_wave(rf_wave wave);                                         // Load sound from wave data
+extern void rf_update_short_audio_stream(rf_short_audio_stream short_audio_stream, const void* data, int samples_count); // Update sound buffer with new data
+extern void rf_unload_wave(rf_wave wave);                                                                                // Unload wave data
+extern void rf_unload_sound(rf_short_audio_stream short_audio_stream);                                                   // Unload sound
+extern void rf_export_wave(rf_wave wave, const char* filename);                                                          // Export wave data to file
+extern void rf_export_wave_as_code(rf_wave wave, const char* filename);                                                  // Export wave sample data to code (.h)
+
+// Wave/Sound management functions
+extern void rf_play_short_audio_stream(rf_short_audio_stream short_audio_stream);                     // Play a sound
+extern void rf_stop_short_audio_stream(rf_short_audio_stream short_audio_stream);                     // Stop playing a sound
+extern void rf_pause_short_audio_stream(rf_short_audio_stream short_audio_stream);                    // Pause a sound
+extern void rf_resume_short_audio_stream(rf_short_audio_stream short_audio_stream);                   // Resume a paused sound
+extern void rf_play_short_audio_stream_multi(rf_short_audio_stream short_audio_stream);               // Play a sound (using multichannel buffer pool)
+extern void rf_stop_short_audio_stream_multi(void);                                                   // Stop any sound playing (using multichannel buffer pool)
+extern int rf_get_short_audio_streams_playing(void);                                                  // Get number of sounds playing in the multichannel
+extern bool rf_is_short_audio_stream_playing(rf_short_audio_stream short_audio_stream);               // Check if a sound is currently playing
+extern void rf_set_short_audio_stream_volume(rf_short_audio_stream short_audio_stream, float volume); // Set volume for a sound (1.0 is max level)
+extern void rf_set_short_audio_stream_pitch(rf_short_audio_stream short_audio_stream, float pitch);   // Set pitch for a sound (1.0 is base level)
+extern void rf_format_wave(rf_wave* wave, int sample_rate, int sample_size, int channels);            // Convert wave data to desired format
+extern rf_wave rf_copy_wave(rf_wave wave);                                                            // Copy a wave to a new wave
+extern void rf_crop_wave(rf_wave* rf_wave, int init_sample, int final_sample);                        // Crop a wave to defined samples range
+extern float* rf_get_wave_data(rf_wave rf_wave);                                                      // Get samples data from wave as a floats array
+
+// Music management functions
+extern rf_long_audio_stream rf_load_long_audio_stream(const char* filename);                        // Load music stream from file
+extern void rf_unload_long_audio_stream(rf_long_audio_stream long_audio_stream);                    // Unload music stream
+extern void rf_play_long_audio_stream(rf_long_audio_stream long_audio_stream);                      // Start music playing
+extern void rf_update_long_audio_stream(rf_long_audio_stream long_audio_stream);                    // Updates buffers for music streaming
+extern void rf_stop_long_audio_stream(rf_long_audio_stream long_audio_stream);                      // Stop music playing
+extern void rf_pause_long_audio_stream(rf_long_audio_stream long_audio_stream);                     // Pause music playing
+extern void rf_resume_long_audio_stream(rf_long_audio_stream long_audio_stream);                    // Resume playing paused music
+extern bool rf_is_long_audio_stream_playing(rf_long_audio_stream long_audio_stream);                // Check if music is playing
+extern void rf_set_long_audio_stream_volume(rf_long_audio_stream long_audio_stream, float volume);  // Set volume for music (1.0 is max level)
+extern void rf_set_long_audio_stream_pitch(rf_long_audio_stream long_audio_stream, float pitch);    // Set pitch for a music (1.0 is base level)
+extern void rf_set_long_audio_stream_loop_count(rf_long_audio_stream long_audio_stream, int count); // Set music loop count (loop repeats)
+extern float rf_get_long_audio_stream_time_length(rf_long_audio_stream long_audio_stream);          // Get music time length (in seconds)
+extern float rf_get_long_audio_stream_time_played(rf_long_audio_stream long_audio_stream);          // Get current music time played (in seconds)
+
+// AudioStream management functions
+extern rf_audio_stream rf_create_audio_stream(unsigned int sample_rate, unsigned int sample_size, unsigned int channels); // Init audio stream (to stream raw audio pcm data)
+extern void rf_update_audio_stream(rf_audio_stream stream, const void* data, int samplesCount);                           // Update audio stream buffers with data
+extern void rf_close_audio_stream(rf_audio_stream stream);                    // Close audio stream and free memory
+extern bool rf_is_audio_stream_processed(rf_audio_stream stream);             // Check if any audio stream buffers requires refill
+extern void rf_play_audio_stream(rf_audio_stream stream);                     // Play audio stream
+extern void rf_pause_audio_stream(rf_audio_stream stream);                    // Pause audio stream
+extern void rf_resume_audio_stream(rf_audio_stream stream);                   // Resume audio stream
+extern bool rf_is_audio_stream_playing(rf_audio_stream stream);               // Check if audio stream is playing
+extern void rf_stop_audio_stream(rf_audio_stream stream);                     // Stop audio stream
+extern void rf_set_audio_stream_volume(rf_audio_stream stream, float volume); // Set volume for audio stream (1.0 is max level)
+extern void rf_set_audio_stream_pitch(rf_audio_stream stream, float pitch);   // Set pitch for audio stream (1.0 is base level)
 //endregion
 
 //region setups and defaults
@@ -1126,7 +1243,6 @@ RF_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3* outAxis, float
 RF_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw); // Returns he quaternion equivalent to Euler angles
 RF_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q); // Return the Euler angles equivalent to quaternion (roll, pitch, yaw). NOTE: Angles are returned in a rf_vec3 struct in degrees
 RF_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat); // rf_transform a quaternion given a transformation matrix
-
 //endregion
 
 //region collision detection
@@ -1150,7 +1266,6 @@ RF_API bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box); // Dete
 RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model); // Get collision info between ray and model
 RF_API rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
 RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
-
 //endregion
 //endregion
 
@@ -1227,11 +1342,11 @@ RF_API bool rf_gfx_check_buffer_limit(int v_count); // Check internal buffer ove
 RF_API void rf_gfx_set_debug_marker(const char* text); // Set debug marker for analysis
 
 // Textures data management
-RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, int format, int mipmap_count); // Load texture in GPU
+RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count); // Load texture in GPU
 RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, bool use_render_buffer); // Load depth texture/renderbuffer (to be attached to fbo)
-RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, int format); // Load texture cubemap
-RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, int format, const void* data); // Update GPU texture with new data
-RF_API void rf_gfx_get_gl_texture_formats(int format, unsigned int* gl_internal_format, unsigned int* gl_format, unsigned int* gl_type); // Get OpenGL internal formats
+RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format); // Load texture cubemap
+RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* data); // Update GPU texture with new data
+RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format); // Get OpenGL internal formats
 RF_API void rf_gfx_unload_texture(unsigned int id); // Unload texture from GPU memory
 
 RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture); // Generate mipmap data for selected texture
@@ -1239,7 +1354,7 @@ RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator alloc
 RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height); // Read screen pixel data (color buffer)
 
 // Render texture management (fbo)
-RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, int format, int depth_bits, bool use_depth_texture); // Load a render texture (with color and depth attachments)
+RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, bool use_depth_texture); // Load a render texture (with color and depth attachments)
 RF_API void rf_gfx_render_texture_attach(rf_render_texture target, unsigned int id, int attach_type); // Attach texture/renderbuffer to an fbo
 RF_API bool rf_gfx_render_texture_complete(rf_render_texture target); // Verify render texture is complete
 
@@ -1264,6 +1379,7 @@ RF_API bool rf_is_uncompressed_format(rf_pixel_format format);
 RF_API bool rf_is_compressed_format(rf_pixel_format format);
 RF_API int rf_bits_per_pixel(rf_pixel_format format);
 RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format);
+RF_API int rf_pixel_buffer_size(int width, int height, rf_pixel_format format);
 
 RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size);
 RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size);
@@ -1409,6 +1525,7 @@ RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator);
 RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io); // Load texture from file into GPU memory (VRAM)
 RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, int dst_size, rf_allocator temp_allocator); // Load texture from an image file data using stb
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture from image data
+RF_API rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image image); // Load texture from image data
 RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_cubemap_layout_type layout_type, rf_allocator temp_allocator); // Load cubemap from image, multiple image cubemap layouts supported
 RF_API rf_render_texture2d rf_load_render_texture(int width, int height); // Load texture for rendering (framebuffer)
 RF_API rf_image rf_get_texture_data(rf_texture2d texture, rf_allocator allocator); // Get pixel data from GPU texture and return an rf_image
@@ -1423,18 +1540,18 @@ RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload rend
 //region font
 //region ttf font
 RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size);
-RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_metrics* dst, int dst_count);
-RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count);
-RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
-RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_metrics* glyph_metrics, int glyphs_count);
+RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_info* dst, int dst_count);
+RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, int glyphs_count);
+RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator);
+RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_info* glyph_metrics, int glyphs_count);
 
 RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, int char_count, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 //endregion
 
 //region image font
-RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_metrics* dst, int codepoints_count);
-RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_metrics* glyphs, int glyphs_count);
+RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_info* dst, int codepoints_count);
+RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_info* glyphs, int glyphs_count);
 RF_API rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator allocator);
 RF_API rf_font rf_load_image_font_from_file(const char* path, rf_color key, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 //endregion
@@ -1595,4 +1712,4 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
 RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator); // Generate cubes-based map mesh from image data
 //endregion
 
-#endif //#ifndef RAYFORK_H
+#endif // #ifndef RAYFORK_H

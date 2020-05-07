@@ -240,8 +240,13 @@ void rf_internal_cgltf_io_release(const struct cgltf_memory_options* memory_opti
 //endregion
 //endregion
 
+//region audio
+#include "rayfork_audio.inc"
+//endregion
+
 //region graphics backends
 #include "rayfork_gfx_backend_gl.inc"
+#include "rayfork_gfx_backend_sokol_gfx.inc"
 //endregion
 
 //region init and setup
@@ -4268,34 +4273,34 @@ RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_r
         rf_gfx_enable_texture(texture.id);
 
         rf_gfx_push_matrix();
-        rf_gfx_translatef(dest_rec.x, dest_rec.y, 0.0f);
-        rf_gfx_rotatef(rotation, 0.0f, 0.0f, 1.0f);
-        rf_gfx_translatef(-origin.x, -origin.y, 0.0f);
+            rf_gfx_translatef(dest_rec.x, dest_rec.y, 0.0f);
+            rf_gfx_rotatef(rotation, 0.0f, 0.0f, 1.0f);
+            rf_gfx_translatef(-origin.x, -origin.y, 0.0f);
 
-        rf_gfx_begin(RF_QUADS);
-        rf_gfx_color4ub(tint.r, tint.g, tint.b, tint.a);
-        rf_gfx_normal3f(0.0f, 0.0f, 1.0f); // Normal vector pointing towards viewer
+            rf_gfx_begin(RF_QUADS);
+                rf_gfx_color4ub(tint.r, tint.g, tint.b, tint.a);
+                rf_gfx_normal3f(0.0f, 0.0f, 1.0f); // Normal vector pointing towards viewer
 
-        // Bottom-left corner for texture and quad
-        if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, source_rec.y/height);
-        else rf_gfx_tex_coord2f(source_rec.x/width, source_rec.y/height);
-        rf_gfx_vertex2f(0.0f, 0.0f);
+                // Bottom-left corner for texture and quad
+                if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width) / width, source_rec.y / height);
+                else rf_gfx_tex_coord2f(source_rec.x / width, source_rec.y / height);
+                rf_gfx_vertex2f(0.0f, 0.0f);
 
-        // Bottom-right corner for texture and quad
-        if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, (source_rec.y + source_rec.height)/height);
-        else rf_gfx_tex_coord2f(source_rec.x/width, (source_rec.y + source_rec.height)/height);
-        rf_gfx_vertex2f(0.0f, dest_rec.height);
+                // Bottom-right corner for texture and quad
+                if (flip_x) rf_gfx_tex_coord2f((source_rec.x + source_rec.width) / width, (source_rec.y + source_rec.height) / height);
+                else rf_gfx_tex_coord2f(source_rec.x / width, (source_rec.y + source_rec.height) / height);
+                rf_gfx_vertex2f(0.0f, dest_rec.height);
 
-        // Top-right corner for texture and quad
-        if (flip_x) rf_gfx_tex_coord2f(source_rec.x/width, (source_rec.y + source_rec.height)/height);
-        else rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, (source_rec.y + source_rec.height)/height);
-        rf_gfx_vertex2f(dest_rec.width, dest_rec.height);
+                // Top-right corner for texture and quad
+                if (flip_x) rf_gfx_tex_coord2f(source_rec.x / width, (source_rec.y + source_rec.height) / height);
+                else rf_gfx_tex_coord2f((source_rec.x + source_rec.width) / width, (source_rec.y + source_rec.height) / height);
+                rf_gfx_vertex2f(dest_rec.width, dest_rec.height);
 
-        // Top-left corner for texture and quad
-        if (flip_x) rf_gfx_tex_coord2f(source_rec.x/width, source_rec.y/height);
-        else rf_gfx_tex_coord2f((source_rec.x + source_rec.width)/width, source_rec.y/height);
-        rf_gfx_vertex2f(dest_rec.width, 0.0f);
-        rf_gfx_end();
+                // Top-left corner for texture and quad
+                if (flip_x) rf_gfx_tex_coord2f(source_rec.x / width, source_rec.y / height);
+                else rf_gfx_tex_coord2f((source_rec.x + source_rec.width) / width, source_rec.y / height);
+                rf_gfx_vertex2f(dest_rec.width, 0.0f);
+            rf_gfx_end();
         rf_gfx_pop_matrix();
 
         rf_gfx_disable_texture();
@@ -4547,9 +4552,9 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
     float scale_factor = 0.0f;
 
     int letter = 0; // Current character
-    int index = 0; // Index position in sprite font
+    int index  = 0; // Index position in sprite font
 
-    scale_factor = font_size/font.base_size;
+    scale_factor = font_size / font.base_size;
 
     for (int i = 0; i < text_len; i++)
     {
@@ -4572,15 +4577,16 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
         {
             if (letter != ' ')
             {
-                rf_draw_texture_region(font.texture, font.glyphs[index].rec,
-                                       (rf_rec){position.x + text_offset_x + font.glyphs[index].offset_x * scale_factor,
-                                                position.y + text_offset_y + font.glyphs[index].offset_y*scale_factor,
-                                                font.glyphs[index].width*scale_factor,
-                                                font.glyphs[index].height*scale_factor }, (rf_vec2){0, 0 }, 0.0f, tint);
+                rf_rec src_rec = font.glyphs[index].rec;
+                rf_rec dst_rec = {  position.x + text_offset_x + font.glyphs[index].offset_x * scale_factor,
+                                    position.y + text_offset_y + font.glyphs[index].offset_y * scale_factor,
+                                    font.glyphs[index].width  * scale_factor,
+                                    font.glyphs[index].height * scale_factor };
+                rf_draw_texture_region(font.texture, src_rec, dst_rec, (rf_vec2){0}, 0.0f, tint);
             }
 
-            if (font.glyphs[index].advance_x == 0) text_offset_x += ((float)font.glyphs[index].width*scale_factor + spacing);
-            else text_offset_x += ((float)font.glyphs[index].advance_x*scale_factor + spacing);
+            if (font.glyphs[index].advance_x == 0) text_offset_x += ((float)font.glyphs[index].width * scale_factor + spacing);
+            else text_offset_x += ((float)font.glyphs[index].advance_x * scale_factor + spacing);
         }
     }
 }
@@ -5453,6 +5459,10 @@ RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format)
     }
 }
 
+RF_API int rf_pixel_buffer_size(int width, int height, rf_pixel_format format)
+{
+    return width * height * rf_bits_per_pixel(format) / 8;
+}
 
 RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size)
 {
@@ -6228,7 +6238,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
 //region extract image data functions
 RF_API int rf_image_size(rf_image image)
 {
-    return image.width * image.height * rf_bytes_per_pixel(image.format);
+    return rf_pixel_buffer_size(image.width, image.height, image.format);
 }
 
 RF_API int rf_image_size_in_format(rf_image image, rf_pixel_format format)
@@ -9076,23 +9086,31 @@ RF_API rf_texture2d rf_load_texture_from_file_data(const void* dst, int dst_size
 // Load texture from image data
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image)
 {
-    rf_texture2d texture = {0};
+    return rf_load_texture_from_image_with_mipmaps((rf_mipmaps_image) {
+        .image = image,
+        .mipmaps = 1
+    });
+}
+
+RF_API rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image image)
+{
+    rf_texture2d result = {0};
 
     if (image.valid)
     {
-        texture.id = rf_gfx_load_texture(image.data, image.width, image.height, image.format, 1);
+        result.id = rf_gfx_load_texture(image.data, image.width, image.height, image.format, image.mipmaps);
 
-        if (texture.id != 0)
+        if (result.id != 0)
         {
-            texture.width  = image.width;
-            texture.height = image.height;
-            texture.format = image.format;
-            texture.valid  = true;
+            result.width  = image.width;
+            result.height = image.height;
+            result.format = image.format;
+            result.valid  = true;
         }
     }
     else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture could not be loaded from rf_image");
 
-    return texture;
+    return result;
 }
 
 // Load cubemap from image, multiple image cubemap layouts supported
@@ -9124,7 +9142,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
 
         rf_image faces = {0}; // Vertical column image
         rf_rec face_recs[6] = {0}; // Face source rectangles
-        for (int i = 0; i < 6; i++) face_recs[i] = (rf_rec) {0, 0, size, size };
+        for (int i = 0; i < 6; i++) face_recs[i] = (rf_rec) { 0, 0, size, size };
 
         if (layout_type == RF_CUBEMAP_LINE_VERTICAL)
         {
@@ -9173,7 +9191,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
 
         cubemap.id = rf_gfx_load_texture_cubemap(faces.data, size, faces.format);
 
-        if (cubemap.id == 0) RF_LOG(RF_LOG_TYPE_WARNING, "Cubemap image could not be loaded.");
+        if (cubemap.id == 0) { RF_LOG(RF_LOG_TYPE_WARNING, "Cubemap image could not be loaded."); }
 
         rf_unload_image(faces, temp_allocator);
     }
@@ -9310,7 +9328,7 @@ RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size)
     return result;
 }
 
-RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_metrics* dst, int dst_count)
+RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_info* dst, int dst_count)
 {
     if (font_info && font_info->valid)
     {
@@ -9329,13 +9347,12 @@ RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const
                 stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_info->internal_stb_font_info;
 
                 dst[i].codepoint = codepoints[i];
-                dst[i].glyph_index = stbtt_FindGlyphIndex(stbtt_ctx, dst[i].codepoint);
 
                 int begin_x = 0;
                 int begin_y = 0;
                 int end_x   = 0;
                 int end_y   = 0;
-                stbtt_GetGlyphBitmapBox(stbtt_ctx, dst[i].glyph_index, font_info->scale_factor, font_info->scale_factor, &begin_x, &begin_y, &end_x, &end_y);
+                stbtt_GetCodepointBitmapBox(stbtt_ctx, dst[i].codepoint, font_info->scale_factor, font_info->scale_factor, &begin_x, &begin_y, &end_x, &end_y);
 
                 dst[i].width  = end_x - begin_x;
                 dst[i].height = end_y - begin_y;
@@ -9354,7 +9371,7 @@ RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const
 }
 
 // Note: the atlas is square and this value is the width of the atlas
-RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_metrics* glyph_metrics, int glyphs_count)
+RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, int glyphs_count)
 {
     int result = 0;
 
@@ -9371,7 +9388,7 @@ RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_metrics* glyph_
     return result;
 }
 
-RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_metrics* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator)
+RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, int glyphs_count, rf_font_antialias antialias, unsigned short* dst, int dst_count, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -9413,7 +9430,7 @@ RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atla
                         stbtt_fontinfo* stbtt_ctx = (stbtt_fontinfo*) &font_info->internal_stb_font_info;
 
                         // Get glyph bitmap
-                        stbtt_MakeGlyphBitmap(stbtt_ctx, glyph_buffer, glyphs[i].width, glyphs[i].height, glyphs[i].width, font_info->scale_factor, font_info->scale_factor, glyphs[i].glyph_index);
+                        stbtt_MakeCodepointBitmap(stbtt_ctx, glyph_buffer, glyphs[i].width, glyphs[i].height, glyphs[i].width, font_info->scale_factor, font_info->scale_factor, glyphs[i].codepoint);
 
                         // Copy pixel data from fc.data to atlas
                         for (int y = 0; y < glyphs[i].height; y++)
@@ -9463,7 +9480,7 @@ RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atla
     return result;
 }
 
-RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_metrics* glyphs, int glyphs_count)
+RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_info* glyphs, int glyphs_count)
 {
     rf_font result = {0};
 
@@ -9494,7 +9511,7 @@ RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_s
     rf_ttf_font_info font_info = rf_parse_ttf_font(font_file_data, font_size);
 
     // Get the glyph metrics
-    rf_glyph_metrics* glyph_metrics = RF_ALLOC(allocator, char_count * sizeof(rf_glyph_metrics));
+    rf_glyph_info* glyph_metrics = RF_ALLOC(allocator, char_count * sizeof(rf_glyph_info));
     rf_compute_ttf_font_glyph_metrics(&font_info, codepoints, char_count, glyph_metrics, char_count);
 
     // Build the atlas and font
@@ -9537,24 +9554,10 @@ RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, r
 }
 //endregion
 
-rf_image global_test_image;
-
-rf_color RF__GET_PIXEL(int index)
-{
-    const int bpp = rf_bytes_per_pixel(global_test_image.format);
-    if (index * bpp < 0 || index * bpp > rf_image_size(global_test_image) - 4)
-    {
-        int i = 0;
-    }
-    return rf_format_one_pixel_to_rgba32((char*)global_test_image.data + index * bpp, global_test_image.format);
-}
-
 //region image font
-RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_metrics* dst, int codepoints_count)
+RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_info* dst, int codepoints_count)
 {
     rf_bool success = false;
-
-    global_test_image = image;
 
     if (image.valid && codepoints && dst && codepoints_count > 0)
     {
@@ -9562,7 +9565,7 @@ RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key,
         const int image_data_size = rf_image_size(image);
 
         // This macro uses `bpp` and returns the pixel from the image at the index provided by calling rf_format_one_pixel_to_rgba32.
-        //#define RF__GET_PIXEL(index) rf_format_one_pixel_to_rgba32((char*)image.data + ((index) * bpp), image.format)
+        #define RF__GET_PIXEL(index) rf_format_one_pixel_to_rgba32((char*)image.data + ((index) * bpp), image.format)
 
         // Parse image data to get char_spacing and line_spacing
         int char_spacing = 0;
@@ -9637,7 +9640,7 @@ RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key,
     return success;
 }
 
-RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_metrics* glyphs, int glyphs_count)
+RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_info* glyphs, int glyphs_count)
 {
     rf_font result = {
         .texture      = rf_load_texture_from_image(image),
@@ -9663,7 +9666,7 @@ RF_API rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator all
         const int codepoints[]     = RF_DEFAULT_CODEPOINTS;
         const int codepoints_count = RF_DEFAULT_CODEPOINTS_COUNT;
 
-        rf_glyph_metrics* glyphs = RF_ALLOC(allocator, codepoints_count * sizeof(rf_glyph_metrics));
+        rf_glyph_info* glyphs = RF_ALLOC(allocator, codepoints_count * sizeof(rf_glyph_info));
 
         rf_compute_glyph_metrics_from_image(image, key, codepoints, glyphs, codepoints_count);
 
@@ -11092,7 +11095,10 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
         int primitivesCount = 0;
 
-        for (int i = 0; i < cgltf_data->meshes_count; i++) primitivesCount += (int)cgltf_data->meshes[i].primitives_count;
+        for (int i = 0; i < cgltf_data->meshes_count; i++)
+        {
+            primitivesCount += (int)cgltf_data->meshes[i].primitives_count;
+        }
 
         // Process glTF cgltf_data and map to model
         allocator = allocator;
