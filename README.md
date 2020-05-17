@@ -1,6 +1,6 @@
 # Notice
 Rayfork is still under very early development and it is not recommended that you use it at the moment.
-A major update will be available in March 2020 which will provide a higher level of stability and plenty of bug fixes and tests.
+You can check the rayfork 0.8 branch to see the active changes that are made as we are gearing towards a stable release.
 
 # Rayfork
 A set of single header libraries forked from the awesome Raylib game framework: https://www.raylib.com/
