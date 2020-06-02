@@ -8,8 +8,14 @@
 !.gitignore
 !.gitmodules
 
-!dev-scripts/*
-!rayfork/*
-!rayfork-cpp/*
-!rayfork-audio/*
-!rayfork-examples/*
+!dev-scripts/
+!rayfork/
+!rayfork-cpp/
+!rayfork-audio/
+!rayfork-examples/
+
+!dev-scripts/**
+!rayfork/**
+!rayfork-cpp/**
+!rayfork-audio/**
+!rayfork-examples/**
