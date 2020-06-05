@@ -27,7 +27,7 @@ def to_snake_case(it: str) -> str:
     return pattern.sub('_', it).lower()
 
 
-f = open("../rayfork/include/old_rayfork.h", "r").read()
+f = open("../rayfork/old_rayfork.h", "r").read()
 words = list(set(re.findall(r'\w+', re.sub(r'<"+?>', '', remove_comments(f)))))
 
 result = []

@@ -9,4 +9,3 @@ endif()
 
 add_subdirectory(rayfork)
 add_subdirectory(rayfork-cpp)
-add_subdirectory(rayfork-audio)
