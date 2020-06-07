@@ -184,12 +184,6 @@ void _rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, con
 
 #pragma endregion
 
-#pragma region graphics backends
-
-#include "rayfork_gfx_backend_gl.inc.c"
-
-#pragma endregion
-
 #pragma region init and setup
 
 // Set viewport for a provided width and height

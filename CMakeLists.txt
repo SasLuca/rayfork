@@ -6,7 +6,7 @@ add_subdirectory(rayfork-examples)
 include_directories(source)
 include_directories(source/include)
 
-add_library(rayfork source/rayfork.c)
+add_library(rayfork source/rayfork.c source/rayfork_gfx_backend_gl.c)
 target_compile_features(rayfork PUBLIC c_std_99)
 target_include_directories(rayfork PRIVATE source/libs)
 

@@ -1,6 +1,7 @@
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-
 #pragma region macros
+
+#include "rayfork_gfx_backend_gl.h"
 
 //Used internally to make gl calls not look too ugly
 #define _RF_GL (_rf_ctx->gfx_ctx.gl)
