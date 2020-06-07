@@ -8,9 +8,9 @@
 !.gitmodules
 
 !dev-scripts/
-!rayfork/
+!source/
 !rayfork-examples/
 
 !dev-scripts/**
-!rayfork/**
+!source/**
 !rayfork-examples/**
