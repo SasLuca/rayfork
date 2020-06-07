@@ -5,8 +5,7 @@ A single header, cross platform, allocator-aware game dev library forked from th
 
 The goal is to have a powerful and easy to use XNA-like library for professional indie game development in C99.
 
-# Notice
-rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
+**Notice:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
 
 <br>
 
