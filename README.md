@@ -7,11 +7,9 @@ The goal is to have a powerful and easy to use XNA-like library for professional
 
 **Notice:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
 
-<br>
+## Principles
 
-# Principles
-
-## 1. Provide platform-independent code
+### 1. Provide platform-independent code
 
 The code in rayfork fully removes the platform layer from Raylib, instead the developer must provide one. Great care is also taken to avoid hosted (os-dependent) function calls.
 
@@ -19,7 +17,7 @@ The renderer currently has OpenGL33 and OpenGL-ES3 backends (with more to be add
 
 Because of this you can easily compile rayfork for any platform be it PC, Mobile or Consoles.
 
-## 2. Provide full control over IO and memory
+### 2. Provide full control over IO and memory
 
 Functions that do IO are often optional and explicitly ask for IO callbacks. A simple wrapper for the libc IO functions is provided as `RF_DEFAULT_IO`.
 
@@ -27,7 +25,7 @@ Functions that allocate explicitly ask for an allocator and sometimes also for a
 
 All dependencies are also used with custom allocators in mind, the library should never allocate without you knowing.
 
-## 3. Easy to build
+### 3. Easy to build
 
 The library is developed as multiple files that are concatenated into a single header version and a single header + single source version.
 
@@ -35,13 +33,13 @@ All dependencies are bundled inside of rayfork and marked `static`.
 
 The library can be customized at compile time using preprocessor definitions.
 
-## 4. Avoiding globals
+### 4. Avoiding globals
 
 All state required by rayfork is stored in one struct which the user must allocate, but functions in rayfork use a global pointer to this context struct that the user can set if they do hot code reloading.
 
 For more on the principles of how we develop these libraries check this article: https://handmade.network/wiki/7138-how_to_write_better_game_libraries 
 
-# Rationale
+## Rationale
 
 raylib was created initially for educational purposes and has matured over time into a very useful games library, similar to XNA. 
 
@@ -61,13 +59,22 @@ I love coding in C99 and I want to make games in low level languages.
 
 Many libraries however do not follow the principles that I look for in a library (see [this article](https://handmade.network/wiki/7138-how_to_write_better_game_libraries)) which makes using them in games hard/annoying which is why I want to create a library that indie developers can confidently and easily use to develop their projects without sacrificing control, portability or quality.
 
-# Help needed
+## Help needed
 
 If you want to be able to develop games easily with libraries that respect the principles mentioned above, please consider contributing to rayfork.
 
 You can check the issues tab and find a lot of things you can do to contribute.
 
+I am also looking for help in developing things outside my expertise:
+- Improving the rendering API
+- More graphics backends (sokol-gfx, vulkan, custom console backends)
+- A particle system
+- Physics
+- Networking
+
 ## Advice for contributors
+- Contact me on the [raylib discord server](https://discord.gg/mzCY3wN) in the #rayfork channel, I am @BananyaDev#0001, or on [twitter @SasLuca](https://twitter.com/SasLuca).
+
 - Keep the naming convention to snake case, use `rf_function_name` for interface functions and `_rf_function_name` for private functions.
 
 - Prefix all functions with `RF_API` or `RF_INTERNAL`
