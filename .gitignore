@@ -2,20 +2,14 @@
 
 !CMakeLists.txt
 !README.md
-!TODO.md
 
-!.gitattributes
 !.gitignore
 !.gitmodules
 
 !dev-scripts/
 !rayfork/
-!rayfork-cpp/
-!rayfork-audio/
 !rayfork-examples/
 
 !dev-scripts/**
 !rayfork/**
-!rayfork-cpp/**
-!rayfork-audio/**
 !rayfork-examples/**
