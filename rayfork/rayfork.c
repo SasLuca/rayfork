@@ -103,8 +103,21 @@ RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks _rf_tinyobj_io;
 #define TINYOBJ_CALLOC(amount, size)     _rf_calloc_wrapper(_rf_tinyobj_allocator, amount, size)
 #define TINYOBJ_FREE(p)                  RF_FREE(_rf_tinyobj_allocator, p)
 
-#define TINYOBJ_GET_FILE_SIZE(filename) (RF_FILE_SIZE(_rf_tinyobj_io, filename))
-#define TINYOBJ_LOAD_FILE_IN_BUFFER(filename, buffer, buffer_size) (RF_READ_FILE(_rf_tinyobj_io, filename, buffer, buffer_size))
+void _rf_tinyobj_file_reader_callback(const char* filename, char** buf, size_t* len)
+{
+    if (!filename || !buf || !len) return;
+
+    *len = RF_FILE_SIZE(_rf_tinyobj_io, filename);
+
+    if (*len)
+    {
+        if (!RF_READ_FILE(_rf_tinyobj_io, filename, *buf, *len))
+        {
+            // On error we set the size of output buffer to 0
+            *len = 0;
+        }
+    }
+}
 
 #include "tinyobjloader-c/tinyobj_loader_c.h"
 
@@ -865,6 +878,35 @@ RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
     rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, inv_mat_camera);
 
     return (rf_vec2) {transform.x, transform.y};
+}
+
+// Select camera mode (multiple camera modes available)
+RF_API void rf_set_camera3d_mode(rf_camera3d camera, rf_camera3d_mode mode)
+{
+    rf_vec3 v1 = camera.position;
+    rf_vec3 v2 = camera.target;
+
+    float dx = v2.x - v1.x;
+    float dy = v2.y - v1.y;
+    float dz = v2.z - v1.z;
+
+    _rf_ctx->camera_target_distance = sqrtf(dx*dx + dy*dy + dz*dz);
+
+    rf_vec2 distance = { 0.0f, 0.0f };
+    distance.x = sqrtf(dx*dx + dz*dz);
+    distance.y = sqrtf(dx*dx + dy*dy);
+
+    // rf_camera3d angle calculation
+    _rf_ctx->camera_angle.x = asinf( (float)fabs(dx)/distance.x); // rf_camera3d angle in plane XZ (0 aligned with Z, move positive CCW)
+    _rf_ctx->camera_angle.y = -asinf( (float)fabs(dy)/distance.y); // rf_camera3d angle in plane XY (0 aligned with X, move positive CW)
+
+    // _rf_ctx->player_eyes_position = camera.position.y;
+
+    // Lock cursor for first person and third person cameras
+    // if ((mode == rf_camera_first_person) || (mode == rf_camera_third_person)) DisableCursor();
+    // else EnableCursor();
+
+    _rf_ctx->camera_mode = mode;
 }
 
 #pragma endregion
@@ -2717,7 +2759,7 @@ RF_API void rf_end_blend_mode()
 //       Mouse: IsMouseButtonDown(), GetMousePosition(), GetMouseWheelMove()
 //       Keys:  IsKeyDown()
 // TODO: Port to quaternion-based camera
-RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_mode mode, rf_input_state_for_update_camera input_state)
+RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_camera input_state)
 {
     // rf_camera3d mouse movement sensitivity
     #define rf_camera_mouse_move_sensitivity 0.003f
@@ -4226,7 +4268,7 @@ RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec
 
     for (int i = 0; i < text_len; i++)
     {
-        rf_decoded_rune decoded_rune = rf_decode_utf8_rune(&text[i], text_len - i);
+        rf_decoded_rune decoded_rune = rf_decode_utf8_char(&text[i], text_len - i);
         letter = decoded_rune.codepoint;
         index = rf_get_glyph_index(font, letter);
 
@@ -4293,7 +4335,7 @@ RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_re
     {
         int glyph_width = 0;
 
-        rf_decoded_rune decoded_rune = rf_decode_utf8_rune(&text[i], text_len - i);
+        rf_decoded_rune decoded_rune = rf_decode_utf8_char(&text[i], text_len - i);
         letter = decoded_rune.codepoint;
         index  = rf_get_glyph_index(font, letter);
 
@@ -4918,8 +4960,17 @@ RF_API void rf_draw_gizmo(rf_vec3 position)
     rf_gfx_pop_matrix();
 }
 
+// Draw a model (with texture if set)
+RF_API void rf_draw_model(rf_model model, rf_vec3 position, float scale, rf_color tint)
+{
+    rf_vec3 vScale = { scale, scale, scale };
+    rf_vec3 rotationAxis = { 0.0f, 1.0f, 0.0f };
+
+    rf_draw_model_ex(model, position, rotationAxis, 0.0f, vScale, tint);
+}
+
 // Draw a model with extended parameters
-RF_API void rf_draw_model(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
+RF_API void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
 {
     // Calculate transformation matrix from function parameters
     // Get transform matrix (rotation -> scale -> translation)
@@ -4954,7 +5005,7 @@ RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotati
 {
     rf_gfx_enable_wire_mode();
 
-    rf_draw_model(model, position, rotation_axis, rotationAngle, scale, tint);
+    rf_draw_model_ex(model, position, rotation_axis, rotationAngle, scale, tint);
 
     rf_gfx_disable_wire_mode();
 }
@@ -5958,7 +6009,7 @@ RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocato
 {
     rf_color* result = NULL;
 
-    if (rf_is_compressed_format(image.format))
+    if (rf_is_uncompressed_format(image.format))
     {
         int size = image.width * image.height * sizeof(rf_color);
         result = RF_ALLOC(allocator, size);
@@ -7364,36 +7415,32 @@ RF_API rf_image rf_image_color_brightness(rf_image image, int brightness)
 // Modify image color: replace color
 RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color, rf_color replace, void* dst, int dst_size)
 {
+    if (image.valid && dst_size >= rf_image_size(image)) return (rf_image) {0};
+
     rf_image result = {0};
 
-    if (image.valid)
+    int bpp = rf_bytes_per_pixel(image.format);
+
+    for (int y = 0; y < image.height; y++)
     {
-        if (dst_size >= rf_image_size(image))
+        for (int x = 0; x < image.width; x++)
         {
-            int bpp = rf_bytes_per_pixel(image.format);
+            int index = y * image.width + x;
 
-            for (int y = 0; y < image.height; y++)
+            void* src_pixel = ((unsigned char*)image.data) + index * bpp;
+            void* dst_pixel = ((unsigned char*)dst) + index * bpp;
+
+            rf_color pixel_rgba32 = rf_format_one_pixel_to_rgba32(src_pixel, image.format);
+
+            if (rf_color_equal(pixel_rgba32, color))
             {
-                for (int x = 0; x < image.width; x++)
-                {
-                    int index = y * image.width + x;
-
-                    void* src_pixel = ((unsigned char*)image.data) + index * bpp;
-                    void* dst_pixel = ((unsigned char*)dst_pixel) + index * bpp;
-
-                    rf_color pixel_rgba32 = rf_format_one_pixel_to_rgba32(src_pixel, image.format);
-
-                    if (rf_color_equal(pixel_rgba32, color))
-                    {
-                        rf_format_one_pixel(&replace, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
-                    }
-                }
+                rf_format_one_pixel(&replace, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
             }
-
-            result = image;
-            result.data = dst;
         }
     }
+
+    result = image;
+    result.data = dst;
 
     return result;
 }
@@ -9472,7 +9519,7 @@ RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float f
         {
             len_counter++;
 
-            rf_decoded_rune decoded_rune = rf_decode_utf8_rune(&text[i], len - i);
+            rf_decoded_rune decoded_rune = rf_decode_utf8_char(&text[i], len - i);
             index = rf_get_glyph_index(font, decoded_rune.codepoint);
 
             // NOTE: normally we exit the decoding sequence as soon as a bad unsigned char is found (and return 0x3f)
@@ -9540,7 +9587,7 @@ RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len
         {
             int glyph_width = 0;
 
-            rf_decoded_rune decoded_rune = rf_decode_utf8_rune(&text[i], text_len - i);
+            rf_decoded_rune decoded_rune = rf_decode_utf8_char(&text[i], text_len - i);
             letter = decoded_rune.codepoint;
             index = rf_get_glyph_index(font, letter);
 
@@ -9662,7 +9709,7 @@ RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len
    but that character is not supported by the default font in raylib
    TODO: optimize this code for speed!!
 */
-RF_API rf_decoded_rune rf_decode_utf8_rune(const char* text, int len)
+RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len)
 {
     /*
     UTF8 specs from https://www.ietf.org/rfc/rfc3629.txt
@@ -9823,7 +9870,7 @@ RF_API rf_decoded_rune rf_decode_utf8_rune(const char* text, int len)
     return (rf_decoded_rune) { .codepoint = RF_DEFAULT_CODEPOINT, .bytes_processed = 1 };
 }
 
-RF_API rf_decoded_utf8_stats rf_count_utf8_runes(const char* text, int len)
+RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, int len)
 {
     rf_decoded_utf8_stats result = {0};
 
@@ -9831,7 +9878,7 @@ RF_API rf_decoded_utf8_stats rf_count_utf8_runes(const char* text, int len)
     {
         while (len > 0)
         {
-            rf_decoded_rune decoded_rune = rf_decode_utf8_rune(text, len);
+            rf_decoded_rune decoded_rune = rf_decode_utf8_char(text, len);
 
             text += decoded_rune.bytes_processed;
             len  -= decoded_rune.bytes_processed;
@@ -9846,20 +9893,20 @@ RF_API rf_decoded_utf8_stats rf_count_utf8_runes(const char* text, int len)
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8_string_to_buffer(const char* text, int len, int* dst, int dst_count)
+RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, int len, rf_rune* dst, int dst_size)
 {
     rf_decoded_string result = {0};
 
     result.codepoints = dst;
 
-    if (text && len > 0 && dst && dst_count > 0)
+    if (text && len > 0 && dst && dst_size > 0)
     {
         int dst_i = 0;
         int invalid_bytes = 0;
 
-        while (len > 0 && dst_i < dst_count)
+        while (len > 0 && dst_i < dst_size)
         {
-            rf_decoded_rune decoding_result = rf_decode_utf8_rune(text, len);
+            rf_decoded_rune decoding_result = rf_decode_utf8_char(text, len);
 
             // Count the invalid bytes
             if (!decoding_result.valid)
@@ -9873,21 +9920,21 @@ RF_API rf_decoded_string rf_decode_utf8_string_to_buffer(const char* text, int l
             dst[dst_i++] = decoding_result.codepoint;
         }
 
-        result.count               = dst_i;
-        result.valid               = true;
+        result.size = dst_i;
+        result.valid = true;
         result.invalid_bytes_count = invalid_bytes;
     }
 
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8_string(const char* text, int len, rf_allocator allocator)
+RF_API rf_decoded_string rf_decode_utf8(const char* text, int len, rf_allocator allocator)
 {
     rf_decoded_string result = {0};
 
-    int* dst = RF_ALLOC(allocator, len);
+    rf_rune* dst = RF_ALLOC(allocator, sizeof(rf_rune) * len);
 
-    result = rf_decode_utf8_string_to_buffer(text, len, dst, len);
+    result = rf_decode_utf8_to_buffer(text, len, dst, len);
 
     return result;
 }
@@ -10144,19 +10191,11 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
     tinyobj_material_t* materials      = NULL;
     size_t              material_count = 0;
 
-    size_t data_size = RF_FILE_SIZE(io, filename);
-    void*  data      = RF_ALLOC(temp_allocator, data_size);
-
-    if (RF_READ_FILE(io, filename, data, data_size))
-    {
-        RF_FREE(temp_allocator, data);
-        return (rf_model) {0};
-    }
-
     RF_SET_TINYOBJ_ALLOCATOR(temp_allocator); // Set to NULL at the end of the function
+    RF_SET_TINYOBJ_IO_CALLBACKS(io);
     {
         unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
-        int ret            = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, &material_count, (const char*) data, data_size, flags);
+        int ret            = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, &material_count, filename, _rf_tinyobj_file_reader_callback, flags);
 
         if (ret != TINYOBJ_SUCCESS)
         {
@@ -10323,6 +10362,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         tinyobj_materials_free(materials, material_count);
     }
     RF_SET_TINYOBJ_ALLOCATOR(RF_NULL_ALLOCATOR);
+    RF_SET_TINYOBJ_IO_CALLBACKS(RF_NULL_IO);
 
     // NOTE: At this point we have all model data loaded
     RF_LOG_V(RF_LOG_TYPE_INFO, "[%s] rf_model loaded successfully in RAM (CPU)", file_name);
@@ -10999,7 +11039,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 }
 
 // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
-RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator)
+RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator)
 {
     rf_model model = {0};
 
@@ -11043,26 +11083,26 @@ RF_API void rf_unload_model(rf_model model, rf_allocator allocator)
     RF_LOG(RF_LOG_TYPE_INFO, "Unloaded model data from RAM and VRAM");
 }
 
+// TODO: Support IQM and GLTF for materials parsing
+// TODO: Process materials to return
 // Load materials from model file
-RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator)
+RF_API rf_material* rf_load_materials_from_mtl(const char* filename, int* material_count, rf_allocator allocator, rf_io_callbacks io)
 {
-    RF_SET_TINYOBJ_ALLOCATOR(allocator);
-
-    rf_material* materials = NULL;
+    rf_material* materials = 0;
     unsigned int count = 0;
 
-    // TODO: Support IQM and GLTF for materials parsing
-
-    tinyobj_material_t* mats;
-
-    if (tinyobj_parse_mtl_file(&mats, (size_t*) &count, data, data_size) != TINYOBJ_SUCCESS)
+    RF_SET_TINYOBJ_ALLOCATOR(allocator);
+    RF_SET_TINYOBJ_IO_CALLBACKS(io);
     {
-
+        tinyobj_material_t* mats = 0;
+        if (tinyobj_parse_mtl_file(&mats, (size_t*) &count, filename, _rf_tinyobj_file_reader_callback) != TINYOBJ_SUCCESS)
+        {
+            // Log Error
+        }
+        tinyobj_materials_free(mats, count);
     }
-
-    // TODO: Process materials to return
-
-    tinyobj_materials_free(mats, count);
+    RF_SET_TINYOBJ_IO_CALLBACKS(RF_NULL_IO);
+    RF_SET_TINYOBJ_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Set materials shader to default (DIFFUSE, SPECULAR, NORMAL)
     for (int i = 0; i < count; i++)

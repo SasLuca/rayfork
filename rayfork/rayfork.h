@@ -1,6 +1,7 @@
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
+#include <stdint.h>
 #include "math.h"
 #include "string.h"
 #include "rayfork_base.h"
@@ -13,7 +14,7 @@
 
 // If no graphics backend was set, choose OpenGL33 on desktop and OpenGL ES3 on mobile
 #if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)
-    #if defined(_WIN32) || (defined(__linux__) && !defined(__ANDROID__ )) || (defined(__APPLE__) && defined(TARGET_OS_MAC))
+    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) || (defined(__linux__) && !defined(__ANDROID__ )) || (defined(__APPLE__) && defined(TARGET_OS_MAC))
         #define RAYFORK_GRAPHICS_BACKEND_GL_33
     #else // On mobile
         #define RAYFORK_GRAPHICS_BACKEND_GL_ES3
@@ -535,6 +536,8 @@ typedef struct rf_npatch_info
     int type;            // layout of the n-patch: 3x3, 1x3 or 3x1
 } rf_npatch_info;
 
+typedef uint32_t rf_rune;
+
 typedef struct rf_decoded_utf8_stats
 {
     int bytes_processed;
@@ -545,17 +548,17 @@ typedef struct rf_decoded_utf8_stats
 
 typedef struct rf_decoded_rune
 {
-    int     codepoint;
-    int     bytes_processed;
-    bool valid;
+    rf_rune  codepoint;
+    int      bytes_processed;
+    bool     valid;
 } rf_decoded_rune;
 
 typedef struct rf_decoded_string
 {
-    int* codepoints;
-    int  count;
-    int  invalid_bytes_count;
-    bool valid;
+    rf_rune* codepoints;
+    int      size;
+    int      invalid_bytes_count;
+    bool     valid;
 } rf_decoded_string;
 
 typedef struct rf_glyph_info
@@ -908,7 +911,7 @@ RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d t
 RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
 RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
 RF_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
-
+RF_API void rf_set_camera3d_mode(rf_camera3d camera, rf_camera3d_mode mode);
 #pragma endregion
 
 #pragma region vec and matrix math
@@ -1350,10 +1353,10 @@ RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len
 
 #pragma region utf8
 
-RF_API rf_decoded_rune rf_decode_utf8_rune(const char* text, int len);
-RF_API rf_decoded_utf8_stats rf_count_utf8_runes(const char* text, int len);
-RF_API rf_decoded_string rf_decode_utf8_string_to_buffer(const char* text, int len, int* dst, int dst_count);
-RF_API rf_decoded_string rf_decode_utf8_string(const char* text, int len, rf_allocator allocator);
+RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len);
+RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, int len);
+RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, int len, rf_rune* dst, int dst_size);
+RF_API rf_decoded_string rf_decode_utf8(const char* text, int len, rf_allocator allocator);
 
 #pragma endregion
 
@@ -1382,6 +1385,8 @@ RF_API void rf_end_shader(); // End custom shader drawing (use default shader)
 
 RF_API void rf_begin_blend_mode(rf_blend_mode mode); // Begin blending mode (alpha, additive, multiplied)
 RF_API void rf_end_blend_mode(); // End blending mode (reset to default: alpha blending)
+
+RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_camera input_state);
 
 RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color); // Draw a pixel
 RF_API void rf_draw_pixel_v(rf_vec2 position, rf_color color); // Draw a pixel (Vector version)
@@ -1448,7 +1453,8 @@ RF_API void rf_draw_grid(int slices, float spacing); // Draw a grid (centered at
 RF_API void rf_draw_gizmo(rf_vec3 position); // Draw simple gizmo
 
 // rf_model drawing functions
-RF_API void rf_draw_model(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotation_angle, rf_vec3 scale, rf_color tint); // Draw a model with extended parameters
+RF_API void rf_draw_model(rf_model model, rf_vec3 position, float scale, rf_color tint); // Draw a model (with texture if set)
+RF_API void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotation_angle, rf_vec3 scale, rf_color tint); // Draw a model with extended parameters
 RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotation_angle, rf_vec3 scale, rf_color tint); // Draw a model wires (with texture if set) with extended parameters
 RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color); // Draw bounding box (wires)
 RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint); // Draw a billboard texture
@@ -1472,10 +1478,10 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
 RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io); // Load model from files (meshes and materials)
-RF_API rf_model rf_load_model_with_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
+RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
 RF_API void rf_unload_model(rf_model model, rf_allocator allocator); // Unload model from memory (RAM and/or VRAM)
 
-RF_API rf_material* rf_load_materials_from_mtl(const char* data, int data_size, int* material_count, rf_allocator allocator); // Load materials from model file
+RF_API rf_material* rf_load_materials_from_mtl(const char* filename, int* material_count, rf_allocator allocator, rf_io_callbacks io); // Load materials from model file
 RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 RF_API void rf_unload_material(rf_material material, rf_allocator allocator); // Unload material from GPU memory (VRAM)

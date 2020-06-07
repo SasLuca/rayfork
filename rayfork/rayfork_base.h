@@ -50,6 +50,7 @@
 #define RF_CALLOC(allocator, size)  _rf_calloc_wrapper((allocator), 1, size)
 #define RF_FREE(allocator, pointer) ((allocator).free_proc((allocator).user_data, (pointer)))
 
+#define RF_NULL_IO                                (RF_LIT(rf_io_callbacks) {0})
 #define RF_FILE_SIZE(io, filename)                ((io).file_size_proc((io).user_data, filename))
 #define RF_READ_FILE(io, filename, dst, dst_size) ((io).read_file_proc((io).user_data, filename, dst, dst_size))
 
@@ -106,21 +107,10 @@ typedef struct rf_allocator
 
 #include "stdlib.h"
 
-#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_libc_malloc_wrapper, rf_libc_free_wrapper })
+#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, _rf_libc_malloc_wrapper, _rf_libc_free_wrapper })
 
-inline void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
-{
-    ((void)user_data);
-
-    return malloc(size_to_alloc);
-}
-
-inline void rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
-{
-    ((void)user_data);
-
-    free(ptr_to_free);
-}
+RF_API void* _rf_libc_malloc_wrapper(void* user_data, int size_to_alloc);
+RF_API void  _rf_libc_free_wrapper(void* user_data, void* ptr_to_free);
 
 #endif // !defined(RF_NO_DEFAULT_ALLOCATOR)
 
@@ -128,48 +118,11 @@ inline void rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
 
 #include "stdio.h"
 
-#define RF_DEFAULT_IO (RF_LIT(rf_io_callbacks) { NULL, rf_get_file_size, rf_load_file_into_buffer })
+#define RF_DEFAULT_IO (RF_LIT(rf_io_callbacks) { NULL, _rf_get_file_size, _rf_load_file_into_buffer })
 
-inline int rf_get_file_size(void* user_data, const char* filename)
-{
-    FILE* file = fopen(filename, "rb");
+RF_API int _rf_get_file_size(void* user_data, const char* filename);
 
-    fseek(file, 0L, SEEK_END);
-    int size = ftell(file);
-    fseek(file, 0L, SEEK_SET);
-
-    fclose(file);
-
-    return size;
-}
-
-inline bool rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
-{
-    bool result = false;
-
-    FILE* file = fopen(filename, "rb");
-    if (file != NULL)
-    {
-        fseek(file, 0L, SEEK_END);
-        int file_size = ftell(file);
-        fseek(file, 0L, SEEK_SET);
-
-        if (dst_size >= file_size)
-        {
-            int read_size = fread(dst, 1, file_size, file);
-            if (ferror(file) && read_size == file_size)
-            {
-                result = true;
-            }
-        }
-        // else log_error buffer is not big enough
-    }
-    // else log error could not open file
-
-    fclose(file);
-
-    return true;
-}
+RF_API bool _rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
 
 #endif // !defined(RF_NO_DEFAULT_IO)
 

@@ -12,6 +12,67 @@
     #define RF_ASSERT(condition) assert(condition)
 #endif
 
+#if !defined(RF_NO_DEFAULT_ALLOCATOR)
+RF_API void* _rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
+{
+    ((void)user_data);
+
+    return malloc(size_to_alloc);
+}
+
+RF_API void _rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
+{
+    ((void)user_data);
+
+    free(ptr_to_free);
+}
+#endif
+
+#if !defined(RF_NO_DEFAULT_IO)
+
+RF_API int _rf_get_file_size(void* user_data, const char* filename)
+{
+    FILE* file = fopen(filename, "rb");
+
+    fseek(file, 0L, SEEK_END);
+    int size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
+    fclose(file);
+
+    return size;
+}
+
+RF_API bool _rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
+{
+    bool result = false;
+
+    FILE* file = fopen(filename, "rb");
+    if (file != NULL)
+    {
+        fseek(file, 0L, SEEK_END);
+        int file_size = ftell(file);
+        fseek(file, 0L, SEEK_SET);
+
+        if (dst_size >= file_size)
+        {
+            int read_size = fread(dst, 1, file_size, file);
+            if (ferror(file) && read_size == file_size)
+            {
+                result = true;
+            }
+        }
+        // else log_error buffer is not big enough
+    }
+    // else log error could not open file
+
+    fclose(file);
+
+    return true;
+}
+
+#endif // !defined(RF_NO_DEFAULT_IO)
+
 RF_INTERNAL bool _rf_match_str_n(const char* a, int a_len, const char* b, int b_len)
 {
     return a_len == b_len && strncmp(a, b, a_len) == 0;
