@@ -900,7 +900,7 @@ RF_API void rf_set_camera3d_mode(rf_camera3d camera, rf_camera3d_mode mode)
     _rf_ctx->camera_angle.x = asinf( (float)fabs(dx)/distance.x); // rf_camera3d angle in plane XZ (0 aligned with Z, move positive CCW)
     _rf_ctx->camera_angle.y = -asinf( (float)fabs(dy)/distance.y); // rf_camera3d angle in plane XY (0 aligned with X, move positive CW)
 
-    // _rf_ctx->player_eyes_position = camera.position.y;
+    _rf_ctx->player_eyes_position = camera.position.y;
 
     // Lock cursor for first person and third person cameras
     // if ((mode == rf_camera_first_person) || (mode == rf_camera_third_person)) DisableCursor();
@@ -2792,7 +2792,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_ca
     #define rf_camera_third_person_distance_clamp 1.2f
     #define rf_camera_third_person_min_clamp 5.0f
     #define rf_camera_third_person_max_clamp -85.0f
-    #define rf_camera_third_person_offset (rf_vector3){ 0.4f, 0.0f, 0.0f }
+    #define rf_camera_third_person_offset (rf_vec3) { 0.4f, 0.0f, 0.0f }
 
     // PLAYER (used by camera)
     #define rf_player_movement_sensitivity 20.0f
@@ -2808,14 +2808,14 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_ca
         rf_move_down
     } rf_camera_move;
 
-    RF_INTERNAL float player_eyes_position = 1.85f;
+    // RF_INTERNAL float player_eyes_position = 1.85f;
 
     RF_INTERNAL int swing_counter = 0; // Used for 1st person swinging movement
-    RF_INTERNAL rf_vec2 previous_mouse_position = {0.0f, 0.0f };
+    RF_INTERNAL rf_vec2 previous_mouse_position = { 0.0f, 0.0f };
     // TODO: CRF_INTERNAL _rf_ctx->gl_ctx.camera_target_distance and _rf_ctx->gl_ctx.camera_angle here
 
     // Mouse movement detection
-    rf_vec2 mouse_position_delta = {0.0f, 0.0f };
+    rf_vec2 mouse_position_delta = { 0.0f, 0.0f };
     rf_vec2 mouse_position = input_state.mouse_position;
     int mouse_wheel_move = input_state.mouse_wheel_move;
 
@@ -2984,7 +2984,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_ca
 
             // rf_camera3d position update
             // NOTE: On RF_CAMERA_FIRST_PERSON player Y-movement is limited to player 'eyes position'
-            camera->position.y = player_eyes_position - sinf(swing_counter/rf_camera_first_person_step_trigonometric_divider)/rf_camera_first_person_step_divider;
+            camera->position.y = _rf_ctx->player_eyes_position - sinf(swing_counter/rf_camera_first_person_step_trigonometric_divider)/rf_camera_first_person_step_divider;
 
             camera->up.x = sinf(swing_counter/(rf_camera_first_person_step_trigonometric_divider * 2))/rf_camera_first_person_waving_divider;
             camera->up.z = -sinf(swing_counter/(rf_camera_first_person_step_trigonometric_divider * 2))/rf_camera_first_person_waving_divider;
@@ -6205,47 +6205,53 @@ RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, int src_
 
 RF_API rf_image rf_load_image_from_file_data(const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator)
 {
+    // Preconditions
+    if (!src || src_size <= 0)
+    {
+        RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `src` was null.");
+        return (rf_image) {0};
+    }
+
+    // Compute the result
     rf_image result = {0};
 
-    if (src && src_size)
+    // Use stb image with the `temp_allocator` to decompress the image and get it's data
+    int width = 0, height = 0, channels = 0;
+    RF_SET_STBI_ALLOCATOR(temp_allocator);
+    void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &channels, RF_ANY_CHANNELS);
+    RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+
+    if (stbi_result && channels)
     {
-        int width = 0, height = 0, bpp = 0;
+        // Allocate a result buffer using the `allocator` and copy the data to it
+        int stbi_result_size = width * height * channels;
+        void* result_buffer = RF_ALLOC(allocator, stbi_result_size);
 
-        // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(temp_allocator);
-        void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &bpp, RF_ANY_CHANNELS);
-        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
-
-        if (stbi_result && bpp)
+        if (result_buffer)
         {
-            int stbi_result_size = width * height * bpp;
-            void* result_buffer = RF_ALLOC(allocator, stbi_result_size);
+            result.data   = result_buffer;
+            result.width  = width;
+            result.height = height;
+            result.valid  = true;
 
-            if (result_buffer)
+            // Set the format appropriately depending on the `channels` count
+            switch (channels)
             {
-                result.data   = result_buffer;
-                result.width  = width;
-                result.height = height;
-                result.valid  = true;
-
-                switch (bpp)
-                {
-                    case 1: result.format = RF_UNCOMPRESSED_GRAYSCALE; break;
-                    case 2: result.format = RF_UNCOMPRESSED_GRAY_ALPHA; break;
-                    case 3: result.format = RF_UNCOMPRESSED_R8G8B8; break;
-                    case 4: result.format = RF_UNCOMPRESSED_R8G8B8A8; break;
-                    default: break;
-                }
-
-                memcpy(result_buffer, stbi_result, stbi_result_size);
+                case 1: result.format = RF_UNCOMPRESSED_GRAYSCALE; break;
+                case 2: result.format = RF_UNCOMPRESSED_GRAY_ALPHA; break;
+                case 3: result.format = RF_UNCOMPRESSED_R8G8B8; break;
+                case 4: result.format = RF_UNCOMPRESSED_R8G8B8A8; break;
+                default: break;
             }
-            else RF_LOG_ERROR_V(RF_BAD_ALLOC, "Buffer is not big enough", width, height, bpp);
 
-            RF_FREE(temp_allocator, stbi_result);
+            memcpy(result_buffer, stbi_result, stbi_result_size);
         }
-        else RF_LOG_ERROR_V(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, bpp);
+        else RF_LOG_ERROR_V(RF_BAD_ALLOC, "Buffer is not big enough", width, height, channels);
+
+        // Free the temp buffer allocated by stbi
+        RF_FREE(temp_allocator, stbi_result);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `image` was invalid.");
+    else RF_LOG_ERROR_V(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, channels);
 
     return result;
 }

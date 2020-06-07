@@ -832,6 +832,7 @@ typedef struct rf_context
     //Note(LucaSas): might extract into another struct
     rf_vec2 camera_angle;         // rf_camera3d angle in plane XZ
     float camera_target_distance; // rf_camera3d distance from position to target
+    float player_eyes_position;
     rf_camera3d_mode camera_mode; // Current camera mode
 
     //Shapes global data
