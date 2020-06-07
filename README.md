@@ -75,6 +75,8 @@ I am also looking for help in developing things outside my expertise:
 ## Advice for contributors
 - Contact me on the [raylib discord server](https://discord.gg/mzCY3wN) in the #rayfork channel, I am @BananyaDev#0001, or on [twitter @SasLuca](https://twitter.com/SasLuca).
 
+- Clone using `git clone --recursive url_to_your_fork_of_rayfork` in order to also get the `rayfork-examples` submodule which also serves as our test suite.
+
 - Keep the naming convention to snake case, use `rf_function_name` for interface functions and `_rf_function_name` for private functions.
 
 - Prefix all functions with `RF_API` or `RF_INTERNAL`
