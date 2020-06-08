@@ -1,6 +1,6 @@
-<img align="left" src="https://github.com/SasLuca/rayfork/blob/master/logo.jpg" width="256" style="display:block;">
+<img src="https://github.com/SasLuca/rayfork/blob/master/logo.jpg" width="256">
 
-## rayfork
+# rayfork
 
 A single header, cross platform, allocator-aware game dev library forked from the awesome raylib game framework: https://www.raylib.com/
 
