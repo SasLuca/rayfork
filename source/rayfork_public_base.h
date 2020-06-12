@@ -2,6 +2,10 @@
 #define RAYFORK_BASE_H
 
 #include "stdbool.h"
+#include "stdlib.h"
+#include "string.h"
+#include "stdio.h"
+#include "math.h"
 
 #pragma region macros
 
@@ -36,6 +40,11 @@
     #endif
 #endif
 
+#ifndef RF_ASSERT
+    #include "assert.h"
+    #define RF_ASSERT(condition) assert(condition)
+#endif
+
 #ifndef RF_LOG_IMPL_V
     #define RF_LOG_IMPL_V(type, msg, file, line, proc_name, ...)
 #endif
@@ -47,15 +56,18 @@
 
 #define RF_NULL_ALLOCATOR           (RF_LIT(rf_allocator) {0})
 #define RF_ALLOC(allocator, size)   ((allocator).alloc_proc((allocator).user_data, (size)))
-#define RF_CALLOC(allocator, size)  _rf_calloc_wrapper((allocator), 1, size)
+#define RF_CALLOC(allocator, size)  rf__calloc_wrapper((allocator), 1, size)
 #define RF_FREE(allocator, pointer) ((allocator).free_proc((allocator).user_data, (pointer)))
 
 #define RF_NULL_IO                                (RF_LIT(rf_io_callbacks) {0})
 #define RF_FILE_SIZE(io, filename)                ((io).file_size_proc((io).user_data, filename))
 #define RF_READ_FILE(io, filename, dst, dst_size) ((io).read_file_proc((io).user_data, filename, dst, dst_size))
 
-#define RF_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define RF_MAX(a, b) ((a) > (b) ? (a) : (b))
+static inline int rf_min_i(int a, int b) { return ((a) < (b) ? (a) : (b)); }
+static inline int rf_max_i(int a, int b) { return ((a) > (b) ? (a) : (b)); }
+
+static inline int rf_min_f(float a, float b) { return ((a) < (b) ? (a) : (b)); }
+static inline int rf_max_f(float a, float b) { return ((a) > (b) ? (a) : (b)); }
 
 #ifndef RF_MAX_FILEPATH_LEN
     #define RF_MAX_FILEPATH_LEN (1024)
@@ -103,28 +115,71 @@ typedef struct rf_allocator
     void (*free_proc) (void* user_data, void* ptr_to_free);
 } rf_allocator;
 
-#if !defined(RF_NO_DEFAULT_ALLOCATOR)
+typedef int (*rf_rand_proc)(int min, int max);
 
-#include "stdlib.h"
+#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_libc_malloc_wrapper, rf_libc_free_wrapper })
+static inline void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
+{
+    ((void)user_data);
+    return malloc(size_to_alloc);
+}
 
-#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, _rf_libc_malloc_wrapper, _rf_libc_free_wrapper })
+static inline void  rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
+{
+    ((void)user_data);
+    free(ptr_to_free);
+}
 
-RF_API void* _rf_libc_malloc_wrapper(void* user_data, int size_to_alloc);
-RF_API void  _rf_libc_free_wrapper(void* user_data, void* ptr_to_free);
+#define RF_DEFAULT_IO (RF_LIT(rf_io_callbacks) { NULL, rf_get_file_size, rf_load_file_into_buffer })
+static inline int rf_get_file_size(void* user_data, const char* filename)
+{
+    ((void)user_data);
 
-#endif // !defined(RF_NO_DEFAULT_ALLOCATOR)
+    FILE* file = fopen(filename, "rb");
 
-#if !defined(RF_NO_DEFAULT_IO)
+    fseek(file, 0L, SEEK_END);
+    int size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
 
-#include "stdio.h"
+    fclose(file);
 
-#define RF_DEFAULT_IO (RF_LIT(rf_io_callbacks) { NULL, _rf_get_file_size, _rf_load_file_into_buffer })
+    return size;
+}
 
-RF_API int _rf_get_file_size(void* user_data, const char* filename);
+static inline bool rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
+{
+    ((void)user_data);
+    bool result = false;
 
-RF_API bool _rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
+    FILE* file = fopen(filename, "rb");
+    if (file != NULL)
+    {
+        fseek(file, 0L, SEEK_END);
+        int file_size = ftell(file);
+        fseek(file, 0L, SEEK_SET);
 
-#endif // !defined(RF_NO_DEFAULT_IO)
+        if (dst_size >= file_size)
+        {
+            int read_size = fread(dst, 1, file_size, file);
+            if (ferror(file) && read_size == file_size)
+            {
+                result = true;
+            }
+        }
+        // else log_error buffer is not big enough
+    }
+    // else log error could not open file
+
+    fclose(file);
+
+    return result;
+}
+
+#define RF_DEFAULT_RAND_PROC (rf_default_rand_proc)
+static inline int rf_default_rand_proc(int min, int max)
+{
+    return rand() % (max + 1 - min) + min;
+}
 
 #pragma endregion
 

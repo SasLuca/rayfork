@@ -10,9 +10,7 @@
 !random-dev-scripts/
 !source/
 !rayfork-examples/
-!generated/
 
 !random-dev-scripts/**
 !source/**
 !rayfork-examples/**
-!generated/**

@@ -1,10 +1,10 @@
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
-#include <stdint.h>
 #include "math.h"
+#include "stdint.h"
 #include "string.h"
-#include "rayfork_base.h"
+#include "rayfork_public_base.h"
 
 #pragma region macros and constants
 
@@ -87,11 +87,11 @@
 #endif
 
 #if !defined(RF_MAX_MATRIX_STACK_SIZE)
-    #define RF_MAX_MATRIX_STACK_SIZE (32) // Max size of rf_mat _rf_ctx->gl_ctx.stack
+    #define RF_MAX_MATRIX_STACK_SIZE (32) // Max size of rf_mat rf__ctx->gl_ctx.stack
 #endif
 
 #if !defined(RF_MAX_DRAWCALL_REGISTERED)
-    #define RF_MAX_DRAWCALL_REGISTERED (256) // Max _rf_ctx->gl_ctx.draws by state changes (mode, texture)
+    #define RF_MAX_DRAWCALL_REGISTERED (256) // Max rf__ctx->gl_ctx.draws by state changes (mode, texture)
 #endif
 
 //rf_shader and material limits
@@ -431,8 +431,6 @@ union rf_rec
 
 #pragma endregion
 
-typedef int (*rf_rand_proc)(int min, int max);
-
 // R8G8B8A8 format
 typedef union rf_color
 {
@@ -461,6 +459,12 @@ typedef struct rf_image
     rf_pixel_format format;  // Data format (rf_pixel_format type)
     bool            valid;   // True if the image is valid and can be used
 } rf_image;
+
+typedef struct rf_mipmaps_stats
+{
+    int possible_mip_counts;
+    int mipmaps_buffer_size;
+} rf_mipmaps_stats;
 
 typedef struct rf_mipmaps_image
 {
@@ -732,9 +736,15 @@ typedef struct rf_model_animation
 
 typedef struct rf_model_animation_array
 {
-    int                 anims_count;
+    int                 size;
     rf_model_animation* anims;
 } rf_model_animation_array;
+
+typedef struct rf_materials_array
+{
+    int size;
+    rf_material* materials;
+} rf_materials_array;
 
 typedef struct rf_ray
 {
@@ -761,6 +771,10 @@ typedef struct rf_base64_output
     int size;
     unsigned char* buffer;
 } rf_base64_output;
+
+#pragma endregion
+
+#pragma region graphics backends and context struct
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
 #include "rayfork_gfx_backend_gl.h"
@@ -857,7 +871,7 @@ RF_API rf_font rf_get_default_font(); // Get the default font, useful to be used
 RF_API rf_shader rf_get_default_shader(); // Get default shader
 RF_API rf_texture2d rf_get_default_texture(); // Get default internal texture (white texture)
 RF_API rf_context* rf_get_context(); //Get the context pointer
-RF_API rf_image rf_get_screen_data(rf_color* dst, int dst_count); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
+RF_API rf_image rf_get_screen_data(rf_color* dst, int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
 
 #pragma endregion
 
@@ -1039,10 +1053,10 @@ RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, r
 
 #pragma endregion
 
-RF_API rf_mat rf_gfx_get_matrix_projection(); // Return internal _rf_ctx->gl_ctx.projection matrix
-RF_API rf_mat rf_gfx_get_matrix_modelview(); // Return internal _rf_ctx->gl_ctx.modelview matrix
-RF_API void rf_gfx_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal _rf_ctx->gl_ctx.projection matrix)
-RF_API void rf_gfx_set_matrix_modelview(rf_mat view); // Set a custom _rf_ctx->gl_ctx.modelview matrix (replaces internal _rf_ctx->gl_ctx.modelview matrix)
+RF_API rf_mat rf_gfx_get_matrix_projection(); // Return internal rf__ctx->gl_ctx.projection matrix
+RF_API rf_mat rf_gfx_get_matrix_modelview(); // Return internal rf__ctx->gl_ctx.modelview matrix
+RF_API void rf_gfx_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal rf__ctx->gl_ctx.projection matrix)
+RF_API void rf_gfx_set_matrix_modelview(rf_mat view); // Set a custom rf__ctx->gl_ctx.modelview matrix (replaces internal rf__ctx->gl_ctx.modelview matrix)
 
 RF_API void rf_gfx_blend_mode(rf_blend_mode mode); // Choose the blending mode (alpha, additive, multiplied)
 RF_API void rf_gfx_matrix_mode(rf_matrix_mode mode); // Choose the current matrix to be transformed
@@ -1104,12 +1118,13 @@ RF_API void rf_gfx_set_debug_marker(const char* text); // Set debug marker for a
 RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count); // Load texture in GPU
 RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, bool use_render_buffer); // Load depth texture/renderbuffer (to be attached to fbo)
 RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format); // Load texture cubemap
-RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* data); // Update GPU texture with new data
+RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* pixels, int pixels_size); // Update GPU texture with new data
 RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format); // Get OpenGL internal formats
 RF_API void rf_gfx_unload_texture(unsigned int id); // Unload texture from GPU memory
 
 RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture); // Generate mipmap data for selected texture
-RF_API void* rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator); // Read texture pixel data
+RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void* dst, int dst_size);
+RF_API rf_image rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator);
 RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height); // Read screen pixel data (color buffer)
 
 // Render texture management (fbo)
@@ -1207,8 +1222,6 @@ RF_API rf_image rf_image_alpha_clear(rf_image image, rf_color color, float thres
 RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator);
 RF_API rf_image rf_image_dither(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_image rf_image_text(const char* text, int text_len, int font_size, rf_color color, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_image rf_image_text_ex(rf_font font, const char* text, int text_len, float font_size, float spacing, rf_color tint, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, int dst_size);
 RF_API rf_image rf_image_flip_vertical(rf_image image);
 RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, int dst_size);
@@ -1258,7 +1271,9 @@ RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, 
 #pragma region mipmaps
 
 RF_API int rf_mipmaps_image_size(rf_mipmaps_image image);
-RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);  // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
+RF_API rf_mipmaps_stats rf_compute_mipmaps_stats(rf_image image, int desired_mipmaps_count);
+RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);  // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
+RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps_count, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator);
 
 #pragma endregion
@@ -1310,8 +1325,8 @@ RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture 
 RF_API rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image image); // Load texture from image data
 RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_cubemap_layout_type layout_type, rf_allocator temp_allocator); // Load cubemap from image, multiple image cubemap layouts supported
 RF_API rf_render_texture2d rf_load_render_texture(int width, int height); // Load texture for rendering (framebuffer)
-RF_API rf_image rf_get_texture_data(rf_texture2d texture, rf_allocator allocator); // Get pixel data from GPU texture and return an rf_image
-RF_API void rf_update_texture(rf_texture2d texture, const void* pixels); // Update GPU texture with new data. Pixels data must match texture.format
+
+RF_API void rf_update_texture(rf_texture2d texture, const void* pixels, int pixels_size); // Update GPU texture with new data. Pixels data must match texture.format
 RF_API void rf_gen_texture_mipmaps(rf_texture2d* texture); // Generate GPU mipmaps for a texture
 RF_API void rf_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode); // Set texture scaling filter mode
 RF_API void rf_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode); // Set texture wrapping mode
@@ -1482,7 +1497,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator); // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
 RF_API void rf_unload_model(rf_model model, rf_allocator allocator); // Unload model from memory (RAM and/or VRAM)
 
-RF_API rf_material* rf_load_materials_from_mtl(const char* filename, int* material_count, rf_allocator allocator, rf_io_callbacks io); // Load materials from model file
+RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_allocator allocator, rf_io_callbacks io); // Load materials from model file
 RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 RF_API void rf_unload_material(rf_material material, rf_allocator allocator); // Unload material from GPU memory (VRAM)
@@ -1508,6 +1523,137 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
 RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator); // Generate heightmap mesh from image data
 RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator); // Generate cubes-based map mesh from image data
 
+#pragma endregion
+
+#pragma region ez api
+#ifndef RAYFORK_NO_EZ_API
+RF_API rf_material rf_load_default_material_ez();
+RF_API rf_image rf_get_screen_data_ez();
+RF_API rf_base64_output rf_decode_base64_ez(const unsigned char* input);
+RF_API rf_image rf_gfx_read_texture_pixels_ez(rf_texture2d texture);
+
+#pragma region image
+
+#pragma region extract image data functions
+RF_API rf_color* rf_image_pixels_to_rgba32_ez(rf_image image);
+RF_API rf_vec4* rf_image_compute_pixels_to_normalized_ez(rf_image image);
+RF_API rf_palette rf_image_extract_palette_ez(rf_image image, int palette_size);
+#pragma endregion
+
+#pragma region loading & unloading functions
+RF_API rf_image rf_load_image_from_file_data_ez(const void* src, int src_size);
+RF_API rf_image rf_load_image_from_hdr_file_data_ez(const void* src, int src_size);
+RF_API rf_image rf_load_image_from_file_ez(const char* filename);
+RF_API void rf_unload_image_ez(rf_image image);
+#pragma endregion
+
+#pragma region image manipulation
+RF_API rf_image rf_image_copy_ez(rf_image image);
+RF_API rf_image rf_image_crop_ez(rf_image image, rf_rec crop);
+RF_API rf_image rf_image_resize_ez(rf_image image, int new_width, int new_height);
+RF_API rf_image rf_image_resize_nn_ez(rf_image image, int new_width, int new_height);
+RF_API rf_image rf_image_format_ez(rf_image image, rf_uncompressed_pixel_format new_format);
+RF_API rf_image rf_image_alpha_clear_ez(rf_image image, rf_color color, float threshold);
+RF_API rf_image rf_image_alpha_premultiply_ez(rf_image image);
+RF_API rf_image rf_image_alpha_crop_ez(rf_image image, float threshold);
+RF_API rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp);
+
+RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i);
+
+RF_API rf_image rf_gen_image_color_ez(int width, int height, rf_color color);
+RF_API rf_image rf_gen_image_gradient_v_ez(int width, int height, rf_color top, rf_color bottom);
+RF_API rf_image rf_gen_image_gradient_h_ez(int width, int height, rf_color left, rf_color right);
+RF_API rf_image rf_gen_image_gradient_radial_ez(int width, int height, float density, rf_color inner, rf_color outer);
+RF_API rf_image rf_gen_image_checked_ez(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2);
+RF_API rf_image rf_gen_image_white_noise_ez(int width, int height, float factor);
+RF_API rf_image rf_gen_image_perlin_noise_ez(int width, int height, int offset_x, int offset_y, float scale);
+RF_API rf_image rf_gen_image_cellular_ez(int width, int height, int tile_size);
+#pragma endregion
+
+#pragma region mipmaps
+RF_API rf_mipmaps_image rf_image_gen_mipmaps_ez(rf_image image, int gen_mipmaps_count);
+RF_API void rf_unload_mipmaps_image_ez(rf_mipmaps_image image);
+#pragma endregion
+
+#pragma region dds
+RF_API rf_mipmaps_image rf_load_dds_image_ez(const void* src, int src_size);
+RF_API rf_mipmaps_image rf_load_dds_image_from_file_ez(const char* file);
+#pragma endregion
+
+#pragma region pkm
+RF_API rf_image rf_load_pkm_image_ez(const void* src, int src_size);
+RF_API rf_image rf_load_pkm_image_from_file_ez(const char* file);
+#pragma endregion
+
+#pragma region ktx
+RF_API rf_mipmaps_image rf_load_ktx_image_ez(const void* src, int src_size);
+RF_API rf_mipmaps_image rf_load_ktx_image_from_file_ez(const char* file);
+#pragma endregion
+
+#pragma endregion
+
+#pragma region gif
+RF_API rf_gif rf_load_animated_gif_ez(const void* data, int data_size);
+RF_API rf_gif rf_load_animated_gif_file_ez(const char* filename);
+RF_API void rf_unload_gif_ez(rf_gif gif);
+#pragma endregion
+
+#pragma region texture
+RF_API rf_texture2d rf_load_texture_from_file_ez(const char* filename);
+RF_API rf_texture2d rf_load_texture_from_file_data_ez(const void* data, int dst_size);
+RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image_ez(rf_image image, rf_cubemap_layout_type layout_type);
+#pragma endregion
+
+#pragma region font
+RF_API rf_font rf_load_ttf_font_from_data_ez(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, int chars_count);
+RF_API rf_font rf_load_ttf_font_from_file_ez(const char* filename, int font_size, rf_font_antialias antialias);
+
+RF_API rf_font rf_load_image_font_ez(rf_image image, rf_color key);
+RF_API rf_font rf_load_image_font_from_file_ez(const char* path, rf_color key);
+
+RF_API void rf_unload_font_ez(rf_font font);
+#pragma endregion
+
+#pragma region utf8
+RF_API rf_decoded_string rf_decode_utf8_ez(const char* text, int len);
+#pragma endregion
+
+#pragma region drawing
+RF_API void rf_image_draw_ez(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint);
+RF_API void rf_image_draw_rectangle_ez(rf_image* dst, rf_rec rec, rf_color color);
+RF_API void rf_image_draw_rectangle_lines_ez(rf_image* dst, rf_rec rec, int thick, rf_color color);
+#pragma endregion
+
+#pragma region model & materials & animations
+RF_API void rf_mesh_compute_tangents_ez(rf_mesh* mesh);
+RF_API void rf_unload_mesh_ez(rf_mesh mesh);
+
+RF_API rf_model rf_load_model_ez(const char* filename);
+RF_API rf_model rf_load_model_from_obj_ez(const char* filename);
+RF_API rf_model rf_load_model_from_iqm_ez(const char* filename);
+RF_API rf_model rf_load_model_from_gltf_ez(const char* filename);
+RF_API rf_model rf_load_model_from_mesh_ez(rf_mesh mesh);
+RF_API void rf_unload_model_ez(rf_model model);
+
+RF_API rf_materials_array rf_load_materials_from_mtl_ez(const char* filename);
+RF_API void rf_unload_material_ez(rf_material material);
+
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file_ez(const char* filename);
+RF_API rf_model_animation_array rf_load_model_animations_from_iqm_ez(const unsigned char* data, int data_size);
+RF_API void rf_unload_model_animation_ez(rf_model_animation anim);
+
+RF_API rf_mesh rf_gen_mesh_cube_ez(float width, float height, float length);
+RF_API rf_mesh rf_gen_mesh_poly_ez(int sides, float radius);
+RF_API rf_mesh rf_gen_mesh_plane_ez(float width, float length, int res_x, int res_z);
+RF_API rf_mesh rf_gen_mesh_sphere_ez(float radius, int rings, int slices);
+RF_API rf_mesh rf_gen_mesh_hemi_sphere_ez(float radius, int rings, int slices);
+RF_API rf_mesh rf_gen_mesh_cylinder_ez(float radius, float height, int slices);
+RF_API rf_mesh rf_gen_mesh_torus_ez(float radius, float size, int rad_seg, int sides);
+RF_API rf_mesh rf_gen_mesh_knot_ez(float radius, float size, int rad_seg, int sides);
+RF_API rf_mesh rf_gen_mesh_heightmap_ez(rf_image heightmap, rf_vec3 size);
+RF_API rf_mesh rf_gen_mesh_cubicmap_ez(rf_image cubicmap, rf_vec3 cube_size);
+#pragma endregion
+#endif
 #pragma endregion
 
 #endif // #ifndef RAYFORK_H

@@ -18,9 +18,9 @@ struct rf_dynamic_buffer
     unsigned char colors[4 * 4 * RF_MAX_BATCH_ELEMENTS];
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
-    unsigned int indices[6 * RF_MAX_BATCH_ELEMENTS]; // 6 int by quad (indices)
+    unsigned int indices[6 * RF_MAX_BATCH_ELEMENTS];   // 6 int by quad (indices)
 #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-    unsigned short indices[6 * RF_MAX_BATCH_ELEMENTS];  // 6 int by quad (indices)
+    unsigned short indices[6 * RF_MAX_BATCH_ELEMENTS]; // 6 int by quad (indices)
 #endif
 
     unsigned int vao_id;         // OpenGL Vertex Array Object id
