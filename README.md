@@ -1,6 +1,7 @@
-<img align="left" src="https://github.com/SasLuca/rayfork/blob/master/logo.jpg" width=256>
+<img src="https://github.com/SasLuca/rayfork/blob/master/logo.jpg" width="256">
 
 # rayfork
+
 A single header, cross platform, allocator-aware game dev library forked from the awesome raylib game framework: https://www.raylib.com/
 
 The goal is to have a powerful and easy to use XNA-like library for professional indie game development in C99.
