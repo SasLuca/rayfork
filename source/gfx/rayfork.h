@@ -1209,27 +1209,40 @@ RF_API void rf_unload_image(rf_image image, rf_allocator allocator);
 
 RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, int dst_size);
 RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator);
-RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, int dst_size);
+
+RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format);
 RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator);
+
 RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new_height, void* dst, int dst_size, rf_allocator temp_allocator);
 RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_image rf_image_resize_nn_to_buffer(rf_image image, int new_width, int new_height, void* dst, int dst_size);
 RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator allocator);
+
 RF_API rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_format dst_format, void* dst, int dst_size);
 RF_API rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new_format, rf_allocator allocator);
+
 RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mask, void* dst, int dst_size);
 RF_API rf_image rf_image_alpha_clear(rf_image image, rf_color color, float threshold, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocator, rf_allocator temp_allocator);
+
+RF_API rf_rec rf_image_alpha_crop_rec(rf_image image, float threshold);
 RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator);
+
 RF_API rf_image rf_image_dither(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator allocator, rf_allocator temp_allocator);
+
+RF_API void rf_image_flip_vertical_in_place(rf_image* image);
 RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, int dst_size);
-RF_API rf_image rf_image_flip_vertical(rf_image image);
+RF_API rf_image rf_image_flip_vertical(rf_image image, rf_allocator allocator);
+
+RF_API void rf_image_flip_horizontal_in_place(rf_image* image);
 RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, int dst_size);
-RF_API rf_image rf_image_flip_horizontal(rf_image image);
+RF_API rf_image rf_image_flip_horizontal(rf_image image, rf_allocator allocator);
+
 RF_API rf_image rf_image_rotate_cw_to_buffer(rf_image image, void* dst, int dst_size);
 RF_API rf_image rf_image_rotate_cw(rf_image image);
 RF_API rf_image rf_image_rotate_ccw_to_buffer(rf_image image, void* dst, int dst_size);
 RF_API rf_image rf_image_rotate_ccw(rf_image image);
+
 RF_API rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, void* dst, int dst_size);
 RF_API rf_image rf_image_color_tint(rf_image image, rf_color color);
 RF_API rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, int dst_size);
@@ -1443,7 +1456,8 @@ RF_API void rf_draw_triangle_strip(rf_vec2* points, int points_count, rf_color c
 RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color); // Draw a regular polygon (Vector version)
 
 // rf_texture2d drawing functions
-RF_API void rf_draw_texture(rf_texture2d texture, rf_vec2 position, float rotation, float scale, rf_color tint); // Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture(rf_texture2d texture, int x, int y, rf_color tint); // Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h, float rotation, rf_color tint); // Draw a rf_texture2d with extended parameters
 RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
 RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_info, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint); // Draws a texture (or part of it) that stretches or shrinks nicely
 
@@ -1526,14 +1540,15 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
 #pragma endregion
 
 #pragma region ez api
+
 #ifndef RAYFORK_NO_EZ_API
+
 RF_API rf_material rf_load_default_material_ez();
 RF_API rf_image rf_get_screen_data_ez();
 RF_API rf_base64_output rf_decode_base64_ez(const unsigned char* input);
 RF_API rf_image rf_gfx_read_texture_pixels_ez(rf_texture2d texture);
 
 #pragma region image
-
 #pragma region extract image data functions
 RF_API rf_color* rf_image_pixels_to_rgba32_ez(rf_image image);
 RF_API rf_vec4* rf_image_compute_pixels_to_normalized_ez(rf_image image);
@@ -1549,14 +1564,21 @@ RF_API void rf_unload_image_ez(rf_image image);
 
 #pragma region image manipulation
 RF_API rf_image rf_image_copy_ez(rf_image image);
+
 RF_API rf_image rf_image_crop_ez(rf_image image, rf_rec crop);
+
 RF_API rf_image rf_image_resize_ez(rf_image image, int new_width, int new_height);
 RF_API rf_image rf_image_resize_nn_ez(rf_image image, int new_width, int new_height);
+
 RF_API rf_image rf_image_format_ez(rf_image image, rf_uncompressed_pixel_format new_format);
+
 RF_API rf_image rf_image_alpha_clear_ez(rf_image image, rf_color color, float threshold);
 RF_API rf_image rf_image_alpha_premultiply_ez(rf_image image);
 RF_API rf_image rf_image_alpha_crop_ez(rf_image image, float threshold);
 RF_API rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp);
+
+RF_API rf_image rf_image_flip_vertical_ez(rf_image image);
+RF_API rf_image rf_image_flip_horizontal_ez(rf_image image);
 
 RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i);
 
@@ -1589,7 +1611,6 @@ RF_API rf_image rf_load_pkm_image_from_file_ez(const char* file);
 RF_API rf_mipmaps_image rf_load_ktx_image_ez(const void* src, int src_size);
 RF_API rf_mipmaps_image rf_load_ktx_image_from_file_ez(const char* file);
 #pragma endregion
-
 #pragma endregion
 
 #pragma region gif

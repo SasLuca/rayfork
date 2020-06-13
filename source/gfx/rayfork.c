@@ -3973,10 +3973,16 @@ RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation
 }
 
 // Draw a rf_texture2d with extended parameters
-RF_API void rf_draw_texture(rf_texture2d texture, rf_vec2 position, float rotation, float scale, rf_color tint)
+RF_API void rf_draw_texture(rf_texture2d texture, int x, int y, rf_color tint)
+{
+    rf_draw_texture_ex(texture, x, y, texture.width, texture.height, 0, tint);
+}
+
+// Draw a rf_texture2d with extended parameters
+RF_API void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h, float rotation, rf_color tint)
 {
     rf_rec source_rec = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
-    rf_rec dest_rec = { position.x, position.y, (float)texture.width*scale, (float)texture.height*scale };
+    rf_rec dest_rec = { x, y, w, h };
     rf_vec2 origin = { 0.0f, 0.0f };
 
     rf_draw_texture_region(texture, source_rec, dest_rec, origin, rotation, tint);
@@ -6469,7 +6475,7 @@ RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
  * @param dst_size size of the `dst` buffer.
  * @return a cropped image using the `dst` buffer in the same format as `image`.
  */
-RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, int dst_size)
+RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     rf_image result = {0};
 
@@ -6483,34 +6489,40 @@ RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, 
 
         if ((crop.x < image.width) && (crop.y < image.height))
         {
-            // Start the cropping process
-            int size = crop.width * crop.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-
-            if (dst_size >= size)
+            if (dst_size >= rf_pixel_buffer_size(crop.width, crop.height, dst_format))
             {
-                int src_bpp = rf_bytes_per_pixel(image.format);
+                rf_pixel_format src_format = image.format;
+                int src_size = rf_image_size(image);
 
                 unsigned char* src_ptr = image.data;
                 unsigned char* dst_ptr = dst;
+
+                int src_bpp = rf_bytes_per_pixel(image.format);
+                int dst_bpp = rf_bytes_per_pixel(dst_format);
 
                 int crop_y = crop.y;
                 int crop_h = crop.height;
                 int crop_x = crop.x;
                 int crop_w = crop.width;
 
-                for (int j = crop_y; j < crop_y + crop_h; j++)
+                for (int y = 0; y < crop_h; y++)
                 {
-                    for (int i = crop_x; i < crop_x + crop_w; i++)
+                    for (int x = 0; x < crop_w; x++)
                     {
-                        unsigned char* src_pixel = &src_ptr[(j * image.width + i) * src_bpp];
-                        unsigned char* dst_pixel = &dst_ptr[(j - crop_y * crop_w + (i - crop_x))];
+                        int src_x = x + crop_x;
+                        int src_y = y + crop_y;
 
-                        rf_format_one_pixel(src_pixel, image.format, dst_pixel, image.format);
+                        int src_pixel = (src_y * image.width + src_x) * src_bpp;
+                        int dst_pixel = (y * crop_w + x) * src_bpp;
+                        RF_ASSERT(src_pixel < src_size);
+                        RF_ASSERT(dst_pixel < dst_size);
+
+                        rf_format_one_pixel(&src_ptr[src_pixel], src_format, &dst_ptr[dst_pixel], dst_format);
                     }
                 }
 
                 result.data   = dst;
-                result.format = image.format;
+                result.format = dst_format;
                 result.width  = crop.width;
                 result.height = crop.height;
                 result.valid  = true;
@@ -6538,12 +6550,12 @@ RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocato
 
     if (image.valid)
     {
-        int size = rf_image_size(image);
+        int size = rf_pixel_buffer_size(crop.width, crop.height, image.format);
         void* dst = RF_ALLOC(allocator, size);
 
         if (dst)
         {
-            result = rf_image_crop_to_buffer(image, crop, dst, size);
+            result = rf_image_crop_to_buffer(image, crop, dst, size, image.format);
         }
         else RF_LOG_ERROR_V(RF_BAD_ALLOC, "Allocation of size %d failed.", size);
     }
@@ -6552,73 +6564,67 @@ RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocato
     return result;
 }
 
+RF_INTERNAL int rf__format_to_stb_channel_count(rf_pixel_format format)
+{
+    switch (format)
+    {
+        case RF_UNCOMPRESSED_GRAYSCALE: return 1;
+        case RF_UNCOMPRESSED_GRAY_ALPHA: return 2;
+        case RF_UNCOMPRESSED_R8G8B8: return 3;
+        case RF_UNCOMPRESSED_R8G8B8A8: return 4;
+        default: return 0;
+    }
+}
+
 // Resize and image to new size.
 // Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
 RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new_height, void* dst, int dst_size, rf_allocator temp_allocator)
 {
+    if (!image.valid || dst_size < new_width * new_height * rf_bytes_per_pixel(image.format)) return (rf_image){0};
+
     rf_image result = {0};
 
-    if (image.valid)
+    int stb_format = rf__format_to_stb_channel_count(image.format);
+
+    if (stb_format)
     {
-        if (dst_size == new_width * new_height * rf_bytes_per_pixel(image.format))
-        {
-            // Formats supported by stbir can avoid a temporary allocation
-            if (image.format == RF_UNCOMPRESSED_GRAYSCALE &&
-                image.format == RF_UNCOMPRESSED_GRAY_ALPHA &&
-                image.format == RF_UNCOMPRESSED_R8G8B8 &&
-                image.format == RF_UNCOMPRESSED_R8G8B8A8)
-            {
-                int stbir_format = 0;
+        RF_SET_STBIR_ALLOCATOR(temp_allocator);
+        stbir_resize_uint8((unsigned char*) image.data, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, stb_format);
+        RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
 
-                switch (image.format)
-                {
-                    case RF_UNCOMPRESSED_GRAYSCALE: stbir_format = 1;
-                    case RF_UNCOMPRESSED_GRAY_ALPHA: stbir_format = 2;
-                    case RF_UNCOMPRESSED_R8G8B8: stbir_format = 3;
-                    case RF_UNCOMPRESSED_R8G8B8A8: stbir_format = 4;
-                    default: break;
-                }
-
-                RF_SET_STBIR_ALLOCATOR(temp_allocator);
-                stbir_resize_uint8((unsigned char*) image.data, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, stbir_format);
-                RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
-
-                result.data   = dst;
-                result.width  = new_width;
-                result.height = new_height;
-                result.format = image.format;
-                result.valid  = true;
-            }
-            else // if the format of the image is not supported by stbir
-            {
-                int pixels_size = image.width * image.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-                rf_color* pixels = RF_ALLOC(temp_allocator, pixels_size);
-
-                if (pixels)
-                {
-                    bool format_success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, pixels, pixels_size);
-                    RF_ASSERT(format_success);
-
-                    RF_SET_STBIR_ALLOCATOR(temp_allocator);
-                    stbir_resize_uint8((unsigned char*)pixels, image.width, image.height, 0, (unsigned char*) pixels, new_width, new_height, 0, 4);
-                    RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
-
-                    format_success = rf_format_pixels(pixels, pixels_size, RF_UNCOMPRESSED_R8G8B8A8, dst, dst_size, image.format);
-                    RF_ASSERT(format_success);
-
-                    result.data   = dst;
-                    result.width  = new_width;
-                    result.height = new_height;
-                    result.format = image.format;
-                    result.valid  = true;
-                }
-                else RF_LOG_ERROR_V(RF_BAD_ALLOC, "Allocation of size %d failed.", image.width * image.height * sizeof(rf_color));
-
-                RF_FREE(temp_allocator, pixels);
-            }
-        }
+        result.data   = dst;
+        result.width  = new_width;
+        result.height = new_height;
+        result.format = image.format;
+        result.valid  = true;
     }
-    else RF_LOG_ERROR_V(RF_BAD_ARGUMENT, "Image is invalid.");
+    else // if the format of the image is not supported by stbir
+    {
+        int pixels_size = image.width * image.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
+        rf_color* pixels = RF_ALLOC(temp_allocator, pixels_size);
+
+        if (pixels)
+        {
+            bool format_success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, pixels, pixels_size);
+            RF_ASSERT(format_success);
+
+            RF_SET_STBIR_ALLOCATOR(temp_allocator);
+            stbir_resize_uint8((unsigned char*)pixels, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, 4);
+            RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
+
+            format_success = rf_format_pixels(pixels, pixels_size, RF_UNCOMPRESSED_R8G8B8A8, dst, dst_size, image.format);
+            RF_ASSERT(format_success);
+
+            result.data   = dst;
+            result.width  = new_width;
+            result.height = new_height;
+            result.format = image.format;
+            result.valid  = true;
+        }
+        else RF_LOG_ERROR_V(RF_BAD_ALLOC, "Allocation of size %d failed.", image.width * image.height * sizeof(rf_color));
+
+        RF_FREE(temp_allocator, pixels);
+    }
 
     return result;
 }
@@ -6888,43 +6894,45 @@ RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocato
     return result;
 }
 
+RF_API rf_rec rf_image_alpha_crop_rec(rf_image image, float threshold)
+{
+    if (!image.valid) return (rf_rec){0};
+
+    int bpp = rf_bytes_per_pixel(image.format);
+
+    int x_min = INT_MAX;
+    int x_max = 0;
+    int y_min = INT_MAX;
+    int y_max = 0;
+
+    char* src = image.data;
+
+    for (int y = 0; y < image.height; y++)
+    {
+        for (int x = 0; x < image.width; x++)
+        {
+            int pixel = (y * image.width + x) * bpp;
+            rf_color pixel_rgba32 = rf_format_one_pixel_to_rgba32(&src[pixel], image.format);
+
+            if (pixel_rgba32.a > (unsigned char)(threshold * 255.0f))
+            {
+                if (x < x_min) x_min = x;
+                if (x > x_max) x_max = x;
+                if (y < y_min) y_min = y;
+                if (y > y_max) y_max = y;
+            }
+        }
+    }
+
+    return (rf_rec) { x_min, y_min, (x_max + 1) - x_min, (y_max + 1) - y_min };
+}
+
 // Crop image depending on alpha value
 RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator)
 {
-    rf_image result = {0};
+    rf_rec crop = rf_image_alpha_crop_rec(image, threshold);
 
-    if (image.valid)
-    {
-        int bpp = rf_bytes_per_pixel(image.format);
-
-        int x_min = 65536; // Define a big enough number
-        int x_max = 0;
-        int y_min = 65536;
-        int y_max = 0;
-
-        for (int y = 0; y < image.height; y++)
-        {
-            for (int x = 0; x < image.width; x++)
-            {
-                rf_color pixel_rgba32 = rf_format_one_pixel_to_rgba32(((unsigned char*)image.data) + (y * image.width + x) * bpp, image.format);
-
-                if (pixel_rgba32.a > (unsigned char)(threshold * 255.0f))
-                {
-                    if (x < x_min) x_min = x;
-                    if (x > x_max) x_max = x;
-                    if (y < y_min) y_min = y;
-                    if (y > y_max) y_max = y;
-                }
-            }
-        }
-
-        rf_rec crop = { x_min, y_min, (x_max + 1) - x_min, (y_max + 1) - y_min };
-
-        result = rf_image_crop(image, crop, allocator);
-    }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
-
-    return result;
+    return rf_image_crop(image, crop, allocator);
 }
 
 // Dither image data to 16bpp or lower (Floyd-Steinberg dithering) Note: In case selected bpp do not represent an known 16bit format, dithered data is stored in the LSB part of the unsigned short
@@ -7062,9 +7070,17 @@ RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, int 
     return result;
 }
 
-RF_API rf_image rf_image_flip_vertical(rf_image image)
+RF_API rf_image rf_image_flip_vertical(rf_image image, rf_allocator allocator)
 {
-    return rf_image_flip_vertical_to_buffer(image, image.data, rf_image_size(image));
+    if (!image.valid) return (rf_image) {0};
+
+    int size = rf_image_size(image);
+    void* dst = RF_ALLOC(allocator, size);
+
+    rf_image result = rf_image_flip_vertical_to_buffer(image, dst, size);
+    if (!result.valid) RF_FREE(allocator, dst);
+
+    return result;
 }
 
 // Flip image horizontally
@@ -7097,9 +7113,17 @@ RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, in
     return result;
 }
 
-RF_API rf_image rf_image_flip_horizontal(rf_image image)
+RF_API rf_image rf_image_flip_horizontal(rf_image image, rf_allocator allocator)
 {
-    return rf_image_flip_horizontal_to_buffer(image, image.data, rf_image_size(image));
+    if (!image.valid) return (rf_image) {0};
+
+    int size = rf_image_size(image);
+    void* dst = RF_ALLOC(allocator, size);
+
+    rf_image result = rf_image_flip_horizontal_to_buffer(image, dst, size);
+    if (!result.valid) RF_FREE(allocator, dst);
+
+    return result;
 }
 
 // Rotate image clockwise 90deg
@@ -7541,7 +7565,7 @@ RF_API rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_colo
     {
         for (int i = 0; i < width; i++)
         {
-            float factor = ((float)i) / ((float)height);
+            float factor = ((float)i) / ((float)width);
 
             for (int j = 0; j < height; j++)
             {
@@ -12421,14 +12445,21 @@ RF_API void rf_unload_image_ez(rf_image image) { rf_unload_image(image, RF_DEFAU
 
 #pragma region image manipulation
 RF_API rf_image rf_image_copy_ez(rf_image image) { return rf_image_copy(image, RF_DEFAULT_ALLOCATOR); }
+
 RF_API rf_image rf_image_crop_ez(rf_image image, rf_rec crop) { return rf_image_crop(image, crop, RF_DEFAULT_ALLOCATOR); }
+
 RF_API rf_image rf_image_resize_ez(rf_image image, int new_width, int new_height) { return rf_image_resize(image, new_width, new_height, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_image_resize_nn_ez(rf_image image, int new_width, int new_height) { return rf_image_resize_nn(image, new_width, new_height, RF_DEFAULT_ALLOCATOR); }
+
 RF_API rf_image rf_image_format_ez(rf_image image, rf_uncompressed_pixel_format new_format) { return rf_image_format(image, new_format, RF_DEFAULT_ALLOCATOR); }
+
 RF_API rf_image rf_image_alpha_clear_ez(rf_image image, rf_color color, float threshold) { return rf_image_alpha_clear(image, color, threshold, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_image_alpha_premultiply_ez(rf_image image) { return rf_image_alpha_premultiply(image, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_image_alpha_crop_ez(rf_image image, float threshold) { return rf_image_alpha_crop(image, threshold, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp) { return rf_image_dither(image, r_bpp, g_bpp, b_bpp, a_bpp, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
+
+RF_API rf_image rf_image_flip_vertical_ez(rf_image image) { return rf_image_flip_vertical(image, RF_DEFAULT_ALLOCATOR); }
+RF_API rf_image rf_image_flip_horizontal_ez(rf_image image) { return rf_image_flip_horizontal(image, RF_DEFAULT_ALLOCATOR); }
 
 RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i) { return rf_get_seed_for_cellular_image(seeds_per_row, tile_size, i, RF_DEFAULT_RAND_PROC); }
 

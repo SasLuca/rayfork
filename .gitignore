@@ -7,10 +7,10 @@
 !.gitignore
 !.gitmodules
 
-!random-dev-scripts/
+!dev-scripts/
 !source/
 !rayfork-examples/
 
-!random-dev-scripts/**
+!dev-scripts/**
 !source/**
 !rayfork-examples/**

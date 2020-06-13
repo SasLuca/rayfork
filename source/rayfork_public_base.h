@@ -161,7 +161,8 @@ static inline bool rf_load_file_into_buffer(void* user_data, const char* filenam
         if (dst_size >= file_size)
         {
             int read_size = fread(dst, 1, file_size, file);
-            if (ferror(file) && read_size == file_size)
+            int no_error = ferror(file) == 0;
+            if (no_error && read_size == file_size)
             {
                 result = true;
             }
