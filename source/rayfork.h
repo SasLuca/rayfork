@@ -7,6 +7,7 @@
 #define RAYFORK_BASE_H
 
 #include "stdbool.h"
+#include "stdarg.h"
 #include "stdlib.h"
 #include "string.h"
 #include "stdint.h"
@@ -19,10 +20,6 @@
     #else
         #define RF_API extern
     #endif
-#endif
-
-#ifndef RF_INTERNAL_API
-    #define RF_INTERNAL_API RF_API
 #endif
 
 #ifndef RF_INTERNAL
@@ -48,19 +45,10 @@
     #endif
 #endif
 
-#ifndef RF_ASSERT
+#if !defined(RF_ASSERT) && defined(RAYFORK_ENABLE_ASSERTIONS)
     #include "assert.h"
     #define RF_ASSERT(condition) assert(condition)
 #endif
-
-#ifndef RF_LOG_IMPL_V
-    #define RF_LOG_IMPL_V(type, msg, file, line, proc_name, ...)
-#endif
-
-#define RF_LOG_V(type, msg, ...)             RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define RF_LOG(type, msg)                    RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__)
-#define RF_LOG_ERROR(error_type, msg)        RF_LOG(RF_LOG_TYPE_ERROR, "[ERROR]" msg)
-#define RF_LOG_ERROR_V(error_type, msg, ...) RF_LOG_V(RF_LOG_TYPE_ERROR, "[ERROR]" msg, __VA_ARGS__)
 
 #define RF_CONCAT2(a, b) a##b
 #define RF_CONCAT(a, b) RF_CONCAT2(a, b)
@@ -68,6 +56,9 @@
 #ifndef RF_MAX_FILEPATH_LEN
     #define RF_MAX_FILEPATH_LEN (1024)
 #endif
+
+#define RF_DEFAULT_LOGGER rf_libc_printf_logger
+#define RF_NULL_LOGGER NULL
 
 #define RF_NULL_ALLOCATOR           (RF_LIT(rf_allocator) {0})
 #define RF_ALLOC(allocator, size)   ((allocator).alloc_proc((allocator).user_data, (size)))
@@ -84,11 +75,13 @@
 
 typedef enum rf_error_type
 {
+    RF_NO_ERROR,
     RF_BAD_ARGUMENT,
     RF_BAD_ALLOC,
     RF_BAD_IO,
     RF_BAD_BUFFER_SIZE,
     RF_BAD_FORMAT,
+    RF_LIMIT_REACHED,
     RF_STBI_FAILED,
     RF_STBTT_FAILED,
     RF_UNSUPPORTED,
@@ -96,13 +89,15 @@ typedef enum rf_error_type
 
 typedef enum rf_log_type
 {
-    RF_LOG_TYPE_DEBUG,   // Useful mostly to rayfork devs
-    RF_LOG_TYPE_INFO,    // Information
-    RF_LOG_TYPE_WARNING, // Warnings about things to be careful about
-    RF_LOG_TYPE_ERROR,   // Errors that prevented functions from doing everything they advertised
+    RF_LOG_TYPE_NONE    = 0,
+    RF_LOG_TYPE_DEBUG   = 0x1, // Useful mostly to rayfork devs
+    RF_LOG_TYPE_INFO    = 0x2, // Information
+    RF_LOG_TYPE_WARNING = 0x4, // Warnings about things to be careful about
+    RF_LOG_TYPE_ERROR   = 0x8, // Errors that prevented functions from doing everything they advertised
 } rf_log_type;
 
 typedef int (*rf_rand_proc)(int min, int max);
+typedef void (*rf_log_proc)(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args);
 
 typedef struct rf_io_callbacks
 {
@@ -118,11 +113,7 @@ typedef struct rf_allocator
     void (*free_proc) (void* user_data, void* ptr_to_free);
 } rf_allocator;
 
-RF_API int rf_min_i(int a, int b);
-RF_API int rf_max_i(int a, int b);
-
-RF_API int rf_min_f(float a, float b);
-RF_API int rf_max_f(float a, float b);
+RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args);
 
 RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc);
 RF_API void  rf_libc_free_wrapper(void* user_data, void* ptr_to_free);
@@ -131,6 +122,13 @@ RF_API int  rf_get_file_size(void* user_data, const char* filename);
 RF_API bool rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
 
 RF_API int rf_default_rand_proc(int min, int max);
+
+RF_API rf_error_type rf_last_error();
+
+RF_API void rf_set_log_callback(rf_log_proc);
+RF_API void rf_set_log_filter(rf_log_type);
+RF_API rf_log_type rf_current_log_filter();
+RF_API const char* rf_log_type_str(rf_log_type);
 
 #endif // RAYFORK_BASE_H
 
@@ -1374,6 +1372,9 @@ typedef struct rf_context
 
     rf_gfx_context gfx_ctx;
 
+    rf_log_proc log;
+    rf_log_type log_filter;
+
     // Shapes global data
     rf_texture2d tex_shapes;
     rf_rec rec_tex_shapes;
@@ -1385,7 +1386,7 @@ typedef struct rf_context
 #pragma endregion
 
 #pragma region init
-RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_gfx_backend_init_data* gl);
+RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log_proc logger, rf_gfx_backend_init_data* gfx_data);
 #pragma endregion
 
 #pragma region defaults
