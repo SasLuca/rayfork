@@ -1,4 +1,6 @@
-[submodule "rayfork-examples"]
-	path = rayfork-examples
-	url = https://github.com/SasLuca/rayfork-examples
-	update = merge
+[submodule "rayfork-tests"]
+	path = tests/
+	url = https://github.com/SasLuca/rayfork-tests
+[submodule "tests"]
+	path = tests
+	url = https://github.com/SasLuca/rayfork-tests

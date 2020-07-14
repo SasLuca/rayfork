@@ -1,7 +1,7 @@
 #ifndef RF_AUDIO_H
 #define RF_AUDIO_H
 
-#include "rayfork_internal_base.h"
+#include "rayfork_internal_utils.h"
 #include "miniaudio/miniaudio.h"
 
 /*

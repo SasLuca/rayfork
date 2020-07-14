@@ -1,16 +1,16 @@
+# Exclude everything
 *
 
+# Except
 !CMakeLists.txt
 !README.md
-!logo.jpg
+!LICENSE.md
 
 !.gitignore
 !.gitmodules
 
-!dev-scripts/
 !source/
-!rayfork-examples/
+!tests/
 
-!dev-scripts/**
 !source/**
-!rayfork-examples/**
+!tests/**

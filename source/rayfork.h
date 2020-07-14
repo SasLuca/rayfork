@@ -1,51 +1,178 @@
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
-#include "math.h"
-#include "stdint.h"
+#pragma region rayfork common base
+
+#ifndef RAYFORK_BASE_H
+#define RAYFORK_BASE_H
+
+#include "stdbool.h"
+#include "stdlib.h"
 #include "string.h"
-#include "rayfork_public_base.h"
+#include "stdint.h"
+#include "stdio.h"
+#include "math.h"
+
+#ifndef RF_API
+    #ifdef __cplusplus
+        #define RF_API extern "C"
+    #else
+        #define RF_API extern
+    #endif
+#endif
+
+#ifndef RF_INTERNAL_API
+    #define RF_INTERNAL_API RF_API
+#endif
+
+#ifndef RF_INTERNAL
+    #define RF_INTERNAL static
+#endif
+
+// Used to make constant literals work even in C++ mode
+#ifdef __cplusplus
+    #define RF_LIT(type) type
+#else
+    #define RF_LIT(type) (type)
+#endif
+
+#ifndef RF_THREAD_LOCAL
+    #if __cplusplus >= 201103L
+        #define RF_THREAD_LOCAL thread_local
+    #elif __STDC_VERSION_ >= 201112L
+        #define RF_THREAD_LOCAL _Thread_local
+    #elif defined(__GNUC__) /* note that ICC (linux) and Clang are covered by __GNUC__ */
+        #define RF_THREAD_LOCAL __thread
+    #elif defined(_MSC_VER)
+        #define RF_THREAD_LOCAL __declspec(thread)
+    #endif
+#endif
+
+#ifndef RF_ASSERT
+    #include "assert.h"
+    #define RF_ASSERT(condition) assert(condition)
+#endif
+
+#ifndef RF_LOG_IMPL_V
+    #define RF_LOG_IMPL_V(type, msg, file, line, proc_name, ...)
+#endif
+
+#define RF_LOG_V(type, msg, ...)             RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define RF_LOG(type, msg)                    RF_LOG_IMPL_V(type, "[file: " __FILE__ "][line " __LINE__ "][proc: " __FUNCTION__ "]" msg, __FILE__, __LINE__, __FUNCTION__)
+#define RF_LOG_ERROR(error_type, msg)        RF_LOG(RF_LOG_TYPE_ERROR, "[ERROR]" msg)
+#define RF_LOG_ERROR_V(error_type, msg, ...) RF_LOG_V(RF_LOG_TYPE_ERROR, "[ERROR]" msg, __VA_ARGS__)
+
+#define RF_CONCAT2(a, b) a##b
+#define RF_CONCAT(a, b) RF_CONCAT2(a, b)
+
+#ifndef RF_MAX_FILEPATH_LEN
+    #define RF_MAX_FILEPATH_LEN (1024)
+#endif
+
+#define RF_NULL_ALLOCATOR           (RF_LIT(rf_allocator) {0})
+#define RF_ALLOC(allocator, size)   ((allocator).alloc_proc((allocator).user_data, (size)))
+#define RF_CALLOC(allocator, size)  rf__calloc_wrapper((allocator), 1, size)
+#define RF_FREE(allocator, pointer) ((allocator).free_proc((allocator).user_data, (pointer)))
+
+#define RF_NULL_IO                                (RF_LIT(rf_io_callbacks) {0})
+#define RF_FILE_SIZE(io, filename)                ((io).file_size_proc((io).user_data, filename))
+#define RF_READ_FILE(io, filename, dst, dst_size) ((io).read_file_proc((io).user_data, filename, dst, dst_size))
+
+#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_libc_malloc_wrapper, rf_libc_free_wrapper })
+#define RF_DEFAULT_RAND_PROC (rf_default_rand_proc)
+#define RF_DEFAULT_IO        (RF_LIT(rf_io_callbacks) { NULL, rf_get_file_size, rf_load_file_into_buffer })
+
+typedef enum rf_error_type
+{
+    RF_BAD_ARGUMENT,
+    RF_BAD_ALLOC,
+    RF_BAD_IO,
+    RF_BAD_BUFFER_SIZE,
+    RF_BAD_FORMAT,
+    RF_STBI_FAILED,
+    RF_STBTT_FAILED,
+    RF_UNSUPPORTED,
+} rf_error_type;
+
+typedef enum rf_log_type
+{
+    RF_LOG_TYPE_DEBUG,   // Useful mostly to rayfork devs
+    RF_LOG_TYPE_INFO,    // Information
+    RF_LOG_TYPE_WARNING, // Warnings about things to be careful about
+    RF_LOG_TYPE_ERROR,   // Errors that prevented functions from doing everything they advertised
+} rf_log_type;
+
+typedef int (*rf_rand_proc)(int min, int max);
+
+typedef struct rf_io_callbacks
+{
+    void* user_data;
+    int (*file_size_proc) (void* user_data, const char* filename);
+    bool (*read_file_proc) (void* user_data, const char* filename, void* dst, int dst_size); // Returns true if operation was successful
+} rf_io_callbacks;
+
+typedef struct rf_allocator
+{
+    void* user_data;
+    void* (*alloc_proc) (void* user_data, int size_to_alloc);
+    void (*free_proc) (void* user_data, void* ptr_to_free);
+} rf_allocator;
+
+RF_API int rf_min_i(int a, int b);
+RF_API int rf_max_i(int a, int b);
+
+RF_API int rf_min_f(float a, float b);
+RF_API int rf_max_f(float a, float b);
+
+RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc);
+RF_API void  rf_libc_free_wrapper(void* user_data, void* ptr_to_free);
+
+RF_API int  rf_get_file_size(void* user_data, const char* filename);
+RF_API bool rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
+
+RF_API int rf_default_rand_proc(int min, int max);
+
+#endif // RAYFORK_BASE_H
+
+#pragma endregion
 
 #pragma region macros and constants
 
-#ifdef __glad_h_
-    #error Macros defined in glad will overwrite opengl proc names in rayforh.h. Include rayfork.h before glad.h to fix this issue.
+#if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)
+    #define RF_NO_GRAPHICS_BACKEND_SELECTED_BY_THE_USER (1)
 #endif
 
 // If no graphics backend was set, choose OpenGL33 on desktop and OpenGL ES3 on mobile
-#if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)
+#if RF_NO_GRAPHICS_BACKEND_SELECTED_BY_THE_USER
     #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) || (defined(__linux__) && !defined(__ANDROID__ )) || (defined(__APPLE__) && defined(TARGET_OS_MAC))
-        #define RAYFORK_GRAPHICS_BACKEND_GL_33
-    #else // On mobile
-        #define RAYFORK_GRAPHICS_BACKEND_GL_ES3
+        #define RAYFORK_GRAPHICS_BACKEND_GL_33 (1)
+    #else // if on mobile
+        #define RAYFORK_GRAPHICS_BACKEND_GL_ES3 (1)
     #endif
 #endif
 
 // Check to make sure only one graphics backend was selected
-#if !(defined(RAYFORK_GRAPHICS_BACKEND_GL_33) ^ defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) ^ defined(RAYFORK_GRAPHICS_BACKEND_METAL) ^ defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX))
-    #error rayfork error: you can only set one graphics backend but 2 were detected.
+#if (defined(RAYFORK_GRAPHICS_BACKEND_GL_33) + defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) + defined(RAYFORK_GRAPHICS_BACKEND_METAL) + defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)) != 1
+    #error rayfork error: you can only set one graphics backend but 2 or more were detected.
 #endif
 
-#define RF_UNLOCKED_FPS (0)
+#define RF_SDF_CHAR_PADDING         (4)
+#define RF_SDF_ON_EDGE_VALUE        (128)
+#define RF_SDF_PIXEL_DIST_SCALE     (64.0f)
 
-#define RF_SDF_CHAR_PADDING       (4)
-#define RF_SDF_ON_EDGE_VALUE      (128)
-#define RF_SDF_PIXEL_DIST_SCALE   (64.0f)
-#define RF_BITMAP_ALPHA_THRESHOLD (80)
-
-// Default hardcoded values for ttf file loading
+#define RF_BITMAP_ALPHA_THRESHOLD   (80)
 #define RF_DEFAULT_FONT_SIZE        (64)
-#define RF_DEFAULT_CODEPOINTS       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
-#define RF_DEFAULT_FONT_FIRST_CHAR  (32)
-#define RF_DEFAULT_FONT_LAST_CHAR   (126)
-#define RF_DEFAULT_CODEPOINTS_COUNT (96) // ASCII 32 up to 126 is 96 glyphs (note that the range is inclusive)
-#define RF_DEFAULT_FONT_PADDING     (2)
+
+#define RF_BUILTIN_FONT_CHARS       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
+#define RF_BUILTIN_FONT_FIRST_CHAR  (32)
+#define RF_BUILTIN_FONT_LAST_CHAR   (126)
+#define RF_BUILTIN_CODEPOINTS_COUNT (96) // ASCII 32 up to 126 is 96 glyphs (note that the range is inclusive)
+#define RF_BUILTIN_FONT_PADDING     (2)
+
 #define RF_GLYPH_NOT_FOUND          (-1)
-#define RF_DEFAULT_CODEPOINT        (0x3f) // Codepoint defaults to '?' if invalid
+#define RF_INVALID_CODEPOINT        ('?')
 #define RF_DEFAULT_KEY_COLOR        (RF_MAGENTA)
 
-// Some Basic Colors
-// NOTE: Custom raylib color palette for amazing visuals on RF_WHITE background
 #define RF_LIGHTGRAY  (RF_LIT(rf_color) { 200, 200, 200, 255 })
 #define RF_GRAY       (RF_LIT(rf_color) { 130, 130, 130, 255 })
 #define RF_DARKGRAY   (RF_LIT(rf_color) {  80,  80,  80, 255 })
@@ -74,24 +201,24 @@
 #define RF_MAGENTA    (RF_LIT(rf_color) { 255,   0, 255, 255 })
 #define RF_RAYWHITE   (RF_LIT(rf_color) { 245, 245, 245, 255 })
 
-#ifndef RF_MAX_BATCH_ELEMENTS
+#ifndef RF_DEFAULT_BATCH_ELEMENTS_COUNT
     #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) || defined(RAYFORK_GRAPHICS_BACKEND_METAL)
-        #define RF_MAX_BATCH_ELEMENTS (2048)
+        #define RF_DEFAULT_BATCH_ELEMENTS_COUNT (2048)
     #else
-        #define RF_MAX_BATCH_ELEMENTS (8192)
+        #define RF_DEFAULT_BATCH_ELEMENTS_COUNT (8192)
     #endif
 #endif
 
-#if !defined(RF_MAX_BATCH_BUFFERING)
-    #define RF_MAX_BATCH_BUFFERING (1) // Max number of buffers for batching (multi-buffering)
+#if !defined(RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT)
+    #define RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT (1) // Max number of buffers for batching (multi-buffering)
 #endif
 
 #if !defined(RF_MAX_MATRIX_STACK_SIZE)
     #define RF_MAX_MATRIX_STACK_SIZE (32) // Max size of rf_mat rf__ctx->gl_ctx.stack
 #endif
 
-#if !defined(RF_MAX_DRAWCALL_REGISTERED)
-    #define RF_MAX_DRAWCALL_REGISTERED (256) // Max rf__ctx->gl_ctx.draws by state changes (mode, texture)
+#if !defined(RF_DEFAULT_BATCH_DRAW_CALLS_COUNT)
+    #define RF_DEFAULT_BATCH_DRAW_CALLS_COUNT (256) // Max rf__ctx->gl_ctx.draws by state changes (mode, texture)
 #endif
 
 //rf_shader and material limits
@@ -120,6 +247,11 @@
 #define RF_DEFAULT_ATTRIB_COLOR_NAME     "vertex_color"       // shader-location = 3
 #define RF_DEFAULT_ATTRIB_TANGENT_NAME   "vertex_tangent"     // shader-location = 4
 #define RF_DEFAULT_ATTRIB_TEXCOORD2_NAME "vertex_tex_coord2"  // shader-location = 5
+
+// Math
+#define RF_PI (3.14159265358979323846f)
+#define RF_DEG2RAD (RF_PI / 180.0f)
+#define RF_RAD2DEG (180.0f / RF_PI)
 
 #pragma endregion
 
@@ -627,11 +759,11 @@ typedef int rf_glyph_index;
 
 typedef struct rf_camera3d
 {
-    rf_vec3 position; // Camera position
-    rf_vec3 target;   // Camera target it looks-at
-    rf_vec3 up;       // Camera up vector (rotation over its axis)
-    float   fovy;     // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
-    int     type;     // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
+    rf_camera_type type;     // Camera type, defines GL_PROJECTION type: RF_CAMERA_PERSPECTIVE or RF_CAMERA_ORTHOGRAPHIC
+    rf_vec3        position; // Camera position
+    rf_vec3        target;   // Camera target it looks-at
+    rf_vec3        up;       // Camera up vector (rotation over its axis)
+    float          fovy;     // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
 } rf_camera3d;
 
 typedef struct rf_camera2d
@@ -772,13 +904,433 @@ typedef struct rf_base64_output
     unsigned char* buffer;
 } rf_base64_output;
 
+typedef struct rf_camera3d_state
+{
+    rf_vec2 camera_angle;         // rf_camera3d angle in plane XZ
+    float camera_target_distance; // rf_camera3d distance from position to target
+    float player_eyes_position;
+    rf_camera3d_mode camera_mode; // Current camera mode
+    int swing_counter; // Used for 1st person swinging movement
+    rf_vec2 previous_mouse_position;
+} rf_camera3d_state;
+
 #pragma endregion
 
 #pragma region graphics backends and context struct
 
+#pragma region gl backend structs
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-#include "rayfork_gfx_backend_gl.h"
+
+#pragma region opengl procs macro
+#if !defined(RF_GL_CALLING_CONVENTION) && (defined(_WIN32) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__))
+    #define RF_GL_CALLING_CONVENTION __stdcall *
+#else
+    #define RF_GL_CALLING_CONVENTION *
 #endif
+
+typedef struct rf_opengl_procs rf_opengl_procs;
+struct rf_opengl_procs
+{
+    void (RF_GL_CALLING_CONVENTION Viewport)(int x, int y, int width, int height);
+    void (RF_GL_CALLING_CONVENTION BindTexture)(unsigned int target, unsigned int texture);
+    void (RF_GL_CALLING_CONVENTION TexParameteri)(unsigned int target, unsigned int pname, int param);
+    void (RF_GL_CALLING_CONVENTION TexParameterf)(unsigned int target, unsigned int pname, float param);
+    void (RF_GL_CALLING_CONVENTION TexParameteriv)(unsigned int target, unsigned int pname, const int* params);
+    void (RF_GL_CALLING_CONVENTION BindFramebuffer)(unsigned int target, unsigned int framebuffer);
+    void (RF_GL_CALLING_CONVENTION Enable)(unsigned int cap);
+    void (RF_GL_CALLING_CONVENTION Disable)(unsigned int cap);
+    void (RF_GL_CALLING_CONVENTION Scissor)(int x, int y, int width, int height);
+    void (RF_GL_CALLING_CONVENTION DeleteTextures)(int n, const unsigned int* textures);
+    void (RF_GL_CALLING_CONVENTION DeleteRenderbuffers)(int n, const unsigned int* renderbuffers);
+    void (RF_GL_CALLING_CONVENTION DeleteFramebuffers)(int n, const unsigned int* framebuffers);
+    void (RF_GL_CALLING_CONVENTION DeleteVertexArrays)(int n, const unsigned int* arrays);
+    void (RF_GL_CALLING_CONVENTION DeleteBuffers)(int n, const unsigned int* buffers);
+    void (RF_GL_CALLING_CONVENTION ClearColor)(float red, float green, float blue, float alpha);
+    void (RF_GL_CALLING_CONVENTION Clear)(unsigned int mask);
+    void (RF_GL_CALLING_CONVENTION BindBuffer)(unsigned int target, unsigned int buffer);
+    void (RF_GL_CALLING_CONVENTION BufferSubData)(unsigned int target, ptrdiff_t offset, ptrdiff_t size, const void* data);
+    void (RF_GL_CALLING_CONVENTION BindVertexArray)(unsigned int array);
+    void (RF_GL_CALLING_CONVENTION GenBuffers)(int n, unsigned int* buffers);
+    void (RF_GL_CALLING_CONVENTION BufferData)(unsigned int target, ptrdiff_t size, const void* data, unsigned int usage);
+    void (RF_GL_CALLING_CONVENTION VertexAttribPointer)(unsigned int index, int size, unsigned int type, unsigned char normalized, int stride, const void* pointer);
+    void (RF_GL_CALLING_CONVENTION EnableVertexAttribArray)(unsigned int index);
+    void (RF_GL_CALLING_CONVENTION GenVertexArrays)(int n, unsigned int* arrays);
+    void (RF_GL_CALLING_CONVENTION VertexAttrib3f)(unsigned int index, float x, float y, float z);
+    void (RF_GL_CALLING_CONVENTION DisableVertexAttribArray)(unsigned int index);
+    void (RF_GL_CALLING_CONVENTION VertexAttrib4f)(unsigned int index, float x, float y, float z, float w);
+    void (RF_GL_CALLING_CONVENTION VertexAttrib2f)(unsigned int index, float x, float y);
+    void (RF_GL_CALLING_CONVENTION UseProgram)(unsigned int program);
+    void (RF_GL_CALLING_CONVENTION Uniform4f)(int location, float v0, float v1, float v2, float v3);
+    void (RF_GL_CALLING_CONVENTION ActiveTexture)(unsigned int texture);
+    void (RF_GL_CALLING_CONVENTION Uniform1i)(int location, int v0);
+    void (RF_GL_CALLING_CONVENTION UniformMatrix4fv)(int location, int count, unsigned char transpose, const float* value);
+    void (RF_GL_CALLING_CONVENTION DrawElements)(unsigned int mode, int count, unsigned int type, const void* indices);
+    void (RF_GL_CALLING_CONVENTION DrawArrays)(unsigned int mode, int first, int count);
+    void (RF_GL_CALLING_CONVENTION PixelStorei)(unsigned int pname, int param);
+    void (RF_GL_CALLING_CONVENTION GenTextures)(int n, unsigned int* textures);
+    void (RF_GL_CALLING_CONVENTION TexImage2D)(unsigned int target, int level, int internalformat, int width, int height, int border, unsigned int format, unsigned int type, const void* pixels);
+    void (RF_GL_CALLING_CONVENTION GenRenderbuffers)(int n, unsigned int* renderbuffers);
+    void (RF_GL_CALLING_CONVENTION BindRenderbuffer)(unsigned int target, unsigned int renderbuffer);
+    void (RF_GL_CALLING_CONVENTION RenderbufferStorage)(unsigned int target, unsigned int internalformat, int width, int height);
+    void (RF_GL_CALLING_CONVENTION CompressedTexImage2D)(unsigned int target, int level, unsigned int internalformat, int width, int height, int border, int imageSize, const void* data);
+    void (RF_GL_CALLING_CONVENTION TexSubImage2D)(unsigned int target, int level, int txoffset, int yoffset, int width, int height, unsigned int format, unsigned int type, const void* pixels);
+    void (RF_GL_CALLING_CONVENTION GenerateMipmap)(unsigned int target);
+    void (RF_GL_CALLING_CONVENTION ReadPixels)(int x, int y, int width, int height, unsigned int format, unsigned int type, void* pixels);
+    void (RF_GL_CALLING_CONVENTION GenFramebuffers)(int n, unsigned int* framebuffers);
+    void (RF_GL_CALLING_CONVENTION FramebufferTexture2D)(unsigned int target, unsigned int attachment, unsigned int textarget, unsigned int texture, int level);
+    void (RF_GL_CALLING_CONVENTION FramebufferRenderbuffer)(unsigned int target, unsigned int attachment, unsigned int renderbuffertarget, unsigned int renderbuffer);
+    unsigned int (RF_GL_CALLING_CONVENTION CheckFramebufferStatus)(unsigned int target);
+    unsigned int (RF_GL_CALLING_CONVENTION CreateShader)(unsigned int type);
+    void (RF_GL_CALLING_CONVENTION ShaderSource)(unsigned int shader, int count, const char** string, const int* length);
+    void (RF_GL_CALLING_CONVENTION CompileShader)(unsigned int shader);
+    void (RF_GL_CALLING_CONVENTION GetShaderiv)(unsigned int shader, unsigned int pname, int* params);
+    void (RF_GL_CALLING_CONVENTION GetShaderInfoLog)(unsigned int shader, int bufSize, int* length, char* infoLog);
+    unsigned int (RF_GL_CALLING_CONVENTION CreateProgram)();
+    void (RF_GL_CALLING_CONVENTION AttachShader)(unsigned int program, unsigned int shader);
+    void (RF_GL_CALLING_CONVENTION BindAttribLocation)(unsigned int program, unsigned int index, const char* name);
+    void (RF_GL_CALLING_CONVENTION LinkProgram)(unsigned int program);
+    void (RF_GL_CALLING_CONVENTION GetProgramiv)(unsigned int program, unsigned int pname, int* params);
+    void (RF_GL_CALLING_CONVENTION GetProgramInfoLog)(unsigned int program, int bufSize, int* length, char* infoLog);
+    void (RF_GL_CALLING_CONVENTION DeleteProgram)(unsigned int program);
+    int (RF_GL_CALLING_CONVENTION GetAttribLocation)(unsigned int program, const char* name);
+    int (RF_GL_CALLING_CONVENTION GetUniformLocation)(unsigned int program, const char* name);
+    void (RF_GL_CALLING_CONVENTION DetachShader)(unsigned int program, unsigned int shader);
+    void (RF_GL_CALLING_CONVENTION DeleteShader)(unsigned int shader);
+
+    void (RF_GL_CALLING_CONVENTION GetTexImage)(unsigned int target, int level, unsigned int format, unsigned int type, void* pixels); // NULL for OpenGL ES3
+
+    void (RF_GL_CALLING_CONVENTION GetActiveUniform)(unsigned int program, unsigned int index, int bufSize, int* length, int* size, unsigned int* type, char* name);
+    void (RF_GL_CALLING_CONVENTION Uniform1f)(int location, float v0);
+    void (RF_GL_CALLING_CONVENTION Uniform1fv)(int location, int count, const float* value);
+    void (RF_GL_CALLING_CONVENTION Uniform2fv)(int location, int count, const float* value);
+    void (RF_GL_CALLING_CONVENTION Uniform3fv)(int location, int count, const float* value);
+    void (RF_GL_CALLING_CONVENTION Uniform4fv)(int location, int count, const float* value);
+    void (RF_GL_CALLING_CONVENTION Uniform1iv)(int location, int count, const int* value);
+    void (RF_GL_CALLING_CONVENTION Uniform2iv)(int location, int count, const int* value);
+    void (RF_GL_CALLING_CONVENTION Uniform3iv)(int location, int count, const int* value);
+    void (RF_GL_CALLING_CONVENTION Uniform4iv)(int location, int count, const int* value);
+    const unsigned char* (RF_GL_CALLING_CONVENTION GetString)(unsigned int name);
+    void (RF_GL_CALLING_CONVENTION GetFloatv)(unsigned int pname, float* data);
+    void (RF_GL_CALLING_CONVENTION DepthFunc)(unsigned int func);
+    void (RF_GL_CALLING_CONVENTION BlendFunc)(unsigned int sfactor, unsigned int dfactor);
+    void (RF_GL_CALLING_CONVENTION CullFace)(unsigned int mode);
+    void (RF_GL_CALLING_CONVENTION FrontFace)(unsigned int mode);
+
+    //On OpenGL33 we only set glClearDepth but on OpenGL ES3 we set glClearDepthf. In the gl backend we use a macro to choose the correct glClearDepth function depending on the gl version
+    void (RF_GL_CALLING_CONVENTION ClearDepth)(double depth);
+    void (RF_GL_CALLING_CONVENTION ClearDepthf)(float depth);
+
+    void (RF_GL_CALLING_CONVENTION GetIntegerv)(unsigned int pname, int* data); // OpenGL 33 only, can be NULL in OpenGL ES3
+    const unsigned char* (RF_GL_CALLING_CONVENTION GetStringi)(unsigned int name, unsigned int index);
+
+    void (RF_GL_CALLING_CONVENTION PolygonMode)(unsigned int face, unsigned int mode); // OpenGL 33 only
+};
+
+#define RF_OPENGL_PROC_EXT(ext, gl_proc_name) RF_CONCAT(ext, gl_proc_name)
+
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
+#define RF_DEFAULT_OPENGL_PROCS_EXT(ext) (rf_opengl_procs) { \
+    ((void (RF_GL_CALLING_CONVENTION )(int x, int y, int width, int height))RF_OPENGL_PROC_EXT(ext, Viewport)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int texture))RF_OPENGL_PROC_EXT(ext, BindTexture)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int pname, int param))RF_OPENGL_PROC_EXT(ext, TexParameteri)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int pname, float param))RF_OPENGL_PROC_EXT(ext, TexParameterf)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int pname, const int* params))RF_OPENGL_PROC_EXT(ext, TexParameteriv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int framebuffer))RF_OPENGL_PROC_EXT(ext, BindFramebuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int cap))RF_OPENGL_PROC_EXT(ext, Enable)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int cap))RF_OPENGL_PROC_EXT(ext, Disable)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int x, int y, int width, int height))RF_OPENGL_PROC_EXT(ext, Scissor)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, const unsigned int* textures))RF_OPENGL_PROC_EXT(ext, DeleteTextures)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, const unsigned int* renderbuffers))RF_OPENGL_PROC_EXT(ext, DeleteRenderbuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, const unsigned int* framebuffers))RF_OPENGL_PROC_EXT(ext, DeleteFramebuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, const unsigned int* arrays))RF_OPENGL_PROC_EXT(ext, DeleteVertexArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, const unsigned int* buffers))RF_OPENGL_PROC_EXT(ext, DeleteBuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(float red, float green, float blue, float alpha))RF_OPENGL_PROC_EXT(ext, ClearColor)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int mask))RF_OPENGL_PROC_EXT(ext, Clear)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int buffer))RF_OPENGL_PROC_EXT(ext, BindBuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, ptrdiff_t offset, ptrdiff_t size, const void* data))RF_OPENGL_PROC_EXT(ext, BufferSubData)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int array))RF_OPENGL_PROC_EXT(ext, BindVertexArray)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, unsigned int* buffers))RF_OPENGL_PROC_EXT(ext, GenBuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, ptrdiff_t size, const void* data, unsigned int usage))RF_OPENGL_PROC_EXT(ext, BufferData)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index, int size, unsigned int type, unsigned char normalized, int stride, const void* pointer))RF_OPENGL_PROC_EXT(ext, VertexAttribPointer)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index))RF_OPENGL_PROC_EXT(ext, EnableVertexAttribArray)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, unsigned int* arrays))RF_OPENGL_PROC_EXT(ext, GenVertexArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index, float x, float y, float z))RF_OPENGL_PROC_EXT(ext, VertexAttrib3f)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index))RF_OPENGL_PROC_EXT(ext, DisableVertexAttribArray)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index, float x, float y, float z, float w))RF_OPENGL_PROC_EXT(ext, VertexAttrib4f)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int index, float x, float y))RF_OPENGL_PROC_EXT(ext, VertexAttrib2f)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program))RF_OPENGL_PROC_EXT(ext, UseProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, float v0, float v1, float v2, float v3))RF_OPENGL_PROC_EXT(ext, Uniform4f)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int texture))RF_OPENGL_PROC_EXT(ext, ActiveTexture)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int v0))RF_OPENGL_PROC_EXT(ext, Uniform1i)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, unsigned char transpose, const float* value))RF_OPENGL_PROC_EXT(ext, UniformMatrix4fv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int mode, int count, unsigned int type, const void* indices))RF_OPENGL_PROC_EXT(ext, DrawElements)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int mode, int first, int count))RF_OPENGL_PROC_EXT(ext, DrawArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int pname, int param))RF_OPENGL_PROC_EXT(ext, PixelStorei)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, unsigned int* textures))RF_OPENGL_PROC_EXT(ext, GenTextures)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, int level, int internalformat, int width, int height, int border, unsigned int format, unsigned int type, const void* pixels))RF_OPENGL_PROC_EXT(ext, TexImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, unsigned int* renderbuffers))RF_OPENGL_PROC_EXT(ext, GenRenderbuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int renderbuffer))RF_OPENGL_PROC_EXT(ext, BindRenderbuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int internalformat, int width, int height))RF_OPENGL_PROC_EXT(ext, RenderbufferStorage)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, int level, unsigned int internalformat, int width, int height, int border, int imageSize, const void* data))RF_OPENGL_PROC_EXT(ext, CompressedTexImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, int level, int txoffset, int yoffset, int width, int height, unsigned int format, unsigned int type, const void* pixels))RF_OPENGL_PROC_EXT(ext, TexSubImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target))RF_OPENGL_PROC_EXT(ext, GenerateMipmap)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int x, int y, int width, int height, unsigned int format, unsigned int type, void* pixels))RF_OPENGL_PROC_EXT(ext, ReadPixels)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int n, unsigned int* framebuffers))RF_OPENGL_PROC_EXT(ext, GenFramebuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int attachment, unsigned int textarget, unsigned int texture, int level))RF_OPENGL_PROC_EXT(ext, FramebufferTexture2D)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, unsigned int attachment, unsigned int renderbuffertarget, unsigned int renderbuffer))RF_OPENGL_PROC_EXT(ext, FramebufferRenderbuffer)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION )(unsigned int target))RF_OPENGL_PROC_EXT(ext, CheckFramebufferStatus)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION )(unsigned int type))RF_OPENGL_PROC_EXT(ext, CreateShader)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int shader, int count, const char** string, const int* length))RF_OPENGL_PROC_EXT(ext, ShaderSource)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int shader))RF_OPENGL_PROC_EXT(ext, CompileShader)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int shader, unsigned int pname, int* params))RF_OPENGL_PROC_EXT(ext, GetShaderiv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int shader, int bufSize, int* length, char* infoLog))RF_OPENGL_PROC_EXT(ext, GetShaderInfoLog)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION )())RF_OPENGL_PROC_EXT(ext, CreateProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, unsigned int shader))RF_OPENGL_PROC_EXT(ext, AttachShader)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, unsigned int index, const char* name))RF_OPENGL_PROC_EXT(ext, BindAttribLocation)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program))RF_OPENGL_PROC_EXT(ext, LinkProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, unsigned int pname, int* params))RF_OPENGL_PROC_EXT(ext, GetProgramiv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, int bufSize, int* length, char* infoLog))RF_OPENGL_PROC_EXT(ext, GetProgramInfoLog)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program))RF_OPENGL_PROC_EXT(ext, DeleteProgram)),\
+    ((int (RF_GL_CALLING_CONVENTION )(unsigned int program, const char* name))RF_OPENGL_PROC_EXT(ext, GetAttribLocation)),\
+    ((int (RF_GL_CALLING_CONVENTION )(unsigned int program, const char* name))RF_OPENGL_PROC_EXT(ext, GetUniformLocation)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, unsigned int shader))RF_OPENGL_PROC_EXT(ext, DetachShader)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int shader))RF_OPENGL_PROC_EXT(ext, DeleteShader)),\
+    \
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int target, int level, unsigned int format, unsigned int type, void* pixels))RF_OPENGL_PROC_EXT(ext, GetTexImage)),\
+    \
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int program, unsigned int index, int bufSize, int* length, int* size, unsigned int* type, char* name))RF_OPENGL_PROC_EXT(ext, GetActiveUniform)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, float v0))RF_OPENGL_PROC_EXT(ext, Uniform1f)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform1fv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform2fv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform3fv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform4fv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform1iv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform2iv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform3iv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform4iv)),\
+    ((const unsigned char* (RF_GL_CALLING_CONVENTION )(unsigned int name))RF_OPENGL_PROC_EXT(ext, GetString)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int pname, float* data))RF_OPENGL_PROC_EXT(ext, GetFloatv)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int func))RF_OPENGL_PROC_EXT(ext, DepthFunc)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int sfactor, unsigned int dfactor))RF_OPENGL_PROC_EXT(ext, BlendFunc)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int mode))RF_OPENGL_PROC_EXT(ext, CullFace)),\
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int mode))RF_OPENGL_PROC_EXT(ext, FrontFace)),\
+    \
+    /*On OpenGL33 we only set glClearDepth but on OpenGLES2 we set glClearDepthf. In the gl backend we use a macro to choose the correct glClearDepth function depending on the gl version*/\
+    ((void (RF_GL_CALLING_CONVENTION )(double depth))RF_OPENGL_PROC_EXT(ext, ClearDepth)),\
+    NULL /*glClearDepthf*/,\
+    \
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int pname, int* data))RF_OPENGL_PROC_EXT(ext, GetIntegerv)),\
+    ((const unsigned char* (RF_GL_CALLING_CONVENTION )(unsigned int name, unsigned int index))RF_OPENGL_PROC_EXT(ext, GetStringi)),\
+    \
+    ((void (RF_GL_CALLING_CONVENTION )(unsigned int face, unsigned int mode))RF_OPENGL_PROC_EXT(ext, PolygonMode)), /*OpenGL 33 only*/ \
+}
+
+#else
+#define RF_DEFAULT_OPENGL_PROCS_EXT(ext) (rf_opengl_procs) { \
+    ((void (RF_GL_CALLING_CONVENTION)(int x, int y, int width, int height))RF_OPENGL_PROC_EXT(ext, Viewport)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int texture))RF_OPENGL_PROC_EXT(ext, BindTexture)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int pname, int param))RF_OPENGL_PROC_EXT(ext, TexParameteri)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int pname, float param))RF_OPENGL_PROC_EXT(ext, TexParameterf)),\
+    NULL, /*glTexParameteri not needed for OpenGL ES3*/ \
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int framebuffer))RF_OPENGL_PROC_EXT(ext, BindFramebuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int cap))RF_OPENGL_PROC_EXT(ext, Enable)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int cap))RF_OPENGL_PROC_EXT(ext, Disable)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int x, int y, int width, int height))RF_OPENGL_PROC_EXT(ext, Scissor)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, const unsigned int* textures))RF_OPENGL_PROC_EXT(ext, DeleteTextures)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, const unsigned int* renderbuffers))RF_OPENGL_PROC_EXT(ext, DeleteRenderbuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, const unsigned int* framebuffers))RF_OPENGL_PROC_EXT(ext, DeleteFramebuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, const unsigned int* arrays))RF_OPENGL_PROC_EXT(ext, DeleteVertexArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, const unsigned int* vertex_buffers))RF_OPENGL_PROC_EXT(ext, DeleteBuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(float red, float green, float blue, float alpha))RF_OPENGL_PROC_EXT(ext, ClearColor)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int mask))RF_OPENGL_PROC_EXT(ext, Clear)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int buffer))RF_OPENGL_PROC_EXT(ext, BindBuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, ptrdiff_t offset, ptrdiff_t size, const void* data))RF_OPENGL_PROC_EXT(ext, BufferSubData)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int array))RF_OPENGL_PROC_EXT(ext, BindVertexArray)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, unsigned int* vertex_buffers))RF_OPENGL_PROC_EXT(ext, GenBuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, ptrdiff_t size, const void* data, unsigned int usage))RF_OPENGL_PROC_EXT(ext, BufferData)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index, int size, unsigned int type, unsigned char normalized, int stride, const void* pointer))RF_OPENGL_PROC_EXT(ext, VertexAttribPointer)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index))RF_OPENGL_PROC_EXT(ext, EnableVertexAttribArray)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, unsigned int* arrays))RF_OPENGL_PROC_EXT(ext, GenVertexArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index, float x, float y, float z))RF_OPENGL_PROC_EXT(ext, VertexAttrib3f)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index))RF_OPENGL_PROC_EXT(ext, DisableVertexAttribArray)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index, float x, float y, float z, float w))RF_OPENGL_PROC_EXT(ext, VertexAttrib4f)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int index, float x, float y))RF_OPENGL_PROC_EXT(ext, VertexAttrib2f)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program))RF_OPENGL_PROC_EXT(ext, UseProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, float v0, float v1, float v2, float v3))RF_OPENGL_PROC_EXT(ext, Uniform4f)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int texture))RF_OPENGL_PROC_EXT(ext, ActiveTexture)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int v0))RF_OPENGL_PROC_EXT(ext, Uniform1i)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, unsigned char transpose, const float* value))RF_OPENGL_PROC_EXT(ext, UniformMatrix4fv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int mode, int count, unsigned int type, const void* indices))RF_OPENGL_PROC_EXT(ext, DrawElements)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int mode, int first, int count))RF_OPENGL_PROC_EXT(ext, DrawArrays)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int pname, int param))RF_OPENGL_PROC_EXT(ext, PixelStorei)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, unsigned int* textures))RF_OPENGL_PROC_EXT(ext, GenTextures)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, int level, int internalformat, int width, int height, int border, unsigned int format, unsigned int type, const void* pixels))RF_OPENGL_PROC_EXT(ext, TexImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, unsigned int* renderbuffers))RF_OPENGL_PROC_EXT(ext, GenRenderbuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int renderbuffer))RF_OPENGL_PROC_EXT(ext, BindRenderbuffer)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int internalformat, int width, int height))RF_OPENGL_PROC_EXT(ext, RenderbufferStorage)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, int level, unsigned int internalformat, int width, int height, int border, int imageSize, const void* data))RF_OPENGL_PROC_EXT(ext, CompressedTexImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, int level, int txoffset, int yoffset, int width, int height, unsigned int format, unsigned int type, const void* pixels))RF_OPENGL_PROC_EXT(ext, TexSubImage2D)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target))RF_OPENGL_PROC_EXT(ext, GenerateMipmap)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int x, int y, int width, int height, unsigned int format, unsigned int type, void* pixels))RF_OPENGL_PROC_EXT(ext, ReadPixels)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int n, unsigned int* framebuffers))RF_OPENGL_PROC_EXT(ext, GenFramebuffers)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int attachment, unsigned int textarget, unsigned int texture, int level))RF_OPENGL_PROC_EXT(ext, FramebufferTexture2D)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int target, unsigned int attachment, unsigned int renderbuffertarget, unsigned int renderbuffer))RF_OPENGL_PROC_EXT(ext, FramebufferRenderbuffer)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION)(unsigned int target))RF_OPENGL_PROC_EXT(ext, CheckFramebufferStatus)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION)(unsigned int type))RF_OPENGL_PROC_EXT(ext, CreateShader)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int shader, int count, const char** string, const int* length))RF_OPENGL_PROC_EXT(ext, ShaderSource)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int shader))RF_OPENGL_PROC_EXT(ext, CompileShader)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int shader, unsigned int pname, int* params))RF_OPENGL_PROC_EXT(ext, GetShaderiv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int shader, int bufSize, int* length, char* infoLog))RF_OPENGL_PROC_EXT(ext, GetShaderInfoLog)),\
+    ((unsigned int (RF_GL_CALLING_CONVENTION)())RF_OPENGL_PROC_EXT(ext, CreateProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, unsigned int shader))RF_OPENGL_PROC_EXT(ext, AttachShader)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, unsigned int index, const char* name))RF_OPENGL_PROC_EXT(ext, BindAttribLocation)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program))RF_OPENGL_PROC_EXT(ext, LinkProgram)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, unsigned int pname, int* params))RF_OPENGL_PROC_EXT(ext, GetProgramiv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, int bufSize, int* length, char* infoLog))RF_OPENGL_PROC_EXT(ext, GetProgramInfoLog)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program))RF_OPENGL_PROC_EXT(ext, DeleteProgram)),\
+    ((int (RF_GL_CALLING_CONVENTION)(unsigned int program, const char* name))RF_OPENGL_PROC_EXT(ext, GetAttribLocation)),\
+    ((int (RF_GL_CALLING_CONVENTION)(unsigned int program, const char* name))RF_OPENGL_PROC_EXT(ext, GetUniformLocation)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, unsigned int shader))RF_OPENGL_PROC_EXT(ext, DetachShader)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int shader))RF_OPENGL_PROC_EXT(ext, DeleteShader)),\
+    NULL, /*glGetTexImage is NULL for opengl es3*/ \
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int program, unsigned int index, int bufSize, int* length, int* size, unsigned int* type, char* name))RF_OPENGL_PROC_EXT(ext, GetActiveUniform)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, float v0))RF_OPENGL_PROC_EXT(ext, Uniform1f)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform1fv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform2fv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform3fv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const float* value))RF_OPENGL_PROC_EXT(ext, Uniform4fv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform1iv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform2iv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform3iv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(int location, int count, const int* value))RF_OPENGL_PROC_EXT(ext, Uniform4iv)),\
+    ((const unsigned char* (RF_GL_CALLING_CONVENTION)(unsigned int name))RF_OPENGL_PROC_EXT(ext, GetString)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int pname, float* data))RF_OPENGL_PROC_EXT(ext, GetFloatv)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int func))RF_OPENGL_PROC_EXT(ext, DepthFunc)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int sfactor, unsigned int dfactor))RF_OPENGL_PROC_EXT(ext, BlendFunc)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int mode))RF_OPENGL_PROC_EXT(ext, CullFace)),\
+    ((void (RF_GL_CALLING_CONVENTION)(unsigned int mode))RF_OPENGL_PROC_EXT(ext, FrontFace)),\
+    /*On OpenGL33 we only set glClearDepth but on OpenGLES2 we set glClearDepthf. In the gl backend we use a macro to choose the correct glClearDepth function depending on the gl version*/\
+    NULL /*glClearDepth*/,\
+    ((void (RF_GL_CALLING_CONVENTION)(float depth))RF_OPENGL_PROC_EXT(ext, ClearDepthf)),\
+    NULL /*OpenGL 33 only, should be NULL in OpenGL ES3*/,\
+    ((const unsigned char* (RF_GL_CALLING_CONVENTION)(unsigned int name, unsigned int index))RF_OPENGL_PROC_EXT(ext, GetStringi)),\
+    NULL /*glPolygonMode is OpenGL 33 only*/ \
+}
+#endif
+
+#define RF_DEFAULT_OPENGL_PROCS RF_DEFAULT_OPENGL_PROCS_EXT(gl)
+#define RF_DEFAULT_GFX_BACKEND_INIT_DATA &RF_DEFAULT_OPENGL_PROCS
+
+#pragma endregion
+
+typedef float rf_gfx_vertex_data_type;
+typedef float rf_gfx_texcoord_data_type;
+typedef unsigned char rf_gfx_color_data_type;
+#if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
+typedef unsigned int rf_gfx_vertex_index_data_type;
+#else
+typedef unsigned short rf_gfx_vertex_index_data_type;
+#endif
+
+#define RF_GFX_VERTEX_COMPONENT_COUNT       (3 * 4) // 3 float by vertex, 4 vertex by quad
+#define RF_GFX_TEXCOORD_COMPONENT_COUNT     (2 * 4) // 2 float by texcoord, 4 texcoord by quad
+#define RF_GFX_COLOR_COMPONENT_COUNT        (4 * 4) // 4 float by color, 4 colors by quad
+#define RF_GFX_VERTEX_INDEX_COMPONENT_COUNT (6)     // 6 int by quad (indices)
+
+// Dynamic vertex buffers (position + texcoords + colors + indices arrays)
+typedef struct rf_vertex_buffer
+{
+    int elements_count; // Number of elements in the buffer (QUADS)
+    int v_counter;      // Vertex position counter to process (and draw) from full buffer
+    int tc_counter;     // Vertex texcoord counter to process (and draw) from full buffer
+    int c_counter;      // Vertex color counter to process (and draw) from full buffer
+
+    unsigned int vao_id;    // OpenGL Vertex Array Object id
+    unsigned int vbo_id[4]; // OpenGL Vertex Buffer Objects id (4 types of vertex data)
+
+    rf_gfx_vertex_data_type*       vertices;   // Vertex position (XYZ - 3 components per vertex) (shader-location = 0)
+    rf_gfx_texcoord_data_type*     texcoords;  // Vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
+    rf_gfx_color_data_type*        colors;     // Vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
+    rf_gfx_vertex_index_data_type* indices;    // Vertex indices (in case vertex data comes indexed) (6 indices per quad)
+} rf_vertex_buffer;
+
+typedef struct rf_draw_call
+{
+    rf_drawing_mode mode;    // Drawing mode: RF_LINES, RF_TRIANGLES, RF_QUADS
+    int vertex_count;        // Number of vertex of the draw
+    int vertex_alignment;    // Number of vertex required for index alignment (LINES, TRIANGLES)
+    //unsigned int vao_id;   // Vertex array id to be used on the draw
+    //unsigned int shaderId; // rf_shader id to be used on the draw
+    unsigned int texture_id; // rf_texture id to be used on the draw
+    // TODO: Support additional texture units?
+
+    //rf_mat projection;     // Projection matrix for this draw
+    //rf_mat modelview;      // Modelview matrix for this draw
+} rf_draw_call;
+
+typedef struct rf_gfx_context
+{
+    rf_opengl_procs gl;
+
+    struct {
+        bool tex_comp_dxt_supported;             // DDS texture compression support
+        bool tex_comp_etc1_supported;            // ETC1 texture compression support
+        bool tex_comp_etc2_supported;            // ETC2/EAC texture compression support
+        bool tex_comp_pvrt_supported;            // PVR texture compression support
+        bool tex_comp_astc_supported;            // ASTC texture compression support
+        bool tex_npot_supported;                 // NPOT textures full support
+        bool tex_float_supported;                // float textures support (32 bit per channel)
+        bool tex_depth_supported;                // Depth textures supported
+        int max_depth_bits;                      // Maximum bits for depth component
+        bool tex_mirror_clamp_supported;         // Clamp mirror wrap mode supported
+        bool tex_anisotropic_filter_supported;   // Anisotropic texture filtering support
+        float max_anisotropic_level;             // Maximum anisotropy level supported (minimum is 2.0f)
+        bool debug_marker_supported;             // Debug marker support
+    } extensions;
+} rf_gfx_context;
+
+#endif // defined(RAYFORK_GRAPHICS_BACKEND_GL_33) || defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
+
+#pragma endregion
+
+typedef void rf_gfx_backend_init_data;
+
+typedef struct rf_render_batch
+{
+    int vertex_buffers_count;
+    int current_buffer;
+    rf_vertex_buffer* vertex_buffers;
+
+    int draw_calls_size;
+    int draw_calls_counter;
+    rf_draw_call* draw_calls;
+    float current_depth; // Current depth value for next draw
+
+    bool valid;
+} rf_render_batch;
+
+typedef struct rf_one_element_vertex_buffer
+    {
+        rf_gfx_vertex_data_type vertices[1 *RF_GFX_VERTEX_COMPONENT_COUNT];
+        rf_gfx_texcoord_data_type texcoords[1 * RF_GFX_TEXCOORD_COMPONENT_COUNT];
+        rf_gfx_color_data_type colors[1 * RF_GFX_COLOR_COMPONENT_COUNT];
+        rf_gfx_vertex_index_data_type indices[1 * RF_GFX_VERTEX_INDEX_COMPONENT_COUNT];
+    } rf_one_element_vertex_buffer;
+
+typedef struct rf_default_vertex_buffer
+{
+    rf_gfx_vertex_data_type vertices[RF_DEFAULT_BATCH_ELEMENTS_COUNT * RF_GFX_VERTEX_COMPONENT_COUNT];
+    rf_gfx_texcoord_data_type texcoords[RF_DEFAULT_BATCH_ELEMENTS_COUNT * RF_GFX_TEXCOORD_COMPONENT_COUNT];
+    rf_gfx_color_data_type colors[RF_DEFAULT_BATCH_ELEMENTS_COUNT * RF_GFX_COLOR_COMPONENT_COUNT];
+    rf_gfx_vertex_index_data_type indices[RF_DEFAULT_BATCH_ELEMENTS_COUNT * RF_GFX_VERTEX_INDEX_COMPONENT_COUNT];
+} rf_default_vertex_buffer;
+
+typedef struct rf_default_render_batch
+{
+    rf_vertex_buffer vertex_buffers[RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT];
+    rf_draw_call      draw_calls[RF_DEFAULT_BATCH_DRAW_CALLS_COUNT];
+    rf_default_vertex_buffer vertex_buffers_memory[RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT];
+} rf_default_render_batch;
 
 typedef struct rf_default_font
 {
@@ -789,122 +1341,99 @@ typedef struct rf_default_font
 
 typedef struct rf_context
 {
-    //Display size
-    union
-    {
-        rf_sizei display_size;
-        struct
-        {
-            int display_width;
-            int display_height;
-        };
-    };
+    int current_width;
+    int current_height;
 
-    // Screen width and height (used render area)
-    union
-    {
-        rf_sizei screen_size;
-        struct
-        {
-            int screen_width;
-            int screen_height;
-        };
-    };
+    int render_width;
+    int render_height;
 
-    // Framebuffer width and height (render area, including black bars if required)
-    union
-    {
-        rf_sizei render_size;
-        struct
-        {
-            int render_width;
-            int render_height;
-        };
-    };
+    rf_mat screen_scaling;
 
-    // Current render width and height, it could change on rf_begin_texture_mode()
-    union
-    {
-        rf_sizei current_size;
-        struct
-        {
-            int current_width;
-            int current_height;
-        };
-    };
+    rf_render_batch* current_batch;
 
-    int render_offset_x; // Offset X from render area (must be divided by 2)
-    int render_offset_y; // Offset Y from render area (must be divided by 2)
-    rf_mat screen_scaling; // rf_mat to scale screen
+    int     current_matrix_mode;
+    rf_mat* current_matrix;
+    rf_mat  modelview;
+    rf_mat  projection;
+    rf_mat  transform;
+    bool    transform_matrix_required;
+    rf_mat  stack[RF_MAX_MATRIX_STACK_SIZE];
+    int     stack_counter;
 
-    rf_font default_font;
-    rf_default_font default_font_buffers;
+    unsigned int default_texture_id;       // Default texture (1px white) useful for plain color polys (required by shader)
+    unsigned int default_vertex_shader_id; // Default vertex shader id (used by default shader program)
+    unsigned int default_frag_shader_id;   // Default fragment shader Id (used by default shader program)
+
+    rf_shader default_shader; // Basic shader, support vertex color and diffuse texture
+    rf_shader current_shader; // Shader to be used on rendering (by default, default_shader)
+
+    rf_blend_mode blend_mode; // Track current blending mode
+
+    int framebuffer_width;  // Default framebuffer width
+    int framebuffer_height; // Default framebuffer height
 
     rf_gfx_context gfx_ctx;
 
-    //Camera 3d stuff
-    //Note(LucaSas): might extract into another struct
-    rf_vec2 camera_angle;         // rf_camera3d angle in plane XZ
-    float camera_target_distance; // rf_camera3d distance from position to target
-    float player_eyes_position;
-    rf_camera3d_mode camera_mode; // Current camera mode
-
-    //Shapes global data
+    // Shapes global data
     rf_texture2d tex_shapes;
     rf_rec rec_tex_shapes;
+
+    rf_font default_font;
+    rf_default_font default_font_buffers;
 } rf_context;
 
 #pragma endregion
 
-#pragma region setups and defaults
+#pragma region init
+RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_gfx_backend_init_data* gl);
+#pragma endregion
 
-RF_API void rf_setup_viewport(int width, int height); // Set viewport for a provided width and height
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
-RF_API void rf_load_default_font();
+#pragma region defaults
 RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
+RF_API rf_shader rf_load_default_shader();
+#pragma endregion
 
+#pragma region render batch
+RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, int vertex_buffers_count, rf_draw_call* draw_calls, int draw_calls_count);
+RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, int draw_calls_count, int vertex_buffer_elements_count, rf_allocator allocator);
+RF_API rf_render_batch rf_create_default_render_batch(rf_allocator allocator);
+
+RF_API void rf_set_active_render_batch(rf_render_batch* batch);
+RF_API void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator);
 #pragma endregion
 
 #pragma region getters
-
+RF_API rf_render_batch* rf_get_current_render_batch(); // Return a pointer to the current render batch
 RF_API rf_font rf_get_default_font(); // Get the default font, useful to be used with extended parameters
 RF_API rf_shader rf_get_default_shader(); // Get default shader
 RF_API rf_texture2d rf_get_default_texture(); // Get default internal texture (white texture)
 RF_API rf_context* rf_get_context(); //Get the context pointer
 RF_API rf_image rf_get_screen_data(rf_color* dst, int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
-
 #pragma endregion
 
 #pragma region setters
-
 RF_API void rf_set_global_context_pointer(rf_context* ctx); // Set the global context pointer
 RF_API void rf_set_viewport(int width, int height); // Set viewport for a provided width and height
 RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
-
+RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 #pragma endregion
 
 #pragma region math
 
-#define RF_PI (3.14159265358979323846f)
-
-#define RF_DEG2RAD (RF_PI / 180.0f)
-#define RF_RAD2DEG (180.0f / RF_PI)
-
-#define RF_VEC2_ZERO (RF_LIT(rf_vec2) { 0.0f, 0.0f })
-#define RF_VEC2_ONE  (RF_LIT(rf_vec2) { 1.0f, 1.0f })
-
-#define RF_VEC3_ZERO (RF_LIT(rf_vec3) { 0.0f, 0.0f, 0.0f })
-#define RF_VEC3_ONE  (RF_LIT(rf_vec3) { 1.0f, 1.0f, 1.0f })
+#pragma region misc
+RF_API float rf_next_pot(float it);
+RF_API rf_vec2 rf_center_to_screen(float w, float h); // Returns the position of an object such that it will be centered to the screen
+RF_API rf_vec2 rf_center_to_object(rf_sizef center_this, rf_rec to_this); // Returns the position of an object such that it will be centered to a rectangle
+RF_API float rf_clamp(float value, float min, float max); // Clamp float value
+RF_API float rf_lerp(float start, float end, float amount); // Calculate linear interpolation between two floats
+#pragma endregion
 
 #pragma region base64
-
 RF_API int rf_get_size_base64(const unsigned char* input);
 RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator);
-
 #pragma endregion
 
 #pragma region color
-
 RF_API bool rf_color_equal_rgb(rf_color a, rf_color b); // Returns true if the two colors have the same values for the rgb components
 RF_API bool rf_color_equal(rf_color a, rf_color b); // Returns true if the two colors have the same values
 RF_API int rf_color_to_int(rf_color color); // Returns hexadecimal value for a rf_color
@@ -914,25 +1443,21 @@ RF_API rf_vec3 rf_color_to_hsv(rf_color color); // Returns HSV values for a rf_c
 RF_API rf_color rf_color_from_hsv(rf_vec3 hsv); // Returns a rf_color from HSV values. rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors. Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
 RF_API rf_color rf_color_from_int(int hex_value); // Returns a rf_color struct from hexadecimal value
 RF_API rf_color rf_fade(rf_color color, float alpha); // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
-
 #pragma endregion
 
 #pragma region camera
-
 RF_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
 RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
 RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera); // Get transform matrix for camera
 RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
 RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
 RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
-RF_API  rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
-RF_API void rf_set_camera3d_mode(rf_camera3d camera, rf_camera3d_mode mode);
+RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
+RF_API void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, rf_camera3d_mode mode);
+RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state);
 #pragma endregion
 
 #pragma region vec and matrix math
-
-RF_API float rf_clamp(float value, float min, float max); // Clamp float value
-RF_API float rf_lerp(float start, float end, float amount); // Calculate linear interpolation between two floats
 
 RF_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2); // Add two vectors (v1 + v2)
 RF_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2); // Subtract two vectors (v1 - v2)
@@ -1042,7 +1567,6 @@ RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height);
 #pragma region rf_gfx
 
 #pragma region shader
-
 RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code); // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
 RF_API void rf_gfx_unload_shader(rf_shader shader); // Unload shader from GPU memory (VRAM)
 RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name); // Get shader uniform location
@@ -1050,7 +1574,6 @@ RF_API void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const voi
 RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count); // Set shader uniform value vector
 RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat); // Set shader uniform value (matrix 4x4)
 RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture); // Set shader uniform value for texture
-
 #pragma endregion
 
 RF_API rf_mat rf_gfx_get_matrix_projection(); // Return internal rf__ctx->gl_ctx.projection matrix
@@ -1107,6 +1630,7 @@ RF_API void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b
 RF_API void rf_gfx_clear_screen_buffers(void); // Clear used screen buffers (color and depth)
 RF_API void rf_gfx_update_buffer(int buffer_id, void* data, int data_size); // Update GPU buffer with new data
 RF_API unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, bool dynamic); // Load a new attributes buffer
+RF_API void rf_gfx_init_vertex_buffer(rf_vertex_buffer* vertex_buffer);
 
 RF_API void rf_gfx_close(); // De-inititialize rlgl (buffers, shaders, textures)
 RF_API void rf_gfx_draw(); // Update and draw default internal buffers
@@ -1139,19 +1663,16 @@ RF_API void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index);
 RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
 RF_API void rf_gfx_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GPU
 
-#pragma region gen textures
+#pragma endregion
 
+#pragma region gen textures
 RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, int size); // Generate cubemap texture from HDR texture
 RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, int size); // Generate irradiance texture using cubemap data
 RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, int size); // Generate prefilter texture using cubemap data
 RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size); // Generate BRDF texture using cubemap data.
-
-#pragma endregion
-
 #pragma endregion
 
 #pragma region pixel format
-
 RF_API const char* rf_pixel_format_string(rf_pixel_format format);
 RF_API bool rf_is_uncompressed_format(rf_pixel_format format);
 RF_API bool rf_is_compressed_format(rf_pixel_format format);
@@ -1166,13 +1687,11 @@ RF_API bool rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixe
 RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format);
 RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format);
-
 #pragma endregion
 
 #pragma region image
 
 #pragma region extract image data functions
-
 RF_API int rf_image_size(rf_image image);
 RF_API int rf_image_size_in_format(rf_image image, rf_pixel_format format);
 
@@ -1185,11 +1704,9 @@ RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocat
 RF_API void rf_image_extract_palette_to_buffer(rf_image image, rf_color* palette_dst, int palette_size);
 RF_API rf_palette rf_image_extract_palette(rf_image image, int palette_size, rf_allocator allocator);
 RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold);
-
 #pragma endregion
 
 #pragma region loading & unloading functions
-
 RF_API bool rf_supports_image_file_type(const char* filename);
 
 RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, int src_size, void* dst, int dst_size, rf_desired_channels channels, rf_allocator temp_allocator);
@@ -1202,11 +1719,9 @@ RF_API rf_image rf_load_image_from_format_to_buffer(const void* src, int src_siz
 RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 
 RF_API void rf_unload_image(rf_image image, rf_allocator allocator);
-
 #pragma endregion
 
 #pragma region image manipulation
-
 RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, int dst_size);
 RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator);
 
@@ -1278,60 +1793,48 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_r
 RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator);
 RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator);
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator);
-
 #pragma endregion
 
 #pragma region mipmaps
-
 RF_API int rf_mipmaps_image_size(rf_mipmaps_image image);
 RF_API rf_mipmaps_stats rf_compute_mipmaps_stats(rf_image image, int desired_mipmaps_count);
 RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_mipmaps_count, void* dst, int dst_size, rf_allocator temp_allocator);  // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
 RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps_count, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator);
-
 #pragma endregion
 
 #pragma region dds
-
 RF_API int rf_get_dds_image_size(const void* src, int src_size);
 RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, int src_size, void* dst, int dst_size);
 RF_API rf_mipmaps_image rf_load_dds_image(const void* src, int src_size, rf_allocator allocator);
 RF_API rf_mipmaps_image rf_load_dds_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-
 #pragma endregion
 
 #pragma region pkm
-
 RF_API int rf_get_pkm_image_size(const void* src, int src_size);
 RF_API rf_image rf_load_pkm_image_to_buffer(const void* src, int src_size, void* dst, int dst_size);
 RF_API rf_image rf_load_pkm_image(const void* src, int src_size, rf_allocator allocator);
 RF_API rf_image rf_load_pkm_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-
 #pragma endregion
 
 #pragma region ktx
-
 RF_API int rf_get_ktx_image_size(const void* src, int src_size);
 RF_API rf_mipmaps_image rf_load_ktx_image_to_buffer(const void* src, int src_size, void* dst, int dst_size);
 RF_API rf_mipmaps_image rf_load_ktx_image(const void* src, int src_size, rf_allocator allocator);
 RF_API rf_mipmaps_image rf_load_ktx_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-
 #pragma endregion
 
 #pragma endregion
 
 #pragma region gif
-
 RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 RF_API rf_sizei rf_gif_frame_size(rf_gif gif);
 RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame);
 RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator);
-
 #pragma endregion
 
 #pragma region texture
-
 RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io); // Load texture from file into GPU memory (VRAM)
 RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, int dst_size, rf_allocator temp_allocator); // Load texture from an image file data using stb
 RF_API rf_texture2d rf_load_texture_from_image(rf_image image); // Load texture from image data
@@ -1345,13 +1848,11 @@ RF_API void rf_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode f
 RF_API void rf_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode); // Set texture wrapping mode
 RF_API void rf_unload_texture(rf_texture2d texture); // Unload texture from GPU memory (VRAM)
 RF_API void rf_unload_render_texture(rf_render_texture2d target); // Unload render texture from GPU memory (VRAM)
-
 #pragma endregion
 
 #pragma region font
 
 #pragma region ttf font
-
 RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size);
 RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, int codepoints_count, rf_glyph_info* dst, int dst_count);
 RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, int glyphs_count);
@@ -1360,38 +1861,37 @@ RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_in
 
 RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, int char_count, rf_allocator allocator, rf_allocator temp_allocator);
 RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-
 #pragma endregion
 
 #pragma region image font
-
 RF_API bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_info* dst, int codepoints_count);
 RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_info* glyphs, int glyphs_count);
 RF_API rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator allocator);
 RF_API rf_font rf_load_image_font_from_file(const char* path, rf_color key, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
-
 #pragma endregion
 
+#pragma region font utils
 RF_API void rf_unload_font(rf_font font, rf_allocator allocator);
 RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character);
 RF_API int rf_font_height(rf_font font, float font_size);
-RF_API rf_sizef rf_measure_text(rf_font font, const char* text, int len, float font_size, float spacing);
-RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap);
+
+RF_API rf_sizef rf_measure_text(rf_font font, const char* text, float font_size, float extra_spacing);
+RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float extra_spacing, bool wrap);
+
+RF_API rf_sizef rf_measure_string(rf_font font, const char* text, int len, float font_size, float extra_spacing);
+RF_API rf_sizef rf_measure_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, bool wrap);
+#pragma endregion
 
 #pragma endregion
 
 #pragma region utf8
-
 RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len);
 RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, int len);
 RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, int len, rf_rune* dst, int dst_size);
 RF_API rf_decoded_string rf_decode_utf8(const char* text, int len, rf_allocator allocator);
-
 #pragma endregion
 
 #pragma region drawing
-
-// Drawing-related functions
 RF_API void rf_clear(rf_color color); // Set background color (framebuffer clear color)
 
 RF_API void rf_begin(); // Setup canvas (framebuffer) to start drawing
@@ -1414,8 +1914,6 @@ RF_API void rf_end_shader(); // End custom shader drawing (use default shader)
 
 RF_API void rf_begin_blend_mode(rf_blend_mode mode); // Begin blending mode (alpha, additive, multiplied)
 RF_API void rf_end_blend_mode(); // End blending mode (reset to default: alpha blending)
-
-RF_API void rf_update_camera3d(rf_camera3d* camera, rf_input_state_for_update_camera input_state);
 
 RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color); // Draw a pixel
 RF_API void rf_draw_pixel_v(rf_vec2 position, rf_color color); // Draw a pixel (Vector version)
@@ -1456,16 +1954,23 @@ RF_API void rf_draw_triangle_strip(rf_vec2* points, int points_count, rf_color c
 RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color); // Draw a regular polygon (Vector version)
 
 // rf_texture2d drawing functions
+
 RF_API void rf_draw_texture(rf_texture2d texture, int x, int y, rf_color tint); // Draw a rf_texture2d with extended parameters
 RF_API void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h, float rotation, rf_color tint); // Draw a rf_texture2d with extended parameters
 RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint); // Draw a part of a texture defined by a rectangle with 'pro' parameters
 RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_info, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint); // Draws a texture (or part of it) that stretches or shrinks nicely
 
 // Text drawing functions
-RF_API void rf_draw_text(const char* text, int posX, int posY, int fontSize, rf_color color); // Draw text (using default font)
-RF_API void rf_draw_text_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
-RF_API void rf_draw_text_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
+
+RF_API void rf_draw_string(const char* text, int text_len, int posX, int posY, int font_size, rf_color color); // Draw text (using default font)
+RF_API void rf_draw_string_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
+RF_API void rf_draw_string_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
+RF_API void rf_draw_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
+
+RF_API void rf_draw_text(const char* text, int posX, int posY, int font_size, rf_color color); // Draw text (using default font)
+RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
+RF_API void rf_draw_text_wrap(rf_font font, const char* text, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
+RF_API void rf_draw_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
 
 RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color); // Draw a line in 3D world space
 RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotation_angle, rf_color color); // Draw a circle in 3D world space
@@ -1494,11 +1999,9 @@ RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_r
 RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator); // Draw a source image within a destination image (tint applied to source)
 RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator); // Draw rectangle within an image
 RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator); // Draw rectangle lines within an image
-
 #pragma endregion
 
 #pragma region model & materials & animations
-
 RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh); // Compute mesh bounding box limits
 RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_allocator temp_allocator); // Compute mesh tangents
 RF_API void rf_mesh_compute_binormals(rf_mesh* mesh); // Compute mesh binormals
@@ -1536,7 +2039,6 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
 RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator); // Generate trefoil knot mesh
 RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator); // Generate heightmap mesh from image data
 RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator); // Generate cubes-based map mesh from image data
-
 #pragma endregion
 
 #pragma region ez api
@@ -1674,7 +2176,9 @@ RF_API rf_mesh rf_gen_mesh_knot_ez(float radius, float size, int rad_seg, int si
 RF_API rf_mesh rf_gen_mesh_heightmap_ez(rf_image heightmap, rf_vec3 size);
 RF_API rf_mesh rf_gen_mesh_cubicmap_ez(rf_image cubicmap, rf_vec3 cube_size);
 #pragma endregion
+
 #endif
+
 #pragma endregion
 
 #endif // #ifndef RAYFORK_H
