@@ -8,7 +8,7 @@ add_library(rayfork)
 target_compile_features(rayfork PUBLIC c_std_99)
 
 # Add the source files to the executable
-target_sources(rayfork PRIVATE "source/rayfork.c")
+target_sources(rayfork PRIVATE "rayfork.c")
 
 # Include all the files from the source directory
 target_include_directories(rayfork PUBLIC "source")
