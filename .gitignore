@@ -9,8 +9,8 @@
 !.gitignore
 !.gitmodules
 
-!source/
-!tests/
+!rayfork.h
+!rayfork.c
 
-!source/**
+!tests/
 !tests/**
