@@ -2,19 +2,66 @@
 
 # rayfork
 
-A single header and source, platform independent, XNA-like, allocator-aware game dev library. 
+A single header and source, cross-platform, XNA-like, allocator-aware game dev library. 
 
 Forked from the awesome raylib game framework: https://www.raylib.com/
 
 **Notice:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
 
+## How to build
+
+rayfork only has one .c file and only depends on libc, which means it can be easily compiled as a library from the command line.
+
+```shell script
+gcc -c rayfork.c
+clang -c rayfork.c
+cl /c /EHsc rayfork.c
+```
+
+To customize rayfork at compile time (eg: Choosing a different graphics backend, Enabling the audio module, etc) you just have to add preprocessor defines:
+```shell script
+# Compiling with the audio system enabled and the GLES3 graphics backend.
+gcc -c rayfork.c -DRAYFORK_ENABLE_AUDIO -DRAYFORK_GRAPHICS_BACKEND_GL_ES3
+clang -c rayfork.c -DRAYFORK_ENABLE_AUDIO -DRAYFORK_GRAPHICS_BACKEND_GL_ES3
+cl /c /EHsc rayfork.c /DRAYFORK_ENABLE_AUDIO /DRAYFORK_GRAPHICS_BACKEND_GL_ES3
+```
+
+## rayfork audio
+
+rayfork provides an optional audio system, which must be enabled using by defining `RAYFORK_ENABLE_AUDIO`.
+
+The audio system in rayfork uses miniaudio which wraps low-level audio APIs and is not platform independent but is cross platform, supporting the following backends:
+- WASAPI
+- DirectSound
+- WinMM
+- Core Audio (Apple)
+- ALSA
+- PulseAudio
+- JACK
+- sndio (OpenBSD)
+- audio(4) (NetBSD and OpenBSD)
+- OSS (FreeBSD)
+- AAudio (Android 8.0+)
+- OpenSL|ES (Android only)
+- Web Audio (Emscripten)
+- Null (Silence)
+
+On Windows and macOS there's no need to link to anything for rayfork audio. On Linux just link to -lpthread, -lm and -ldl. On BSD just link to -lpthread and -lm. On iOS you need to compile as Objective-C.
+
 ## Principles
 
 ### 1. Provide platform-independent code
 
-The code in rayfork fully removes the platform layer from raylib, instead the developer must provide one. Great care is also taken to avoid all hosted (os-dependent) function calls.
+rayfork does not provide a platform layer, that means it won't create a window, load OpenGL, or capture input for you.
 
-The renderer currently has OpenGL33 and OpenGL-ES3 backends (with more to be added) that are implemented in a portable way which allows rayfork to be compiled on any platform, with the only dependency being libc. OpenGL procs are passed explicitly to rayfork and there is a simple macro to aid with this.
+This is by design, so that you can easily use rayfork on multiple platforms (including game consoles) by using the method that works best for you. 
+There are templates for using rayfork with GLFW, SDL, sokol-app and custom platform layers.
+
+The renderer currently has OpenGL33 and OpenGL-ES3 backends (with more to be added) that are implemented in a portable way which allows rayfork to be compiled on any platform, 
+with the only dependency being libc. OpenGL procs are passed explicitly to rayfork and there is a simple macro to aid with this.
+
+The audio system in rayfork uses miniaudio to wrap low-level audio APIs and as such depends on those low-level audio APIs. 
+You can disable rayfork audio by defining the macro `RAYFORK_NO_AUDIO` if it does not support the platforms you are targeting or if you just do not want it.  
 
 Because of this you can easily compile rayfork for any platform be it PC, Mobile or Consoles.
 
@@ -30,7 +77,7 @@ Every function that requires an allocator or io callbacks has an `_ez` version w
 
 ### 3. Easy to build
 
-The library is only one header and source file and can be customized at compile time using preprocessor definitions. No additional compile flags are needed, depending on the graphics backend you might need to link against certain libraries. 
+The library is only one header and source file and can be customized at compile time using preprocessor definitions. No additional compile flags are needed, depending on the graphics backend you might need to link against certain libraries.
 
 ## Rationale
 

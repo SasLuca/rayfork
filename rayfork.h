@@ -2186,8 +2186,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap_ez(rf_image cubicmap, rf_vec3 cube_size);
 
 #pragma region audio
 
-#define RAYFORK_NO_AUDIO // Note(LucaSas) We defined RAYFORK_NO_AUDIO until it is properly implemented
-#if !defined(RAYFORK_NO_AUDIO)
+#if defined(RAYFORK_ENABLE_AUDIO)
 
 #pragma region miniaudio
 #pragma region miniaudio header
@@ -7883,7 +7882,7 @@ rf_audio_source rf_static_audio_from_memory(const void* file, rf_allocator alloc
 rf_audio_source rf_static_audio_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 #pragma endregion
 
-#endif // !defined(RAYFORK_NO_AUDIO)
+#endif // defined(RAYFORK_ENABLE_AUDIO)
 
 #pragma endregion
 

@@ -41962,7 +41962,7 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size)
 #pragma endregion
 
 #pragma region audio
-#if !defined(RAYFORK_NO_AUDIO)
+#if defined(RAYFORK_ENABLE_AUDIO)
 
 #pragma region miniaudio
 
@@ -98965,5 +98965,5 @@ SOFTWARE.
 
 #pragma endregion
 
-#endif // !defined(RAYFORK_NO_AUDIO)
+#endif // defined(RAYFORK_ENABLE_AUDIO)
 #pragma endregion
