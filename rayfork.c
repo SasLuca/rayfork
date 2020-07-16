@@ -1,16 +1,5 @@
 #include "rayfork.h"
 
-#pragma region context
-// Useful internal macros
-#define rf_ctx   (*rf__ctx)
-#define rf_gfx   (rf_ctx.gfx_ctx)
-#define rf_gl    (rf_gfx.gl)
-#define rf_batch (*(rf_ctx.current_batch))
-
-// Global pointer to context struct
-RF_INTERNAL rf_context* rf__ctx;
-#pragma endregion
-
 #pragma region assert
 
 #if !defined(RF_ASSERT) && defined(RAYFORK_ENABLE_ASSERTIONS)
@@ -22,7 +11,19 @@ RF_INTERNAL rf_context* rf__ctx;
 
 #pragma endregion
 
-#pragma region logger and assert
+#pragma region context
+// Useful internal macros
+#define rf_ctx   (*rf__ctx)
+#define rf_gfx   (rf_ctx.gfx_ctx)
+#define rf_gl    (rf_gfx.gl)
+#define rf_batch (*(rf_ctx.current_batch))
+
+// Global pointer to context struct
+RF_INTERNAL rf_context* rf__ctx;
+RF_INTERNAL RF_THREAD_LOCAL rf_error_type rf__last_error;
+#pragma endregion
+
+#pragma region logger
 
 /*
  Note(LucaSas): MSVC, clang and gcc all deal with __VA_ARGS__ differently.
@@ -31,11 +32,8 @@ RF_INTERNAL rf_context* rf__ctx;
  this causes issues on some compiler just disable logs with RF_DISABLE_LOGGER.
  Also bear in mind that ##__VA_ARGS__ still works differently between compilers but this code seems to work on all major compilers.
 */
-#define RF_LOG_IMPL(file, line, proc_name, type, msg, ...) rf_log_impl((file), (line), (proc_name), (type), (msg), ##__VA_ARGS__)
-#define RF_LOG(log_type, msg, ...) RF_LOG_IMPL(__FILE__, __LINE__, __FUNCTION__, (log_type), (msg), ##__VA_ARGS__)
-#define RF_LOG_ERROR(error_type, msg, ...) RF_LOG(RF_LOG_TYPE_ERROR, (msg), (error_type), __VA_ARGS__)
-
-RF_INTERNAL RF_THREAD_LOCAL rf_error_type rf__last_error;
+#define RF_LOG(log_type, msg, ...) rf_log_impl(__FILE__, __LINE__, __FUNCTION__, (log_type), (msg), ##__VA_ARGS__)
+#define RF_LOG_ERROR(error_type, msg, ...) RF_LOG(RF_LOG_TYPE_ERROR, (msg), (error_type), ##__VA_ARGS__)
 
 RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, ...)
 {
@@ -88,15 +86,22 @@ RF_API const char* rf_log_type_str(rf_log_type log_type)
     }
 }
 
-#pragma endregion
-
-#pragma region libc wrappers
-
 RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args)
 {
     printf("[RAYFORK %s]: ", rf_log_type_str(log_type));
     vprintf(msg, args);
     printf("\n");
+}
+
+#pragma endregion
+
+#pragma region allocator
+
+RF_API void* rf_calloc_wrapper(rf_allocator allocator, int amount, int size)
+{
+    void* ptr = RF_ALLOC(allocator, amount * size);
+    memset(ptr, 0, amount * size);
+    return ptr;
 }
 
 RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
@@ -110,6 +115,19 @@ RF_API void rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
     ((void)user_data);
     free(ptr_to_free);
 }
+
+#pragma endregion 
+
+#pragma region rand
+
+RF_API int rf_libc_rand_wrapper(int min, int max)
+{
+    return rand() % (max + 1 - min) + min;
+}
+
+#pragma endregion
+
+#pragma region io
 
 RF_API int rf_libc_get_file_size(void* user_data, const char* filename)
 {
@@ -156,11 +174,6 @@ RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename,
     return result;
 }
 
-RF_API int rf_libc_rand_wrapper(int min, int max)
-{
-    return rand() % (max + 1 - min) + min;
-}
-
 #pragma endregion
 
 #pragma region internal utils
@@ -185,18 +198,6 @@ RF_INTERNAL void* rf_realloc_wrapper(rf_allocator allocator, void* source, int o
     if (new_alloc && source && old_size) { memcpy(new_alloc, source, old_size); }
     if (source) { RF_FREE(allocator, source); }
     return new_alloc;
-}
-
-RF_INTERNAL void* rf_calloc_wrapper(rf_allocator allocator, int amount, int size)
-{
-    void* ptr = RF_ALLOC(allocator, amount * size);
-    memset(ptr, 0, amount * size);
-    return ptr;
-}
-
-RF_INTERNAL int rf_default_get_random_value(int min, int max)
-{
-    return (rand() % (max - min + 1)) + min;
 }
 
 RF_INTERNAL bool rf_is_file_extension(const char* filename, const char* ext)
@@ -25753,7 +25754,7 @@ void rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, cons
 
 #pragma endregion
 
-#pragma region init and setup
+#pragma region init
 RF_INTERNAL void rf_gfx_backend_init(rf_gfx_backend_init_data* gfx_data);
 
 RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log_proc logger, rf_gfx_backend_init_data* gfx_data)
@@ -25960,24 +25961,6 @@ RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log
         RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Default font loaded successfully", rf_ctx.default_font.texture.id);
     }
     #endif
-}
-
-// Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
-RF_API rf_material rf_load_default_material(rf_allocator allocator)
-{
-    rf_material material = {0};
-    material.maps = (rf_material_map*) RF_ALLOC(allocator, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
-    memset(material.maps, 0, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
-
-    material.shader = rf_get_default_shader();
-    material.maps[RF_MAP_DIFFUSE].texture = rf_get_default_texture(); // White texture (1x1 pixel)
-    //material.maps[RF_MAP_NORMAL].texture;         // NOTE: By default, not set
-    //material.maps[RF_MAP_SPECULAR].texture;       // NOTE: By default, not set
-
-    material.maps[RF_MAP_DIFFUSE].color = RF_WHITE; // Diffuse color
-    material.maps[RF_MAP_SPECULAR].color = RF_WHITE; // Specular color
-
-    return material;
 }
 #pragma endregion
 
@@ -36528,7 +36511,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
       - Only loads the diffuse texture... but not too hard to support other maps (normal, roughness/metalness...)
       - Only supports unsigned short indices (no unsigned char/unsigned int)
       - Only supports float for texture coordinates (no unsigned char/unsigned short)
-    *************************************************************************************/
+*************************************************************************************/
 // Load texture from cgltf_image
 RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, const char* tex_path, rf_color tint, rf_allocator temp_allocator, rf_io_callbacks io)
 {
@@ -36901,6 +36884,26 @@ RF_API void rf_unload_model(rf_model model, rf_allocator allocator)
     RF_LOG(RF_LOG_TYPE_INFO, "Unloaded model data from RAM and VRAM");
 }
 
+#pragma region materials
+
+// Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
+RF_API rf_material rf_load_default_material(rf_allocator allocator)
+{
+    rf_material material = {0};
+    material.maps = (rf_material_map*) RF_ALLOC(allocator, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
+    memset(material.maps, 0, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
+
+    material.shader = rf_get_default_shader();
+    material.maps[RF_MAP_DIFFUSE].texture = rf_get_default_texture(); // White texture (1x1 pixel)
+    //material.maps[RF_MAP_NORMAL].texture;         // NOTE: By default, not set
+    //material.maps[RF_MAP_SPECULAR].texture;       // NOTE: By default, not set
+
+    material.maps[RF_MAP_DIFFUSE].color = RF_WHITE; // Diffuse color
+    material.maps[RF_MAP_SPECULAR].color = RF_WHITE; // Specular color
+
+    return material;
+}
+
 // TODO: Support IQM and GLTF for materials parsing
 // TODO: Process materials to return
 // Load materials from model file
@@ -36959,8 +36962,9 @@ RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_text
 
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 
-// Generated cuboid mesh
+#pragma endregion
 
+#pragma region model animations
 RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     int size = RF_FILE_SIZE(io, filename);
@@ -37285,6 +37289,7 @@ RF_API void rf_unload_model_animation(rf_model_animation anim, rf_allocator allo
     RF_FREE(allocator, anim.bones);
     RF_FREE(allocator, anim.frame_poses);
 }
+#pragma endregion
 
 #pragma region mesh generation
 
@@ -38312,7 +38317,7 @@ RF_API rf_font rf_load_ttf_font_from_file_ez(const char* filename, int font_size
 RF_API rf_font rf_load_image_font_ez(rf_image image, rf_color key) { return rf_load_image_font(image, key, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_font rf_load_image_font_from_file_ez(const char* path, rf_color key) { return rf_load_image_font_from_file(path, key, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }
 
-RF_API void rf_unload_font_ez(rf_font font) { return rf_unload_font(font, RF_DEFAULT_ALLOCATOR); }
+RF_API void rf_unload_font_ez(rf_font font) { rf_unload_font(font, RF_DEFAULT_ALLOCATOR); }
 #pragma endregion
 
 #pragma region utf8
@@ -38320,13 +38325,13 @@ RF_API rf_decoded_string rf_decode_utf8_ez(const char* text, int len) { return r
 #pragma endregion
 
 #pragma region drawing
-RF_API void rf_image_draw_ez(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint) { return rf_image_draw(dst, src, src_rec, dst_rec, tint, RF_DEFAULT_ALLOCATOR); }
-RF_API void rf_image_draw_rectangle_ez(rf_image* dst, rf_rec rec, rf_color color) { return rf_image_draw_rectangle(dst, rec, color, RF_DEFAULT_ALLOCATOR); }
-RF_API void rf_image_draw_rectangle_lines_ez(rf_image* dst, rf_rec rec, int thick, rf_color color) { return rf_image_draw_rectangle_lines(dst, rec, thick, color, RF_DEFAULT_ALLOCATOR); }
+RF_API void rf_image_draw_ez(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint) { rf_image_draw(dst, src, src_rec, dst_rec, tint, RF_DEFAULT_ALLOCATOR); }
+RF_API void rf_image_draw_rectangle_ez(rf_image* dst, rf_rec rec, rf_color color) { rf_image_draw_rectangle(dst, rec, color, RF_DEFAULT_ALLOCATOR); }
+RF_API void rf_image_draw_rectangle_lines_ez(rf_image* dst, rf_rec rec, int thick, rf_color color) { rf_image_draw_rectangle_lines(dst, rec, thick, color, RF_DEFAULT_ALLOCATOR); }
 #pragma endregion
 
 #pragma region model & materials & animations
-RF_API void rf_mesh_compute_tangents_ez(rf_mesh* mesh) { return rf_mesh_compute_tangents(mesh, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
+RF_API void rf_mesh_compute_tangents_ez(rf_mesh* mesh) { rf_mesh_compute_tangents(mesh, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
 RF_API void rf_unload_mesh_ez(rf_mesh mesh) { rf_unload_mesh(mesh, RF_DEFAULT_ALLOCATOR); }
 
 RF_API rf_model rf_load_model_ez(const char* filename) { return rf_load_model(filename, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }

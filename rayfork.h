@@ -1,8 +1,7 @@
 #ifndef RAYFORK_H
 #define RAYFORK_H
 
-#pragma region common base
-
+// Libc includes
 #include "stdbool.h"
 #include "stdarg.h"
 #include "stdlib.h"
@@ -10,6 +9,8 @@
 #include "stdint.h"
 #include "stdio.h"
 #include "math.h"
+
+#pragma region macros
 
 #ifndef RF_API
     #ifdef __cplusplus
@@ -84,33 +85,33 @@ RF_API void rf_set_log_callback(rf_log_proc);
 RF_API void rf_set_log_filter(rf_log_type);
 RF_API rf_log_type rf_current_log_filter();
 RF_API const char* rf_log_type_str(rf_log_type);
+
+RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args);
 #pragma endregion
 
 #pragma region allocator
+#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_libc_malloc_wrapper, rf_libc_free_wrapper })
 #define RF_NULL_ALLOCATOR           (RF_LIT(rf_allocator) {0})
 #define RF_ALLOC(allocator, size)   ((allocator).alloc_proc((allocator).user_data, (size)))
-#define RF_CALLOC(allocator, size)  rf__calloc_wrapper((allocator), 1, size)
+#define RF_CALLOC(allocator, size)  rf_calloc_wrapper((allocator), 1, size)
 #define RF_FREE(allocator, pointer) ((allocator).free_proc((allocator).user_data, (pointer)))
 
 typedef struct rf_allocator
 {
     void* user_data;
     void* (*alloc_proc) (void* user_data, int size_to_alloc);
-    void (*free_proc) (void* user_data, void* ptr_to_free);
+    void  (*free_proc) (void* user_data, void* ptr_to_free);
 } rf_allocator;
-#pragma endregion
 
-#pragma region libc wrappers
-typedef int (*rf_rand_proc)(int min, int max);
-
-RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args);
+RF_API void* rf_calloc_wrapper(rf_allocator allocator, int amount, int size);
 
 RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc);
 RF_API void  rf_libc_free_wrapper(void* user_data, void* ptr_to_free);
+#pragma endregion
 
-RF_API int  rf_libc_get_file_size(void* user_data, const char* filename);
-RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
-
+#pragma region rand
+#define RF_DEFAULT_RAND_PROC (rf_libc_rand_wrapper)
+typedef int (*rf_rand_proc)(int min, int max);
 RF_API int rf_libc_rand_wrapper(int min, int max);
 #pragma endregion
 
@@ -119,9 +120,7 @@ RF_API int rf_libc_rand_wrapper(int min, int max);
 #define RF_FILE_SIZE(io, filename)                ((io).file_size_proc((io).user_data, filename))
 #define RF_READ_FILE(io, filename, dst, dst_size) ((io).read_file_proc((io).user_data, filename, dst, dst_size))
 
-#define RF_DEFAULT_ALLOCATOR (RF_LIT(rf_allocator) { NULL, rf_libc_malloc_wrapper, rf_libc_free_wrapper })
-#define RF_DEFAULT_RAND_PROC (rf_default_rand_proc)
-#define RF_DEFAULT_IO        (RF_LIT(rf_io_callbacks) { NULL, rf_get_file_size, rf_load_file_into_buffer })
+#define RF_DEFAULT_IO        (RF_LIT(rf_io_callbacks) { NULL, rf_libc_get_file_size, rf_libc_load_file_into_buffer })
 
 typedef struct rf_io_callbacks
 {
@@ -129,6 +128,9 @@ typedef struct rf_io_callbacks
     int (*file_size_proc) (void* user_data, const char* filename);
     bool (*read_file_proc) (void* user_data, const char* filename, void* dst, int dst_size); // Returns true if operation was successful
 } rf_io_callbacks;
+
+RF_API int  rf_libc_get_file_size(void* user_data, const char* filename);
+RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
 #pragma endregion
 
 #pragma region graphics
