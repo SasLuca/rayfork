@@ -9,9 +9,31 @@
 
 // Global pointer to context struct
 RF_INTERNAL rf_context* rf__ctx;
-#pragma endregion 
+#pragma endregion
 
-#pragma region logger
+#pragma region assert
+
+#if !defined(RF_ASSERT) && defined(RAYFORK_ENABLE_ASSERTIONS)
+    #include "assert.h"
+    #define RF_ASSERT(condition) assert(condition)
+#else
+    #define RF_ASSERT(condition)
+#endif
+
+#pragma endregion
+
+#pragma region logger and assert
+
+/*
+ Note(LucaSas): MSVC, clang and gcc all deal with __VA_ARGS__ differently.
+ Normally you would expect that __VA_ARGS__ consume a trailing comma but it doesn't, this is why we must ##__VA_ARGS__.
+ ##__VA_ARGS__ is a preprocessor black magic which achieves this goal, it's not standard but every compiler supports it, if
+ this causes issues on some compiler just disable logs with RF_DISABLE_LOGGER.
+ Also bear in mind that ##__VA_ARGS__ still works differently between compilers but this code seems to work on all major compilers.
+*/
+#define RF_LOG_IMPL(file, line, proc_name, type, msg, ...) rf_log_impl((file), (line), (proc_name), (type), (msg), ##__VA_ARGS__)
+#define RF_LOG(log_type, msg, ...) RF_LOG_IMPL(__FILE__, __LINE__, __FUNCTION__, (log_type), (msg), ##__VA_ARGS__)
+#define RF_LOG_ERROR(error_type, msg, ...) RF_LOG(RF_LOG_TYPE_ERROR, (msg), (error_type), __VA_ARGS__)
 
 RF_INTERNAL RF_THREAD_LOCAL rf_error_type rf__last_error;
 
@@ -36,88 +58,6 @@ RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, 
     }
 
     va_end(args);
-}
-
-#define RF_LOG_IMPL(file, line, proc_name, type, msg, ...) rf_log_impl(file, line, proc_name, type, msg, __VA_ARGS__)
-#define RF_LOG(log_type, msg, ...) RF_LOG_IMPL(__FILE__, __LINE__, __FUNCTION__, log_type, msg, __VA_ARGS__)
-#define RF_LOG_ERROR(error_type, msg, ...) RF_LOG(RF_LOG_TYPE_ERROR, msg, error_type, __VA_ARGS__)
-
-#pragma endregion
-
-#pragma region rayfork common base
-
-RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args)
-{
-    printf("[RAYFORK %s]: ", rf_log_type_str(log_type));
-    vprintf(msg, args);
-    printf("\n");
-}
-
-RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
-{
-    ((void)user_data);
-    return malloc(size_to_alloc);
-}
-
-RF_API void  rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
-{
-    ((void)user_data);
-    free(ptr_to_free);
-}
-
-RF_API int rf_get_file_size(void* user_data, const char* filename)
-{
-    ((void)user_data);
-
-    FILE* file = fopen(filename, "rb");
-
-    fseek(file, 0L, SEEK_END);
-    int size = ftell(file);
-    fseek(file, 0L, SEEK_SET);
-
-    fclose(file);
-
-    return size;
-}
-
-RF_API bool rf_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
-{
-    ((void)user_data);
-    bool result = false;
-
-    FILE* file = fopen(filename, "rb");
-    if (file != NULL)
-    {
-        fseek(file, 0L, SEEK_END);
-        int file_size = ftell(file);
-        fseek(file, 0L, SEEK_SET);
-
-        if (dst_size >= file_size)
-        {
-            int read_size = fread(dst, 1, file_size, file);
-            int no_error = ferror(file) == 0;
-            if (no_error && read_size == file_size)
-            {
-                result = true;
-            }
-        }
-        // else log_error buffer is not big enough
-    }
-    // else log error could not open file
-
-    fclose(file);
-
-    return result;
-}
-
-RF_API int rf_default_rand_proc(int min, int max)
-{
-    return rand() % (max + 1 - min) + min;
-}
-
-RF_API rf_error_type rf_last_error()
-{
-    return rf__last_error;
 }
 
 RF_API void rf_set_log_callback(rf_log_proc logger)
@@ -150,10 +90,84 @@ RF_API const char* rf_log_type_str(rf_log_type log_type)
 
 #pragma endregion
 
+#pragma region libc wrappers
+
+RF_API void rf_libc_printf_logger(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args)
+{
+    printf("[RAYFORK %s]: ", rf_log_type_str(log_type));
+    vprintf(msg, args);
+    printf("\n");
+}
+
+RF_API void* rf_libc_malloc_wrapper(void* user_data, int size_to_alloc)
+{
+    ((void)user_data);
+    return malloc(size_to_alloc);
+}
+
+RF_API void rf_libc_free_wrapper(void* user_data, void* ptr_to_free)
+{
+    ((void)user_data);
+    free(ptr_to_free);
+}
+
+RF_API int rf_libc_get_file_size(void* user_data, const char* filename)
+{
+    ((void)user_data);
+
+    FILE* file = fopen(filename, "rb");
+
+    fseek(file, 0L, SEEK_END);
+    int size = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
+    fclose(file);
+
+    return size;
+}
+
+RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
+{
+    ((void)user_data);
+    bool result = false;
+
+    FILE* file = fopen(filename, "rb");
+    if (file != NULL)
+    {
+        fseek(file, 0L, SEEK_END);
+        int file_size = ftell(file);
+        fseek(file, 0L, SEEK_SET);
+
+        if (dst_size >= file_size)
+        {
+            int read_size = fread(dst, 1, file_size, file);
+            int no_error = ferror(file) == 0;
+            if (no_error && read_size == file_size)
+            {
+                result = true;
+            }
+        }
+        // else log_error buffer is not big enough
+    }
+    // else log error could not open file
+
+    fclose(file);
+
+    return result;
+}
+
+RF_API int rf_libc_rand_wrapper(int min, int max)
+{
+    return rand() % (max + 1 - min) + min;
+}
+
+#pragma endregion
+
 #pragma region internal utils
 
-#ifndef RAYFORK_INTERNAL_UTILS_H
-#define RAYFORK_INTERNAL_UTILS_H
+#ifndef RF_MAX_FILEPATH_LEN
+    #define RF_MAX_FILEPATH_LEN (1024)
+#endif
 
 RF_INTERNAL bool rf_match_str_n(const char* a, int a_len, const char* b, int b_len)
 {
@@ -228,7 +242,6 @@ RF_INTERNAL inline int rf_max_i(int a, int b) { return ((a) > (b) ? (a) : (b)); 
 RF_INTERNAL inline int rf_min_f(float a, float b) { return ((a) < (b) ? (a) : (b)); }
 RF_INTERNAL inline int rf_max_f(float a, float b) { return ((a) > (b) ? (a) : (b)); }
 
-#endif // RAYFORK_INTERNAL_UTILS_H
 #pragma endregion
 
 #pragma region dependencies
@@ -26109,6 +26122,11 @@ RF_API void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator
 
 #pragma region getters
 
+RF_API rf_error_type rf_last_error()
+{
+    return rf__last_error;
+}
+
 // Get the default font, useful to be used with extended parameters
 RF_API rf_font rf_get_default_font()
 {
@@ -26194,6 +26212,7 @@ RF_API void rf_set_viewport(int width, int height)
     rf_gfx_matrix_mode(RF_MODELVIEW); // Switch back to MODELVIEW matrix
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 }
+
 #pragma endregion
 
 #pragma region math
@@ -38234,16 +38253,22 @@ RF_API rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_b
 RF_API rf_image rf_image_flip_vertical_ez(rf_image image) { return rf_image_flip_vertical(image, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_image_flip_horizontal_ez(rf_image image) { return rf_image_flip_horizontal(image, RF_DEFAULT_ALLOCATOR); }
 
-RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i) { return rf_get_seed_for_cellular_image(seeds_per_row, tile_size, i, RF_DEFAULT_RAND_PROC); }
+RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i) { return rf_get_seed_for_cellular_image(
+        seeds_per_row, tile_size, i, RF_DEFAULT_RAND_PROC); }
 
 RF_API rf_image rf_gen_image_color_ez(int width, int height, rf_color color) { return rf_gen_image_color(width, height, color, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_gen_image_gradient_v_ez(int width, int height, rf_color top, rf_color bottom) { return rf_gen_image_gradient_v(width, height, top, bottom, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_gen_image_gradient_h_ez(int width, int height, rf_color left, rf_color right) { return rf_gen_image_gradient_h(width, height, left, right, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_gen_image_gradient_radial_ez(int width, int height, float density, rf_color inner, rf_color outer) { return rf_gen_image_gradient_radial(width, height, density, inner, outer, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_gen_image_checked_ez(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2) { return rf_gen_image_checked(width, height, checks_x, checks_y, col1, col2, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_white_noise_ez(int width, int height, float factor) { return rf_gen_image_white_noise(width, height, factor, RF_DEFAULT_RAND_PROC, RF_DEFAULT_ALLOCATOR); }
+RF_API rf_image rf_gen_image_white_noise_ez(int width, int height, float factor) { return rf_gen_image_white_noise(
+        width, height, factor, RF_DEFAULT_RAND_PROC, RF_DEFAULT_ALLOCATOR); }
 RF_API rf_image rf_gen_image_perlin_noise_ez(int width, int height, int offset_x, int offset_y, float scale) { return rf_gen_image_perlin_noise(width, height, offset_x, offset_y, scale, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_cellular_ez(int width, int height, int tile_size) { return rf_gen_image_cellular(width, height, tile_size, RF_DEFAULT_RAND_PROC, RF_DEFAULT_ALLOCATOR); }
+RF_API rf_image rf_gen_image_cellular_ez(int width, int height, int tile_size) { return rf_gen_image_cellular(width,
+                                                                                                              height,
+                                                                                                              tile_size,
+                                                                                                              RF_DEFAULT_RAND_PROC,
+                                                                                                              RF_DEFAULT_ALLOCATOR); }
 #pragma endregion
 
 #pragma region mipmaps
