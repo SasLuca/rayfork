@@ -77,6 +77,7 @@ typedef enum rf_log_type
     RF_LOG_TYPE_INFO    = 0x2, // Information
     RF_LOG_TYPE_WARNING = 0x4, // Warnings about things to be careful about
     RF_LOG_TYPE_ERROR   = 0x8, // Errors that prevented functions from doing everything they advertised
+    RF_LOG_TYPE_ALL     = RF_LOG_TYPE_DEBUG | RF_LOG_TYPE_INFO | RF_LOG_TYPE_WARNING | RF_LOG_TYPE_ERROR,
 } rf_log_type;
 
 typedef void (*rf_log_proc)(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args);
@@ -1386,7 +1387,7 @@ typedef struct rf_context
 #pragma endregion
 
 #pragma region init
-RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log_proc logger, rf_gfx_backend_init_data* gfx_data);
+RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_gfx_backend_init_data* gfx_data, rf_log_proc logger, rf_log_type log_filter);
 #pragma endregion
 
 #pragma region defaults
@@ -2044,7 +2045,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
 
 #pragma region ez api
 
-#ifndef RAYFORK_NO_EZ_API
+#if !defined(RAYFORK_NO_EZ_API)
 
 RF_API rf_material rf_load_default_material_ez();
 RF_API rf_image rf_get_screen_data_ez();
@@ -2185,10 +2186,10 @@ RF_API rf_mesh rf_gen_mesh_cubicmap_ez(rf_image cubicmap, rf_vec3 cube_size);
 #pragma endregion
 
 #pragma region audio
-
 #if defined(RAYFORK_ENABLE_AUDIO)
 
 #pragma region miniaudio
+
 #pragma region miniaudio header
 
 /*
@@ -7816,7 +7817,9 @@ MA_API ma_uint64 ma_noise_read_pcm_frames(ma_noise* pNoise, void* pFramesOut, ma
 }
 #endif
 #endif  /* miniaudio_h */
+
 #pragma endregion
+
 #pragma endregion
 
 #pragma region enums, constants, structs
@@ -7883,7 +7886,6 @@ rf_audio_source rf_static_audio_from_file(const char* file, rf_allocator allocat
 #pragma endregion
 
 #endif // defined(RAYFORK_ENABLE_AUDIO)
-
 #pragma endregion
 
 #endif // #ifndef RAYFORK_H

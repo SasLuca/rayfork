@@ -37,6 +37,8 @@ RF_INTERNAL RF_THREAD_LOCAL rf_error_type rf__last_error;
 
 RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, ...)
 {
+    if (!(log_type & rf_ctx.log_filter)) return;
+
     va_list args;
 
     va_start(args, msg);
@@ -25757,12 +25759,13 @@ void rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, cons
 #pragma region init
 RF_INTERNAL void rf_gfx_backend_init(rf_gfx_backend_init_data* gfx_data);
 
-RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log_proc logger, rf_gfx_backend_init_data* gfx_data)
+RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_gfx_backend_init_data* gfx_data, rf_log_proc logger, rf_log_type log_type)
 {
     *ctx = (rf_context) {0};
     rf_set_global_context_pointer(ctx);
 
     rf_ctx.log = logger;
+    rf_ctx.log_filter = log_type;
     rf_ctx.current_matrix_mode = -1;
     rf_ctx.screen_scaling = rf_mat_identity();
 
@@ -25968,7 +25971,9 @@ RF_API void rf_init(rf_context* ctx, int screen_width, int screen_height, rf_log
 
 RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, int vertex_buffers_count, rf_draw_call* draw_calls, int draw_calls_count)
 {
-    if (!vertex_buffers || !draw_calls || vertex_buffers_count < 0 || draw_calls_count < 0) return (rf_render_batch){0};
+    if (!vertex_buffers || !draw_calls || vertex_buffers_count < 0 || draw_calls_count < 0) {
+        return (rf_render_batch) {0};
+    }
 
     rf_render_batch batch = {0};
     batch.vertex_buffers = vertex_buffers;
@@ -26010,9 +26015,6 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
             .mode = RF_QUADS,
             .texture_id = rf_ctx.default_texture_id,
         };
-
-        //batch.draws[i].RLGL.State.projection = MatrixIdentity();
-        //batch.draws[i].RLGL.State.modelview = MatrixIdentity();
     }
 
     batch.draw_calls_counter = 1; // Reset draws counter
@@ -26022,10 +26024,12 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
     return batch;
 }
 
+// TODO: Not working yet
 RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, int draw_calls_count, int vertex_buffer_elements_count, rf_allocator allocator)
 {
-    // TODO: Not working yet
-    if (vertex_buffers_count < 0 || draw_calls_count < 0 || vertex_buffer_elements_count < 0) return (rf_render_batch) {0};
+    if (vertex_buffers_count < 0 || draw_calls_count < 0 || vertex_buffer_elements_count < 0) {
+        return (rf_render_batch) {0};
+    }
 
     rf_render_batch result = {0};
 
@@ -26071,7 +26075,9 @@ RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, i
 
 RF_API rf_render_batch rf_create_default_render_batch_from_memory(rf_default_render_batch* memory)
 {
-    if (!memory) return (rf_render_batch) {0};
+    if (!memory) {
+        return (rf_render_batch) {0};
+    }
 
     for (int i = 0; i < RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT; i++)
     {
@@ -28574,12 +28580,12 @@ RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height)
 
 #pragma region internal functions
 
-// Get texture to draw shapes Note(LucaSas): Do we need this?
+// Get texture to draw shapes, the user can customize this using rf_set_shapes_texture
 RF_INTERNAL rf_texture2d rf_get_shapes_texture()
 {
     if (rf_ctx.tex_shapes.id == 0)
     {
-        rf_ctx.tex_shapes = rf_get_default_texture(); // Use default white texture
+        rf_ctx.tex_shapes = rf_get_default_texture();
         rf_ctx.rec_tex_shapes = (rf_rec) {0.0f, 0.0f, 1.0f, 1.0f };
     }
 
@@ -28611,8 +28617,7 @@ RF_API void rf_begin()
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
     rf_gfx_mult_matrixf(rf_mat_to_float16(rf_ctx.screen_scaling).v); // Apply screen scaling
 
-    //rf_gfx_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1
-    // NOTE: Not required with OpenGL 3.3+
+    //rf_gfx_translatef(0.375, 0.375, 0);    // HACK to have 2D pixel-perfect drawing on OpenGL 1.1, not required with OpenGL 3.3+
 }
 
 // End canvas drawing and swap buffers (double buffering)
@@ -28745,7 +28750,7 @@ RF_API void rf_end_render_to_texture()
 
 // Begin scissor mode (define screen area for following drawing)
 // NOTE: Scissor rec refers to bottom-left corner, we change it to upper-left
-RF_API void rf_begin_scissors(int x, int y, int width, int height)
+RF_API void rf_begin_scissor_mode(int x, int y, int width, int height)
 {
     rf_gfx_draw(); // Force drawing elements
 
@@ -28754,7 +28759,7 @@ RF_API void rf_begin_scissors(int x, int y, int width, int height)
 }
 
 // End scissor mode
-RF_API void rf_end_scissors()
+RF_API void rf_end_scissor_mode()
 {
     rf_gfx_draw(); // Force drawing elements
     rf_gfx_disable_scissor_test();
@@ -38206,7 +38211,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
 #pragma endregion
 
 #pragma region ez api
-#ifndef RAYFORK_NO_EZ_API
+#if !defined(RAYFORK_NO_EZ_API)
 #pragma region other stuff
 
 RF_API rf_material rf_load_default_material_ez() { return rf_load_default_material(RF_DEFAULT_ALLOCATOR); }
