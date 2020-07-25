@@ -8,11 +8,19 @@ add_library(rayfork)
 # Set C99 for the library
 target_compile_features(rayfork PUBLIC c_std_99)
 
-# Add the source files to the executable
-target_sources(rayfork PRIVATE "rayfork.c")
+# Set build
+target_sources(rayfork PRIVATE "source/rayfork.c")
 
-# Add rayfork.h to the include dirs
-target_include_directories(rayfork PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# Include dirs
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(rayfork PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+endif()
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/source")
+target_include_directories(rayfork PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/source")
+endif()
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+target_include_directories(rayfork PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+endif()
 
 # rayfork options --------------------------------------------------------------------
 
@@ -30,6 +38,6 @@ endif()
 
 # Include test optional suite
 if(RAYFORK_TESTS)
-    set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/")
+    set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
     add_subdirectory(tests)
 endif()
