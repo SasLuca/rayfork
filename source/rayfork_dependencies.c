@@ -1,23 +1,17 @@
 #pragma region stb_image
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__stbi_allocator;
-#define RF_SET_STBI_ALLOCATOR(allocator) rf__stbi_allocator = (allocator)
-
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)                     RF_ALLOC(rf__stbi_allocator, sz)
-#define STBI_FREE(p)                        RF_FREE(rf__stbi_allocator, p)
-#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_realloc_wrapper(rf__stbi_allocator, p, oldsz, newsz)
+#define STBI_MALLOC(sz)                     RF_ALLOC(rf__global_allocator_for_dependencies, sz)
+#define STBI_FREE(p)                        RF_FREE(rf__global_allocator_for_dependencies, p)
+#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_realloc_wrapper(rf__global_allocator_for_dependencies, p, oldsz, newsz)
 #define STBI_ASSERT(it)                     RF_ASSERT(it)
 #define STBIDEF                             RF_INTERNAL
 #include "stb_image.h"
 #pragma endregion
 
 #pragma region stb_image_resize
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__stbir_allocator;
-#define RF_SET_STBIR_ALLOCATOR(allocator) rf__stbir_allocator = (allocator)
-
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(rf__stbir_allocator, sz))
-#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(rf__stbir_allocator, p))
+#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(rf__global_allocator_for_dependencies, sz))
+#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(rf__global_allocator_for_dependencies, p))
 #define STBIR_ASSERT(it)     RF_ASSERT(it)
 #define STBIRDEF RF_INTERNAL
 #include "stb_image_resize.h"
@@ -31,12 +25,9 @@ RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__stbir_allocator;
 #pragma endregion
 
 #pragma region stb_truetype
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__stbtt_allocator;
-#define RF_SET_STBTT_ALLOCATOR(allocator) rf__stbtt_allocator = (allocator)
-
 #define STB_TRUETYPE_IMPLEMENTATION
-#define STBTT_malloc(sz, u) RF_ALLOC(rf__stbtt_allocator, sz)
-#define STBTT_free(p, u)    RF_FREE(rf__stbtt_allocator, p)
+#define STBTT_malloc(sz, u) RF_ALLOC(rf__global_allocator_for_dependencies, sz)
+#define STBTT_free(p, u)    RF_FREE(rf__global_allocator_for_dependencies, p)
 #define STBTT_assert(it)    RF_ASSERT(it)
 #define STBTT_STATIC
 #include "stb_truetype.h"
@@ -49,29 +40,25 @@ RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__stbtt_allocator;
 #pragma endregion
 
 #pragma region par shapes
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__par_allocator;
-#define RF_SET_PARSHAPES_ALLOCATOR(allocator) rf__par_allocator = (allocator)
-
 #define PAR_SHAPES_IMPLEMENTATION
-#define PAR_MALLOC(T, N)               ((T*)RF_ALLOC(rf__par_allocator, N * sizeof(T)))
-#define PAR_CALLOC(T, N)               ((T*)rf_calloc_wrapper(rf__par_allocator, N, sizeof(T)))
-#define PAR_FREE(BUF)                  (RF_FREE(rf__par_allocator, BUF))
-#define PAR_REALLOC(T, BUF, N, OLD_SZ) ((T*) rf_realloc_wrapper(rf__par_allocator, BUF, sizeof(T) * (N), (OLD_SZ)))
+#define PAR_MALLOC(T, N)               ((T*)RF_ALLOC(rf__global_allocator_for_dependencies, N * sizeof(T)))
+#define PAR_CALLOC(T, N)               ((T*)rf_calloc_wrapper(rf__global_allocator_for_dependencies, N, sizeof(T)))
+#define PAR_FREE(BUF)                  (RF_FREE(rf__global_allocator_for_dependencies, BUF))
+#define PAR_REALLOC(T, BUF, N, OLD_SZ) ((T*) rf_realloc_wrapper(rf__global_allocator_for_dependencies, BUF, sizeof(T) * (N), (OLD_SZ)))
 #define PARDEF                         RF_INTERNAL
 #include "par_shapes.h"
 #pragma endregion
 
 #pragma region tinyobj loader
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__tinyobj_allocator;
 RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks rf__tinyobj_io;
 #define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf__tinyobj_allocator = allocator
 #define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf__tinyobj_io = io;
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
-#define TINYOBJ_MALLOC(size)             (RF_ALLOC(rf__tinyobj_allocator, (size)))
-#define TINYOBJ_REALLOC(p, oldsz, newsz) (rf_realloc_wrapper(rf__tinyobj_allocator, (p), (oldsz), (newsz)))
-#define TINYOBJ_CALLOC(amount, size)     (rf_calloc_wrapper(rf__tinyobj_allocator, (amount), (size)))
-#define TINYOBJ_FREE(p)                  (RF_FREE(rf__tinyobj_allocator, (p)))
+#define TINYOBJ_MALLOC(size)             (RF_ALLOC(rf__global_allocator_for_dependencies, (size)))
+#define TINYOBJ_REALLOC(p, oldsz, newsz) (rf_realloc_wrapper(rf__global_allocator_for_dependencies, (p), (oldsz), (newsz)))
+#define TINYOBJ_CALLOC(amount, size)     (rf_calloc_wrapper(rf__global_allocator_for_dependencies, (amount), (size)))
+#define TINYOBJ_FREE(p)                  (RF_FREE(rf__global_allocator_for_dependencies, (p)))
 #define TINYOBJDEF                       RF_INTERNAL
 #include "tinyobjloader.h"
 
@@ -93,12 +80,9 @@ RF_INTERNAL void rf_tinyobj_file_reader_callback(const char* filename, char** bu
 #pragma endregion
 
 #pragma region cgltf
-RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__cgltf_allocator;
-#define RF_SET_CGLTF_ALLOCATOR(allocator) rf__cgltf_allocator = allocator
-
 #define CGLTF_IMPLEMENTATION
-#define CGLTF_MALLOC(size) RF_ALLOC(rf__cgltf_allocator, size)
-#define CGLTF_FREE(ptr)    RF_FREE(rf__cgltf_allocator, ptr)
+#define CGLTF_MALLOC(size) RF_ALLOC(rf__global_allocator_for_dependencies, size)
+#define CGLTF_FREE(ptr)    RF_FREE(rf__global_allocator_for_dependencies, ptr)
 #include "cgltf.h"
 
 RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data)

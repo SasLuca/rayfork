@@ -100,10 +100,10 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_
 
 // Text drawing functions
 
-RF_API void rf_draw_string(const char* text, int text_len, int posX, int posY, int font_size, rf_color color); // Draw text (using default font)
-RF_API void rf_draw_string_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
-RF_API void rf_draw_string_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
-RF_API void rf_draw_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
+RF_API void rf_draw_string(const char* string, int string_len, int posX, int posY, int font_size, rf_color color); // Draw text (using default font)
+RF_API void rf_draw_string_ex(rf_font font, const char* string, int string_len, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters
+RF_API void rf_draw_string_wrap(rf_font font, const char* string, int string_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode); // Draw text and wrap at a specific width
+RF_API void rf_draw_string_rec(rf_font font, const char* string, int string_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint); // Draw text using font inside rectangle limits
 
 RF_API void rf_draw_text(const char* text, int posX, int posY, int font_size, rf_color color); // Draw text (using default font)
 RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vec2 position, float fontSize, float spacing, rf_color tint); // Draw text using font and additional parameters

@@ -209,9 +209,9 @@ RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, int src_
     int img_height = 0;
     int img_bpp    = 0;
 
-    RF_SET_STBI_ALLOCATOR(temp_allocator);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
     void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-    RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     if (output_buffer)
     {
@@ -258,9 +258,9 @@ RF_API rf_image rf_load_image_from_file_data(const void* src, int src_size, rf_a
 
     // Use stb image with the `temp_allocator` to decompress the image and get it's data
     int width = 0, height = 0, channels = 0;
-    RF_SET_STBI_ALLOCATOR(temp_allocator);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
     void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &channels, RF_ANY_CHANNELS);
-    RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     if (stbi_result && channels)
     {
@@ -306,9 +306,9 @@ RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, int 
         int img_width = 0, img_height = 0, img_bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(temp_allocator);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
         void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (output_buffer)
         {
@@ -347,9 +347,9 @@ RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, int src_size, 
         int width = 0, height = 0, bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_STBI_ALLOCATOR(temp_allocator);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
         void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &bpp, RF_ANY_CHANNELS);
-        RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         if (stbi_result && bpp)
         {
@@ -630,9 +630,9 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
 
     if (stb_format)
     {
-        RF_SET_STBIR_ALLOCATOR(temp_allocator);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
         stbir_resize_uint8((unsigned char*) image.data, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, stb_format);
-        RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
+        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
         result.data   = dst;
         result.width  = new_width;
@@ -650,9 +650,9 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
             bool format_success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, pixels, pixels_size);
             RF_ASSERT(format_success);
 
-            RF_SET_STBIR_ALLOCATOR(temp_allocator);
+            RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
             stbir_resize_uint8((unsigned char*)pixels, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, 4);
-            RF_SET_STBIR_ALLOCATOR(RF_NULL_ALLOCATOR);
+            RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
             format_success = rf_format_pixels(pixels, pixels_size, RF_UNCOMPRESSED_R8G8B8A8, dst, dst_size, image.format);
             RF_ASSERT(format_success);
@@ -2827,7 +2827,7 @@ RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator
 {
     rf_gif gif = {0};
 
-    RF_SET_STBI_ALLOCATOR(temp_allocator);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
     {
         int component_count = 0;
         void* loaded_gif = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &component_count, 4);
@@ -2849,7 +2849,7 @@ RF_API rf_gif rf_load_animated_gif(const void* data, int data_size, rf_allocator
 
         RF_FREE(temp_allocator, loaded_gif);
     }
-    RF_SET_STBI_ALLOCATOR(RF_NULL_ALLOCATOR);
+    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     return gif;
 }

@@ -309,7 +309,7 @@ RF_API void rf_set_logger(rf_logger logger)
     rf_ctx.logger = logger;
 }
 
-RF_API void rf_set_log_filter(rf_log_type filter)
+RF_API void rf_set_logger_filter(rf_log_type filter)
 {
     rf_ctx.logger_filter = filter;
 }

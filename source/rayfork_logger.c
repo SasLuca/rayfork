@@ -1,4 +1,4 @@
-RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, ...)
+RF_INTERNAL void rf_log_impl(rf_source_location source_location, rf_log_type log_type, const char* msg, ...)
 {
     if (!(log_type & rf_ctx.logger_filter)) return;
 
@@ -16,13 +16,13 @@ RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, 
 
     if (rf_ctx.logger.log_proc)
     {
-        rf_ctx.logger.log_proc(&rf_ctx.logger, file, line, proc_name, log_type, msg, error_type, args);
+        rf_ctx.logger.log_proc(&rf_ctx.logger, source_location, log_type, msg, error_type, args);
     }
 
     va_end(args);
 }
 
-RF_API const char* rf_log_type_str(rf_log_type log_type)
+RF_API const char* rf_log_type_string(rf_log_type log_type)
 {
     switch (log_type)
     {
@@ -35,10 +35,10 @@ RF_API const char* rf_log_type_str(rf_log_type log_type)
     }
 }
 
-RF_API void rf_libc_printf_logger(struct rf_logger* logger, const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args)
+RF_API void rf_libc_printf_logger(struct rf_logger* logger, rf_source_location source_location, rf_log_type log_type, const char* msg, rf_error_type error_type, va_list args)
 {
     ((void)logger); // unused
-    printf("[RAYFORK %s]: ", rf_log_type_str(log_type));
+    printf("[RAYFORK %s]: ", rf_log_type_string(log_type));
     vprintf(msg, args);
     printf("\n");
 }

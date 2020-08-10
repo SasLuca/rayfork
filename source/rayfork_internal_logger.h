@@ -8,9 +8,9 @@
  this causes issues on some compiler just disable logs with RF_DISABLE_LOGGER.
  Also bear in mind that ##__VA_ARGS__ still works differently between compilers but this code seems to work on all major compilers.
 */
-#define RF_LOG(log_type, msg, ...) rf_log_impl(__FILE__, __LINE__, __FUNCTION__, (log_type), (msg), ##__VA_ARGS__)
+#define RF_LOG(log_type, msg, ...) rf_log_impl(RF_SOURCE_LOCATION, (log_type), (msg), ##__VA_ARGS__)
 #define RF_LOG_ERROR(error_type, msg, ...) RF_LOG(RF_LOG_TYPE_ERROR, (msg), (error_type), ##__VA_ARGS__)
 
-RF_INTERNAL void rf_log_impl(const char* file, int line, const char* proc_name, rf_log_type log_type, const char* msg, ...);
+RF_INTERNAL void rf_log_impl(rf_source_location source_location, rf_log_type log_type, const char* msg, ...);
 
 #endif // RAYFORK_LOGGER_INTERNALS_H

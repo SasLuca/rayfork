@@ -44,7 +44,7 @@ RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const
         if (dst && dst_count >= codepoints_count)
         {
             // The stbtt functions called here should not require any allocations
-            RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
+            RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
             font_info->largest_glyph_size = 0;
 
@@ -130,7 +130,7 @@ RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atla
                 int offset_y = RF_BUILTIN_FONT_PADDING;
 
                 // Set the allocator for stbtt
-                RF_SET_STBTT_ALLOCATOR(temp_allocator);
+                RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
                 {
                     // Using simple packaging, one char after another
                     for (int i = 0; i < glyphs_count; i++)
@@ -173,7 +173,7 @@ RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atla
                         }
                     }
                 }
-                RF_SET_STBTT_ALLOCATOR(RF_NULL_ALLOCATOR);
+                RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
                 result.data   = dst;
                 result.width  = atlas_width;
