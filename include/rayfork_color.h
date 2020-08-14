@@ -65,7 +65,7 @@ typedef enum rf_pixel_format rf_compressed_pixel_format;
 typedef enum rf_pixel_format rf_uncompressed_pixel_format;
 
 // R8G8B8A8 format
-typedef union rf_color
+typedef struct rf_color
 {
     unsigned char r, g, b, a;
 } rf_color;

@@ -1,3 +1,7 @@
+#ifndef RF_MAX_FILEPATH_LEN
+    #define RF_MAX_FILEPATH_LEN (1024)
+#endif
+
 RF_INTERNAL bool rf_match_str_n(const char* a, int a_len, const char* b, int b_len)
 {
     return a_len == b_len && strncmp(a, b, a_len) == 0;
@@ -52,3 +56,9 @@ RF_INTERNAL const char* rf_get_directory_path_from_file_path(const char* file_pa
 
     return rf_global_dir_path;
 }
+
+RF_INTERNAL inline int rf_min_i(int a, int b) { return ((a) < (b) ? (a) : (b)); }
+RF_INTERNAL inline int rf_max_i(int a, int b) { return ((a) > (b) ? (a) : (b)); }
+
+RF_INTERNAL inline int rf_min_f(float a, float b) { return ((a) < (b) ? (a) : (b)); }
+RF_INTERNAL inline int rf_max_f(float a, float b) { return ((a) > (b) ? (a) : (b)); }

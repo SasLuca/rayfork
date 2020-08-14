@@ -14,6 +14,7 @@
 
 typedef enum rf_allocator_mode
 {
+    RF_AM_UNKNOWN = 0,
     RF_AM_ALLOC,
     RF_AM_REALLOC,
     RF_AM_FREE,

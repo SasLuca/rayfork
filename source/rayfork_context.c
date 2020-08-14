@@ -1,3 +1,5 @@
+RF_INTERNAL void rf_gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
+
 RF_API void rf_init_context(rf_context* ctx)
 {
     *ctx = (rf_context) {0};
@@ -208,7 +210,7 @@ RF_API void rf_init_gfx(int screen_width, int screen_height, rf_gfx_backend_data
 
 #pragma region getters
 
-RF_API rf_error_type rf_get_last_error()
+RF_API rf_recorded_error rf_get_last_recorded_error()
 {
     return rf__last_error;
 }

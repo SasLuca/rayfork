@@ -17,4 +17,12 @@ typedef enum rf_error_type
     RF_UNSUPPORTED,
 } rf_error_type;
 
+typedef struct rf_recorded_error
+{
+    rf_source_location reported_source_location;
+    rf_error_type error_type;
+} rf_recorded_error;
+
+RF_API rf_recorded_error rf_get_last_recorded_error();
+
 #endif // RAYFORK_ERROR_H

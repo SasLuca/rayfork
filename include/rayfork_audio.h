@@ -28,6 +28,18 @@ typedef enum rf_audio_format
     RF_AUDIO_FORMAT_MOD,
 } rf_audio_format;
 
+typedef enum rf_audio_data_type
+{
+    RF_DECODED_AUDIO_DATA,
+    RF_ENCODED_AUDIO_DATA
+} rf_audio_data_type;
+
+typedef enum rf_audio_player_type
+{
+    RF_STREAMING_AUDIO_PLAYER,
+    RF_STATIC_AUDIO_PLAYER,
+} rf_audio_player_type;
+
 typedef enum rf_audio_channels
 {
     RF_MONO   = 1,
@@ -36,8 +48,10 @@ typedef enum rf_audio_channels
 
 typedef struct rf_audio_buffer rf_audio_buffer;
 
-typedef struct rf_decoded_audio_data
+typedef struct rf_audio_data
 {
+    rf_audio_data_type type;
+
     void* data;
     int data_size;
 
@@ -45,31 +59,18 @@ typedef struct rf_decoded_audio_data
     int sample_count; // Total number of samples
     int sample_rate;  // Frequency (samples per second)
     int sample_size;  // Bit depth (bits per sample): 8, 16, 32 (24 not supported)
-    enum rf_audio_channels channels;
-} rf_decoded_audio_data;
+    rf_audio_channels channels;
+    bool valid;
+} rf_audio_data;
 
-typedef struct rf_compressed_audio_data
+typedef struct rf_audio_player
 {
-    rf_audio_format format;
-    int size_in_frames;
-    int sample_count; // Total number of samples
-    int sample_rate;  // Frequency (samples per second)
-    int sample_size;  // Bit depth (bits per sample): 8, 16, 32 (24 not supported)
-    enum rf_audio_channels channels;
-} rf_compressed_audio_data;
-
-typedef struct rf_static_audio_player
-{
-    rf_decoded_audio_data* source;
+    rf_audio_player_type type;
+    rf_audio_data source;
     float volume;
     bool looping;
     bool valid;
 } rf_audio_player;
-
-typedef struct rf_streaming_audio_player
-{
-    rf_
-} rf_stream_audio_player;
 
 typedef struct rf_audio_device
 {
@@ -90,24 +91,20 @@ RF_API void rf_set_master_volume(float);
 RF_API rf_audio_format rf_audio_format_from_filename_extension(const char* text);
 RF_API rf_audio_format rf_audio_format_from_filename_extension_string(const char* string, int string_len);
 
-RF_API rf_audio_player rf_load_static_audio_player_from_wav_to_buffer (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_ogg_to_buffer (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_flac_to_buffer(const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_mp3_to_buffer (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_xm_to_buffer  (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_mod_to_buffer (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator);
+RF_API rf_audio_data rf_fully_decode_wav (const void* src, int src_size, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_ogg (const void* src, int src_size, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_flac(const void* src, int src_size, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_mp3 (const void* src, int src_size, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_xm  (const void* src, int src_size, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_mod (const void* src, int src_size, rf_allocator allocator);
 
-RF_API rf_audio_player rf_load_static_audio_player_from_wav (const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_ogg (const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_flac(const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_mp3 (const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_xm  (const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_audio_player rf_load_static_audio_player_from_mod (const void* src, int src_size, rf_allocator allocator, rf_allocator temp_allocator);
+RF_API rf_audio_data rf_fully_decode_audio_from_buffer(const void* src, int src_size, rf_audio_format format, rf_allocator allocator);
+RF_API rf_audio_data rf_fully_decode_audio_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 
-RF_API rf_audio_player rf_load_static_audio_player_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API void rf_unload_audio_data(rf_audio_data audio_data, rf_allocator allocator);
 
-RF_API rf_audio_player rf_streamed_audio_player_from_memory(const void* src, int src_size, rf_allocator allocator);
-RF_API rf_audio_player rf_streamed_audio_player_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+RF_API rf_audio_data rf_load_encoded_audio_from_buffer(const void* src, int src_size, rf_audio_format format, rf_allocator allocator);
+RF_API rf_audio_data rf_load_encoded_audio_from_file(const char* filename, rf_allocator allocator, rf_io_callbacks io);
 #pragma endregion
 
 #pragma region audio controls
@@ -120,11 +117,11 @@ RF_API void rf_audio_update(rf_audio_player* audio);
 RF_API void rf_audio_set_volume(rf_audio_player* audio);
 RF_API void rf_audio_set_pitch(rf_audio_player* audio);
 
-RF_API float rf_audio_time_len(rf_audio_player* audio);
-RF_API float rf_audio_time_played(rf_audio_player* audio);
-RF_API bool  rf_audio_is_playing(rf_audio_player* audio);
-RF_API int   rf_audio_volume(rf_audio_player* audio);
-RF_API int   rf_audio_pitch(rf_audio_player* audio);
+RF_API float rf_audio_time_len(rf_audio_player audio);
+RF_API float rf_audio_time_played(rf_audio_player audio);
+RF_API bool  rf_audio_is_playing(rf_audio_player audio);
+RF_API int   rf_audio_volume(rf_audio_player audio);
+RF_API int   rf_audio_pitch(rf_audio_player audio);
 #pragma endregion
 
 #endif // RAYFORK_AUDIO_H

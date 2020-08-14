@@ -19,40 +19,25 @@ typedef struct rf_sizef
     float height;
 } rf_sizef;
 
-typedef union rf_vec2
+typedef struct rf_vec2
 {
-    float v[2];
-
-    struct
-    {
-        float x;
-        float y;
-    };
+    float x;
+    float y;
 } rf_vec2;
 
-typedef union rf_vec3
+typedef struct rf_vec3
 {
-    float v[3];
-
-    struct
-    {
-        float x;
-        float y;
-        float z;
-    };
+    float x;
+    float y;
+    float z;
 } rf_vec3;
 
 typedef struct rf_vec4
 {
-    float v[4];
-
-    struct
-    {
-        float x;
-        float y;
-        float z;
-        float w;
-    };
+    float x;
+    float y;
+    float z;
+    float w;
 } rf_vec4, rf_quaternion;
 
 // The matrix is OpenGL style 4x4 - right handed, column major
@@ -69,23 +54,12 @@ typedef struct rf_float16
     float v[16];
 } rf_float16;
 
-typedef union rf_rec
+typedef struct rf_rec
 {
-    struct
-    {
-        float x;
-        float y;
-        float width;
-        float height;
-    };
-
-    struct
-    {
-        rf_vec2 pos;
-        rf_sizef size;
-    };
-
-    rf_vec4 v;
+    float x;
+    float y;
+    float width;
+    float height;
 } rf_rec;
 
 typedef struct rf_ray
