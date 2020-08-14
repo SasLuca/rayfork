@@ -11,9 +11,11 @@
 
 !include/
 !source/
+!libs/
 
 !include/**
 !source/**
+!libs/**
 
 !tests/
 !tests/**
