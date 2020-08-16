@@ -3,7 +3,6 @@
 
 #include "rayfork-render-batch.h"
 #include "rayfork-font.h"
-#include "rayfork-logger.h"
 
 typedef struct rf_default_font
 {

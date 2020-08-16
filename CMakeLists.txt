@@ -3,9 +3,9 @@ project(rayfork LANGUAGES C)
 
 add_library(rayfork)
 target_compile_features(rayfork PUBLIC c_std_99)
-target_sources(rayfork PRIVATE "source/rayfork.c")
+target_sources(rayfork PRIVATE "src/rayfork.c")
 target_include_directories(rayfork PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_include_directories(rayfork PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/source" "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+target_include_directories(rayfork PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/libs")
 
 # rayfork options --------------------------------------------------------------------
 

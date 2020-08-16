@@ -9,7 +9,7 @@
 #include "rayfork-unicode.c"
 #include "rayfork-math.c"
 #include "rayfork-camera.c"
-//#include "rayfork-image.c"
+#include "rayfork-image.c"
 #include "rayfork-texture.c"
 #include "rayfork-font.c"
 #include "rayfork-render-batch.c"

@@ -1,7 +1,7 @@
 #ifndef RAYFORK_UNICODE_H
 #define RAYFORK_UNICODE_H
 
-#include "rayfork-allocator.h"
+#include "rayfork-std.h"
 
 #define RF_INVALID_CODEPOINT ('?')
 

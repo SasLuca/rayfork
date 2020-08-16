@@ -1,9 +1,6 @@
 #ifndef RAYFORK_IMAGE_H
 #define RAYFORK_IMAGE_H
 
-#include "rayfork_common.h"
-#include "rayfork-allocator.h"
-#include "rayfork-io.h"
 #include "rayfork-color.h"
 
 typedef enum rf_desired_channels

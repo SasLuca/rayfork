@@ -1,8 +1,6 @@
 #ifndef RAYFORK_DRAWING_H
 #define RAYFORK_DRAWING_H
 
-#include "rayfork-gfx.h"
-#include "rayfork-camera.h"
 #include "rayfork-font.h"
 
 typedef struct rf_model rf_model;

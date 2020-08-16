@@ -1,7 +1,6 @@
 #ifndef RAYFORK_FONT_H
 #define RAYFORK_FONT_H
 
-#include "rayfork-image.h"
 #include "rayfork-gfx.h"
 
 #define RF_SDF_CHAR_PADDING         (4)
