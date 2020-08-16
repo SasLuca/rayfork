@@ -1,8 +1,8 @@
 #ifndef RAYFORK_FONT_H
 #define RAYFORK_FONT_H
 
-#include "rayfork_image.h"
-#include "rayfork_gfx_base.h"
+#include "rayfork-image.h"
+#include "rayfork-gfx.h"
 
 #define RF_SDF_CHAR_PADDING         (4)
 #define RF_SDF_ON_EDGE_VALUE        (128)

@@ -1,7 +1,7 @@
 #ifndef RAYFORK_MATH_H
 #define RAYFORK_MATH_H
 
-#include "rayfork_common.h"
+#include "rayfork-std.h"
 
 #define RF_PI (3.14159265358979323846f)
 #define RF_DEG2RAD (RF_PI / 180.0f)
@@ -194,6 +194,19 @@ struct rf_model;
 RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, struct rf_model model); // Get collision info between ray and model
 RF_API rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3); // Get collision info between ray and triangle
 RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height); // Get collision info between ray and ground plane (Y-normal plane)
+
+#pragma endregion
+
+#pragma region base64
+
+typedef struct rf_base64_output
+{
+    int size;
+    unsigned char* buffer;
+} rf_base64_output;
+
+RF_API int rf_get_size_base64(const unsigned char* input);
+RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator);
 
 #pragma endregion
 

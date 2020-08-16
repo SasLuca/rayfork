@@ -1,3 +1,99 @@
+#pragma region dependencies
+
+#pragma region par shapes
+#define PAR_SHAPES_IMPLEMENTATION
+#define PAR_MALLOC(T, N)               ((T*)RF_ALLOC(rf__global_allocator_for_dependencies, N * sizeof(T)))
+#define PAR_CALLOC(T, N)               ((T*)rf_calloc_wrapper(rf__global_allocator_for_dependencies, N, sizeof(T)))
+#define PAR_FREE(BUF)                  (RF_FREE(rf__global_allocator_for_dependencies, BUF))
+#define PAR_REALLOC(T, BUF, N, OLD_SZ) ((T*) rf_realloc_wrapper(rf__global_allocator_for_dependencies, BUF, sizeof(T) * (N), (OLD_SZ)))
+#define PARDEF                         RF_INTERNAL
+#include "par_shapes.h"
+#pragma endregion
+
+#pragma region tinyobj loader
+RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks rf__tinyobj_io;
+#define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf__tinyobj_allocator = allocator
+#define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf__tinyobj_io = io;
+
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
+#define TINYOBJ_MALLOC(size)             (RF_ALLOC(rf__global_allocator_for_dependencies, (size)))
+#define TINYOBJ_REALLOC(p, oldsz, newsz) (rf_realloc_wrapper(rf__global_allocator_for_dependencies, (p), (oldsz), (newsz)))
+#define TINYOBJ_CALLOC(amount, size)     (rf_calloc_wrapper(rf__global_allocator_for_dependencies, (amount), (size)))
+#define TINYOBJ_FREE(p)                  (RF_FREE(rf__global_allocator_for_dependencies, (p)))
+#define TINYOBJDEF                       RF_INTERNAL
+#include "tinyobjloader.h"
+
+RF_INTERNAL void rf_tinyobj_file_reader_callback(const char* filename, char** buf, size_t* len)
+{
+    if (!filename || !buf || !len) return;
+
+    *len = RF_FILE_SIZE(rf__tinyobj_io, filename);
+
+    if (*len)
+    {
+        if (!RF_READ_FILE(rf__tinyobj_io, filename, *buf, *len))
+        {
+            // On error we set the size of output buffer to 0
+            *len = 0;
+        }
+    }
+}
+#pragma endregion
+
+#pragma region cgltf
+#define CGLTF_IMPLEMENTATION
+#define CGLTF_MALLOC(size) RF_ALLOC(rf__global_allocator_for_dependencies, size)
+#define CGLTF_FREE(ptr)    RF_FREE(rf__global_allocator_for_dependencies, ptr)
+#include "cgltf.h"
+
+RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data)
+{
+    ((void) memory_options);
+    ((void) file_options);
+
+    cgltf_result result = cgltf_result_file_not_found;
+    rf_io_callbacks* io = (rf_io_callbacks*) file_options->user_data;
+
+    int file_size = RF_FILE_SIZE(*io, path);
+
+    if (file_size > 0)
+    {
+        void* dst = CGLTF_MALLOC(file_size);
+
+        if (dst == NULL)
+        {
+            if (RF_READ_FILE(*io, path, data, file_size) && data && size)
+            {
+                *data = dst;
+                *size = file_size;
+                result = cgltf_result_success;
+            }
+            else
+            {
+                CGLTF_FREE(dst);
+                result = cgltf_result_io_error;
+            }
+        }
+        else
+        {
+            result = cgltf_result_out_of_memory;
+        }
+    }
+
+    return result;
+}
+
+RF_INTERNAL void rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, void* data)
+{
+    ((void) memory_options);
+    ((void) file_options);
+
+    CGLTF_FREE(data);
+}
+#pragma endregion
+
+#pragma endregion
+
 RF_INTERNAL rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Make sure model transform is set to identity matrix!

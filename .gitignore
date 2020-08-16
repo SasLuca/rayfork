@@ -10,11 +10,11 @@
 !.gitmodules
 
 !include/
-!source/
+!src/
 !libs/
 
 !include/**
-!source/**
+!src/**
 !libs/**
 
 !tests/

@@ -1,9 +1,9 @@
 #ifndef RAYFORK_CONTEXT_H
 #define RAYFORK_CONTEXT_H
 
-#include "rayfork_gfx.h"
-#include "rayfork_font.h"
-#include "rayfork_logger.h"
+#include "rayfork-render-batch.h"
+#include "rayfork-font.h"
+#include "rayfork-logger.h"
 
 typedef struct rf_default_font
 {

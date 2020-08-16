@@ -1,8 +1,8 @@
-#ifndef RAYFORK_GFX_BASE_H
-#define RAYFORK_GFX_BASE_H
+#ifndef RAYFORK_GFX_CORE_H
+#define RAYFORK_GFX_CORE_H
 
-#include "rayfork_math.h"
-#include "rayfork_image.h"
+#include "rayfork-math.h"
+#include "rayfork-image.h"
 
 #if !defined(RAYFORK_GRAPHICS_BACKEND_GL_33) && !defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3) && !defined(RAYFORK_GRAPHICS_BACKEND_METAL) && !defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)
     #define RF_NO_GRAPHICS_BACKEND_SELECTED_BY_THE_USER (1)
@@ -310,4 +310,4 @@ RF_API void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index);
 RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
 RF_API void rf_gfx_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GPU
 
-#endif // RAYFORK_GFX_BASE_H
+#endif // RAYFORK_GFX_CORE_H

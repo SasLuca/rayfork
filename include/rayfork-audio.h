@@ -1,10 +1,7 @@
 #ifndef RAYFORK_AUDIO_H
 #define RAYFORK_AUDIO_H
 
-#include "rayfork_error.h"
-#include "rayfork_allocator.h"
-#include "rayfork_io.h"
-#include "rayfork_logger.h"
+#include "rayfork-std.h"
 
 /*
  This buffer size is defined by number of samples, independent of sample size and channels number

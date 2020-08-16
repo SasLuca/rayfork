@@ -1,3 +1,39 @@
+#pragma region dependencies
+
+#pragma region stb_image
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz)                     RF_ALLOC(rf__global_allocator_for_dependencies, sz)
+#define STBI_FREE(p)                        RF_FREE(rf__global_allocator_for_dependencies, p)
+#define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_realloc_wrapper(rf__global_allocator_for_dependencies, p, oldsz, newsz)
+#define STBI_ASSERT(it)                     RF_ASSERT(it)
+#define STBIDEF                             RF_INTERNAL
+#include "stb_image.h"
+#pragma endregion
+
+#pragma region stb_image_resize
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(rf__global_allocator_for_dependencies, sz))
+#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(rf__global_allocator_for_dependencies, p))
+#define STBIR_ASSERT(it)     RF_ASSERT(it)
+#define STBIRDEF RF_INTERNAL
+#include "stb_image_resize.h"
+#pragma endregion
+
+#pragma region stb_rect_pack
+#define STB_RECT_PACK_IMPLEMENTATION
+#define STBRP_ASSERT RF_ASSERT
+#define STBRP_STATIC
+#include "stb_rect_pack.h"
+#pragma endregion
+
+#pragma region stb_perlin
+#define STB_PERLIN_IMPLEMENTATION
+#define STBPDEF RF_INTERNAL
+#include "stb_perlin.h"
+#pragma endregion
+
+#pragma endregion
+
 #pragma region extract image data functions
 
 RF_API int rf_image_size(rf_image image)

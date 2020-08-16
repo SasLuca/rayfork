@@ -3,11 +3,11 @@
 
 #if !defined(RAYFORK_NO_EZ_API)
 
-#include "rayfork_gfx.h"
+#include "rayfork-render-batch.h"
 #include "rayfork_base64.h"
-#include "rayfork_font.h"
-#include "rayfork_unicode.h"
-#include "rayfork_3d.h"
+#include "rayfork-font.h"
+#include "rayfork-unicode.h"
+#include "rayfork-3d.h"
 
 RF_API rf_material rf_load_default_material_ez();
 RF_API rf_image rf_get_screen_data_ez();

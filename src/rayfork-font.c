@@ -1,3 +1,16 @@
+#pragma region dependencies
+
+#pragma region stb_truetype
+#define STB_TRUETYPE_IMPLEMENTATION
+#define STBTT_malloc(sz, u) RF_ALLOC(rf__global_allocator_for_dependencies, sz)
+#define STBTT_free(p, u)    RF_FREE(rf__global_allocator_for_dependencies, p)
+#define STBTT_assert(it)    RF_ASSERT(it)
+#define STBTT_STATIC
+#include "stb_truetype.h"
+#pragma endregion
+
+#pragma endregion
+
 #pragma region ttf font
 
 RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, int font_size)

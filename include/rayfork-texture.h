@@ -1,8 +1,7 @@
 #ifndef RAYFORK_TEXTURE_H
 #define RAYFORK_TEXTURE_H
 
-#include "rayfork_io.h"
-#include "rayfork_gfx_base.h"
+#include "rayfork-gfx.h"
 
 RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io); // Load texture from file into GPU memory (VRAM)
 RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, int dst_size, rf_allocator temp_allocator); // Load texture from an image file data using stb

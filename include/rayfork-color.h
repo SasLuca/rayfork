@@ -2,7 +2,7 @@
 #define RAYFORK_COLOR_H
 
 #include "rayfork_common.h"
-#include "rayfork_math.h"
+#include "rayfork-math.h"
 
 #define RF_LIGHTGRAY  (RF_LIT(rf_color) { 200, 200, 200, 255 })
 #define RF_GRAY       (RF_LIT(rf_color) { 130, 130, 130, 255 })

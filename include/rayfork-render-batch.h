@@ -1,8 +1,8 @@
 #ifndef RAYFORK_GFX_H
 #define RAYFORK_GFX_H
 
-#include "rayfork_gfx_base.h"
-#include "rayfork_gfx_backend_opengl.h"
+#include "rayfork-gfx.h"
+#include "rayfork-gfx-backend-opengl.h"
 
 typedef struct rf_render_batch
 {

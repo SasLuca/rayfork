@@ -1,7 +1,7 @@
 #ifndef RAYFORK_3D_H
 #define RAYFORK_3D_H
 
-#include "rayfork_gfx_base.h"
+#include "rayfork-gfx.h"
 
 typedef enum rf_material_map_type
 {
