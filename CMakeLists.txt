@@ -19,10 +19,8 @@ if (RAYFORK_ENABLE_AUDIO)
     target_compile_definitions(rayfork PUBLIC RAYFORK_ENABLE_AUDIO)
 endif()
 
-# For rayfork devs -------------------------------------------------------------------------------
-
-# Include test optional suite
-if(RAYFORK_TESTS)
+# rayfork test -------------------------------------------------------------------------------
+if (EXISTS ./tests)
     set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
     add_subdirectory(tests)
 endif()
