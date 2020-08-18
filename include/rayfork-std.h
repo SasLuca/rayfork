@@ -98,11 +98,13 @@
 #define RF_CONCAT_IMPL(a, b) a##b
 #define RF_CONCAT(a, b)      RF_CONCAT_IMPL(a, b)
 
+typedef ptrdiff_t rf_int;
+
 typedef struct rf_source_location
 {
     const char* file_name;
     const char* proc_name;
-    int line_in_file;
+    rf_int line_in_file;
 } rf_source_location;
 
 #define RF_SOURCE_LOCATION (RF_LIT(rf_source_location) { __FILE__, __FUNCTION__, __LINE__ })
@@ -142,7 +144,7 @@ typedef struct rf_allocator_args
      * In case of RF_AM_REALLOC this is the new size that the buffer should have.
      * In case of RF_AM_FREE this argument can be ignored.
      */
-    int size_to_allocate_or_reallocate;
+    rf_int size_to_allocate_or_reallocate;
 
     /*
      * In case of RF_AM_ALLOC this argument can be ignored.
@@ -162,7 +164,7 @@ typedef struct rf_allocator
     rf_allocator_proc* allocator_proc;
 } rf_allocator;
 
-RF_API void* rf_calloc_wrapper(rf_allocator allocator, int amount, int size);
+RF_API void* rf_calloc_wrapper(rf_allocator allocator, rf_int amount, rf_int size);
 
 RF_API void* rf_libc_allocator_wrapper(struct rf_allocator* this_allocator, rf_source_location source_location, rf_allocator_mode mode, rf_allocator_args args);
 
@@ -177,12 +179,12 @@ RF_API void* rf_libc_allocator_wrapper(struct rf_allocator* this_allocator, rf_s
 
 typedef struct rf_io_callbacks
 {
-    void* user_data;
-    int  (*file_size_proc) (void* user_data, const char* filename);
-    bool (*read_file_proc) (void* user_data, const char* filename, void* dst, int dst_size); // Returns true if operation was successful
+    void*  user_data;
+    rf_int (*file_size_proc) (void* user_data, const char* filename);
+    bool   (*read_file_proc) (void* user_data, const char* filename, void* dst, rf_int dst_size); // Returns true if operation was successful
 } rf_io_callbacks;
 
-RF_API int  rf_libc_get_file_size(void* user_data, const char* filename);
+RF_API rf_int rf_libc_get_file_size(void* user_data, const char* filename);
 RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size);
 
 #pragma endregion
@@ -251,9 +253,9 @@ RF_API void rf_libc_printf_logger(struct rf_logger* logger, rf_source_location s
 
 #define RF_DEFAULT_RAND_PROC (rf_libc_rand_wrapper)
 
-typedef int (*rf_rand_proc)(int min, int max);
+typedef rf_int (*rf_rand_proc)(rf_int min, rf_int max);
 
-RF_API int rf_libc_rand_wrapper(int min, int max);
+RF_API rf_int rf_libc_rand_wrapper(rf_int min, rf_int max);
 
 #pragma endregion
 

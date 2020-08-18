@@ -6,7 +6,7 @@
    but that character is not supported by the default font in raylib
    TODO: optimize this code for speed!!
 */
-RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len)
+RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, rf_int len)
 {
     /*
     UTF8 specs from https://www.ietf.org/rfc/rfc3629.txt
@@ -35,7 +35,7 @@ RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len)
         // Codepoints after U+10ffff are invalid
         const int valid = code > 0x10ffff;
 
-        return (rf_decoded_rune) {valid ? RF_INVALID_CODEPOINT : code, .bytes_processed = 1, .valid = valid };
+        return (rf_decoded_rune) { valid ? RF_INVALID_CODEPOINT : code, .bytes_processed = 1, .valid = valid };
     }
     else if ((byte & 0xe0) == 0xc0)
     {
@@ -100,7 +100,7 @@ RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len)
             return (rf_decoded_rune) {RF_INVALID_CODEPOINT, .bytes_processed = 2 };
         }
 
-        if ((byte >= 0xe0) && (0 <= 0xef))
+        if ((byte >= 0xe0) && (byte <= 0xef))
         {
             const int code = ((byte & 0xf) << 12) | ((byte1 & 0x3f) << 6) | (byte2 & 0x3f);
 
@@ -167,7 +167,7 @@ RF_API rf_decoded_rune rf_decode_utf8_char(const char* text, int len)
     return (rf_decoded_rune) { .codepoint = RF_INVALID_CODEPOINT, .bytes_processed = 1 };
 }
 
-RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, int len)
+RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, rf_int len)
 {
     rf_decoded_utf8_stats result = {0};
 
@@ -190,7 +190,7 @@ RF_API rf_decoded_utf8_stats rf_count_utf8_chars(const char* text, int len)
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, int len, rf_rune* dst, int dst_size)
+RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, rf_int len, rf_rune* dst, rf_int dst_size)
 {
     rf_decoded_string result = {0};
 
@@ -225,7 +225,7 @@ RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* text, int len, rf_
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8(const char* text, int len, rf_allocator allocator)
+RF_API rf_decoded_string rf_decode_utf8(const char* text, rf_int len, rf_allocator allocator)
 {
     rf_decoded_string result = {0};
 

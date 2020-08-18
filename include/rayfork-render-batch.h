@@ -6,12 +6,12 @@
 
 typedef struct rf_render_batch
 {
-    int vertex_buffers_count;
-    int current_buffer;
+    rf_int vertex_buffers_count;
+    rf_int current_buffer;
     rf_vertex_buffer* vertex_buffers;
 
-    int draw_calls_size;
-    int draw_calls_counter;
+    rf_int draw_calls_size;
+    rf_int draw_calls_counter;
     rf_draw_call* draw_calls;
     float current_depth; // Current depth value for next draw
 
@@ -41,8 +41,8 @@ typedef struct rf_default_render_batch
     rf_default_vertex_buffer vertex_buffers_memory [RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT];
 } rf_default_render_batch;
 
-RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, int vertex_buffers_count, rf_draw_call* draw_calls, int draw_calls_count);
-RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, int draw_calls_count, int vertex_buffer_elements_count, rf_allocator allocator);
+RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count);
+RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator);
 RF_API rf_render_batch rf_create_default_render_batch(rf_allocator allocator);
 
 RF_API void rf_set_active_render_batch(rf_render_batch* batch);

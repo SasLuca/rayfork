@@ -1002,7 +1002,7 @@ RF_INTERNAL void rf_unload_buffers_default()
     rf_gl.BindBuffer(GL_ARRAY_BUFFER, 0);
     rf_gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    for (int i = 0; i < RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT; i++)
+    for (rf_int i = 0; i < RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT; i++)
     {
         // Delete VBOs from GPU (VRAM)
         rf_gl.DeleteBuffers(1, &rf_batch.vertex_buffers[i].vbo_id[0]);
@@ -1221,7 +1221,7 @@ RF_INTERNAL void rf_gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
 
             rf_gl.GetIntegerv(GL_NUM_EXTENSIONS, &num_ext);
 
-            for (int i = 0; i < num_ext; i++)
+            for (rf_int i = 0; i < num_ext; i++)
             {
                 const char *ext = (const char *) rf_gl.GetStringi(GL_EXTENSIONS, i);
                 rf_set_gl_extension_if_available(ext, strlen(ext));
@@ -1334,7 +1334,7 @@ RF_API rf_shader rf_load_default_shader()
     memset(shader.locs, 0, sizeof(shader.locs));
 
     // NOTE: All locations must be reseted to -1 (no location)
-    for (int i = 0; i < RF_MAX_SHADER_LOCATIONS; i++) shader.locs[i] = -1;
+    for (rf_int i = 0; i < RF_MAX_SHADER_LOCATIONS; i++) shader.locs[i] = -1;
 
     // Vertex shader directly defined, no external file required
     const char* default_vertex_shader_str =
@@ -1453,7 +1453,7 @@ RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
 
     rf_gl.GetProgramiv(shader.id, GL_ACTIVE_UNIFORMS, &uniform_count);
 
-    for (int i = 0; i < uniform_count; i++)
+    for (rf_int i = 0; i < uniform_count; i++)
     {
         int namelen = -1;
         int num = -1;
@@ -1750,7 +1750,7 @@ RF_API void rf_gfx_end()
     {
         int add_colors = rf_batch.vertex_buffers[rf_batch.current_buffer].v_counter - rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter;
 
-        for (int i = 0; i < add_colors; i++)
+        for (rf_int i = 0; i < add_colors; i++)
         {
             rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter] = rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter - 4];
             rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter + 1] = rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter - 3];
@@ -1765,7 +1765,7 @@ RF_API void rf_gfx_end()
     {
         int add_tex_coords = rf_batch.vertex_buffers[rf_batch.current_buffer].v_counter - rf_batch.vertex_buffers[rf_batch.current_buffer].tc_counter;
 
-        for (int i = 0; i < add_tex_coords; i++)
+        for (rf_int i = 0; i < add_tex_coords; i++)
         {
             rf_batch.vertex_buffers[rf_batch.current_buffer].texcoords[2*rf_batch.vertex_buffers[rf_batch.current_buffer].tc_counter] = 0.0f;
             rf_batch.vertex_buffers[rf_batch.current_buffer].texcoords[2*rf_batch.vertex_buffers[rf_batch.current_buffer].tc_counter + 1] = 0.0f;
@@ -1787,7 +1787,7 @@ RF_API void rf_gfx_end()
         // WARNING: If we are between rf_gfx_push_matrix() and rf_gfx_pop_matrix() and we need to force a rf_gfx_draw(),
         // we need to call rf_gfx_pop_matrix() before to recover *rf_ctx->gl_ctx.current_matrix (rf_ctx->gl_ctx.modelview) for the next forced draw call!
         // If we have multiple matrix pushed, it will require "rf_ctx->gl_ctx.stack_counter" pops before launching the draw
-        for (int i = rf_ctx.stack_counter; i >= 0; i--) rf_gfx_pop_matrix();
+        for (rf_int i = rf_ctx.stack_counter; i >= 0; i--) rf_gfx_pop_matrix();
         rf_gfx_draw();
     }
 }
@@ -2336,7 +2336,7 @@ RF_API void rf_gfx_draw()
 
                 rf_gl.ActiveTexture(GL_TEXTURE0);
 
-                for (int i = 0; i < rf_batch.draw_calls_counter; i++)
+                for (rf_int i = 0; i < rf_batch.draw_calls_counter; i++)
                 {
                     rf_gl.BindTexture(GL_TEXTURE_2D, rf_batch.draw_calls[i].texture_id);
 
@@ -2382,7 +2382,7 @@ RF_API void rf_gfx_draw()
             rf_ctx.modelview  = mat_model_view;
 
             // Reset rf_ctx->gl_ctx.draws array
-            for (int i = 0; i < RF_DEFAULT_BATCH_DRAW_CALLS_COUNT; i++)
+            for (rf_int i = 0; i < RF_DEFAULT_BATCH_DRAW_CALLS_COUNT; i++)
             {
                 rf_batch.draw_calls[i].mode = RF_QUADS;
                 rf_batch.draw_calls[i].vertex_count = 0;
@@ -2465,7 +2465,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pi
     RF_LOG(RF_LOG_TYPE_DEBUG, "Load texture from data memory address: 0x%x", data);
 
     // Load the different mipmap levels
-    for (int i = 0; i < mipmap_count; i++)
+    for (rf_int i = 0; i < mipmap_count; i++)
     {
         int mip_size = rf_pixel_buffer_size(mip_width, mip_height, format);
 
@@ -2867,9 +2867,9 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
     // NOTE 2: We are getting alpha channel! Be careful, it can be transparent if not cleared properly!
     rf_gl.ReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, dst);
 
-    for (int y = height - 1; y >= 0; y--)
+    for (rf_int y = height - 1; y >= 0; y--)
     {
-        for (int x = 0; x < width; x++)
+        for (rf_int x = 0; x < width; x++)
         {
             dst[((height - 1) - y) * width + x] = dst[(y * width) + x]; // Flip line
 
@@ -3226,14 +3226,14 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
     // TODO: Consider possible transform matrices in the rf_ctx->gl_ctx.stack
     // Is this the right order? or should we start with the first stored matrix instead of the last one?
     //rf_mat matStackTransform = rf_mat_identity();
-    //for (int i = rf_ctx->gl_ctx.stack_counter; i > 0; i--) matStackTransform = rf_mat_mul(rf_ctx->gl_ctx.stack[i], matStackTransform);
+    //for (rf_int i = rf_ctx->gl_ctx.stack_counter; i > 0; i--) matStackTransform = rf_mat_mul(rf_ctx->gl_ctx.stack[i], matStackTransform);
 
     // rf_transform to camera-space coordinates
     rf_mat mat_model_view = rf_mat_mul(transform, rf_mat_mul(rf_ctx.transform, mat_view));
     //-----------------------------------------------------
 
     // Bind active texture maps (if available)
-    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
+    for (rf_int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         if (material.maps[i].texture.id > 0)
         {
@@ -3261,7 +3261,7 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
     else rf_gl.DrawArrays(GL_TRIANGLES, 0, mesh.vertex_count);
 
     // Unbind all binded texture maps
-    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
+    for (rf_int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         rf_gl.ActiveTexture(GL_TEXTURE0 + i);       // Set shader active texture
         if ((i == RF_MAP_IRRADIANCE) || (i == RF_MAP_PREFILTER) || (i == RF_MAP_CUBEMAP)) rf_gl.BindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -3298,7 +3298,7 @@ RF_API void rf_gfx_unload_mesh(rf_mesh mesh)
 
 #pragma region gen textures
 // Generate cubemap texture from HDR texture
-RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, int size)
+RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, rf_int size)
 {
     rf_texture2d cubemap = { 0 };
     // NOTE: rf_set_shader_default_locations() already setups locations for rf_ctx->gl_ctx.projection and view rf_mat in shader
@@ -3353,7 +3353,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
     rf_gl.Viewport(0, 0, size, size);
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    for (int i = 0; i < 6; i++)
+    for (rf_int i = 0; i < 6; i++)
     {
         rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
         rf_gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap.id, 0);
@@ -3378,7 +3378,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
 }
 
 // Generate irradiance texture using cubemap data
-RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, int size)
+RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, rf_int size)
 {
     rf_texture2d irradiance = { 0 };
 
@@ -3429,7 +3429,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     rf_gl.Viewport(0, 0, size, size);
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    for (int i = 0; i < 6; i++)
+    for (rf_int i = 0; i < 6; i++)
     {
         rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
         rf_gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradiance.id, 0);
@@ -3452,7 +3452,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
 }
 
 // Generate prefilter texture using cubemap data
-RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, int size)
+RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, rf_int size)
 {
     rf_texture2d prefilter = { 0 };
 
@@ -3508,7 +3508,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 
 #define MAX_MIPMAP_LEVELS   5   // Max number of prefilter texture mipmaps
 
-    for (int mip = 0; mip < MAX_MIPMAP_LEVELS; mip++)
+    for (rf_int mip = 0; mip < MAX_MIPMAP_LEVELS; mip++)
     {
         // Resize framebuffer according to mip-level size.
         unsigned int mip_width  = size*(int)powf(0.5f, (float)mip);
@@ -3521,7 +3521,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
         float roughness = (float)mip/(float)(MAX_MIPMAP_LEVELS - 1);
         rf_gl.Uniform1f(roughness_loc, roughness);
 
-        for (int i = 0; i < 6; i++)
+        for (rf_int i = 0; i < 6; i++)
         {
             rf_gfx_set_shader_value_matrix(shader, shader.locs[RF_LOC_MATRIX_VIEW], fbo_views[i]);
             rf_gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilter.id, mip);
@@ -3545,7 +3545,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 }
 
 // Generate BRDF texture using cubemap data. Todo: Review implementation: https://github.com/HectorMF/BRDFGenerator
-RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, int size)
+RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, rf_int size)
 {
     rf_texture2d brdf = { 0 };
     // Generate BRDF convolution texture

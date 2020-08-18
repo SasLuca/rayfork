@@ -43,7 +43,7 @@ RF_API void rf_init_gfx(int screen_width, int screen_height, rf_gfx_backend_data
         rf_ctx.transform = rf_mat_identity();
 
         // Init internal matrix stack (emulating OpenGL 1)
-        for (int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++)
+        for (rf_int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++)
         {
             rf_ctx.stack[i] = rf_mat_identity();
         }
@@ -135,9 +135,9 @@ RF_API void rf_init_gfx(int screen_width, int screen_height, rf_gfx_backend_data
             int counter = 0; // rf_font data elements counter
 
             // Fill with default_font_data (convert from bit to pixel!)
-            for (int i = 0; i < 128 * 128; i += 32)
+            for (rf_int i = 0; i < 128 * 128; i += 32)
             {
-                for (int j = 31; j >= 0; j--)
+                for (rf_int j = 31; j >= 0; j--)
                 {
                     const int bit_check = (default_font_data[counter]) & (1u << j);
                     if (bit_check) font_pixels[i + j] = RF_WHITE;
@@ -172,7 +172,7 @@ RF_API void rf_init_gfx(int screen_width, int screen_height, rf_gfx_backend_data
         int test_pos_x       = chars_divisor;
         int char_pixels_iter = 0;
 
-        for (int i = 0; i < rf_ctx.default_font.glyphs_count; i++)
+        for (rf_int i = 0; i < rf_ctx.default_font.glyphs_count; i++)
         {
             rf_ctx.default_font.glyphs[i].codepoint = 32 + i; // First char is 32
 
@@ -247,7 +247,7 @@ RF_API rf_context* rf_get_context()
 }
 
 // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
-RF_API rf_image rf_get_screen_data(rf_color* dst, int dst_size)
+RF_API rf_image rf_get_screen_data(rf_color* dst, rf_int dst_size)
 {
     rf_image image = {0};
 
@@ -316,7 +316,7 @@ RF_API void rf_set_logger_filter(rf_log_type filter)
     rf_ctx.logger_filter = filter;
 }
 
-RF_API inline int rf_libc_rand_wrapper(int min, int max)
+RF_API inline rf_int rf_libc_rand_wrapper(rf_int min, rf_int max)
 {
     return rand() % (max + 1 - min) + min;
 }

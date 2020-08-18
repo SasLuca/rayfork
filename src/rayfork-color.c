@@ -91,13 +91,13 @@ RF_API int rf_pixel_buffer_size(int width, int height, rf_pixel_format format)
     return width * height * rf_bits_per_pixel(format) / 8;
 }
 
-RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, int dst_size)
+RF_API bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, rf_int dst_size)
 {
     bool success = false;
 
-    int src_bpp = rf_bytes_per_pixel(src_format);
-    int src_pixel_count = src_size / src_bpp;
-    int dst_pixel_count = dst_size / sizeof(rf_vec4);
+    rf_int src_bpp = rf_bytes_per_pixel(src_format);
+    rf_int src_pixel_count = src_size / src_bpp;
+    rf_int dst_pixel_count = dst_size / sizeof(rf_vec4);
 
     if (dst_pixel_count >= src_pixel_count)
     {
@@ -110,7 +110,7 @@ RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_unc
         {
             success = true;
 
-            #define RF_FOR_EACH_PIXEL for (int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
+            #define RF_FOR_EACH_PIXEL for (rf_int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
             switch (src_format)
             {
                 case RF_UNCOMPRESSED_GRAYSCALE:
@@ -234,13 +234,13 @@ RF_API bool rf_format_pixels_to_normalized(const void* src, int src_size, rf_unc
     return success;
 }
 
-RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, int dst_size)
+RF_API bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, rf_int dst_size)
 {
     bool success = false;
 
-    int src_bpp = rf_bytes_per_pixel(src_format);
-    int src_pixel_count = src_size / src_bpp;
-    int dst_pixel_count = dst_size / sizeof(rf_color);
+    rf_int src_bpp = rf_bytes_per_pixel(src_format);
+    rf_int src_pixel_count = src_size / src_bpp;
+    rf_int dst_pixel_count = dst_size / sizeof(rf_color);
 
     if (dst_pixel_count >= src_pixel_count)
     {
@@ -252,7 +252,7 @@ RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompr
         else
         {
             success = true;
-            #define RF_FOR_EACH_PIXEL for (int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
+            #define RF_FOR_EACH_PIXEL for (rf_int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
             switch (src_format)
             {
                 case RF_UNCOMPRESSED_GRAYSCALE:
@@ -375,7 +375,7 @@ RF_API bool rf_format_pixels_to_rgba32(const void* src, int src_size, rf_uncompr
     return success;
 }
 
-RF_API bool rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixel_format src_format, void* dst, int dst_size, rf_uncompressed_pixel_format dst_format)
+RF_API bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     bool success = false;
 
@@ -389,18 +389,18 @@ RF_API bool rf_format_pixels(const void* src, int src_size, rf_uncompressed_pixe
     }
     else if (rf_is_uncompressed_format(src_format) && rf_is_uncompressed_format(dst_format))
     {
-        int src_bpp = rf_bytes_per_pixel(src_format);
-        int dst_bpp = rf_bytes_per_pixel(dst_format);
+        rf_int src_bpp = rf_bytes_per_pixel(src_format);
+        rf_int dst_bpp = rf_bytes_per_pixel(dst_format);
 
-        int src_pixel_count = src_size / src_bpp;
-        int dst_pixel_count = dst_size / dst_bpp;
+        rf_int src_pixel_count = src_size / src_bpp;
+        rf_int dst_pixel_count = dst_size / dst_bpp;
 
         if (dst_pixel_count >= src_pixel_count)
         {
             success = true;
 
             //Loop over both src and dst
-            #define RF_FOR_EACH_PIXEL for (int src_iter = 0, dst_iter = 0; src_iter < src_size && dst_iter < dst_size; src_iter += src_bpp, dst_iter += dst_bpp)
+            #define RF_FOR_EACH_PIXEL for (rf_int src_iter = 0, dst_iter = 0; src_iter < src_size && dst_iter < dst_size; src_iter += src_bpp, dst_iter += dst_bpp)
             #define RF_COMPUTE_NORMALIZED_PIXEL() rf_format_one_pixel_to_normalized(((unsigned char*) src) + src_iter, src_format);
             if (src_format == dst_format)
             {

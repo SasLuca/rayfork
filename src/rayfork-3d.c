@@ -111,7 +111,7 @@ RF_INTERNAL rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_a
     else
     {
         // Upload vertex data to GPU (static mesh)
-        for (int i = 0; i < model.mesh_count; i++)
+        for (rf_int i = 0; i < model.mesh_count; i++)
             rf_gfx_load_mesh(&model.meshes[i], false);
     }
 
@@ -146,7 +146,7 @@ RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
         min_vertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
         max_vertex = (rf_vec3){mesh.vertices[0], mesh.vertices[1], mesh.vertices[2] };
 
-        for (int i = 1; i < mesh.vertex_count; i++)
+        for (rf_int i = 1; i < mesh.vertex_count; i++)
         {
             min_vertex = rf_vec3_min(min_vertex, (rf_vec3) {mesh.vertices[i * 3], mesh.vertices[i * 3 + 1],
                                                             mesh.vertices[i * 3 + 2]});
@@ -174,7 +174,7 @@ RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_a
     rf_vec3* tan1 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
     rf_vec3* tan2 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
 
-    for (int i = 0; i < mesh->vertex_count; i += 3)
+    for (rf_int i = 0; i < mesh->vertex_count; i += 3)
     {
         // Get triangle vertices
         rf_vec3 v1 = { mesh->vertices[(i + 0) * 3 + 0], mesh->vertices[(i + 0) * 3 + 1], mesh->vertices[(i + 0) * 3 + 2] };
@@ -214,7 +214,7 @@ RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_a
     }
 
     // Compute tangents considering normals
-    for (int i = 0; i < mesh->vertex_count; ++i)
+    for (rf_int i = 0; i < mesh->vertex_count; ++i)
     {
         rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
         rf_vec3 tangent = tan1[i];
@@ -239,7 +239,7 @@ RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_a
 // Compute mesh binormals (aka bitangent)
 RF_API void rf_mesh_compute_binormals(rf_mesh* mesh)
 {
-    for (int i = 0; i < mesh->vertex_count; i++)
+    for (rf_int i = 0; i < mesh->vertex_count; i++)
     {
         rf_vec3 normal = {mesh->normals[i * 3 + 0], mesh->normals[i * 3 + 1], mesh->normals[i * 3 + 2] };
         rf_vec3 tangent = {mesh->tangents[i * 4 + 0], mesh->tangents[i * 4 + 1], mesh->tangents[i * 4 + 2] };
@@ -305,7 +305,7 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
     else
     {
         // Upload vertex data to GPU (static mesh)
-        for (int i = 0; i < model.mesh_count; i++)
+        for (rf_int i = 0; i < model.mesh_count; i++)
         {
             rf_gfx_load_mesh(&model.meshes[i], false);
         }
@@ -378,7 +378,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
 
         // Init model meshes
-        for (int m = 0; m < 1; m++)
+        for (rf_int m = 0; m < 1; m++)
         {
             rf_mesh mesh = (rf_mesh)
             {
@@ -400,7 +400,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
             int vtCount = 0;
             int vnCount = 0;
 
-            for (int f = 0; f < attrib.num_faces; f++)
+            for (rf_int f = 0; f < attrib.num_faces; f++)
             {
                 // Get indices for the face
                 tinyobj_vertex_index_t idx0 = attrib.faces[3 * f + 0];
@@ -410,13 +410,13 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
                 // RF_LOG(RF_LOG_TYPE_DEBUG, "Face %i index: v %i/%i/%i . vt %i/%i/%i . vn %i/%i/%i\n", f, idx0.v_idx, idx1.v_idx, idx2.v_idx, idx0.vt_idx, idx1.vt_idx, idx2.vt_idx, idx0.vn_idx, idx1.vn_idx, idx2.vn_idx);
 
                 // Fill vertices buffer (float) using vertex index of the face
-                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx0.v_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx0.v_idx * 3 + v]; }
                 vCount +=3;
 
-                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx1.v_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx1.v_idx * 3 + v]; }
                 vCount +=3;
 
-                for (int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx2.v_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.vertices[vCount + v] = attrib.vertices[idx2.v_idx * 3 + v]; }
                 vCount +=3;
 
                 // Fill texcoords buffer (float) using vertex index of the face
@@ -429,13 +429,13 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
                 mesh.texcoords[vtCount + 1] = 1.0f - attrib.texcoords[idx2.vt_idx * 2 + 1]; vtCount += 2;
 
                 // Fill normals buffer (float) using vertex index of the face
-                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx0.vn_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx0.vn_idx * 3 + v]; }
                 vnCount +=3;
 
-                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx1.vn_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx1.vn_idx * 3 + v]; }
                 vnCount +=3;
 
-                for (int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx2.vn_idx * 3 + v]; }
+                for (rf_int v = 0; v < 3; v++) { mesh.normals[vnCount + v] = attrib.normals[idx2.vn_idx * 3 + v]; }
                 vnCount +=3;
             }
 
@@ -449,7 +449,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         }
 
         // Init model materials
-        for (int m = 0; m < material_count; m++)
+        for (rf_int m = 0; m < material_count; m++)
         {
             // Init material to default
             // NOTE: Uses default shader, only RF_MAP_DIFFUSE supported
@@ -642,7 +642,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
 
     char name[RF_MESH_NAME_LENGTH] = {0};
-    for (int i = 0; i < model.mesh_count; i++)
+    for (rf_int i = 0; i < model.mesh_count; i++)
     {
         memcpy(name, data + (iqm.ofs_text + imesh[i].name), RF_MESH_NAME_LENGTH);
 
@@ -686,11 +686,11 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     tri = (rf_iqm_triangle*) RF_ALLOC(temp_allocator, iqm.num_triangles * sizeof(rf_iqm_triangle));
     memcpy(tri, data + iqm.ofs_triangles, iqm.num_triangles * sizeof(rf_iqm_triangle));
 
-    for (int m = 0; m < model.mesh_count; m++)
+    for (rf_int m = 0; m < model.mesh_count; m++)
     {
         int tcounter = 0;
 
-        for (int i = imesh[m].first_triangle; i < (imesh[m].first_triangle + imesh[m].num_triangles); i++)
+        for (rf_int i = imesh[m].first_triangle; i < (imesh[m].first_triangle + imesh[m].num_triangles); i++)
         {
             // IQM triangles are stored counter clockwise, but raylib sets opengl to clockwise drawing, so we swap them around
             model.meshes[m].indices[tcounter + 2] = tri[i].vertex[0] - imesh[m].first_vertex;
@@ -704,7 +704,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     va = (rf_iqm_vertex_array*) RF_ALLOC(temp_allocator, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
     memcpy(va, data + iqm.ofs_vertexarrays, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
 
-    for (int i = 0; i < iqm.num_vertexarrays; i++)
+    for (rf_int i = 0; i < iqm.num_vertexarrays; i++)
     {
         switch (va[i].type)
         {
@@ -713,10 +713,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
                 vertex = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
                 memcpy(vertex, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
 
-                for (int m = 0; m < iqm.num_meshes; m++)
+                for (rf_int m = 0; m < iqm.num_meshes; m++)
                 {
                     int vertex_pos_counter = 0;
-                    for (int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
+                    for (rf_int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
                     {
                         model.meshes[m].vertices     [vertex_pos_counter] = vertex[ii];
                         model.meshes[m].anim_vertices[vertex_pos_counter] = vertex[ii];
@@ -730,10 +730,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
                 normal = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
                 memcpy(normal, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
 
-                for (int m = 0; m < iqm.num_meshes; m++)
+                for (rf_int m = 0; m < iqm.num_meshes; m++)
                 {
                     int vertex_pos_counter = 0;
-                    for (int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
+                    for (rf_int ii = imesh[m].first_vertex * 3; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 3; ii++)
                     {
                         model.meshes[m].normals     [vertex_pos_counter] = normal[ii];
                         model.meshes[m].anim_normals[vertex_pos_counter] = normal[ii];
@@ -747,10 +747,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
                 text = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 2 * sizeof(float));
                 memcpy(text, data + va[i].offset, iqm.num_vertexes * 2 * sizeof(float));
 
-                for (int m = 0; m < iqm.num_meshes; m++)
+                for (rf_int m = 0; m < iqm.num_meshes; m++)
                 {
                     int vertex_pos_counter = 0;
-                    for (int ii = imesh[m].first_vertex * 2; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 2; ii++)
+                    for (rf_int ii = imesh[m].first_vertex * 2; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 2; ii++)
                     {
                         model.meshes[m].texcoords[vertex_pos_counter] = text[ii];
                         vertex_pos_counter++;
@@ -763,10 +763,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
                 blendi = (char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(char));
                 memcpy(blendi, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(char));
 
-                for (int m = 0; m < iqm.num_meshes; m++)
+                for (rf_int m = 0; m < iqm.num_meshes; m++)
                 {
                     int bone_counter = 0;
-                    for (int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
+                    for (rf_int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
                     {
                         model.meshes[m].bone_ids[bone_counter] = blendi[ii];
                         bone_counter++;
@@ -779,10 +779,10 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
                 blendw = (unsigned char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(unsigned char));
                 memcpy(blendw, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(unsigned char));
 
-                for (int m = 0; m < iqm.num_meshes; m++)
+                for (rf_int m = 0; m < iqm.num_meshes; m++)
                 {
                     int bone_counter = 0;
-                    for (int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
+                    for (rf_int ii = imesh[m].first_vertex * 4; ii < (imesh[m].first_vertex + imesh[m].num_vertexes) * 4; ii++)
                     {
                         model.meshes[m].bone_weights[bone_counter] = blendw[ii] / 255.0f;
                         bone_counter++;
@@ -800,7 +800,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     model.bones      = (rf_bone_info*) RF_ALLOC(allocator, iqm.num_joints * sizeof(rf_bone_info));
     model.bind_pose  = (rf_transform*) RF_ALLOC(allocator, iqm.num_joints * sizeof(rf_transform));
 
-    for (int i = 0; i < iqm.num_joints; i++)
+    for (rf_int i = 0; i < iqm.num_joints; i++)
     {
         // Bones
         model.bones[i].parent = ijoint[i].parent;
@@ -822,7 +822,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     }
 
     // Build bind pose from parent joints
-    for (int i = 0; i < model.bone_count; i++)
+    for (rf_int i = 0; i < model.bone_count; i++)
     {
         if (model.bones[i].parent >= 0)
         {
@@ -932,7 +932,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
         int n = image->buffer_view->offset;
         int stride = image->buffer_view->stride ? image->buffer_view->stride : 1;
 
-        for (int i = 0; i < image->buffer_view->size; i++)
+        for (rf_int i = 0; i < image->buffer_view->size; i++)
         {
             data[i] = ((unsigned char* )image->buffer_view->buffer->data)[n];
             n += stride;
@@ -980,8 +980,8 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
     { \
         int n = 0; \
         type* buf = (type*) acc->buffer_view->buffer->data + acc->buffer_view->offset / sizeof(type) + acc->offset / sizeof(type); \
-        for (int k = 0; k < acc->count; k++) { \
-            for (int l = 0; l < nbcomp; l++) { \
+        for (rf_int k = 0; k < acc->count; k++) { \
+            for (rf_int l = 0; l < nbcomp; l++) { \
                 dst[nbcomp * k + l] = buf[n + l]; \
             } \
             n += acc->stride / sizeof(type); \
@@ -1024,7 +1024,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
         int primitivesCount = 0;
 
-        for (int i = 0; i < cgltf_data->meshes_count; i++)
+        for (rf_int i = 0; i < cgltf_data->meshes_count; i++)
         {
             primitivesCount += (int)cgltf_data->meshes[i].primitives_count;
         }
@@ -1039,14 +1039,14 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
         memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
 
-        for (int i = 0; i < model.mesh_count; i++)
+        for (rf_int i = 0; i < model.mesh_count; i++)
         {
             model.meshes[i].vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
             memset(model.meshes[i].vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
         }
 
         //For each material
-        for (int i = 0; i < model.material_count - 1; i++)
+        for (rf_int i = 0; i < model.material_count - 1; i++)
         {
             model.materials[i] = rf_load_default_material(allocator);
             rf_color tint = (rf_color){ 255, 255, 255, 255 };
@@ -1101,11 +1101,11 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
         int primitiveIndex = 0;
 
-        for (int i = 0; i < cgltf_data->meshes_count; i++)
+        for (rf_int i = 0; i < cgltf_data->meshes_count; i++)
         {
-            for (int p = 0; p < cgltf_data->meshes[i].primitives_count; p++)
+            for (rf_int p = 0; p < cgltf_data->meshes[i].primitives_count; p++)
             {
-                for (int j = 0; j < cgltf_data->meshes[i].primitives[p].attributes_count; j++)
+                for (rf_int j = 0; j < cgltf_data->meshes[i].primitives[p].attributes_count; j++)
                 {
                     if (cgltf_data->meshes[i].primitives[p].attributes[j].type == cgltf_attribute_type_position)
                     {
@@ -1216,12 +1216,12 @@ RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator)
 // Unload model from memory (RAM and/or VRAM)
 RF_API void rf_unload_model(rf_model model, rf_allocator allocator)
 {
-    for (int i = 0; i < model.mesh_count; i++) rf_unload_mesh(model.meshes[i], allocator);
+    for (rf_int i = 0; i < model.mesh_count; i++) rf_unload_mesh(model.meshes[i], allocator);
 
     // As the user could be sharing shaders and textures between models,
     // we don't unload the material but just free it's maps, the user
     // is responsible for freeing models shaders and textures
-    for (int i = 0; i < model.material_count; i++) RF_FREE(allocator, model.materials[i].maps);
+    for (rf_int i = 0; i < model.material_count; i++) RF_FREE(allocator, model.materials[i].maps);
 
     RF_FREE(allocator, model.meshes);
     RF_FREE(allocator, model.materials);
@@ -1280,7 +1280,7 @@ RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_al
     RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(RF_NULL_ALLOCATOR);
 
     // Set materials shader to default (DIFFUSE, SPECULAR, NORMAL)
-    for (int i = 0; i < result.size; i++)
+    for (rf_int i = 0; i < result.size; i++)
     {
         result.materials[i].shader = rf_get_default_shader();
     }
@@ -1297,7 +1297,7 @@ RF_API void rf_unload_material(rf_material material, rf_allocator allocator)
     }
 
     // Unload loaded texture maps (avoid unloading default texture, managed by raylib)
-    for (int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
+    for (rf_int i = 0; i < RF_MAX_MATERIAL_MAPS; i++)
     {
         if (material.maps[i].texture.id != rf_get_default_texture().id)
         {
@@ -1308,7 +1308,7 @@ RF_API void rf_unload_material(rf_material material, rf_allocator allocator)
     RF_FREE(allocator, material.maps);
 }
 
-RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+RF_API void rf_set_material_texture(rf_material* material, rf_material_map_type map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 
@@ -1413,7 +1413,7 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
     unsigned short* framedata = (unsigned short*) RF_ALLOC(temp_allocator, iqm.num_frames * iqm.num_framechannels * sizeof(unsigned short));
     memcpy(framedata, data + iqm.ofs_frames, iqm.num_frames*iqm.num_framechannels * sizeof(unsigned short));
 
-    for (int a = 0; a < iqm.num_anims; a++)
+    for (rf_int a = 0; a < iqm.num_anims; a++)
     {
         animations[a].frame_count = anim[a].num_frames;
         animations[a].bone_count  = iqm.num_poses;
@@ -1421,22 +1421,22 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
         animations[a].frame_poses = (rf_transform**) RF_ALLOC(allocator, anim[a].num_frames * sizeof(rf_transform*));
         //animations[a].framerate = anim.framerate;     // TODO: Use framerate?
 
-        for (int j = 0; j < iqm.num_poses; j++)
+        for (rf_int j = 0; j < iqm.num_poses; j++)
         {
             strcpy(animations[a].bones[j].name, "ANIMJOINTNAME");
             animations[a].bones[j].parent = poses[j].parent;
         }
 
-        for (int j = 0; j < anim[a].num_frames; j++)
+        for (rf_int j = 0; j < anim[a].num_frames; j++)
         {
             animations[a].frame_poses[j] = (rf_transform*) RF_ALLOC(allocator, iqm.num_poses * sizeof(rf_transform));
         }
 
         int dcounter = anim[a].first_frame*iqm.num_framechannels;
 
-        for (int frame = 0; frame < anim[a].num_frames; frame++)
+        for (rf_int frame = 0; frame < anim[a].num_frames; frame++)
         {
-            for (int i = 0; i < iqm.num_poses; i++)
+            for (rf_int i = 0; i < iqm.num_poses; i++)
             {
                 animations[a].frame_poses[frame][i].translation.x = poses[i].channeloffset[0];
 
@@ -1523,9 +1523,9 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
         }
 
         // Build frameposes
-        for (int frame = 0; frame < anim[a].num_frames; frame++)
+        for (rf_int frame = 0; frame < anim[a].num_frames; frame++)
         {
-            for (int i = 0; i < animations[a].bone_count; i++)
+            for (rf_int i = 0; i < animations[a].bone_count; i++)
             {
                 if (animations[a].bones[i].parent >= 0)
                 {
@@ -1558,7 +1558,7 @@ RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, i
         frame = frame%anim.frame_count;
     }
 
-    for (int m = 0; m < model.mesh_count; m++)
+    for (rf_int m = 0; m < model.mesh_count; m++)
     {
         rf_vec3 anim_vertex = {0};
         rf_vec3 anim_normal = {0};
@@ -1575,7 +1575,7 @@ RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, i
         int bone_counter = 0;
         int bone_id = 0;
 
-        for (int i = 0; i < model.meshes[m].vertex_count; i++)
+        for (rf_int i = 0; i < model.meshes[m].vertex_count; i++)
         {
             bone_id = model.meshes[m].bone_ids[bone_counter];
             in_translation = model.bind_pose[bone_id].translation;
@@ -1622,7 +1622,7 @@ RF_API bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim)
     if (model.bone_count != anim.bone_count) result = false;
     else
     {
-        for (int i = 0; i < model.bone_count; i++)
+        for (rf_int i = 0; i < model.bone_count; i++)
         {
             if (model.bones[i].parent != anim.bones[i].parent) { result = false; break; }
         }
@@ -1634,7 +1634,7 @@ RF_API bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim)
 // Unload animation data
 RF_API void rf_unload_model_animation(rf_model_animation anim, rf_allocator allocator)
 {
-    for (int i = 0; i < anim.frame_count; i++) RF_FREE(allocator, anim.frame_poses[i]);
+    for (rf_int i = 0; i < anim.frame_count; i++) RF_FREE(allocator, anim.frame_poses[i]);
 
     RF_FREE(allocator, anim.bones);
     RF_FREE(allocator, anim.frame_poses);
@@ -1666,7 +1666,7 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
         par_shapes_mesh* cube = par_shapes_create_cube();
         cube->tcoords = PAR_MALLOC(float, 2 * cube->npoints);
 
-        for (int i = 0; i < 2 * cube->npoints; i++)
+        for (rf_int i = 0; i < 2 * cube->npoints; i++)
         {
             cube->tcoords[i] = 0.0f;
         }
@@ -1682,7 +1682,7 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
         mesh.vertex_count = cube->ntriangles * 3;
         mesh.triangle_count = cube->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3] = cube->points[cube->triangles[k] * 3];
             mesh.vertices[k * 3 + 1] = cube->points[cube->triangles[k] * 3 + 1];
@@ -1716,7 +1716,7 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
 
     // Vertices definition
     rf_vec3* vertices = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
-    for (int i = 0, v = 0; i < 360; i += 360/sides, v += 3)
+    for (rf_int i = 0, v = 0; i < 360; i += 360/sides, v += 3)
     {
         vertices[v    ] = (rf_vec3){ 0.0f, 0.0f, 0.0f };
         vertices[v + 1] = (rf_vec3) { sinf(RF_DEG2RAD * i) * radius, 0.0f, cosf(RF_DEG2RAD * i) * radius };
@@ -1725,11 +1725,11 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
 
     // Normals definition
     rf_vec3* normals = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
-    for (int n = 0; n < vertex_count; n++) normals[n] = (rf_vec3){0.0f, 1.0f, 0.0f }; // rf_vec3.up;
+    for (rf_int n = 0; n < vertex_count; n++) normals[n] = (rf_vec3){0.0f, 1.0f, 0.0f }; // rf_vec3.up;
 
     // TexCoords definition
     rf_vec2* texcoords = (rf_vec2*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec2));
-    for (int n = 0; n < vertex_count; n++) texcoords[n] = (rf_vec2) {0.0f, 0.0f };
+    for (rf_int n = 0; n < vertex_count; n++) texcoords[n] = (rf_vec2) {0.0f, 0.0f };
 
     mesh.vertex_count = vertex_count;
     mesh.triangle_count = sides;
@@ -1738,7 +1738,7 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
     mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
 
     // rf_mesh vertices position array
-    for (int i = 0; i < mesh.vertex_count; i++)
+    for (rf_int i = 0; i < mesh.vertex_count; i++)
     {
         mesh.vertices[3*i] = vertices[i].x;
         mesh.vertices[3*i + 1] = vertices[i].y;
@@ -1746,14 +1746,14 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
     }
 
     // rf_mesh texcoords array
-    for (int i = 0; i < mesh.vertex_count; i++)
+    for (rf_int i = 0; i < mesh.vertex_count; i++)
     {
         mesh.texcoords[2*i] = texcoords[i].x;
         mesh.texcoords[2*i + 1] = texcoords[i].y;
     }
 
     // rf_mesh normals array
-    for (int i = 0; i < mesh.vertex_count; i++)
+    for (rf_int i = 0; i < mesh.vertex_count; i++)
     {
         mesh.normals[3*i] = normals[i].x;
         mesh.normals[3*i + 1] = normals[i].y;
@@ -1797,7 +1797,7 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z
         mesh.vertex_count   = plane->ntriangles * 3;
         mesh.triangle_count = plane->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = plane->points[plane->triangles[k] * 3    ];
             mesh.vertices[k * 3 + 1] = plane->points[plane->triangles[k] * 3 + 1];
@@ -1841,7 +1841,7 @@ RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_alloca
         mesh.vertex_count = sphere->ntriangles * 3;
         mesh.triangle_count = sphere->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = sphere->points[sphere->triangles[k] * 3];
             mesh.vertices[k * 3 + 1] = sphere->points[sphere->triangles[k] * 3 + 1];
@@ -1885,7 +1885,7 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_a
         mesh.vertex_count   = sphere->ntriangles * 3;
         mesh.triangle_count = sphere->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = sphere->points[sphere->triangles[k] * 3];
             mesh.vertices[k * 3 + 1] = sphere->points[sphere->triangles[k] * 3 + 1];
@@ -1933,7 +1933,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
         float normal_minus_1[] = { 0, 0, -1 };
         par_shapes_mesh* cap_top = par_shapes_create_disk(radius, slices, center, normal);
         cap_top->tcoords = PAR_MALLOC(float, 2*cap_top->npoints);
-        for (int i = 0; i < 2 * cap_top->npoints; i++)
+        for (rf_int i = 0; i < 2 * cap_top->npoints; i++)
         {
             cap_top->tcoords[i] = 0.0f;
         }
@@ -1944,7 +1944,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
         // Generate an orientable disk shape (bottom cap)
         par_shapes_mesh* cap_bottom = par_shapes_create_disk(radius, slices, center, normal_minus_1);
         cap_bottom->tcoords = PAR_MALLOC(float, 2*cap_bottom->npoints);
-        for (int i = 0; i < 2*cap_bottom->npoints; i++) cap_bottom->tcoords[i] = 0.95f;
+        for (rf_int i = 0; i < 2*cap_bottom->npoints; i++) cap_bottom->tcoords[i] = 0.95f;
         par_shapes_rotate(cap_bottom, RF_PI / 2.0f, axis);
 
         par_shapes_merge_and_free(cylinder, cap_top);
@@ -1957,7 +1957,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
         mesh.vertex_count   = cylinder->ntriangles * 3;
         mesh.triangle_count = cylinder->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = cylinder->points[cylinder->triangles[k] * 3    ];
             mesh.vertices[k * 3 + 1] = cylinder->points[cylinder->triangles[k] * 3 + 1];
@@ -2005,7 +2005,7 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
         mesh.vertex_count   = torus->ntriangles * 3;
         mesh.triangle_count = torus->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = torus->points[torus->triangles[k] * 3    ];
             mesh.vertices[k * 3 + 1] = torus->points[torus->triangles[k] * 3 + 1];
@@ -2051,7 +2051,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
         mesh.vertex_count   = knot->ntriangles * 3;
         mesh.triangle_count = knot->ntriangles;
 
-        for (int k = 0; k < mesh.vertex_count; k++)
+        for (rf_int k = 0; k < mesh.vertex_count; k++)
         {
             mesh.vertices[k * 3    ] = knot->points[knot->triangles[k] * 3    ];
             mesh.vertices[k * 3 + 1] = knot->points[knot->triangles[k] * 3 + 1];
@@ -2107,9 +2107,9 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
 
     rf_vec3 scale_factor = { size.x / map_x, size.y / 255.0f, size.z / map_z };
 
-    for (int z = 0; z < map_z-1; z++)
+    for (rf_int z = 0; z < map_z-1; z++)
     {
-        for (int x = 0; x < map_x-1; x++)
+        for (rf_int x = 0; x < map_x-1; x++)
         {
             // Fill vertices array with data
             //----------------------------------------------------------
@@ -2165,7 +2165,7 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
 
             // Fill normals array with data
             //--------------------------------------------------------------
-            for (int i = 0; i < 18; i += 3)
+            for (rf_int i = 0; i < 18; i += 3)
             {
                 mesh.normals[n_counter + i    ] = 0.0f;
                 mesh.normals[n_counter + i + 1] = 1.0f;
@@ -2240,9 +2240,9 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     rf_recf top_tex_uv    = { 0.0f, 0.5f, 0.5f, 0.5f };
     rf_recf bottom_tex_uv = { 0.5f, 0.5f, 0.5f, 0.5f };
 
-    for (int z = 0; z < map_height; ++z)
+    for (rf_int z = 0; z < map_height; ++z)
     {
-        for (int x = 0; x < map_width; ++x)
+        for (rf_int x = 0; x < map_width; ++x)
         {
             // Define the 8 vertex of the cube, we will combine them accordingly later...
             rf_vec3 v1 = {w * (x - 0.5f), h2, h * (z - 0.5f) };
@@ -2510,7 +2510,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     int f_counter = 0;
 
     // Move vertices data
-    for (int i = 0; i < vertex_pos_counter; i++)
+    for (rf_int i = 0; i < vertex_pos_counter; i++)
     {
         mesh.vertices[f_counter] = map_vertices[i].x;
         mesh.vertices[f_counter + 1] = map_vertices[i].y;
@@ -2521,7 +2521,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     f_counter = 0;
 
     // Move normals data
-    for (int i = 0; i < n_counter; i++)
+    for (rf_int i = 0; i < n_counter; i++)
     {
         mesh.normals[f_counter] = map_normals[i].x;
         mesh.normals[f_counter + 1] = map_normals[i].y;
@@ -2532,7 +2532,7 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     f_counter = 0;
 
     // Move texcoords data
-    for (int i = 0; i < vertex_texcoord_counter; i++)
+    for (rf_int i = 0; i < vertex_texcoord_counter; i++)
     {
         mesh.texcoords[f_counter] = map_texcoords[i].x;
         mesh.texcoords[f_counter + 1] = map_texcoords[i].y;

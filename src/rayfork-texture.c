@@ -13,9 +13,9 @@ RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator
 }
 
 // Load texture from an image file data
-RF_API rf_texture2d rf_load_texture_from_file_data(const void* dst, int dst_size, rf_allocator temp_allocator)
+RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, rf_int dst_size, rf_allocator temp_allocator)
 {
-    rf_image img = rf_load_image_from_file_data(dst, dst_size, temp_allocator, temp_allocator);
+    rf_image img = rf_load_image_from_file_data(data, dst_size, temp_allocator, temp_allocator);
 
     rf_texture2d texture = rf_load_texture_from_image(img);
 
@@ -83,12 +83,12 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
 
         rf_image faces = {0}; // Vertical column image
         rf_rec face_recs[6] = {0}; // Face source rectangles
-        for (int i = 0; i < 6; i++) face_recs[i] = (rf_rec) { 0, 0, size, size };
+        for (rf_int i = 0; i < 6; i++) face_recs[i] = (rf_rec) { 0, 0, size, size };
 
         if (layout_type == RF_CUBEMAP_LINE_VERTICAL)
         {
             faces = image;
-            for (int i = 0; i < 6; i++) face_recs[i].y = size*i;
+            for (rf_int i = 0; i < 6; i++) face_recs[i].y = size*i;
         }
         else if (layout_type == RF_CUBEMAP_PANORAMA)
         {
@@ -97,7 +97,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
         }
         else
         {
-            if (layout_type == RF_CUBEMAP_LINE_HORIZONTAL) { for (int i = 0; i < 6; i++) { face_recs[i].x = size * i; } }
+            if (layout_type == RF_CUBEMAP_LINE_HORIZONTAL) { for (rf_int i = 0; i < 6; i++) { face_recs[i].x = size * i; } }
             else if (layout_type == RF_CUBEMAP_CROSS_THREE_BY_FOUR)
             {
                 face_recs[0].x = size; face_recs[0].y = size;
@@ -125,7 +125,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
             // TODO: rf_image formating does not work with compressed textures!
         }
 
-        for (int i = 0; i < 6; i++)
+        for (rf_int i = 0; i < 6; i++)
         {
             rf_image_draw(&faces, image, face_recs[i], (rf_rec) {0, size * i, size, size }, RF_WHITE, temp_allocator);
         }
@@ -150,7 +150,7 @@ RF_API rf_render_texture2d rf_load_render_texture(int width, int height)
 }
 
 // Update GPU texture with new data. Pixels data must match texture.format
-RF_API void rf_update_texture(rf_texture2d texture, const void* pixels, int pixels_size)
+RF_API void rf_update_texture(rf_texture2d texture, const void* pixels, rf_int pixels_size)
 {
     rf_gfx_update_texture(texture.id, texture.width, texture.height, texture.format, pixels, pixels_size);
 }

@@ -24,14 +24,14 @@ typedef struct rf_context
         rf_mat screen_scaling;
         rf_render_batch* current_batch;
 
-        int     current_matrix_mode;
-        rf_mat* current_matrix;
-        rf_mat  modelview;
-        rf_mat  projection;
-        rf_mat  transform;
-        bool    transform_matrix_required;
-        rf_mat  stack[RF_MAX_MATRIX_STACK_SIZE];
-        int     stack_counter;
+        rf_matrix_mode current_matrix_mode;
+        rf_mat*        current_matrix;
+        rf_mat         modelview;
+        rf_mat         projection;
+        rf_mat         transform;
+        bool           transform_matrix_required;
+        rf_mat         stack[RF_MAX_MATRIX_STACK_SIZE];
+        int            stack_counter;
 
         unsigned int default_texture_id;       // Default texture (1px white) useful for plain color polys (required by shader)
         unsigned int default_vertex_shader_id; // Default vertex shader id (used by default shader program)
@@ -70,11 +70,10 @@ RF_API rf_font          rf_get_default_font(); // Get the default font, useful t
 RF_API rf_shader        rf_get_default_shader(); // Get default shader
 RF_API rf_texture2d     rf_get_default_texture(); // Get default internal texture (white texture)
 RF_API rf_context*      rf_get_context(); // Get the context pointer
-RF_API rf_image         rf_get_screen_data(rf_color* dst, int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
+RF_API rf_image         rf_get_screen_data(rf_color* dst, rf_int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
 
 RF_API void rf_set_global_context_pointer(rf_context* ctx); // Set the global context pointer
 RF_API void rf_set_viewport(int width, int height); // Set viewport for a provided width and height
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 
 #endif // RAYFORK_CONTEXT_H

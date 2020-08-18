@@ -195,8 +195,8 @@ RF_API void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, r
     distance.y = sqrtf(dx*dx + dy*dy);
 
     // rf_camera3d angle calculation
-    state->camera_angle.x = asinf( (float)fabs(dx)/distance.x); // rf_camera3d angle in plane XZ (0 aligned with Z, move positive CCW)
-    state->camera_angle.y = -asinf( (float)fabs(dy)/distance.y); // rf_camera3d angle in plane XY (0 aligned with X, move positive CW)
+    state->camera_angle.x = asinf((float)fabs(dx)/distance.x); // rf_camera3d angle in plane XZ (0 aligned with Z, move positive CCW)
+    state->camera_angle.y = -asinf((float)fabs(dy)/distance.y); // rf_camera3d angle in plane XY (0 aligned with X, move positive CW)
 
     state->player_eyes_position = camera.position.y;
 
@@ -431,7 +431,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf
 
             bool is_moving = false; // Required for swinging
 
-            for (int i = 0; i < 6; i++) if (direction[i]) { is_moving = true; break; }
+            for (rf_int i = 0; i < 6; i++) if (direction[i]) { is_moving = true; break; }
 
             // Camera orientation calculation
             state->camera_angle.x += (mouse_position_delta.x*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);

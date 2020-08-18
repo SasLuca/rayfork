@@ -1,4 +1,4 @@
-RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, int vertex_buffers_count, rf_draw_call* draw_calls, int draw_calls_count)
+RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count)
 {
     if (!vertex_buffers || !draw_calls || vertex_buffers_count < 0 || draw_calls_count < 0) {
         return (rf_render_batch) {0};
@@ -10,7 +10,7 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
     batch.draw_calls = draw_calls;
     batch.draw_calls_size = draw_calls_count;
 
-    for (int i = 0; i < vertex_buffers_count; i++)
+    for (rf_int i = 0; i < vertex_buffers_count; i++)
     {
         memset(vertex_buffers[i].vertices,  0, RF_GFX_VERTEX_COMPONENT_COUNT   * vertex_buffers[i].elements_count);
         memset(vertex_buffers[i].texcoords, 0, RF_GFX_TEXCOORD_COMPONENT_COUNT * vertex_buffers[i].elements_count);
@@ -19,7 +19,7 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
         int k = 0;
 
         // Indices can be initialized right now
-        for (int j = 0; j < (RF_GFX_VERTEX_INDEX_COMPONENT_COUNT * vertex_buffers[i].elements_count); j += 6)
+        for (rf_int j = 0; j < (RF_GFX_VERTEX_INDEX_COMPONENT_COUNT * vertex_buffers[i].elements_count); j += 6)
         {
             vertex_buffers[i].indices[j + 0] = 4 * k + 0;
             vertex_buffers[i].indices[j + 1] = 4 * k + 1;
@@ -38,7 +38,7 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
         rf_gfx_init_vertex_buffer(&vertex_buffers[i]);
     }
 
-    for (int i = 0; i < RF_DEFAULT_BATCH_DRAW_CALLS_COUNT; i++)
+    for (rf_int i = 0; i < RF_DEFAULT_BATCH_DRAW_CALLS_COUNT; i++)
     {
         batch.draw_calls[i] = (rf_draw_call) {
             .mode = RF_QUADS,
@@ -54,7 +54,7 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
 }
 
 // TODO: Not working yet
-RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, int draw_calls_count, int vertex_buffer_elements_count, rf_allocator allocator)
+RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator)
 {
     if (vertex_buffers_count < 0 || draw_calls_count < 0 || vertex_buffer_elements_count < 0) {
         return (rf_render_batch) {0};
@@ -62,10 +62,10 @@ RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, i
 
     rf_render_batch result = {0};
 
-    int vertex_buffer_array_size = sizeof(rf_vertex_buffer) * vertex_buffers_count;
-    int vertex_buffers_memory_size = (sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count) * vertex_buffers_count;
-    int draw_calls_array_size = sizeof(rf_draw_call) * draw_calls_count;
-    int allocation_size = vertex_buffer_array_size + draw_calls_array_size + vertex_buffers_memory_size;
+    rf_int vertex_buffer_array_size = sizeof(rf_vertex_buffer) * vertex_buffers_count;
+    rf_int vertex_buffers_memory_size = (sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count) * vertex_buffers_count;
+    rf_int draw_calls_array_size = sizeof(rf_draw_call) * draw_calls_count;
+    rf_int allocation_size = vertex_buffer_array_size + draw_calls_array_size + vertex_buffers_memory_size;
 
     char* memory = RF_ALLOC(allocator, allocation_size);
 
@@ -79,13 +79,13 @@ RF_API rf_render_batch rf_create_custom_render_batch(int vertex_buffers_count, i
         RF_ASSERT((buffers_memory - memory) == vertex_buffers_memory_size);
         RF_ASSERT((buffers_memory - memory) == sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count * vertex_buffers_count);
 
-        for (int i = 0; i < vertex_buffers_count; i++)
+        for (rf_int i = 0; i < vertex_buffers_count; i++)
         {
-            int one_vertex_buffer_memory_size = sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count;
-            int vertices_size = sizeof(rf_gfx_vertex_data_type) * vertex_buffer_elements_count;
-            int texcoords_size = sizeof(rf_gfx_texcoord_data_type) * vertex_buffer_elements_count;
-            int colors_size = sizeof(rf_gfx_color_data_type) * vertex_buffer_elements_count;
-            int indices_size = sizeof(rf_gfx_vertex_index_data_type) * vertex_buffer_elements_count;
+            rf_int one_vertex_buffer_memory_size = sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count;
+            rf_int vertices_size = sizeof(rf_gfx_vertex_data_type) * vertex_buffer_elements_count;
+            rf_int texcoords_size = sizeof(rf_gfx_texcoord_data_type) * vertex_buffer_elements_count;
+            rf_int colors_size = sizeof(rf_gfx_color_data_type) * vertex_buffer_elements_count;
+            rf_int indices_size = sizeof(rf_gfx_vertex_index_data_type) * vertex_buffer_elements_count;
 
             char* this_buffer_memory = buffers_memory + one_vertex_buffer_memory_size * i;
 
@@ -108,7 +108,7 @@ RF_API rf_render_batch rf_create_default_render_batch_from_memory(rf_default_ren
         return (rf_render_batch) {0};
     }
 
-    for (int i = 0; i < RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT; i++)
+    for (rf_int i = 0; i < RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT; i++)
     {
         memory->vertex_buffers[i].elements_count = RF_DEFAULT_BATCH_ELEMENTS_COUNT;
         memory->vertex_buffers[i].vertices = memory->vertex_buffers_memory[i].vertices;

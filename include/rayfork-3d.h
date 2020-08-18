@@ -72,43 +72,43 @@ typedef struct rf_transform
 
 typedef struct rf_bone_info
 {
-    char name[32]; // Bone name
-    int  parent;   // Bone parent
+    char   name[32]; // Bone name
+    rf_int parent;   // Bone parent
 } rf_bone_info;
 
 typedef struct rf_model
 {
     rf_mat transform; // Local transform matrix
-    int mesh_count;    // Number of meshes
+    rf_int mesh_count;    // Number of meshes
     rf_mesh* meshes;     // Meshes array
 
-    int material_count;   // Number of materials
+    rf_int material_count;   // Number of materials
     rf_material* materials; // Materials array
-    int* mesh_material;   // rf_mesh material number
+    int* mesh_material;   // Mesh material number
 
     // Animation data
-    int bone_count;       // Number of bones
+    rf_int bone_count;       // Number of bones
     rf_bone_info* bones;     // Bones information (skeleton)
     rf_transform* bind_pose; // Bones base transformation (pose)
 } rf_model;
 
 typedef struct rf_model_animation
 {
-    int bone_count;             // Number of bones
+    rf_int bone_count;          // Number of bones
     rf_bone_info* bones;        // Bones information (skeleton)
-    int frame_count;            // Number of animation frames
+    rf_int frame_count;         // Number of animation frames
     rf_transform** frame_poses; // Poses array by frame
 } rf_model_animation;
 
 typedef struct rf_model_animation_array
 {
-    int                 size;
+    rf_int              size;
     rf_model_animation* anims;
 } rf_model_animation_array;
 
 typedef struct rf_materials_array
 {
-    int size;
+    rf_int       size;
     rf_material* materials;
 } rf_materials_array;
 
@@ -125,7 +125,7 @@ RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator); /
 RF_API void rf_unload_model(rf_model model, rf_allocator allocator); // Unload model from memory (RAM and/or VRAM)
 
 RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_allocator allocator, rf_io_callbacks io); // Load materials from model file
-RF_API void rf_set_material_texture(rf_material* material, int map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+RF_API void rf_set_material_texture(rf_material* material, rf_material_map_type map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 RF_API void rf_unload_material(rf_material material, rf_allocator allocator); // Unload material from GPU memory (VRAM)
 

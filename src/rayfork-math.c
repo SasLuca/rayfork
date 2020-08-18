@@ -36,7 +36,7 @@ RF_API int rf_get_size_base64(const unsigned char *input)
 {
     int size = 0;
 
-    for (int i = 0; input[4 * i] != 0; i++)
+    for (rf_int i = 0; input[4 * i] != 0; i++)
     {
         if (input[4 * i + 3] == '=')
         {
@@ -70,7 +70,7 @@ RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocato
     result.size = rf_get_size_base64(input);
     result.buffer = RF_ALLOC(allocator, result.size);
 
-    for (int i = 0; i < result.size / 3; i++)
+    for (rf_int i = 0; i < result.size / 3; i++)
     {
         unsigned char a = rf_base64_table[(int) input[4 * i + 0]];
         unsigned char b = rf_base64_table[(int) input[4 * i + 1]];
@@ -1578,7 +1578,7 @@ RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model)
 {
     rf_ray_hit_info result = {0};
 
-    for (int m = 0; m < model.mesh_count; m++)
+    for (rf_int m = 0; m < model.mesh_count; m++)
     {
 // Check if meshhas vertex data on CPU for testing
         if (model.meshes[m].vertices != NULL)
@@ -1587,7 +1587,7 @@ RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model)
             int triangle_count = model.meshes[m].vertex_count / 3;
 
 // Test against all triangles in mesh
-            for (int i = 0; i < triangle_count; i++)
+            for (rf_int i = 0; i < triangle_count; i++)
             {
                 rf_vec3 a, b, c;
                 rf_vec3 *vertdata = (rf_vec3 *) model.meshes[m].vertices;

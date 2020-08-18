@@ -28,7 +28,7 @@ RF_INTERNAL RF_THREAD_LOCAL rf_recorded_error rf__last_error;
 RF_INTERNAL RF_THREAD_LOCAL rf_allocator rf__global_allocator_for_dependencies;
 #define RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(allocator) rf__global_allocator_for_dependencies = (allocator)
 
-RF_API void* rf_calloc_wrapper(rf_allocator allocator, int amount, int size)
+RF_API void* rf_calloc_wrapper(rf_allocator allocator, rf_int amount, rf_int size)
 {
     void* ptr = RF_ALLOC(allocator, amount * size);
     memset(ptr, 0, amount * size);
@@ -65,7 +65,7 @@ RF_API void* rf_libc_allocator_wrapper(struct rf_allocator* this_allocator, rf_s
 
 #pragma region io
 
-RF_API int rf_libc_get_file_size(void* user_data, const char* filename)
+RF_API rf_int rf_libc_get_file_size(void* user_data, const char* filename)
 {
     ((void)user_data);
 
