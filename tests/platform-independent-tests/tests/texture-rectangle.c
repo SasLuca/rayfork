@@ -1,19 +1,15 @@
-//Implementation of the texture rectangle example from raylib using rayfork
+#include "platform.h"
 
-#include "game.h"
-#include "include/rayfork.h"
-#include "glad.h"
-#include <stdio.h>
+const char* window_title = "rayfork - basic window";
 
-#define MAX_FRAME_SPEED     15
-#define MIN_FRAME_SPEED      1
-
-rf_context   rf_ctx;
-rf_default_render_batch    rf_mem;
-rf_default_font    default_font_buffers;
-
-int screen_width = 800;
+int screen_width  = 800;
 int screen_height = 450;
+
+rf_context ctx;
+rf_render_batch batch;
+
+#define MAX_FRAME_SPEED 15
+#define MIN_FRAME_SPEED  1
 
 rf_texture2d scarfy;
 rf_vec2 position = { 350.0f, 280.0f };
@@ -24,24 +20,26 @@ int current_frame = 0;
 int frames_counter = 0;
 int frames_speed = 8;
 
-void on_init(void)
+extern void game_init(rf_gfx_backend_data* gfx_data)
 {
-    //Load opengl with glad
-    gladLoadGL();
+    // Initialize rayfork
+    rf_init_context(&ctx);
+    rf_init_gfx(screen_width, screen_height, gfx_data);
 
-    //Initialise rayfork and load the default font
-    rf_init(&rf_ctx, &rf_mem, SCREEN_WIDTH, SCREEN_HEIGHT, RF_DEFAULT_OPENGL_PROCS);
-    rf_load_default_font(&default_font_buffers);
+    // Initialize the rendering batch
+    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    rf_set_active_render_batch(&batch);
 
     scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
-    frame_rec.pos = (rf_vec2){ 0.0f, 0.0f};
-    frame_rec.size = (rf_sizef){ (float)scarfy.width/6, (float)scarfy.height };
-
+    frame_rec = (rf_rec) {
+        .width = scarfy.width / 6,
+        .height = scarfy.height
+    };
 }
 
-void on_frame(const input_data input)
+extern void game_update(const input_t* input)
 {
-    // Update
+     // Update
     frames_counter++;
 
     if (frames_counter >= (60 / frames_speed))
@@ -54,9 +52,8 @@ void on_frame(const input_data input)
         frame_rec.x = (float)current_frame * (float)scarfy.width / 6;
     }
 
-    // @Note: gotta fix input
-    if (input.right_down) frames_speed++;
-    else if (input.left_down) frames_speed--;
+    if (input->keys[KEYCODE_RIGHT] & BTN_PRESSED_DOWN)     frames_speed++;
+    else if (input->keys[KEYCODE_LEFT] & BTN_PRESSED_DOWN) frames_speed--;
 
     if (frames_speed > MAX_FRAME_SPEED) frames_speed = MAX_FRAME_SPEED;
     else if (frames_speed < MIN_FRAME_SPEED) frames_speed = MIN_FRAME_SPEED;
@@ -71,7 +68,7 @@ void on_frame(const input_data input)
 
     rf_draw_text("FRAME SPEED: ", 165, 210, 10, RF_DARKGRAY);
 
-    char text[1024];
+    char text[1024] = {0};
     snprintf(text, sizeof(text), "%02i FPS", frames_speed);
     rf_draw_text(text, 575, 210, 10, RF_DARKGRAY);
 
@@ -88,4 +85,12 @@ void on_frame(const input_data input)
     rf_draw_text("(c) Scarfy sprite by Eiden Marsal", screen_width - 200, screen_height - 20, 10, RF_GRAY);
 
     rf_end();
+}
+
+extern void game_window_resize(int width, int height)
+{
+    screen_width  = width;
+    screen_height = height;
+
+    rf_set_viewport(screen_width, screen_height);
 }
