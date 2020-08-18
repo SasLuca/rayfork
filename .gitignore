@@ -6,16 +6,17 @@
 !README.md
 !LICENSE.md
 
+!.gitattributes
 !.gitignore
-!.gitmodules
 
 !include/
 !src/
 !libs/
+!tests/
+!logo/
 
 !include/**
 !src/**
 !libs/**
-
-!tests/
 !tests/**
+!logo/**

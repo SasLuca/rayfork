@@ -1,0 +1,11 @@
+# Denote all files that are truly binary and should not be modified.
+*.png  binary
+*.jpg  binary
+*.ttf  binary
+*.mp3  binary
+*.wav  binary
+*.raw  binary
+*.obj  binary
+*.gltf binary
+*.ai   binary
+*.svg  binary
