@@ -15,6 +15,7 @@
 #include "rayfork-render-batch.c"
 #include "rayfork-3d.c"
 #include "rayfork-drawing.c"
+#include "rayfork-ez.c"
 //#include "rayfork_audio_loading.c"
 
 #include "rayfork-gfx-backend-opengl.c"

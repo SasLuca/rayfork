@@ -80,7 +80,7 @@ RF_API rf_int rf_libc_get_file_size(void* user_data, const char* filename)
     return size;
 }
 
-RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, int dst_size)
+RF_API bool rf_libc_load_file_into_buffer(void* user_data, const char* filename, void* dst, rf_int dst_size)
 {
     ((void)user_data);
     bool result = false;
