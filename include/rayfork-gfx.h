@@ -10,7 +10,7 @@
 
 // If no graphics backend was set, choose OpenGL33 on desktop and OpenGL ES3 on mobile
 #if RF_NO_GRAPHICS_BACKEND_SELECTED_BY_THE_USER
-    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) || (defined(__linux__) && !defined(__ANDROID__ )) || (defined(__APPLE__) && defined(TARGET_OS_MAC))
+    #if defined(RAYFORK_PLATFORM_WINDOWS) || defined(RAYFORK_PLATFORM_LINUX) || defined(RAYFORK_PLATFORM_MACOS)
         #define RAYFORK_GRAPHICS_BACKEND_GL_33 (1)
     #else // if on mobile
         #define RAYFORK_GRAPHICS_BACKEND_GL_ES3 (1)
@@ -207,9 +207,9 @@ typedef struct rf_render_texture2d
     int          depth_texture; // Track if depth attachment is a texture or renderbuffer
 } rf_render_texture2d;
 
-typedef struct rf_vertex_buffer rf_vertex_buffer;
-typedef struct rf_mesh rf_mesh;
-typedef struct rf_material rf_material;
+struct rf_vertex_buffer;
+struct rf_mesh;
+struct rf_material;
 typedef void rf_gfx_backend_data;
 typedef void rf_audio_backend_data;
 
@@ -277,7 +277,7 @@ RF_API void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b
 RF_API void rf_gfx_clear_screen_buffers(void); // Clear used screen buffers (color and depth)
 RF_API void rf_gfx_update_buffer(int buffer_id, void* data, int data_size); // Update GPU buffer with new data
 RF_API unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, bool dynamic); // Load a new attributes buffer
-RF_API void rf_gfx_init_vertex_buffer(rf_vertex_buffer* vertex_buffer);
+RF_API void rf_gfx_init_vertex_buffer(struct rf_vertex_buffer* vertex_buffer);
 
 RF_API void rf_gfx_close(); // De-inititialize rf gfx (buffers, shaders, textures)
 RF_API void rf_gfx_draw(); // Update and draw default internal buffers
@@ -304,10 +304,10 @@ RF_API void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned in
 RF_API bool rf_gfx_render_texture_complete(rf_render_texture2d target); // Verify render texture is complete
 
 // Vertex data management
-RF_API void rf_gfx_load_mesh(rf_mesh* mesh, bool dynamic); // Upload vertex data into GPU and provided VAO/VBO ids
-RF_API void rf_gfx_update_mesh(rf_mesh mesh, int buffer, int num); // Update vertex or index data on GPU (upload new data to one buffer)
-RF_API void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index); // Update vertex or index data on GPU, at index
-RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
-RF_API void rf_gfx_unload_mesh(rf_mesh mesh); // Unload mesh data from CPU and GPU
+RF_API void rf_gfx_load_mesh(struct rf_mesh* mesh, bool dynamic); // Upload vertex data into GPU and provided VAO/VBO ids
+RF_API void rf_gfx_update_mesh(struct rf_mesh mesh, int buffer, int num); // Update vertex or index data on GPU (upload new data to one buffer)
+RF_API void rf_gfx_update_mesh_at(struct rf_mesh mesh, int buffer, int num, int index); // Update vertex or index data on GPU, at index
+RF_API void rf_gfx_draw_mesh(struct rf_mesh mesh, struct rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
+RF_API void rf_gfx_unload_mesh(struct rf_mesh mesh); // Unload mesh data from CPU and GPU
 
 #endif // RAYFORK_GFX_CORE_H

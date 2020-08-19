@@ -20,7 +20,7 @@ if (RAYFORK_ENABLE_AUDIO)
 endif()
 
 # rayfork test -------------------------------------------------------------------------------
-if (EXISTS ./tests)
+if (EXISTS tests)
     set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
     add_subdirectory(tests)
 endif()

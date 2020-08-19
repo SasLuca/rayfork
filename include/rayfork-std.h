@@ -8,6 +8,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "stdint.h"
+#include "stddef.h"
 #include "stdio.h"
 #include "float.h"
 #include "math.h"
@@ -30,6 +31,30 @@
         #define true 1
         #define false 0
     #endif
+#endif
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+#define RAYFORK_PLATFORM_WINDOWS (1)
+#endif
+
+#if defined(__linux__) && !defined(__ANDROID__)
+#define RAYFORK_PLATFORM_LINUX (1)
+#endif
+
+#if defined(__linux__) && defined(__ANDROID__)
+#define RAYFORK_PLATFORM_ANDROID (1)
+#endif
+
+#if defined(__APPLE__) && !TARGET_OS_IPHONE
+#define RAYFORK_PLATFORM_MACOS (1)
+#endif
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#define RAYFORK_PLATFORM_IOS (1)
+#endif
+
+#if (defined(RAYFORK_PLATFORM_WINDOWS) + defined(RAYFORK_PLATFORM_LINUX) + defined(RAYFORK_PLATFORM_MACOS) + defined(RAYFORK_PLATFORM_ANDROID) + defined(RAYFORK_PLATFORM_IOS)) != 1
+#error rayfork: none or more than one platforms defined.
 #endif
 
 #ifndef RF_EXTERN

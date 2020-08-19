@@ -138,7 +138,7 @@ typedef enum
     BTN_HOLD_DOWN     = 0x2,
     KEY_RELEASE       = 0x4,
     BTN_RELEASE       = 0x4,
-} key_t, btn_t;
+} btn_t;
 
 typedef struct input_t
 {
@@ -148,7 +148,7 @@ typedef struct input_t
     btn_t left_mouse_btn;
     btn_t right_mouse_btn;
 
-    key_t keys[KEYCODE_MENU + 1];
+    btn_t keys[KEYCODE_MENU + 1];
     bool any_key_pressed;
 } input_t;
 

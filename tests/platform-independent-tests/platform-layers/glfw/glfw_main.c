@@ -82,7 +82,7 @@ int main()
 
         game_update(&input_state);
 
-        for (int i = 0; i < sizeof(input_state.keys) / sizeof(key_t); i++)
+        for (int i = 0; i < sizeof(input_state.keys) / sizeof(btn_t); i++)
         {
             if (input_state.keys[i] == KEY_RELEASE)
             {

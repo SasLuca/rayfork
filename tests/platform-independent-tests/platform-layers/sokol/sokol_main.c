@@ -3,8 +3,13 @@
 #define SOKOL_WIN32_NO_GL_LOADER
 #define SOKOL_WIN32_FORCE_MAIN
 #include "sokol/sokol_app.h"
-#include "glad/glad.h"
 #include "platform.h"
+
+#ifdef RAYFORK_PLATFORM_MACOS
+int gladLoadGL(void);
+#else
+#include "glad/glad.h"
+#endif
 
 static input_t input_state;
 

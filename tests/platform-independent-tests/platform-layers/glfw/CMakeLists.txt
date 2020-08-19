@@ -13,3 +13,8 @@ target_sources(glfw-platform-layer PRIVATE glfw_main.c glad/glad.c)
 target_include_directories(glfw-platform-layer PUBLIC "${rayfork_path}" "${platform_header_path}" ".")
 target_link_libraries(glfw-platform-layer PRIVATE glfw)
 target_link_libraries(glfw-platform-layer PUBLIC common-platform-interface)
+
+if (APPLE)
+    target_link_libraries(glfw-platform-layer PUBLIC common-platform-interface "-framework Cocoa" "-framework QuartzCore" "-framework OpenGL")
+    target_compile_options(glfw-platform-layer PUBLIC "-fobjc-arc" "-ObjC")
+endif()
