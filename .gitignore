@@ -14,9 +14,12 @@
 !libs/
 !tests/
 !logo/
+!devutils/
 
 !include/**
 !src/**
 !libs/**
 !tests/**
 !logo/**
+!devutils/amalgamate.bat
+!devutils/amalgamate.exe
