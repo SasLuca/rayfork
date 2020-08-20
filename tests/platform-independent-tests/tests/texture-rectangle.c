@@ -1,9 +1,10 @@
 #include "platform.h"
 
-const char* window_title = "rayfork - basic window";
-
-int screen_width  = 800;
-int screen_height = 450;
+platform_window_details window = {
+    .width  = 800,
+    .height = 450,
+    .title  = "rayfork - texture rectangle"
+};
 
 rf_context ctx;
 rf_render_batch batch;
@@ -15,16 +16,15 @@ rf_texture2d scarfy;
 rf_vec2 position = { 350.0f, 280.0f };
 rf_rec frame_rec;
 
-int current_frame = 0;
-
-int frames_counter = 0;
+int current_frame;
+int frames_counter;
 int frames_speed = 8;
 
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
     rf_init_context(&ctx);
-    rf_init_gfx(screen_width, screen_height, gfx_data);
+    rf_init_gfx(window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
@@ -37,7 +37,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     };
 }
 
-extern void game_update(const input_t* input)
+extern void game_update(const platform_input_state* input)
 {
      // Update
     frames_counter++;
@@ -82,15 +82,7 @@ extern void game_update(const input_t* input)
 
     rf_draw_texture_region(scarfy, frame_rec, (rf_rec) { position.x, position.y, frame_rec.width, frame_rec.height }, (rf_vec2){ 0.0f, 0.0f }, 0.0f, RF_WHITE);  // Draw part of the texture
 
-    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", screen_width - 200, screen_height - 20, 10, RF_GRAY);
+    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, RF_GRAY);
 
     rf_end();
-}
-
-extern void game_window_resize(int width, int height)
-{
-    screen_width  = width;
-    screen_height = height;
-
-    rf_set_viewport(screen_width, screen_height);
 }

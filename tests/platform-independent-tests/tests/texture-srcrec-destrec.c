@@ -1,9 +1,10 @@
 #include "platform.h"
 
-const char* window_title = "rayfork - basic window";
-
-int screen_width  = 800;
-int screen_height = 450;
+platform_window_details window = {
+    .width  = 800,
+    .height = 450,
+    .title  = "rayfork - texture srcrec destrec"
+};
 
 rf_context ctx;
 rf_render_batch batch;
@@ -28,7 +29,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
     rf_init_context(&ctx);
-    rf_init_gfx(screen_width, screen_height, gfx_data);
+    rf_init_gfx(window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
@@ -43,13 +44,13 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     source_rec = (rf_rec){ 0.0f, 0.0f, frame_width, frame_height };
 
     // Destination rectangle (screen rectangle where drawing part of texture)
-    dest_rec = (rf_rec){ screen_width / 2, screen_height / 2, frame_width * 2, frame_height*2 };
+    dest_rec = (rf_rec){window.width / 2, window.height / 2, frame_width * 2, frame_height * 2 };
 
     // Origin of the texture (rotation/scale point), it's relative to destination rectangle size
     origin = (rf_vec2){ frame_width, frame_height };
 }
 
-extern void game_update(const input_t* input)
+extern void game_update(const platform_input_state* input)
 {
     // Update
     rotation++;
@@ -66,18 +67,10 @@ extern void game_update(const input_t* input)
     // rotation defines the texture rotation (using origin as rotation point)
     rf_draw_texture_region(scarfy, source_rec, dest_rec, origin, (float)rotation, RF_WHITE);
 
-    rf_draw_line((int)dest_rec.x, 0, (int)dest_rec.x, screen_height, RF_GRAY);
-    rf_draw_line(0, (int)dest_rec.y, screen_width, (int)dest_rec.y, RF_GRAY);
+    rf_draw_line((int)dest_rec.x, 0, (int)dest_rec.x, window.height, RF_GRAY);
+    rf_draw_line(0, (int)dest_rec.y, window.width, (int)dest_rec.y, RF_GRAY);
 
-    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", screen_width - 200, screen_height - 20, 10, RF_GRAY);
+    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, RF_GRAY);
 
     rf_end();
-}
-
-extern void game_window_resize(int width, int height)
-{
-    screen_width  = width;
-    screen_height = height;
-
-    rf_set_viewport(screen_width, screen_height);
 }

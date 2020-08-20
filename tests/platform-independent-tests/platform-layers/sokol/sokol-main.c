@@ -11,7 +11,7 @@ int gladLoadGL(void);
 #include "glad/glad.h"
 #endif
 
-static input_t input_state;
+static platform_input_state input_state;
 
 static void sokol_on_init(void)
 {
@@ -24,7 +24,7 @@ static void sokol_on_frame(void)
 {
     game_update(&input_state);
 
-    for (int i = 0; i < sizeof(input_state.keys) / sizeof(key_t); i++)
+    for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
     {
         if (input_state.keys[i] == KEY_RELEASE)
         {
@@ -51,7 +51,9 @@ static void sokol_on_event(const sapp_event* event)
     switch (event->type)
     {
         case SAPP_EVENTTYPE_RESIZED:
-            game_window_resize(event->window_width, event->window_height);
+            window.width  = event->window_width;
+            window.height = event->window_height;
+            rf_set_viewport(window.width, window.height);
             break;
 
         case SAPP_EVENTTYPE_MOUSE_MOVE:
@@ -96,9 +98,9 @@ sapp_desc sokol_main(int argc, char** argv)
 {
     return (sapp_desc)
     {
-        .window_title = window_title,
-        .width        = screen_width,
-        .height       = screen_height,
+        .window_title = window.title,
+        .width        = window.width,
+        .height       = window.height,
         .init_cb      = sokol_on_init,
         .frame_cb     = sokol_on_frame,
         .event_cb     = sokol_on_event,

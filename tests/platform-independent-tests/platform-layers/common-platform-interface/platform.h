@@ -4,7 +4,7 @@
 #include "rayfork.h"
 
 // key codes are the same names and values as GLFW
-typedef enum keycode_t {
+typedef enum platform_keycode {
     KEYCODE_INVALID          = 0,
     KEYCODE_SPACE            = 32,
     KEYCODE_APOSTROPHE       = 39,  /* ' */
@@ -126,9 +126,9 @@ typedef enum keycode_t {
     KEYCODE_RIGHT_ALT        = 346,
     KEYCODE_RIGHT_SUPER      = 347,
     KEYCODE_MENU             = 348,
-} keycode_t;
+} platform_keycode;
 
-typedef enum
+typedef enum platform_button_state
 {
     KEY_DEFAULT_STATE = 0,
     BTN_DEFAULT_STATE = 0,
@@ -138,27 +138,29 @@ typedef enum
     BTN_HOLD_DOWN     = 0x2,
     KEY_RELEASE       = 0x4,
     BTN_RELEASE       = 0x4,
-} btn_t;
+} platform_button_state;
 
-typedef struct input_t
+typedef struct platform_input_state
 {
     int mouse_x;
     int mouse_y;
     float mouse_scroll_y;
-    btn_t left_mouse_btn;
-    btn_t right_mouse_btn;
+    platform_button_state left_mouse_btn;
+    platform_button_state right_mouse_btn;
 
-    btn_t keys[KEYCODE_MENU + 1];
+    platform_button_state keys[KEYCODE_MENU + 1];
     bool any_key_pressed;
-} input_t;
+} platform_input_state;
+
+typedef struct platform_window_details
+{
+    int width;
+    int height;
+    const char* title;
+} platform_window_details;
 
 // The game program must define these functions and global variables
+extern platform_window_details window;
 extern void game_init(rf_gfx_backend_data*);
-extern void game_update(const input_t* input);
-extern void game_window_resize(int, int);
-
-extern int screen_width;
-extern int screen_height;
-extern const char* window_title;
-
+extern void game_update(const platform_input_state* input);
 #endif // PLATFORM_H

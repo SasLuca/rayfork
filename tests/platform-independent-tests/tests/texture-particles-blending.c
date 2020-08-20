@@ -1,9 +1,10 @@
 #include "platform.h"
 
-const char* window_title = "rayfork - basic window";
-
-int screen_width  = 800;
-int screen_height = 450;
+platform_window_details window = {
+    .width  = 800,
+    .height = 450,
+    .title  = "rayfork - texture particles blending"
+};
 
 rf_context ctx;
 rf_render_batch batch;
@@ -21,7 +22,7 @@ typedef struct {
 } particle;
 
 // Particles pool, reuse them!
-particle mouse_tail[MAX_PARTICLES] = { 0 };
+particle mouse_tail[MAX_PARTICLES];
 rf_texture2d smoke;
 
 float gravity = 3.0f;
@@ -31,7 +32,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
     rf_init_context(&ctx);
-    rf_init_gfx(screen_width, screen_height, gfx_data);
+    rf_init_gfx(window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
@@ -51,7 +52,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
 }
 
-extern void game_update(const input_t* input)
+extern void game_update(const platform_input_state* input)
 {
     // Update
     // Activate one particle every frame and Update active particles
@@ -107,16 +108,8 @@ extern void game_update(const input_t* input)
 
         rf_draw_text("PRESS SPACE to CHANGE BLENDING MODE", 180, 20, 20, RF_BLACK);
 
-        if (blending == RF_BLEND_ALPHA) rf_draw_text("ALPHA BLENDING", 290, screen_height - 40, 20, RF_BLACK);
-        else rf_draw_text("ADDITIVE BLENDING", 280, screen_height - 40, 20, RF_RAYWHITE);
+        if (blending == RF_BLEND_ALPHA) rf_draw_text("ALPHA BLENDING", 290, window.height - 40, 20, RF_BLACK);
+        else rf_draw_text("ADDITIVE BLENDING", 280, window.height - 40, 20, RF_RAYWHITE);
 
     rf_end();
-}
-
-extern void game_window_resize(int width, int height)
-{
-    screen_width  = width;
-    screen_height = height;
-
-    rf_set_viewport(screen_width, screen_height);
 }

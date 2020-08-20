@@ -2,13 +2,13 @@
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
-input_t input_state;
+platform_input_state input_state;
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(glfw_window, GLFW_TRUE);
     }
 
     if (action == GLFW_PRESS && input_state.keys[key] == KEY_DEFAULT_STATE)
@@ -23,12 +23,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     }
 }
 
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+static void scroll_callback(GLFWwindow* glfw_window, double xoffset, double yoffset)
 {
     input_state.mouse_scroll_y = yoffset;
 }
 
-static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+static void mouse_button_callback(GLFWwindow* glfw_window, int button, int action, int mods)
 {
     if (action == GLFW_PRESS)
     {
@@ -43,15 +43,17 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     }
 }
 
-static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+static void cursor_position_callback(GLFWwindow* glfw_window, double xpos, double ypos)
 {
     input_state.mouse_x = (int) xpos;
     input_state.mouse_y = (int) ypos;
 }
 
-static void window_size_callback(GLFWwindow* window, int width, int height)
+static void window_size_callback(GLFWwindow* glfw_window, int width, int height)
 {
-    game_window_resize(width, height);
+    window.width = width;
+    window.height = height;
+    rf_set_viewport(window.width, window.height);
 }
 
 int main()
@@ -60,29 +62,29 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, window_title, NULL, NULL);
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetWindowSizeCallback(window, window_size_callback);
+    GLFWwindow* glfw_window = glfwCreateWindow(window.width, window.height, window.title, NULL, NULL);
+    glfwSetKeyCallback(glfw_window, key_callback);
+    glfwSetScrollCallback(glfw_window, scroll_callback);
+    glfwSetMouseButtonCallback(glfw_window, mouse_button_callback);
+    glfwSetCursorPosCallback(glfw_window, cursor_position_callback);
+    glfwSetWindowSizeCallback(glfw_window, window_size_callback);
 
-    glfwMakeContextCurrent(window);
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // We only need this for the fps test
+    glfwMakeContextCurrent(glfw_window);
+    // glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // We only need this for the fps test
 
     gladLoadGL();
     glfwSwapInterval(1);
 
     game_init(RF_DEFAULT_GFX_BACKEND_INIT_DATA);
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(glfw_window))
     {
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(glfw_window);
         glfwPollEvents();
 
         game_update(&input_state);
 
-        for (int i = 0; i < sizeof(input_state.keys) / sizeof(btn_t); i++)
+        for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
         {
             if (input_state.keys[i] == KEY_RELEASE)
             {

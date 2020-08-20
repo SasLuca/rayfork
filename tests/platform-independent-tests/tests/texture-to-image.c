@@ -1,9 +1,10 @@
 #include "platform.h"
 
-const char* window_title = "rayfork - basic window";
-
-int screen_width  = 800;
-int screen_height = 450;
+platform_window_details window = {
+    .width  = 800,
+    .height = 450,
+    .title  = "rayfork - basic shapes"
+};
 
 rf_context ctx;
 rf_render_batch batch;
@@ -15,7 +16,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
     rf_init_context(&ctx);
-    rf_init_gfx(screen_width, screen_height, gfx_data);
+    rf_init_gfx(window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
@@ -33,23 +34,15 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     rf_unload_image_ez(image);                   // Unload retrieved image data from CPU memory (RAM)
 }
 
-extern void game_update(const input_t* input)
+extern void game_update(const platform_input_state* input)
 {
-     rf_begin();
+    rf_begin();
 
     rf_clear(RF_RAYWHITE);
 
-    rf_draw_texture(texture, screen_width / 2 - texture.width / 2, screen_height / 2 - texture.height / 2, RF_WHITE);
+    rf_draw_texture(texture, window.width / 2 - texture.width / 2, window.height / 2 - texture.height / 2, RF_WHITE);
 
     rf_draw_text("this IS a texture loaded from an image!", 300, 370, 10, RF_GRAY);
 
     rf_end();
-}
-
-extern void game_window_resize(int width, int height)
-{
-    screen_width  = width;
-    screen_height = height;
-
-    rf_set_viewport(screen_width, screen_height);
 }

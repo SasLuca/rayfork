@@ -2,7 +2,7 @@
 #include "glad/glad.h"
 #include "platform.h"
 
-input_t input_state;
+platform_input_state input_state;
 
 static int sdl_key(SDL_Event event)
 {
@@ -144,10 +144,10 @@ int main(int argc, char* argv[])
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-	SDL_Window* window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_OPENGL);
-	SDL_SetWindowResizable(window, SDL_TRUE);
+	SDL_Window* sdl_window = SDL_CreateWindow(window.title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window.width, window.height, SDL_WINDOW_OPENGL);
+	SDL_SetWindowResizable(sdl_window, SDL_TRUE);
 
-	SDL_GLContext gl_ctx = SDL_GL_CreateContext(window);
+	SDL_GLContext gl_ctx = SDL_GL_CreateContext(sdl_window);
 	gladLoadGLLoader(SDL_GL_GetProcAddress);
 	SDL_GL_SetSwapInterval(1); // Use v-sync
 
@@ -158,14 +158,14 @@ int main(int argc, char* argv[])
     bool run = true;
 	while (run)
 	{
-	    SDL_GL_SwapWindow(window);
+	    SDL_GL_SwapWindow(sdl_window);
 
 	    // SDL event handling
 		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT ||
-			   (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window)) ||
-               (event.type == SDL_KEYDOWN && sdl_key(event) == KEYCODE_ESCAPE))
+			   (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(sdl_window)) ||
+			   (event.type == SDL_KEYDOWN && sdl_key(event) == KEYCODE_ESCAPE))
 			{
 			    run = false;
 			}
@@ -205,18 +205,16 @@ int main(int argc, char* argv[])
 
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED)
             {
-                int w = 0;
-                int h = 0;
-                SDL_GetWindowSize(window, &w, &h);
+                SDL_GetWindowSize(sdl_window, &window.width, &window.height);
 
-                game_window_resize(w, h);
+                rf_set_viewport(window.width, window.height);
             }
 		}
 
         // Game Update
 		game_update(&input_state);
 
-        for (int i = 0; i < sizeof(input_state.keys) / sizeof(key_t); i++)
+        for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
         {
             if (input_state.keys[i] == KEY_RELEASE)
             {
@@ -238,7 +236,7 @@ int main(int argc, char* argv[])
         if (input_state.right_mouse_btn == BTN_PRESSED_DOWN) input_state.right_mouse_btn = BTN_HOLD_DOWN;
 	}
 
-	SDL_DestroyWindow(window);
+	SDL_DestroyWindow(sdl_window);
 	SDL_Quit();
 
 	return 0;

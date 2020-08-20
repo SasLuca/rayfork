@@ -1,13 +1,15 @@
 #include "platform.h"
 #include "time.h"
 
-const char* window_title = "rayfork - core camera 2d";
+platform_window_details window = {
+    .width  = 800,
+    .height = 450,
+    .title  = "rayfork - core 2d camera"
+};
 
 rf_context ctx;
 rf_render_batch batch;
 
-int screen_width  = 800;
-int screen_height = 450;
 int max_buildings = 100;
 
 rf_rec   buildings[100];
@@ -22,7 +24,7 @@ rf_camera2d camera;
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     rf_init_context(&ctx);
-    rf_init_gfx(screen_width, screen_height, gfx_data);
+    rf_init_gfx(window.width, window.height, gfx_data);
 
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
     rf_set_active_render_batch(&batch);
@@ -30,7 +32,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     srand(time(NULL));
 
     camera.target = (rf_vec2) { player.x + 20, player.y + 20 };
-    camera.offset = (rf_vec2) { screen_width/2, screen_height/2 };
+    camera.offset = (rf_vec2) {window.width / 2, window.height / 2 };
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 
@@ -38,7 +40,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     {
         buildings[i].width = rf_libc_rand_wrapper(50, 100);
         buildings[i].height = rf_libc_rand_wrapper(100, 800);
-        buildings[i].y = screen_height - 130 - buildings[i].height;
+        buildings[i].y = window.height - 130 - buildings[i].height;
         buildings[i].x = -6000 + spacing;
 
         spacing += buildings[i].width;
@@ -47,7 +49,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     }
 }
 
-extern void game_update(const input_t* input)
+extern void game_update(const platform_input_state* input)
 {
     // Player movement
     if (input->keys[KEYCODE_RIGHT] & (KEY_PRESSED_DOWN | KEY_HOLD_DOWN)) { player.x += 2; }
@@ -90,17 +92,17 @@ extern void game_update(const input_t* input)
 
         rf_draw_rectangle_rec(player, RF_RED);
 
-        rf_draw_line(camera.target.x, -screen_height * 10, camera.target.x, screen_height * 10, RF_GREEN);
-        rf_draw_line(-screen_width * 10, camera.target.y, screen_width * 10, camera.target.y, RF_GREEN);
+        rf_draw_line(camera.target.x, -window.height * 10, camera.target.x, window.height * 10, RF_GREEN);
+        rf_draw_line(-window.width * 10, camera.target.y, window.width * 10, camera.target.y, RF_GREEN);
 
     rf_end_2d();
 
     rf_draw_text("SCREEN AREA", 640, 10, 20, RF_RED);
 
-    rf_draw_rectangle(0, 0, screen_width, 5, RF_RED);
-    rf_draw_rectangle(0, 5, 5, screen_height - 10, RF_RED);
-    rf_draw_rectangle(screen_width - 5, 5, 5, screen_height - 10, RF_RED);
-    rf_draw_rectangle(0, screen_height - 5, screen_width, 5, RF_RED);
+    rf_draw_rectangle(0, 0, window.width, 5, RF_RED);
+    rf_draw_rectangle(0, 5, 5, window.height - 10, RF_RED);
+    rf_draw_rectangle(window.width - 5, 5, 5, window.height - 10, RF_RED);
+    rf_draw_rectangle(0, window.height - 5, window.width, 5, RF_RED);
 
     rf_draw_rectangle( 10, 10, 250, 113, rf_fade(RF_SKYBLUE, 0.5f));
     rf_draw_rectangle_outline((rf_rec){ 10, 10, 250, 113 }, 1, RF_BLUE);
@@ -112,12 +114,4 @@ extern void game_update(const input_t* input)
     rf_draw_text("- R to reset Zoom and Rotation", 40, 100, 10, RF_DARKGRAY);
 
     rf_end();
-}
-
-extern void game_window_resize(int width, int height)
-{
-    screen_width  = width;
-    screen_height = height;
-
-    rf_set_viewport(screen_width, screen_height);
 }

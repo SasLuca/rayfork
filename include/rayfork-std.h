@@ -34,23 +34,23 @@
 #endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-#define RAYFORK_PLATFORM_WINDOWS (1)
+#define RAYFORK_PLATFORM_WINDOWS
 #endif
 
 #if defined(__linux__) && !defined(__ANDROID__)
-#define RAYFORK_PLATFORM_LINUX (1)
+#define RAYFORK_PLATFORM_LINUX
 #endif
 
 #if defined(__linux__) && defined(__ANDROID__)
-#define RAYFORK_PLATFORM_ANDROID (1)
+#define RAYFORK_PLATFORM_ANDROID
 #endif
 
 #if defined(__APPLE__) && !TARGET_OS_IPHONE
-#define RAYFORK_PLATFORM_MACOS (1)
+#define RAYFORK_PLATFORM_MACOS
 #endif
 
 #if defined(__APPLE__) && TARGET_OS_IPHONE
-#define RAYFORK_PLATFORM_IOS (1)
+#define RAYFORK_PLATFORM_IOS
 #endif
 
 #if (defined(RAYFORK_PLATFORM_WINDOWS) + defined(RAYFORK_PLATFORM_LINUX) + defined(RAYFORK_PLATFORM_MACOS) + defined(RAYFORK_PLATFORM_ANDROID) + defined(RAYFORK_PLATFORM_IOS)) != 1
