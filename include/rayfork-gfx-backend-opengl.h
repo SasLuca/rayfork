@@ -100,13 +100,19 @@ typedef struct rf_opengl_procs
     void                 (RF_GL_CALLING_CONVENTION PolygonMode)              (unsigned int face, unsigned int mode);                                                 // OpenGL 33  ONLY
 } rf_opengl_procs;
 
-#define RF__GL_PROC_DEFN(ext, proc) .proc = (void*) RF_CONCAT(ext, proc)
+#if defined(__cplusplus)
+    #define RF__GL_PROC_DEFN(ext, proc) (void*) RF_CONCAT(ext, proc)
+    #define RF__GL_PROC_NULL(ext, proc) NULL
+#else
+    #define RF__GL_PROC_DEFN(ext, proc) .proc = (void*) RF_CONCAT(ext, proc)
+    #define RF__GL_PROC_NULL(ext, proc) .proc = NULL
+#endif
 
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     #define RF__GL_PROC_GL33(ext, proc) RF__GL_PROC_DEFN(ext, proc)
-    #define RF__GL_PROC_GLES(ext, proc) .proc = NULL
+    #define RF__GL_PROC_GLES(ext, proc) RF__GL_PROC_NULL(ext, proc)
 #else
-    #define RF__GL_PROC_GL33(ext, proc) .proc = NULL
+    #define RF__GL_PROC_GL33(ext, proc) RF__GL_PROC_NULL(ext, proc)
     #define RF__GL_PROC_GLES(ext, proc) RF__GL_PROC_DEFN(ext, proc)
 #endif
 
@@ -194,8 +200,8 @@ typedef struct rf_opengl_procs
     RF__GL_PROC_DEFN(ext, CullFace),\
     RF__GL_PROC_DEFN(ext, FrontFace),\
     RF__GL_PROC_DEFN(ext, GetStringi),\
-    RF__GL_PROC_GL33(ext, GetTexImage), /* OpenGL 33 ONLY */  \
-    RF__GL_PROC_GL33(ext,ClearDepth),   /* OpenGL 33  ONLY */ \
+    RF__GL_PROC_GL33(ext, GetTexImage), /* OpenGL 33  ONLY */ \
+    RF__GL_PROC_GL33(ext, ClearDepth),  /* OpenGL 33  ONLY */ \
     RF__GL_PROC_GLES(ext, ClearDepthf), /* OpenGL ES3 ONLY */ \
     RF__GL_PROC_GL33(ext, GetIntegerv), /* OpenGL 33  ONLY */ \
     RF__GL_PROC_GL33(ext, PolygonMode), /* OpenGL 33  ONLY */ \
