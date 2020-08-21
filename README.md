@@ -12,7 +12,7 @@
 
 Forked from the awesome raylib game framework: https://www.raylib.com/
 
-**Notice:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
+**NOTICE:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
 
 ## How to build
 
@@ -26,8 +26,6 @@ gcc -c rayfork.c
 clang -c rayfork.c
 cl -c -EHsc rayfork.c
 ```
-
-You can also try it using this cmake template: https://github.com/SasLuca/rayfork-sokol-template
 
 ## Principles
 
