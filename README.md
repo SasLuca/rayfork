@@ -13,40 +13,15 @@ Forked from the awesome raylib game framework: https://www.raylib.com/
 rayfork only has one .c file and only depends on libc, which means it can be easily compiled as a library from the command line.
 
 ```shell script
+# -c compiles the code as a library
+# -EHsc disables exceptions on msvc
+
 gcc -c rayfork.c
 clang -c rayfork.c
-cl /c /EHsc rayfork.c
+cl -c -EHsc rayfork.c
 ```
 
-To customize rayfork at compile time (eg: Choosing a different graphics backend, Enabling the audio module, etc) you just have to add preprocessor defines:
-```shell script
-# Compiling with the audio system enabled and the GLES3 graphics backend.
-gcc -c rayfork.c -DRAYFORK_ENABLE_AUDIO -DRAYFORK_GRAPHICS_BACKEND_GL_ES3
-clang -c rayfork.c -DRAYFORK_ENABLE_AUDIO -DRAYFORK_GRAPHICS_BACKEND_GL_ES3
-cl /c /EHsc rayfork.c /DRAYFORK_ENABLE_AUDIO /DRAYFORK_GRAPHICS_BACKEND_GL_ES3
-```
-
-## rayfork audio
-
-rayfork provides an optional audio system, which must be enabled using by defining `RAYFORK_ENABLE_AUDIO`.
-
-The audio system in rayfork uses miniaudio which wraps low-level audio APIs and is not platform independent but is cross platform, supporting the following backends:
-- WASAPI
-- DirectSound
-- WinMM
-- Core Audio (Apple)
-- ALSA
-- PulseAudio
-- JACK
-- sndio (OpenBSD)
-- audio(4) (NetBSD and OpenBSD)
-- OSS (FreeBSD)
-- AAudio (Android 8.0+)
-- OpenSL|ES (Android only)
-- Web Audio (Emscripten)
-- Null (Silence)
-
-On Windows and macOS there's no need to link to anything for rayfork audio. On Linux just link to -lpthread, -lm and -ldl. On BSD just link to -lpthread and -lm. On iOS you need to compile as Objective-C.
+You can also try it using this cmake template: https://github.com/SasLuca/rayfork-sokol-template
 
 ## Principles
 
@@ -58,10 +33,7 @@ This is by design, so that you can easily use rayfork on multiple platforms (inc
 There are templates for using rayfork with GLFW, SDL, sokol-app and custom platform layers.
 
 The renderer currently has OpenGL33 and OpenGL-ES3 backends (with more to be added) that are implemented in a portable way which allows rayfork to be compiled on any platform, 
-with the only dependency being libc. OpenGL procs are passed explicitly to rayfork and there is a simple macro to aid with this.
-
-The audio system in rayfork uses miniaudio to wrap low-level audio APIs and as such depends on those low-level audio APIs. 
-You can disable rayfork audio by defining the macro `RAYFORK_NO_AUDIO` if it does not support the platforms you are targeting or if you just do not want it.  
+with the only dependency being libc. OpenGL procs are passed explicitly to rayfork and there is a simple macro to aid with this.  
 
 Because of this you can easily compile rayfork for any platform be it PC, Mobile or Consoles.
 
@@ -112,8 +84,6 @@ I am also looking for help in developing things outside my expertise:
 
 ## Advice for contributors
 - Contact me on the [raylib discord server](https://discord.gg/mzCY3wN) in the #rayfork channel, I am @BananyaDev#0001, or on [twitter @SasLuca](https://twitter.com/SasLuca).
-
-- Clone using `git clone --recursive url_to_your_fork_of_rayfork` in order to also get the `rayfork-examples` submodule which also serves as our test suite.
 
 - Keep the naming convention to snake case, use `rf_function_name` for interface functions and `_rf_function_name` for private functions.
 
