@@ -22,5 +22,4 @@
 !libs/**
 !tests/**
 !graphics/**
-!devutils/amalgamate.bat
-!devutils/amalgamate.exe
+!devutils/**
