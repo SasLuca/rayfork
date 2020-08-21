@@ -4,6 +4,7 @@
 
 <div align="center"><h3>
   <a href="https://github.com/SasLuca/rayfork/releases"> DOWNLOAD HERE </a>
+  <a> • </a>
   <a href="https://github.com/SasLuca/rayfork-sokol-template"> GITHUB TEMPLATE </a>
 </h3></div>
 
