@@ -8,6 +8,8 @@
   <a href="https://github.com/SasLuca/rayfork-sokol-template"> GITHUB TEMPLATE </a>
 </h3></div>
 
+<br></br>
+
 Forked from the awesome raylib game framework: https://www.raylib.com/
 
 **Notice:** rayfork is still under very early development and it is not recommended that you use it professionally at the moment.
