@@ -2,9 +2,12 @@
 
 <div align="center"><i>C99 • Single Source • Platform Independent • XNA-like • Allocator-Aware • Game Dev Library</i></div>
 
-<div align="center"><h3><a href="https://github.com/SasLuca/rayfork/releases"> DOWNLOAD HERE </a></h3></div>
+<div align="center"><h3>
+  <a href="https://github.com/SasLuca/rayfork/releases"> DOWNLOAD HERE </a>
+  <a href="https://github.com/SasLuca/rayfork-sokol-template"> GITHUB TEMPLATE </a>
+</h3></div>
 
-<div align="center"><h3><a href="https://github.com/SasLuca/rayfork-sokol-template"> GITHUB TEMPLATE </a></h3></div>
+<br></br>
 
 Forked from the awesome raylib game framework: https://www.raylib.com/
 
