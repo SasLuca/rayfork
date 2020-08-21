@@ -9,3 +9,6 @@
 *.gltf binary
 *.ai   binary
 *.svg  binary
+
+./graphics/**     binary
+./tests/assets/** binary

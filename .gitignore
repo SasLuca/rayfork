@@ -13,13 +13,13 @@
 !src/
 !libs/
 !tests/
-!logo/
+!graphics/
 !devutils/
 
 !include/**
 !src/**
 !libs/**
 !tests/**
-!logo/**
+!graphics/**
 !devutils/amalgamate.bat
 !devutils/amalgamate.exe

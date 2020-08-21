@@ -30,14 +30,14 @@ foreach(file ${files})                                               # Iterate o
 	get_filename_component(name ${file} NAME_WE)                     # Create a variable `name` that stores the filename without the extension. NAME_WE means filename with extension. (https://cmake.org/cmake/help/v3.0/command/get_filename_component.html).
 	add_executable(${name})                                          # Create the target for the specific example
 	target_sources(${name} PRIVATE ${file})				    	     # Add sources to target
-	target_link_libraries(${name} PRIVATE ${platform-layer} rayfork) # Link with the platform layer and rayfork
+	target_link_libraries(${name} PRIVATE ${platform-layer} ${rayfork}) # Link with the platform layer and rayfork
 	target_include_directories(${name} PUBLIC platform-independent-tests/platform-layers/) # Add platform.h to the include path
 endforeach()
 
 # Setup unit-tests
 add_executable(unit-test-suite)
 target_sources(unit-test-suite PRIVATE unit-tests/tests.cpp)
-target_link_libraries(unit-test-suite PRIVATE rayfork)
+target_link_libraries(unit-test-suite PRIVATE ${rayfork})
 target_compile_features(unit-test-suite PUBLIC cxx_std_17)
 set_target_properties(unit-test-suite PROPERTIES
         CXX_STANDARD 17

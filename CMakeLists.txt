@@ -1,11 +1,21 @@
 cmake_minimum_required(VERSION 3.1)
 project(rayfork LANGUAGES C)
 
-add_library(rayfork)
-target_compile_features(rayfork PUBLIC c_std_99)
-target_sources(rayfork PRIVATE "src/rayfork.c")
-target_include_directories(rayfork PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_include_directories(rayfork PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+add_library(rayfork-dev)
+target_compile_features(rayfork-dev PUBLIC c_std_99)
+target_sources(rayfork-dev PRIVATE "src/rayfork.c")
+target_include_directories(rayfork-dev PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(rayfork-dev PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+
+if (RAYFORK_TEST_AMALGAMATED)
+    add_library(rayfork-amalgamated)
+    target_compile_features(rayfork-amalgamated PUBLIC c_std_99)
+    target_sources(rayfork-amalgamated PRIVATE "rayfork-amalgamated/rayfork.c")
+    target_include_directories(rayfork-amalgamated PUBLIC "rayfork-amalgamated")
+    set(rayfork rayfork-amalgamated)
+else()
+    set(rayfork rayfork-dev)
+endif()
 
 # rayfork options --------------------------------------------------------------------
 
