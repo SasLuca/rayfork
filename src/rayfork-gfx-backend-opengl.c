@@ -2875,7 +2875,7 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
             int j = (y * width) + x;
 
             // only flip screen pixels once
-            if (i > height / 2)
+            if (y > height / 2)
             {
                 rf_color temp = dst[i];
                 dst[i] = dst[j];
