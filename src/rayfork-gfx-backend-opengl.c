@@ -2871,11 +2871,20 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
     {
         for (rf_int x = 0; x < width; x++)
         {
-            dst[((height - 1) - y) * width + x] = dst[(y * width) + x]; // Flip line
+            int i = ((height - 1) - y) * width + x;
+            int j = (y * width) + x;
+
+            // only flip screen pixels once
+            if (y > height / 2)
+            {
+                rf_color temp = dst[i];
+                dst[i] = dst[j];
+                dst[j] = temp;  
+            }
 
             // Set alpha component value to 255 (no trasparent image retrieval)
             // NOTE: Alpha value has already been applied to RGB in framebuffer, we don't need it!
-            if (((x + 1) % 4) == 0) dst[((height - 1) - y) * width + x].a = 255;
+            if(dst[j].a == 0) dst[j].a = 255;
         }
     }
 }
