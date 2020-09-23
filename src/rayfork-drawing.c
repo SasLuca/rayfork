@@ -487,6 +487,38 @@ RF_API void rf_draw_circle_lines(int center_x, int center_y, float radius, rf_co
     rf_gfx_end();
 }
 
+// Draw ellipse
+RF_API void rf_draw_ellipse(int center_x, int center_y, float radius_h, float radius_v, rf_color color)
+{
+    if (rf_gfx_check_buffer_limit(3 * 36)) rf_gfx_draw();
+
+    rf_gfx_begin(RF_TRIANGLES);
+    for (int i = 0; i < 360; i += 10)
+    {
+        rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+        rf_gfx_vertex2f(center_x, center_y);
+        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD * i) * radius_h, center_y + cosf(RF_DEG2RAD * i) * radius_v);
+        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD * (i + 10)) * radius_h, center_y + cosf(RF_DEG2RAD * (i + 10)) * radius_v);
+    }
+    rf_gfx_end();
+}
+
+// Draw ellipse outline
+RF_API void rf_draw_ellipse_lines(int center_x, int center_y, float radius_h, float radius_v, rf_color color)
+{
+    if (rf_gfx_check_buffer_limit(3 * 36)) rf_gfx_draw();
+
+    rf_gfx_begin(RF_LINES);
+    for (int i = 0; i < 360; i += 10)
+    {
+        rf_gfx_color4ub(color.r, color.g, color.b, color.a);
+        rf_gfx_vertex2f(center_x, center_y);
+        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD * i) * radius_h, center_y + cosf(RF_DEG2RAD * i) * radius_v);
+        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD * (i + 10)) * radius_h, center_y + cosf(RF_DEG2RAD * (i + 10)) * radius_v);
+    }
+    rf_gfx_end();
+}
+
 RF_API void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius, int start_angle, int end_angle, int segments, rf_color color)
 {
     if (start_angle == end_angle) return;
