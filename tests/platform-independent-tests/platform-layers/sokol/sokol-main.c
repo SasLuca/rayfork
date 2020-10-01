@@ -2,7 +2,8 @@
 #define SOKOL_GLCORE33
 #define SOKOL_WIN32_NO_GL_LOADER
 #define SOKOL_WIN32_FORCE_MAIN
-#include "sokol/sokol_app.h"
+#include "glad/glad.h"
+#include "sokol_app.h"
 #include "platform.h"
 
 #ifdef RAYFORK_PLATFORM_MACOS

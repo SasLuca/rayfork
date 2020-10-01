@@ -149,7 +149,7 @@ typedef struct platform_input_state
     platform_button_state right_mouse_btn;
 
     platform_button_state keys[KEYCODE_MENU + 1];
-    bool any_key_pressed;
+    rf_bool any_key_pressed;
 } platform_input_state;
 
 typedef struct platform_window_details

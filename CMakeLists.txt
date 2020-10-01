@@ -1,36 +1,28 @@
 cmake_minimum_required(VERSION 3.1)
-project(rayfork LANGUAGES C)
+project(rayfork LANGUAGES C CXX)
 
 add_library(rayfork-dev)
+target_sources(rayfork-dev PRIVATE "source/rayfork.c")
 target_compile_features(rayfork-dev PUBLIC c_std_99)
-target_sources(rayfork-dev PRIVATE "src/rayfork.c")
-target_include_directories(rayfork-dev PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_include_directories(rayfork-dev PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/libs")
+target_include_directories(rayfork-dev PUBLIC "source" "source/core" "source/gfx" "source/audio" "source/internal" "source/math" "source/unicode" "source/libs" "source/audio")
+
+if (RAYFORK_DEV)
+target_compile_definitions(rayfork-dev PUBLIC RAYFORK_DEV)
+endif()
 
 if (RAYFORK_TEST_AMALGAMATED)
-    add_library(rayfork-amalgamated)
-    target_compile_features(rayfork-amalgamated PUBLIC c_std_99)
-    target_sources(rayfork-amalgamated PRIVATE "rayfork-amalgamated/rayfork.c")
-    target_include_directories(rayfork-amalgamated PUBLIC "rayfork-amalgamated")
-    set(rayfork rayfork-amalgamated)
+    add_library(amalgamated)
+    target_compile_features(amalgamated PUBLIC c_std_99)
+    target_sources(amalgamated PRIVATE "amalgamated/rayfork.c")
+    target_include_directories(amalgamated PUBLIC "amalgamated")
+
+    set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/amalgamated")
+    set(rayfork amalgamated)
 else()
+    set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/rayfork-dev")
     set(rayfork rayfork-dev)
 endif()
 
-# rayfork options --------------------------------------------------------------------
-
-# Setup assertions
-if (RAYFORK_ENABLE_ASSERTIONS)
-    target_compile_definitions(rayfork PUBLIC RAYFORK_ENABLE_ASSERTIONS)
-endif()
-
-# Enable audio
-if (RAYFORK_ENABLE_AUDIO)
-    target_compile_definitions(rayfork PUBLIC RAYFORK_ENABLE_AUDIO)
-endif()
-
-# rayfork test -------------------------------------------------------------------------------
 if (EXISTS tests)
-    set(rayfork_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
     add_subdirectory(tests)
 endif()

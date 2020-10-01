@@ -10,9 +10,9 @@ add_subdirectory(glfw EXCLUDE_FROM_ALL)
 
 add_library(glfw-platform-layer)
 target_sources(glfw-platform-layer PRIVATE glfw-main.c glad/glad.c)
-target_include_directories(glfw-platform-layer PUBLIC "${rayfork_path}" "${platform_header_path}" ".")
+target_include_directories(glfw-platform-layer PUBLIC "${platform_header_path}" ".")
 target_link_libraries(glfw-platform-layer PRIVATE glfw)
-target_link_libraries(glfw-platform-layer PUBLIC common-platform-interface)
+target_link_libraries(glfw-platform-layer PUBLIC ${rayfork} common-platform-interface)
 
 if (APPLE)
     target_link_libraries(glfw-platform-layer PUBLIC "-framework Cocoa" "-framework QuartzCore" "-framework OpenGL")

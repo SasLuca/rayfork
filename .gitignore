@@ -11,8 +11,7 @@
 !.gitignore
 
 !include/
-!src/
-!libs/
+!source/
 !tests/
 !graphics/
 !devutils/
