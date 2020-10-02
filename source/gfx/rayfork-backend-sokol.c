@@ -1,5 +1,13 @@
 #include "rayfork-backend-sokol.h"
 
+#define SOKOL_IMPL
+#if defined(RAYFORK_GRAPHICS_BACKEND_DIRECTX)
+#define SOKOL_D3D11
+#elif defined(RAYFORK_GRAPHICS_BACKEND_METAL)
+#define SOKOL_METAL
+#endif
+#include "sokol_gfx.h"
+
 RF_API void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
 
 #pragma region shader
