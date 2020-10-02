@@ -10,15 +10,12 @@
 !.gitattributes
 !.gitignore
 
-!include/
 !source/
 !tests/
 !graphics/
 !devutils/
 
-!include/**
-!src/**
+!source/**
 !libs/**
-!tests/**
 !graphics/**
 !devutils/**
