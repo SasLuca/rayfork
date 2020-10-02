@@ -23,6 +23,4 @@ else()
     set(rayfork rayfork-dev)
 endif()
 
-if (EXISTS tests)
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
