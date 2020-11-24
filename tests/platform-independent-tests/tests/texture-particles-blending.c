@@ -6,7 +6,7 @@ platform_window_details window = {
     .title  = "rayfork - texture particles blending"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 #define MAX_PARTICLES 200
@@ -18,7 +18,7 @@ typedef struct {
     float alpha;
     float size;
     float rotation;
-    bool active;        // NOTE: Use it to activate/deactive particle
+    rf_bool active;        // NOTE: Use it to activate/deactive particle
 } particle;
 
 // Particles pool, reuse them!
@@ -31,8 +31,7 @@ int blending = RF_BLEND_ALPHA;
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
@@ -46,7 +45,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
         mouse_tail[i].alpha    = 1.0f;
         mouse_tail[i].size     = (float)rf_libc_rand_wrapper(1, 30) / 20.0f;
         mouse_tail[i].rotation = (float)rf_libc_rand_wrapper(0, 360);
-        mouse_tail[i].active   = false;
+        mouse_tail[i].active   = 0;
     }
 
     smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
@@ -63,7 +62,7 @@ extern void game_update(const platform_input_state* input)
     {
         if (!mouse_tail[i].active)
         {
-            mouse_tail[i].active = true;
+            mouse_tail[i].active = 1;
             mouse_tail[i].alpha = 1.0f;
             mouse_tail[i].position = (rf_vec2){ input->mouse_x, input->mouse_y };
             i = MAX_PARTICLES;
@@ -77,7 +76,7 @@ extern void game_update(const platform_input_state* input)
             mouse_tail[i].position.y += gravity;
             mouse_tail[i].alpha -= 0.01f;
 
-            if (mouse_tail[i].alpha <= 0.0f) mouse_tail[i].active = false;
+            if (mouse_tail[i].alpha <= 0.0f) mouse_tail[i].active = 0;
 
             mouse_tail[i].rotation += 5.0f;
         }

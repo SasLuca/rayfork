@@ -6,7 +6,7 @@ platform_window_details window = {
     .title  = "rayfork - texture srcrec destrec"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 rf_texture2d scarfy;
@@ -28,8 +28,7 @@ int rotation = 0;
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);

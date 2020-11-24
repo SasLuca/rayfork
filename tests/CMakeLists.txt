@@ -37,7 +37,7 @@ endforeach()
 # Setup unit-tests
 add_executable(unit-test-suite)
 target_sources(unit-test-suite PRIVATE unit-tests/tests.cpp)
-target_link_libraries(unit-test-suite PRIVATE ${rayfork})
+target_link_libraries(unit-test-suite PUBLIC ${rayfork})
 target_compile_features(unit-test-suite PUBLIC cxx_std_17)
 set_target_properties(unit-test-suite PROPERTIES
         CXX_STANDARD 17

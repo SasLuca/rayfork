@@ -3,8 +3,12 @@
 
 #include "rayfork-core.h"
 
-#if !defined(RAYFORK_NO_UNICODE)
-    #include "rayfork-unicode.h"
+#if !defined(RAYFORK_NO_STR)
+    #include "rayfork-str.h"
+#endif
+
+#if !defined(RAYFORK_NO_CSV)
+    //#include "rayfork-csv.h"
 #endif
 
 #if !defined(RAYFORK_NO_MATH)

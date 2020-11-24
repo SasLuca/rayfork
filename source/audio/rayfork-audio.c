@@ -1,3 +1,5 @@
+#include "rayfork-audio.h"
+
 #define STB_VORBIS_IMPLEMENTATION
 #define JAR_XM_IMPLEMENTATION
 #define JAR_MOD_IMPLEMENTATION
@@ -11,7 +13,7 @@
 
 RF_API rf_valid rf_audio_init()
 {
-    rf_bool         valid          = {0};
+    rf_valid        valid          = {0};
     ma_context      context        = {0};
     ma_device_info* playback_infos = {0};
     ma_uint32       playback_count = {0};
@@ -31,7 +33,7 @@ RF_API rf_valid rf_audio_init()
 
             ma_device_config config = ma_device_config_init(ma_device_type_playback);
             config.playback.pDeviceID = &playback_infos[chosenPlaybackDeviceIndex].id;
-            config.playback.format    = MY_FORMAT;
+            config.playback.format    = FORMAT;
             config.playback.channels  = MY_CHANNEL_COUNT;
             config.sampleRate         = MY_SAMPLE_RATE;
             config.dataCallback       = data_callback;

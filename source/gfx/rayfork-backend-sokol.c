@@ -8,7 +8,7 @@
 #endif
 #include "sokol_gfx.h"
 
-RF_API void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
+RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
 
 #pragma region shader
 

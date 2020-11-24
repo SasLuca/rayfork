@@ -3,6 +3,9 @@
 
 #include "stdarg.h"
 #include "stddef.h"
+#include "stdint.h"
+
+#define RF_INVALID_INDEX (-1)
 
 typedef ptrdiff_t rf_int;
 typedef int rf_bool;
@@ -105,6 +108,9 @@ typedef int rf_bool;
 
 #define RF_CONCAT_IMPL(a, b) a##b
 #define RF_CONCAT(a, b)      RF_CONCAT_IMPL(a, b)
+
+/* This macro is used to name variables in custom macros such as custom for-each-loops */
+#define RF_MACRO_VAR(X) RF_CONCAT(rf_macro_gen_var, RF_CONCAT(X, __LINE__))
 #pragma endregion
 
 #pragma region source location

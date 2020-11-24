@@ -55,10 +55,7 @@ typedef struct rf_gfx_context
     rf_log_type logger_filter;
 } rf_gfx_context;
 
-RF_EXTERN rf_gfx_context* rf__global_gfx_context_ptr;
-
-RF_API void rf_init_gfx(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data);
-RF_API void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
+RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data);
 
 RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
 RF_API rf_shader   rf_load_default_shader();

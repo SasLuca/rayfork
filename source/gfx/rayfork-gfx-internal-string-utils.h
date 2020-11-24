@@ -31,7 +31,7 @@ RF_INTERNAL inline rf_bool rf_is_file_extension(const char* filename, const char
     return rf_match_str_n(filename + filename_len - ext_len, ext_len, ext, ext_len);
 }
 
-RF_INTERNAL inline const char* rf_str_find_last(const char* s, const char* charset)
+RF_INTERNAL inline const char* rf__str_find_last(const char* s, const char* charset)
 {
     const char* latest_match = NULL;
     for (; s = strpbrk(s, charset), s != NULL; latest_match = s++) { }
@@ -45,7 +45,7 @@ RF_INTERNAL inline const char* rf_get_directory_path_from_file_path(const char* 
     const char* last_slash = NULL;
     memset(rf_global_dir_path, 0, RF_MAX_FILEPATH_LEN);
 
-    last_slash = rf_str_find_last(file_path, "\\/");
+    last_slash = rf__str_find_last(file_path, "\\/");
     if (!last_slash) { return NULL; }
 
     // NOTE: Be careful, strncpy() is not safe, it does not care about '\0'

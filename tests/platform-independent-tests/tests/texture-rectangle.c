@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include "platform.h"
 
 platform_window_details window = {
@@ -6,7 +7,7 @@ platform_window_details window = {
     .title  = "rayfork - texture rectangle"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 #define MAX_FRAME_SPEED 15
@@ -23,8 +24,7 @@ int frames_speed = 8;
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);

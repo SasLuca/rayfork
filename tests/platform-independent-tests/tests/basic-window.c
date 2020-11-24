@@ -6,14 +6,13 @@ platform_window_details window = {
     .title  = "rayfork - basic window"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     // Initialize rayfork
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);

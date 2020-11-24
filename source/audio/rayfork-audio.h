@@ -2,6 +2,7 @@
 #define RAYFORK_AUDIO_H
 
 #include "rayfork-core.h"
+#include "miniaudio.h"
 
 /*
  This buffer size is defined by number of samples, independent of sample size and channels number
@@ -73,6 +74,19 @@ typedef struct rf_audio_device
 {
     int id;
 } rf_audio_device;
+
+typedef struct rf_audio_buffer
+{
+    ma_data_converter converter;
+} rf_audio_buffer;
+
+RF_API rf_valid rf_audio_init();
+
+RF_API rf_int rf_audio_device_count();
+RF_API rf_int rf_default_audio_device_index();
+RF_API rf_audio_device_info rf_audio_device_get_info(rf_int device_index);
+RF_API rf_audio_device rf_init_audio_device(rf_audio_device_config);
+RF_API rf_audio_device rf_init_default_audio_device();
 
 #pragma region audio device
 RF_API rf_audio_device rf_audio_device_count();

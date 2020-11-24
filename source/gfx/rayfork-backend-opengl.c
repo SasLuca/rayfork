@@ -1205,7 +1205,7 @@ RF_INTERNAL void rf_set_gl_extension_if_available(const char* gl_ext, int len)
 
 #pragma region init
 
-RF_API void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
+RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
 {
     rf_gfx.gl = *((rf_opengl_procs*) gfx_data);
     rf_gfx.extensions.max_depth_bits = 16;

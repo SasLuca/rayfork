@@ -11,7 +11,7 @@ rf_render_batch batch;
 
 void game_init(rf_gfx_backend_data* gfx_data)
 {
-    rf_init_gfx(&ctx, window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
     rf_set_active_render_batch(&batch);

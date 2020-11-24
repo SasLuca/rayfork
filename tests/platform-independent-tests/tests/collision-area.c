@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include "platform.h"
 
 platform_window_details window = {
@@ -6,7 +7,7 @@ platform_window_details window = {
     .title  = "rayfork - collision area"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 // Box A: Moving box
@@ -23,15 +24,14 @@ rf_rec box_collision;
 const int screen_upper_limit = 40;
 
 // Movement pause
-bool pause;
+rf_bool pause;
 
 // Collision detection
-bool collision;
+rf_bool collision;
 
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
     rf_set_active_render_batch(&batch);

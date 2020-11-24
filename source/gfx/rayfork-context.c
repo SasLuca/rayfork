@@ -1,9 +1,9 @@
 #include "rayfork-gfx-internal.h"
 #include "rayfork-texture.h"
 
-rf_gfx_context* rf__global_gfx_context_ptr;
+RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
 
-RF_API void rf_init_gfx(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data)
+RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data)
 {
     *ctx = (rf_gfx_context) {0};
     rf_set_global_gfx_context_pointer(ctx);

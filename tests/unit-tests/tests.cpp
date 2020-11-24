@@ -1,16 +1,23 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
-#include "include/rayfork.h"
+#include "rayfork.h"
 
-unsigned int Factorial(unsigned int number)
+TEST_CASE( "rf_for_str_split", "[str]" )
 {
-    return number <= 1 ? number : Factorial(number - 1) * number;
-}
+    int i = 0;
+    rf_for_str_split(str, rf_cstr("Hello World"), rf_cstr(" "))
+    {
+        if (i == 0)
+        {
+            rf_bool result = rf_str_match(str, rf_cstr("Hello"));
+            REQUIRE(result);
+        }
+        else if (i == 1)
+        {
+            rf_bool result = rf_str_match(str, rf_cstr("World"));
+            REQUIRE(result);
+        }
 
-TEST_CASE( "Factorials are computed", "[factorial]" )
-{
-    REQUIRE(Factorial(1) == 1);
-    REQUIRE(Factorial(2) == 2);
-    REQUIRE(Factorial(3) == 6);
-    REQUIRE(Factorial(10) == 3628800);
+        i++;
+    }
 }

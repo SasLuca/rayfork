@@ -1,3 +1,4 @@
+#include "stdlib.h"
 #include "platform.h"
 #include "time.h"
 
@@ -7,7 +8,7 @@ platform_window_details window = {
     .title  = "rayfork - core 2d camera"
 };
 
-rf_context ctx;
+rf_gfx_context ctx;
 rf_render_batch batch;
 
 int max_buildings = 100;
@@ -23,8 +24,7 @@ rf_camera2d camera;
 
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
-    rf_init_context(&ctx);
-    rf_init_gfx(window.width, window.height, gfx_data);
+    rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
     rf_set_active_render_batch(&batch);
