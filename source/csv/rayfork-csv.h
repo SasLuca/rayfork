@@ -7,18 +7,19 @@
 typedef struct rf_csv_iter
 {
     rf_str src;
-    rf_int offset;
-    rf_int count;
+    rf_str row_separator;
+    rf_str col_separator;
+    rf_bool valid;
 } rf_csv_iter;
 
 rf_int rf_csv_col_count_ex(rf_str src, rf_str separator)
 {
     rf_int result = 0;
 
-    while (src.valid && src.data[0] != '\n')
+    while (rf_str_valid(src))
     {
-        result += rf_str_match_prefix(src, separator);
-        src = rf_str_nextb(src);
+        rf_str_pop_first_split(&src, separator);
+        result++;
     }
 
     return result;
@@ -36,23 +37,16 @@ rf_csv_iter rf_csv_make_iter_ex(rf_str csv)
     return iter;
 }
 
-/*void test()
+void test()
 {
-    char* csv_str = "...";
-    int col_count = rf_csv_col_count(csv_str);
+    rf_str csv_str = rf_cstr("...");
 
-    for (rf_csv_iter csv_it = rf_csv_make_iter(csv); csv_it.valid; rf_csv_iter_next_row(&csv_it))
+    for (rf_csv_iter csv = rf_csv_make_iter(csv); rf_csv_valid(&csv); rf_csv_advance_row(&csv))
     {
-        for (rf_str )
-    }
-
-    for (rf_csv_row r = rf_csv_first_row(csv_str); r.valid; r = rf_csv_next_row(r))
-    {
-        for (rf_csv_col c = rf_csv_first_col(r); c.valid; c = rf_csv_next_col(c))
+        for (rf_str element = rf_csv_next_col_element(csv); rf_csv_col_valid(&csv); rf_csv_next_element())
         {
-
         }
     }
-}*/
+}
 
 #endif // RAYFORK_CSV_H

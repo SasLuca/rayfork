@@ -11,7 +11,7 @@
 
 // If no graphics backend was set, choose OpenGL33 on desktop and OpenGL ES3 on mobile
 #if RAYFORK_NO_GRAPHICS_BACKEND_SELECTED_BY_THE_USER
-    #if defined(RAYFORK_PLATFORM_WINDOWS) || defined(RAYFORK_PLATFORM_LINUX) || defined(RAYFORK_PLATFORM_MACOS)
+    #if defined(rayfork_platform_windows) || defined(rayfork_platform_linux) || defined(rayfork_platform_macos)
         #define RAYFORK_GRAPHICS_BACKEND_GL_33 (1)
     #else // if on mobile
         #define RAYFORK_GRAPHICS_BACKEND_GL_ES3 (1)
@@ -57,7 +57,7 @@
 #endif
 
 #if !defined(RF_MAX_TEXT_BUFFER_LENGTH)
-    #define RF_MAX_TEXT_BUFFER_LENGTH (1024) // Size of internal RF_INTERNAL buffers used on some functions:
+    #define RF_MAX_TEXT_BUFFER_LENGTH (1024) // Size of internal rf_internal buffers used on some functions:
 #endif
 
 #if !defined(RF_MAX_MESH_VBO)
@@ -220,102 +220,102 @@ struct rf_material;
 struct rf_gfx_backend_data;
 
 #pragma region shader
-RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code); // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
-RF_API void rf_gfx_unload_shader(rf_shader shader); // Unload shader from GPU memory (VRAM)
-RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name); // Get shader uniform location
-RF_API void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name); // Set shader uniform value
-RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count); // Set shader uniform value vector
-RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat); // Set shader uniform value (matrix 4x4)
-RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture); // Set shader uniform value for texture
+rf_public rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code); // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
+rf_public void rf_gfx_unload_shader(rf_shader shader); // Unload shader from GPU memory (VRAM)
+rf_public int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name); // Get shader uniform location
+rf_public void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name); // Set shader uniform value
+rf_public void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count); // Set shader uniform value vector
+rf_public void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat); // Set shader uniform value (matrix 4x4)
+rf_public void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture); // Set shader uniform value for texture
 #pragma endregion
 
 #pragma region gfx api
-RF_API rf_mat rf_gfx_get_matrix_projection(); // Return internal rf__ctx->gl_ctx.projection matrix
-RF_API rf_mat rf_gfx_get_matrix_modelview(); // Return internal rf__ctx->gl_ctx.modelview matrix
-RF_API void rf_gfx_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal rf__ctx->gl_ctx.projection matrix)
-RF_API void rf_gfx_set_matrix_modelview(rf_mat view); // Set a custom rf__ctx->gl_ctx.modelview matrix (replaces internal rf__ctx->gl_ctx.modelview matrix)
+rf_public rf_mat rf_gfx_get_matrix_projection(); // Return internal rf__ctx->gl_ctx.projection matrix
+rf_public rf_mat rf_gfx_get_matrix_modelview(); // Return internal rf__ctx->gl_ctx.modelview matrix
+rf_public void rf_gfx_set_matrix_projection(rf_mat proj); // Set a custom projection matrix (replaces internal rf__ctx->gl_ctx.projection matrix)
+rf_public void rf_gfx_set_matrix_modelview(rf_mat view); // Set a custom rf__ctx->gl_ctx.modelview matrix (replaces internal rf__ctx->gl_ctx.modelview matrix)
 
-RF_API void rf_gfx_blend_mode(rf_blend_mode mode); // Choose the blending mode (alpha, additive, multiplied)
-RF_API void rf_gfx_matrix_mode(rf_matrix_mode mode); // Choose the current matrix to be transformed
-RF_API void rf_gfx_push_matrix(); // Push the current matrix to rf_global_gl_stack
-RF_API void rf_gfx_pop_matrix(); // Pop lattest inserted matrix from rf_global_gl_stack
-RF_API void rf_gfx_load_identity(); // Reset current matrix to identity matrix
-RF_API void rf_gfx_translatef(float x, float y, float z); // Multiply the current matrix by a translation matrix
-RF_API void rf_gfx_rotatef(float angleDeg, float x, float y, float z); // Multiply the current matrix by a rotation matrix
-RF_API void rf_gfx_scalef(float x, float y, float z); // Multiply the current matrix by a scaling matrix
-RF_API void rf_gfx_mult_matrixf(float* matf); // Multiply the current matrix by another matrix
-RF_API void rf_gfx_frustum(double left, double right, double bottom, double top, double znear, double zfar);
-RF_API void rf_gfx_ortho(double left, double right, double bottom, double top, double znear, double zfar);
-RF_API void rf_gfx_viewport(int x, int y, int width, int height); // Set the viewport area
+rf_public void rf_gfx_blend_mode(rf_blend_mode mode); // Choose the blending mode (alpha, additive, multiplied)
+rf_public void rf_gfx_matrix_mode(rf_matrix_mode mode); // Choose the current matrix to be transformed
+rf_public void rf_gfx_push_matrix(); // Push the current matrix to rf_global_gl_stack
+rf_public void rf_gfx_pop_matrix(); // Pop lattest inserted matrix from rf_global_gl_stack
+rf_public void rf_gfx_load_identity(); // Reset current matrix to identity matrix
+rf_public void rf_gfx_translatef(float x, float y, float z); // Multiply the current matrix by a translation matrix
+rf_public void rf_gfx_rotatef(float angleDeg, float x, float y, float z); // Multiply the current matrix by a rotation matrix
+rf_public void rf_gfx_scalef(float x, float y, float z); // Multiply the current matrix by a scaling matrix
+rf_public void rf_gfx_mult_matrixf(float* matf); // Multiply the current matrix by another matrix
+rf_public void rf_gfx_frustum(double left, double right, double bottom, double top, double znear, double zfar);
+rf_public void rf_gfx_ortho(double left, double right, double bottom, double top, double znear, double zfar);
+rf_public void rf_gfx_viewport(int x, int y, int width, int height); // Set the viewport area
 
 // Functions Declaration - Vertex level operations
-RF_API void rf_gfx_begin(rf_drawing_mode mode); // Initialize drawing mode (how to organize vertex)
-RF_API void rf_gfx_end(); // Finish vertex providing
-RF_API void rf_gfx_vertex2i(int x, int y); // Define one vertex (position) - 2 int
-RF_API void rf_gfx_vertex2f(float x, float y); // Define one vertex (position) - 2 float
-RF_API void rf_gfx_vertex3f(float x, float y, float z); // Define one vertex (position) - 3 float
-RF_API void rf_gfx_tex_coord2f(float x, float y); // Define one vertex (texture coordinate) - 2 float
-RF_API void rf_gfx_normal3f(float x, float y, float z); // Define one vertex (normal) - 3 float
-RF_API void rf_gfx_color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a); // Define one vertex (color) - 4 unsigned char
-RF_API void rf_gfx_color3f(float x, float y, float z); // Define one vertex (color) - 3 float
-RF_API void rf_gfx_color4f(float x, float y, float z, float w); // Define one vertex (color) - 4 float
+rf_public void rf_gfx_begin(rf_drawing_mode mode); // Initialize drawing mode (how to organize vertex)
+rf_public void rf_gfx_end(); // Finish vertex providing
+rf_public void rf_gfx_vertex2i(int x, int y); // Define one vertex (position) - 2 int
+rf_public void rf_gfx_vertex2f(float x, float y); // Define one vertex (position) - 2 float
+rf_public void rf_gfx_vertex3f(float x, float y, float z); // Define one vertex (position) - 3 float
+rf_public void rf_gfx_tex_coord2f(float x, float y); // Define one vertex (texture coordinate) - 2 float
+rf_public void rf_gfx_normal3f(float x, float y, float z); // Define one vertex (normal) - 3 float
+rf_public void rf_gfx_color4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a); // Define one vertex (color) - 4 unsigned char
+rf_public void rf_gfx_color3f(float x, float y, float z); // Define one vertex (color) - 3 float
+rf_public void rf_gfx_color4f(float x, float y, float z, float w); // Define one vertex (color) - 4 float
 
-RF_API void rf_gfx_enable_texture(unsigned int id); // Enable texture usage
-RF_API void rf_gfx_disable_texture(); // Disable texture usage
-RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode); // Set texture parameters (wrap mode/filter mode)
-RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode); // Set filter for texture
-RF_API void rf_gfx_enable_render_texture(unsigned int id); // Enable render texture (fbo)
-RF_API void rf_gfx_disable_render_texture(void); // Disable render texture (fbo), return to default framebuffer
-RF_API void rf_gfx_enable_depth_test(void); // Enable depth test
-RF_API void rf_gfx_disable_depth_test(void); // Disable depth test
-RF_API void rf_gfx_enable_backface_culling(void); // Enable backface culling
-RF_API void rf_gfx_disable_backface_culling(void); // Disable backface culling
-RF_API void rf_gfx_enable_scissor_test(void); // Enable scissor test
-RF_API void rf_gfx_disable_scissor_test(void); // Disable scissor test
-RF_API void rf_gfx_scissor(int x, int y, int width, int height); // Scissor test
-RF_API void rf_gfx_enable_wire_mode(void); // Enable wire mode
-RF_API void rf_gfx_disable_wire_mode(void); // Disable wire mode
-RF_API void rf_gfx_delete_textures(unsigned int id); // Delete OpenGL texture from GPU
-RF_API void rf_gfx_delete_render_textures(rf_render_texture2d target); // Delete render textures (fbo) from GPU
-RF_API void rf_gfx_delete_shader(unsigned int id); // Delete OpenGL shader program from GPU
-RF_API void rf_gfx_delete_vertex_arrays(unsigned int id); // Unload vertex data (VAO) from GPU memory
-RF_API void rf_gfx_delete_buffers(unsigned int id); // Unload vertex data (VBO) from GPU memory
-RF_API void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a); // Clear color buffer with color
-RF_API void rf_gfx_clear_screen_buffers(void); // Clear used screen buffers (color and depth)
-RF_API void rf_gfx_update_buffer(int buffer_id, void* data, int data_size); // Update GPU buffer with new data
-RF_API unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, rf_bool dynamic); // Load a new attributes buffer
-RF_API void rf_gfx_init_vertex_buffer(struct rf_vertex_buffer* vertex_buffer);
+rf_public void rf_gfx_enable_texture(unsigned int id); // Enable texture usage
+rf_public void rf_gfx_disable_texture(); // Disable texture usage
+rf_public void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode); // Set texture parameters (wrap mode/filter mode)
+rf_public void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode); // Set filter for texture
+rf_public void rf_gfx_enable_render_texture(unsigned int id); // Enable render texture (fbo)
+rf_public void rf_gfx_disable_render_texture(void); // Disable render texture (fbo), return to default framebuffer
+rf_public void rf_gfx_enable_depth_test(void); // Enable depth test
+rf_public void rf_gfx_disable_depth_test(void); // Disable depth test
+rf_public void rf_gfx_enable_backface_culling(void); // Enable backface culling
+rf_public void rf_gfx_disable_backface_culling(void); // Disable backface culling
+rf_public void rf_gfx_enable_scissor_test(void); // Enable scissor test
+rf_public void rf_gfx_disable_scissor_test(void); // Disable scissor test
+rf_public void rf_gfx_scissor(int x, int y, int width, int height); // Scissor test
+rf_public void rf_gfx_enable_wire_mode(void); // Enable wire mode
+rf_public void rf_gfx_disable_wire_mode(void); // Disable wire mode
+rf_public void rf_gfx_delete_textures(unsigned int id); // Delete OpenGL texture from GPU
+rf_public void rf_gfx_delete_render_textures(rf_render_texture2d target); // Delete render textures (fbo) from GPU
+rf_public void rf_gfx_delete_shader(unsigned int id); // Delete OpenGL shader program from GPU
+rf_public void rf_gfx_delete_vertex_arrays(unsigned int id); // Unload vertex data (VAO) from GPU memory
+rf_public void rf_gfx_delete_buffers(unsigned int id); // Unload vertex data (VBO) from GPU memory
+rf_public void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a); // Clear color buffer with color
+rf_public void rf_gfx_clear_screen_buffers(void); // Clear used screen buffers (color and depth)
+rf_public void rf_gfx_update_buffer(int buffer_id, void* data, int data_size); // Update GPU buffer with new data
+rf_public unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, rf_bool dynamic); // Load a new attributes buffer
+rf_public void rf_gfx_init_vertex_buffer(struct rf_vertex_buffer* vertex_buffer);
 
-RF_API void rf_gfx_close(); // De-inititialize rf gfx (buffers, shaders, textures)
-RF_API void rf_gfx_draw(); // Update and draw default internal buffers
+rf_public void rf_gfx_close(); // De-inititialize rf gfx (buffers, shaders, textures)
+rf_public void rf_gfx_draw(); // Update and draw default internal buffers
 
-RF_API rf_bool rf_gfx_check_buffer_limit(int v_count); // Check internal buffer overflow for a given number of vertex
-RF_API void rf_gfx_set_debug_marker(const char* text); // Set debug marker for analysis
+rf_public rf_bool rf_gfx_check_buffer_limit(int v_count); // Check internal buffer overflow for a given number of vertex
+rf_public void rf_gfx_set_debug_marker(const char* text); // Set debug marker for analysis
 
 // Textures data management
-RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count); // Load texture in GPU
-RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, rf_bool use_render_buffer); // Load depth texture/renderbuffer (to be attached to fbo)
-RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format); // Load texture cubemap
-RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* pixels, int pixels_size); // Update GPU texture with new data
-RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format); // Get OpenGL internal formats
-RF_API void rf_gfx_unload_texture(unsigned int id); // Unload texture from GPU memory
+rf_public unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count); // Load texture in GPU
+rf_public unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, rf_bool use_render_buffer); // Load depth texture/renderbuffer (to be attached to fbo)
+rf_public unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format); // Load texture cubemap
+rf_public void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* pixels, int pixels_size); // Update GPU texture with new data
+rf_public rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format); // Get OpenGL internal formats
+rf_public void rf_gfx_unload_texture(unsigned int id); // Unload texture from GPU memory
 
-RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture); // Generate mipmap data for selected texture
-RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void* dst, int dst_size);
-RF_API rf_image rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator);
-RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height); // Read screen pixel data (color buffer)
+rf_public void rf_gfx_generate_mipmaps(rf_texture2d* texture); // Generate mipmap data for selected texture
+rf_public rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void* dst, int dst_size);
+rf_public rf_image rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator);
+rf_public void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height); // Read screen pixel data (color buffer)
 
 // Render texture management (fbo)
-RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, rf_bool use_depth_texture); // Load a render texture (with color and depth attachments)
-RF_API void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned int id, int attach_type); // Attach texture/renderbuffer to an fbo
-RF_API rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target); // Verify render texture is complete
+rf_public rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, rf_bool use_depth_texture); // Load a render texture (with color and depth attachments)
+rf_public void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned int id, int attach_type); // Attach texture/renderbuffer to an fbo
+rf_public rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target); // Verify render texture is complete
 
 // Vertex data management
-RF_API void rf_gfx_load_mesh(struct rf_mesh* mesh, rf_bool dynamic); // Upload vertex data into GPU and provided VAO/VBO ids
-RF_API void rf_gfx_update_mesh(struct rf_mesh mesh, int buffer, int num); // Update vertex or index data on GPU (upload new data to one buffer)
-RF_API void rf_gfx_update_mesh_at(struct rf_mesh mesh, int buffer, int num, int index); // Update vertex or index data on GPU, at index
-RF_API void rf_gfx_draw_mesh(struct rf_mesh mesh, struct rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
-RF_API void rf_gfx_unload_mesh(struct rf_mesh mesh); // Unload mesh data from CPU and GPU
+rf_public void rf_gfx_load_mesh(struct rf_mesh* mesh, rf_bool dynamic); // Upload vertex data into GPU and provided VAO/VBO ids
+rf_public void rf_gfx_update_mesh(struct rf_mesh mesh, int buffer, int num); // Update vertex or index data on GPU (upload new data to one buffer)
+rf_public void rf_gfx_update_mesh_at(struct rf_mesh mesh, int buffer, int num, int index); // Update vertex or index data on GPU, at index
+rf_public void rf_gfx_draw_mesh(struct rf_mesh mesh, struct rf_material material, rf_mat transform); // Draw a 3d mesh with material and transform
+rf_public void rf_gfx_unload_mesh(struct rf_mesh mesh); // Unload mesh data from CPU and GPU
 #pragma endregion
 
 #pragma region gfx backends
@@ -369,12 +369,12 @@ typedef struct rf_default_render_batch
     rf_default_vertex_buffer vertex_buffers_memory [RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT];
 } rf_default_render_batch;
 
-RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count);
-RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator);
-RF_API rf_render_batch rf_create_default_render_batch(rf_allocator allocator);
+rf_public rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count);
+rf_public rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator);
+rf_public rf_render_batch rf_create_default_render_batch(rf_allocator allocator);
 
-RF_API void rf_set_active_render_batch(rf_render_batch* batch);
-RF_API void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator);
+rf_public void rf_set_active_render_batch(rf_render_batch* batch);
+rf_public void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator);
 #pragma endregion
 
 #endif // RAYFORK_RAYFORK_LOW_LEVEL_RENDERER_H

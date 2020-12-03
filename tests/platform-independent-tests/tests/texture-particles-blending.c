@@ -34,7 +34,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
-    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
     // Initialize particles
@@ -48,7 +48,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
         mouse_tail[i].active   = 0;
     }
 
-    smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
+    smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", rf_default_allocator, rf_default_io);
 }
 
 extern void game_update(const platform_input_state* input)
@@ -91,7 +91,7 @@ extern void game_update(const platform_input_state* input)
     // Draw
     rf_begin();
 
-        rf_clear(RF_DARKGRAY);
+        rf_clear(rf_dark_gray);
         rf_begin_blend_mode(blending);
 
         // Draw active particles
@@ -105,10 +105,10 @@ extern void game_update(const platform_input_state* input)
 
         rf_end_blend_mode();
 
-        rf_draw_text("PRESS SPACE to CHANGE BLENDING MODE", 180, 20, 20, RF_BLACK);
+        rf_draw_text("PRESS SPACE to CHANGE BLENDING MODE", 180, 20, 20, rf_black);
 
-        if (blending == RF_BLEND_ALPHA) rf_draw_text("ALPHA BLENDING", 290, window.height - 40, 20, RF_BLACK);
-        else rf_draw_text("ADDITIVE BLENDING", 280, window.height - 40, 20, RF_RAYWHITE);
+        if (blending == RF_BLEND_ALPHA) rf_draw_text("ALPHA BLENDING", 290, window.height - 40, 20, rf_black);
+        else rf_draw_text("ADDITIVE BLENDING", 280, window.height - 40, 20, rf_raywhite);
 
     rf_end();
 }

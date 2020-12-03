@@ -27,13 +27,13 @@ typedef struct rf_camera3d
     float          fovy;     // Camera field-of-view apperture in Y (degrees) in perspective, used as near plane width in orthographic
 } rf_camera3d;
 
-RF_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
-RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
-RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera); // Get transform matrix for camera
-RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
-RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
-RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
-RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
+rf_public rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view); // Get world coordinates from screen coordinates
+rf_public rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera); // Returns a ray trace from mouse position
+rf_public rf_mat rf_get_camera_matrix(rf_camera3d camera); // Get transform matrix for camera
+rf_public rf_mat rf_get_camera_matrix2d(rf_camera2d camera); // Returns camera 2d transform matrix
+rf_public rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera); // Returns the screen space position from a 3d world space position
+rf_public rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera); // Returns the screen space position for a 2d camera world space position
+rf_public rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera); // Returns the world space position for a 2d camera screen space position
 
 #pragma region builtin camera
 
@@ -67,8 +67,8 @@ typedef struct rf_input_state_for_update_camera
     rf_bool     direction_keys[6];                 // 'W', 'S', 'D', 'A', 'E', 'Q'
 } rf_input_state_for_update_camera;
 
-RF_API void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, rf_builtin_camera3d_mode mode);
-RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state);
+rf_public void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, rf_builtin_camera3d_mode mode);
+rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state);
 
 #pragma endregion
 

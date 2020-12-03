@@ -5,36 +5,36 @@
 
 #pragma region par shapes
 #define PAR_SHAPES_IMPLEMENTATION
-#define PAR_MALLOC(T, N)               ((T*)RF_ALLOC(rf__global_allocator_for_dependencies, N * sizeof(T)))
+#define PAR_MALLOC(T, N)               ((T*)rf_alloc(rf__global_allocator_for_dependencies, N * sizeof(T)))
 #define PAR_CALLOC(T, N)               ((T*) rf_calloc_wrapper(rf__global_allocator_for_dependencies, N, sizeof(T)))
-#define PAR_FREE(BUF)                  (RF_FREE(rf__global_allocator_for_dependencies, BUF))
+#define PAR_FREE(BUF)                  (rf_free(rf__global_allocator_for_dependencies, BUF))
 #define PAR_REALLOC(T, BUF, N, OLD_SZ) ((T*) rf_default_realloc(rf__global_allocator_for_dependencies, BUF, sizeof(T) * (N), (OLD_SZ)))
-#define PARDEF                         RF_INTERNAL
+#define PARDEF                         rf_internal
 #include "par_shapes.h"
 #pragma endregion
 
 #pragma region tinyobj loader
-RF_INTERNAL RF_THREAD_LOCAL rf_io_callbacks rf__tinyobj_io;
+rf_internal rf_thread_local rf_io_callbacks rf__tinyobj_io;
 #define RF_SET_TINYOBJ_ALLOCATOR(allocator) rf__tinyobj_allocator = allocator
-#define RF_SET_TINYOBJ_IO_CALLBACKS(io) rf__tinyobj_io = io;
+#define rf_set_tinyobj_io_callbacks(io) rf__tinyobj_io = io;
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
-#define TINYOBJ_MALLOC(size)             (RF_ALLOC(rf__global_allocator_for_dependencies, (size)))
+#define TINYOBJ_MALLOC(size)             (rf_alloc(rf__global_allocator_for_dependencies, (size)))
 #define TINYOBJ_REALLOC(p, oldsz, newsz) (rf_default_realloc(rf__global_allocator_for_dependencies, (p), (oldsz), (newsz)))
 #define TINYOBJ_CALLOC(amount, size)     (rf_calloc_wrapper(rf__global_allocator_for_dependencies, (amount), (size)))
-#define TINYOBJ_FREE(p)                  (RF_FREE(rf__global_allocator_for_dependencies, (p)))
-#define TINYOBJDEF                       RF_INTERNAL
+#define TINYOBJ_FREE(p)                  (rf_free(rf__global_allocator_for_dependencies, (p)))
+#define TINYOBJDEF                       rf_internal
 #include "tinyobjloader.h"
 
-RF_INTERNAL void rf_tinyobj_file_reader_callback(const char* filename, char** buf, size_t* len)
+rf_internal void rf_tinyobj_file_reader_callback(const char* filename, char** buf, size_t* len)
 {
     if (!filename || !buf || !len) return;
 
-    *len = RF_FILE_SIZE(rf__tinyobj_io, filename);
+    *len = rf_file_size(rf__tinyobj_io, filename);
 
     if (*len)
     {
-        if (!RF_READ_FILE(rf__tinyobj_io, filename, *buf, *len))
+        if (!rf_read_file(rf__tinyobj_io, filename, *buf, *len))
         {
             // On error we set the size of output buffer to 0
             *len = 0;
@@ -45,11 +45,11 @@ RF_INTERNAL void rf_tinyobj_file_reader_callback(const char* filename, char** bu
 
 #pragma region cgltf
 #define CGLTF_IMPLEMENTATION
-#define CGLTF_MALLOC(size) RF_ALLOC(rf__global_allocator_for_dependencies, size)
-#define CGLTF_FREE(ptr)    RF_FREE(rf__global_allocator_for_dependencies, ptr)
+#define CGLTF_MALLOC(size) rf_alloc(rf__global_allocator_for_dependencies, size)
+#define CGLTF_FREE(ptr)    rf_free(rf__global_allocator_for_dependencies, ptr)
 #include "cgltf.h"
 
-RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data)
+rf_internal cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, const char* path, cgltf_size* size, void** data)
 {
     ((void) memory_options);
     ((void) file_options);
@@ -57,7 +57,7 @@ RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* mem
     cgltf_result result = cgltf_result_file_not_found;
     rf_io_callbacks* io = (rf_io_callbacks*) file_options->user_data;
 
-    int file_size = RF_FILE_SIZE(*io, path);
+    int file_size = rf_file_size(*io, path);
 
     if (file_size > 0)
     {
@@ -65,7 +65,7 @@ RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* mem
 
         if (dst == NULL)
         {
-            if (RF_READ_FILE(*io, path, data, file_size) && data && size)
+            if (rf_read_file(*io, path, data, file_size) && data && size)
             {
                 *data = dst;
                 *size = file_size;
@@ -86,7 +86,7 @@ RF_INTERNAL cgltf_result rf_cgltf_io_read(const struct cgltf_memory_options* mem
     return result;
 }
 
-RF_INTERNAL void rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, void* data)
+rf_internal void rf_cgltf_io_release(const struct cgltf_memory_options* memory_options, const struct cgltf_file_options* file_options, void* data)
 {
     ((void) memory_options);
     ((void) file_options);
@@ -97,17 +97,17 @@ RF_INTERNAL void rf_cgltf_io_release(const struct cgltf_memory_options* memory_o
 
 #pragma endregion
 
-RF_INTERNAL rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator allocator, rf_allocator temp_allocator)
+rf_internal rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Make sure model transform is set to identity matrix!
     model.transform = rf_mat_identity();
 
     if (model.mesh_count == 0)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "No meshes can be loaded, default to cube mesh.");
+        rf_log(rf_log_type_warning, "No meshes can be loaded, default to cube mesh.");
 
         model.mesh_count = 1;
-        model.meshes = (rf_mesh *) RF_ALLOC(allocator, sizeof(rf_mesh));
+        model.meshes = (rf_mesh *) rf_alloc(allocator, sizeof(rf_mesh));
         memset(model.meshes, 0, sizeof(rf_mesh));
         model.meshes[0] = rf_gen_mesh_cube(1.0f, 1.0f, 1.0f, allocator, temp_allocator);
     }
@@ -120,16 +120,16 @@ RF_INTERNAL rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_a
 
     if (model.material_count == 0)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "No materials can be loaded, default to white material.");
+        rf_log(rf_log_type_warning, "No materials can be loaded, default to white material.");
 
         model.material_count = 1;
-        model.materials = (rf_material *) RF_ALLOC(allocator, sizeof(rf_material));
+        model.materials = (rf_material *) rf_alloc(allocator, sizeof(rf_material));
         memset(model.materials, 0, sizeof(rf_material));
         model.materials[0] = rf_load_default_material(allocator);
 
         if (model.mesh_material == NULL)
         {
-            model.mesh_material = (int *) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+            model.mesh_material = (int *) rf_alloc(allocator, model.mesh_count * sizeof(int));
             memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
         }
     }
@@ -138,7 +138,7 @@ RF_INTERNAL rf_model rf_load_meshes_and_materials_for_model(rf_model model, rf_a
 }
 
 // Compute mesh bounding box limits. Note: min_vertex and max_vertex should be transformed by model transform matrix
-RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
+rf_public rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
 {
     // Get min and max vertex to construct bounds (AABB)
     rf_vec3 min_vertex = {0};
@@ -169,13 +169,13 @@ RF_API rf_bounding_box rf_mesh_bounding_box(rf_mesh mesh)
 // Compute mesh tangents
 // NOTE: To calculate mesh tangents and binormals we need mesh vertex positions and texture coordinates
 // Implementation base don: https://answers.unity.com/questions/7789/calculating-tangents-vector4.html
-RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_allocator temp_allocator)
 {
-    if (mesh->tangents == NULL) mesh->tangents = (float*) RF_ALLOC(allocator, mesh->vertex_count * 4 * sizeof(float));
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_mesh tangents already exist");
+    if (mesh->tangents == NULL) mesh->tangents = (float*) rf_alloc(allocator, mesh->vertex_count * 4 * sizeof(float));
+    else rf_log(rf_log_type_warning, "rf_mesh tangents already exist");
 
-    rf_vec3* tan1 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
-    rf_vec3* tan2 = (rf_vec3*) RF_ALLOC(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
+    rf_vec3* tan1 = (rf_vec3*) rf_alloc(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
+    rf_vec3* tan2 = (rf_vec3*) rf_alloc(temp_allocator, mesh->vertex_count * sizeof(rf_vec3));
 
     for (rf_int i = 0; i < mesh->vertex_count; i += 3)
     {
@@ -230,17 +230,17 @@ RF_API void rf_mesh_compute_tangents(rf_mesh* mesh, rf_allocator allocator, rf_a
         mesh->tangents[i * 4 + 3] = (rf_vec3_dot_product(rf_vec3_cross_product(normal, tangent), tan2[i]) < 0.0f) ? -1.0f : 1.0f;
     }
 
-    RF_FREE(temp_allocator, tan1);
-    RF_FREE(temp_allocator, tan2);
+    rf_free(temp_allocator, tan1);
+    rf_free(temp_allocator, tan2);
 
     // Load a new tangent attributes buffer
     mesh->vbo_id[RF_LOC_VERTEX_TANGENT] = rf_gfx_load_attrib_buffer(mesh->vao_id, RF_LOC_VERTEX_TANGENT, mesh->tangents, mesh->vertex_count * 4 * sizeof(float), false);
 
-    RF_LOG(RF_LOG_TYPE_INFO, "Tangents computed for mesh");
+    rf_log(rf_log_type_info, "Tangents computed for mesh");
 }
 
 // Compute mesh binormals (aka bitangent)
-RF_API void rf_mesh_compute_binormals(rf_mesh* mesh)
+rf_public void rf_mesh_compute_binormals(rf_mesh* mesh)
 {
     for (rf_int i = 0; i < mesh->vertex_count; i++)
     {
@@ -254,26 +254,26 @@ RF_API void rf_mesh_compute_binormals(rf_mesh* mesh)
 }
 
 // Unload mesh from memory (RAM and/or VRAM)
-RF_API void rf_unload_mesh(rf_mesh mesh, rf_allocator allocator)
+rf_public void rf_unload_mesh(rf_mesh mesh, rf_allocator allocator)
 {
     rf_gfx_unload_mesh(mesh);
 
-    RF_FREE(allocator, mesh.vertices);
-    RF_FREE(allocator, mesh.texcoords);
-    RF_FREE(allocator, mesh.normals);
-    RF_FREE(allocator, mesh.colors);
-    RF_FREE(allocator, mesh.tangents);
-    RF_FREE(allocator, mesh.texcoords2);
-    RF_FREE(allocator, mesh.indices);
+    rf_free(allocator, mesh.vertices);
+    rf_free(allocator, mesh.texcoords);
+    rf_free(allocator, mesh.normals);
+    rf_free(allocator, mesh.colors);
+    rf_free(allocator, mesh.tangents);
+    rf_free(allocator, mesh.texcoords2);
+    rf_free(allocator, mesh.indices);
 
-    RF_FREE(allocator, mesh.anim_vertices);
-    RF_FREE(allocator, mesh.anim_normals);
-    RF_FREE(allocator, mesh.bone_weights);
-    RF_FREE(allocator, mesh.bone_ids);
-    RF_FREE(allocator, mesh.vbo_id);
+    rf_free(allocator, mesh.anim_vertices);
+    rf_free(allocator, mesh.anim_normals);
+    rf_free(allocator, mesh.bone_weights);
+    rf_free(allocator, mesh.bone_ids);
+    rf_free(allocator, mesh.vbo_id);
 }
 
-RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_model model = {0};
 
@@ -298,10 +298,10 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 
     if (model.mesh_count == 0)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "No meshes can be loaded, default to cube mesh. Filename: %s", filename);
+        rf_log(rf_log_type_warning, "No meshes can be loaded, default to cube mesh. Filename: %s", filename);
 
         model.mesh_count = 1;
-        model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+        model.meshes = (rf_mesh*) rf_alloc(allocator, model.mesh_count * sizeof(rf_mesh));
         memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
         model.meshes[0] = rf_gen_mesh_cube(1.0f, 1.0f, 1.0f, allocator, temp_allocator);
     }
@@ -316,16 +316,16 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 
     if (model.material_count == 0)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "No materials can be loaded, default to white material. Filename: %s", filename);
+        rf_log(rf_log_type_warning, "No materials can be loaded, default to white material. Filename: %s", filename);
 
         model.material_count = 1;
-        model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+        model.materials = (rf_material*) rf_alloc(allocator, model.material_count * sizeof(rf_material));
         memset(model.materials, 0, model.material_count * sizeof(rf_material));
         model.materials[0] = rf_load_default_material(allocator);
 
         if (model.mesh_material == NULL)
         {
-            model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+            model.mesh_material = (int*) rf_alloc(allocator, model.mesh_count * sizeof(int));
         }
     }
 
@@ -333,7 +333,7 @@ RF_API rf_model rf_load_model(const char* filename, rf_allocator allocator, rf_a
 }
 
 // Load OBJ mesh data. Note: This calls into a library to do io, so we need to ask the user for IO callbacks
-RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_model rf_load_model_from_obj(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_model model  = {0};
     allocator = allocator;
@@ -345,19 +345,19 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
     tinyobj_material_t* materials      = NULL;
     size_t              material_count = 0;
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator); // Set to NULL at the end of the function
-    RF_SET_TINYOBJ_IO_CALLBACKS(io);
+    rf_set_global_dependencies_allocator(temp_allocator); // Set to NULL at the end of the function
+    rf_set_tinyobj_io_callbacks(io);
     {
         unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
         int ret            = tinyobj_parse_obj(&attrib, &meshes, (size_t*) &mesh_count, &materials, &material_count, filename, rf_tinyobj_file_reader_callback, flags);
 
         if (ret != TINYOBJ_SUCCESS)
         {
-            RF_LOG(RF_LOG_TYPE_WARNING, "Model data could not be loaded. Filename %s", filename);
+            rf_log(rf_log_type_warning, "Model data could not be loaded. Filename %s", filename);
         }
         else
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "Model data loaded successfully: %i meshes / %i materials, filename: %s", mesh_count, material_count, filename);
+            rf_log(rf_log_type_info, "Model data loaded successfully: %i meshes / %i materials, filename: %s", mesh_count, material_count, filename);
         }
 
         // Init model meshes array
@@ -365,7 +365,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
             // TODO: Support multiple meshes... in the meantime, only one mesh is returned
             //model.mesh_count = mesh_count;
             model.mesh_count = 1;
-            model.meshes     = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+            model.meshes     = (rf_mesh*) rf_alloc(allocator, model.mesh_count * sizeof(rf_mesh));
             memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
         }
 
@@ -373,11 +373,11 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         if (material_count > 0)
         {
             model.material_count = material_count;
-            model.materials      = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+            model.materials      = (rf_material*) rf_alloc(allocator, model.material_count * sizeof(rf_material));
             memset(model.materials, 0, model.material_count * sizeof(rf_material));
         }
 
-        model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+        model.mesh_material = (int*) rf_alloc(allocator, model.mesh_count * sizeof(int));
         memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
 
         // Init model meshes
@@ -388,10 +388,10 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
                 .vertex_count   = attrib.num_faces * 3,
                 .triangle_count = attrib.num_faces,
 
-                .vertices  = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
-                .texcoords = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 2 * sizeof(float)),
-                .normals   = (float*)        RF_ALLOC(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
-                .vbo_id    = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO            * sizeof(unsigned int)),
+                .vertices  = (float*)        rf_alloc(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
+                .texcoords = (float*)        rf_alloc(allocator, (attrib.num_faces * 3) * 2 * sizeof(float)),
+                .normals   = (float*)        rf_alloc(allocator, (attrib.num_faces * 3) * 3 * sizeof(float)),
+                .vbo_id    = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int)),
             };
 
             memset(mesh.vertices,  0, mesh.vertex_count * 3 * sizeof(float));
@@ -494,7 +494,7 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
                 model.materials[m].maps[RF_MAP_NORMAL].texture = rf_load_texture_from_file(materials[m].bump_texname, temp_allocator, io); //char* bump_texname; // map_bump, bump
             }
 
-            model.materials[m].maps[RF_MAP_NORMAL].color = RF_WHITE;
+            model.materials[m].maps[RF_MAP_NORMAL].color = rf_white;
             model.materials[m].maps[RF_MAP_NORMAL].value = materials[m].shininess;
 
             model.materials[m].maps[RF_MAP_EMISSION].color = (rf_color)
@@ -515,17 +515,17 @@ RF_API rf_model rf_load_model_from_obj(const char* filename, rf_allocator alloca
         tinyobj_shapes_free(meshes, mesh_count);
         tinyobj_materials_free(materials, material_count);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
-    RF_SET_TINYOBJ_IO_CALLBACKS(RF_NULL_IO);
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
+    rf_set_tinyobj_io_callbacks((rf_io_callbacks){0});
 
     // NOTE: At this point we have all model data loaded
-    RF_LOG(RF_LOG_TYPE_INFO, "Model loaded successfully in RAM. Filename: %s", filename);
+    rf_log(rf_log_type_info, "Model loaded successfully in RAM. Filename: %s", filename);
 
     return rf_load_meshes_and_materials_for_model(model, allocator, temp_allocator);
 }
 
 // Load IQM mesh data
-RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_model rf_load_model_from_iqm(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     #pragma region constants
     #define RF_IQM_MAGIC "INTERQUAKEMODEL" // IQM file magic number
@@ -604,12 +604,12 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
     rf_model model = {0};
 
-    size_t data_size = RF_FILE_SIZE(io, filename);
-    unsigned char* data = (unsigned char*) RF_ALLOC(temp_allocator, data_size);
+    size_t data_size = rf_file_size(io, filename);
+    unsigned char* data = (unsigned char*) rf_alloc(temp_allocator, data_size);
 
-    if (RF_READ_FILE(io, filename, data, data_size))
+    if (rf_read_file(io, filename, data, data_size))
     {
-        RF_FREE(temp_allocator, data);
+        rf_free(temp_allocator, data);
     }
 
     rf_iqm_header iqm = *((rf_iqm_header*)data);
@@ -627,22 +627,22 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
     if (strncmp(iqm.magic, RF_IQM_MAGIC, sizeof(RF_IQM_MAGIC)))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] IQM file does not seem to be valid", filename);
+        rf_log(rf_log_type_warning, "[%s] IQM file does not seem to be valid", filename);
         return model;
     }
 
     if (iqm.version != RF_IQM_VERSION)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] IQM file version is not supported (%i).", filename, iqm.version);
+        rf_log(rf_log_type_warning, "[%s] IQM file version is not supported (%i).", filename, iqm.version);
         return model;
     }
 
     // Meshes data processing
-    imesh = (rf_iqm_mesh*) RF_ALLOC(temp_allocator, sizeof(rf_iqm_mesh) * iqm.num_meshes);
+    imesh = (rf_iqm_mesh*) rf_alloc(temp_allocator, sizeof(rf_iqm_mesh) * iqm.num_meshes);
     memcpy(imesh, data + iqm.ofs_meshes, sizeof(rf_iqm_mesh) * iqm.num_meshes);
 
     model.mesh_count = iqm.num_meshes;
-    model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+    model.meshes = (rf_mesh*) rf_alloc(allocator, model.mesh_count * sizeof(rf_mesh));
 
     char name[RF_MESH_NAME_LENGTH] = {0};
     for (rf_int i = 0; i < model.mesh_count; i++)
@@ -653,40 +653,40 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
             .vertex_count = imesh[i].num_vertexes
         };
 
-        model.meshes[i].vertices = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex positions
+        model.meshes[i].vertices = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex positions
         memset(model.meshes[i].vertices, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
 
-        model.meshes[i].normals = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex normals
+        model.meshes[i].normals = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 3 * sizeof(float)); // Default vertex normals
         memset(model.meshes[i].normals, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
 
-        model.meshes[i].texcoords = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 2 * sizeof(float)); // Default vertex texcoords
+        model.meshes[i].texcoords = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 2 * sizeof(float)); // Default vertex texcoords
         memset(model.meshes[i].texcoords, 0, model.meshes[i].vertex_count * 2 * sizeof(float));
 
-        model.meshes[i].bone_ids = (int*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
+        model.meshes[i].bone_ids = (int*) rf_alloc(allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
         memset(model.meshes[i].bone_ids, 0, model.meshes[i].vertex_count * 4 * sizeof(float));
 
-        model.meshes[i].bone_weights = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
+        model.meshes[i].bone_weights = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 4 * sizeof(float)); // Up-to 4 bones supported!
         memset(model.meshes[i].bone_weights, 0, model.meshes[i].vertex_count * 4 * sizeof(float));
 
         model.meshes[i].triangle_count = imesh[i].num_triangles;
 
-        model.meshes[i].indices = (unsigned short*) RF_ALLOC(allocator, model.meshes[i].triangle_count * 3 * sizeof(unsigned short));
+        model.meshes[i].indices = (unsigned short*) rf_alloc(allocator, model.meshes[i].triangle_count * 3 * sizeof(unsigned short));
         memset(model.meshes[i].indices, 0, model.meshes[i].triangle_count * 3 * sizeof(unsigned short));
 
         // Animated verted data, what we actually process for rendering
         // NOTE: Animated vertex should be re-uploaded to GPU (if not using GPU skinning)
-        model.meshes[i].anim_vertices = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
+        model.meshes[i].anim_vertices = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
         memset(model.meshes[i].anim_vertices, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
 
-        model.meshes[i].anim_normals = (float*) RF_ALLOC(allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
+        model.meshes[i].anim_normals = (float*) rf_alloc(allocator, model.meshes[i].vertex_count * 3 * sizeof(float));
         memset(model.meshes[i].anim_normals, 0, model.meshes[i].vertex_count * 3 * sizeof(float));
 
-        model.meshes[i].vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+        model.meshes[i].vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
         memset(model.meshes[i].vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
     }
 
     // Triangles data processing
-    tri = (rf_iqm_triangle*) RF_ALLOC(temp_allocator, iqm.num_triangles * sizeof(rf_iqm_triangle));
+    tri = (rf_iqm_triangle*) rf_alloc(temp_allocator, iqm.num_triangles * sizeof(rf_iqm_triangle));
     memcpy(tri, data + iqm.ofs_triangles, iqm.num_triangles * sizeof(rf_iqm_triangle));
 
     for (rf_int m = 0; m < model.mesh_count; m++)
@@ -704,7 +704,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     }
 
     // Vertex arrays data processing
-    va = (rf_iqm_vertex_array*) RF_ALLOC(temp_allocator, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
+    va = (rf_iqm_vertex_array*) rf_alloc(temp_allocator, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
     memcpy(va, data + iqm.ofs_vertexarrays, iqm.num_vertexarrays * sizeof(rf_iqm_vertex_array));
 
     for (rf_int i = 0; i < iqm.num_vertexarrays; i++)
@@ -713,7 +713,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
         {
             case RF_IQM_POSITION:
             {
-                vertex = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
+                vertex = (float*) rf_alloc(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
                 memcpy(vertex, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
 
                 for (rf_int m = 0; m < iqm.num_meshes; m++)
@@ -730,7 +730,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
             case RF_IQM_NORMAL:
             {
-                normal = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
+                normal = (float*) rf_alloc(temp_allocator, iqm.num_vertexes * 3 * sizeof(float));
                 memcpy(normal, data + va[i].offset, iqm.num_vertexes * 3 * sizeof(float));
 
                 for (rf_int m = 0; m < iqm.num_meshes; m++)
@@ -747,7 +747,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
             case RF_IQM_TEXCOORD:
             {
-                text = (float*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 2 * sizeof(float));
+                text = (float*) rf_alloc(temp_allocator, iqm.num_vertexes * 2 * sizeof(float));
                 memcpy(text, data + va[i].offset, iqm.num_vertexes * 2 * sizeof(float));
 
                 for (rf_int m = 0; m < iqm.num_meshes; m++)
@@ -763,7 +763,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
             case RF_IQM_BLENDINDEXES:
             {
-                blendi = (char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(char));
+                blendi = (char*) rf_alloc(temp_allocator, iqm.num_vertexes * 4 * sizeof(char));
                 memcpy(blendi, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(char));
 
                 for (rf_int m = 0; m < iqm.num_meshes; m++)
@@ -779,7 +779,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
 
             case RF_IQM_BLENDWEIGHTS:
             {
-                blendw = (unsigned char*) RF_ALLOC(temp_allocator, iqm.num_vertexes * 4 * sizeof(unsigned char));
+                blendw = (unsigned char*) rf_alloc(temp_allocator, iqm.num_vertexes * 4 * sizeof(unsigned char));
                 memcpy(blendw, data + va[i].offset, iqm.num_vertexes * 4 * sizeof(unsigned char));
 
                 for (rf_int m = 0; m < iqm.num_meshes; m++)
@@ -796,12 +796,12 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
     }
 
     // Bones (joints) data processing
-    ijoint = (rf_iqm_joint*) RF_ALLOC(temp_allocator, iqm.num_joints * sizeof(rf_iqm_joint));
+    ijoint = (rf_iqm_joint*) rf_alloc(temp_allocator, iqm.num_joints * sizeof(rf_iqm_joint));
     memcpy(ijoint, data + iqm.ofs_joints, iqm.num_joints * sizeof(rf_iqm_joint));
 
     model.bone_count = iqm.num_joints;
-    model.bones      = (rf_bone_info*) RF_ALLOC(allocator, iqm.num_joints * sizeof(rf_bone_info));
-    model.bind_pose  = (rf_transform*) RF_ALLOC(allocator, iqm.num_joints * sizeof(rf_transform));
+    model.bones      = (rf_bone_info*) rf_alloc(allocator, iqm.num_joints * sizeof(rf_bone_info));
+    model.bind_pose  = (rf_transform*) rf_alloc(allocator, iqm.num_joints * sizeof(rf_transform));
 
     for (rf_int i = 0; i < iqm.num_joints; i++)
     {
@@ -836,15 +836,15 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
         }
     }
 
-    RF_FREE(temp_allocator, imesh);
-    RF_FREE(temp_allocator, tri);
-    RF_FREE(temp_allocator, va);
-    RF_FREE(temp_allocator, vertex);
-    RF_FREE(temp_allocator, normal);
-    RF_FREE(temp_allocator, text);
-    RF_FREE(temp_allocator, blendi);
-    RF_FREE(temp_allocator, blendw);
-    RF_FREE(temp_allocator, ijoint);
+    rf_free(temp_allocator, imesh);
+    rf_free(temp_allocator, tri);
+    rf_free(temp_allocator, va);
+    rf_free(temp_allocator, vertex);
+    rf_free(temp_allocator, normal);
+    rf_free(temp_allocator, text);
+    rf_free(temp_allocator, blendi);
+    rf_free(temp_allocator, blendw);
+    rf_free(temp_allocator, ijoint);
 
     return rf_load_meshes_and_materials_for_model(model, allocator, temp_allocator);
 }
@@ -866,7 +866,7 @@ RF_API rf_model rf_load_model_from_iqm(const char* filename, rf_allocator alloca
       - Only supports float for texture coordinates (no unsigned char/unsigned short)
 *************************************************************************************/
 // Load texture from cgltf_image
-RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, const char* tex_path, rf_color tint, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_internal rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, const char* tex_path, rf_color tint, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_texture2d texture = {0};
 
@@ -888,7 +888,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
 
             if (image->uri[i] == 0)
             {
-                RF_LOG(RF_LOG_TYPE_WARNING, "CGLTF rf_image: Invalid data URI");
+                rf_log(rf_log_type_warning, "CGLTF rf_image: Invalid data URI");
             }
             else
             {
@@ -902,7 +902,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
                 texture = rf_load_texture_from_image(rimage);
 
                 rf_unload_image(rimage, temp_allocator);
-                RF_FREE(temp_allocator, data.buffer);
+                rf_free(temp_allocator, data.buffer);
             }
         }
         else
@@ -921,7 +921,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
     }
     else if (image->buffer_view)
     {
-        unsigned char* data = (unsigned char*) RF_ALLOC(temp_allocator, image->buffer_view->size);
+        unsigned char* data = (unsigned char*) rf_alloc(temp_allocator, image->buffer_view->size);
         int n = image->buffer_view->offset;
         int stride = image->buffer_view->stride ? image->buffer_view->stride : 1;
 
@@ -939,7 +939,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
         texture = rf_load_texture_from_image(rimage);
 
         rf_unload_image(rimage, temp_allocator);
-        RF_FREE(temp_allocator, data);
+        rf_free(temp_allocator, data);
     }
     else
     {
@@ -947,7 +947,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
             .data = &tint,
             .width = 1,
             .height = 1,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = true
         });
     }
@@ -956,7 +956,7 @@ RF_INTERNAL rf_texture2d rf_load_texture_from_cgltf_image(cgltf_image* image, co
 }
 
 // Load model from files (meshes and materials)
-RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_model rf_load_model_from_gltf(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     #define rf_load_accessor(type, nbcomp, acc, dst)\
     { \
@@ -970,7 +970,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         } \
     }
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     rf_model model = {0};
 
     cgltf_options options = {
@@ -982,12 +982,12 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         }
     };
 
-    int data_size = RF_FILE_SIZE(io, filename);
-    void* data = RF_ALLOC(temp_allocator, data_size);
-    if (!RF_READ_FILE(io, filename, data, data_size))
+    int data_size = rf_file_size(io, filename);
+    void* data = rf_alloc(temp_allocator, data_size);
+    if (!rf_read_file(io, filename, data, data_size))
     {
-        RF_FREE(temp_allocator, data);
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+        rf_free(temp_allocator, data);
+        rf_set_global_dependencies_allocator(temp_allocator);
         return model;
     }
 
@@ -996,12 +996,12 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
     if (result == cgltf_result_success)
     {
-        RF_LOG(RF_LOG_TYPE_INFO, "[%s][%s] rf_model meshes/materials: %i/%i", filename, (cgltf_data->file_type == 2) ? "glb" : "gltf", cgltf_data->meshes_count, cgltf_data->materials_count);
+        rf_log(rf_log_type_info, "[%s][%s] rf_model meshes/materials: %i/%i", filename, (cgltf_data->file_type == 2) ? "glb" : "gltf", cgltf_data->meshes_count, cgltf_data->materials_count);
 
         // Read cgltf_data buffers
         result = cgltf_load_buffers(&options, cgltf_data, filename);
         if (result != cgltf_result_success) {
-            RF_LOG(RF_LOG_TYPE_INFO, "[%s][%s] Error loading mesh/material buffers", filename, (cgltf_data->file_type == 2) ? "glb" : "gltf");
+            rf_log(rf_log_type_info, "[%s][%s] Error loading mesh/material buffers", filename, (cgltf_data->file_type == 2) ? "glb" : "gltf");
         }
 
         int primitivesCount = 0;
@@ -1015,15 +1015,15 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
         allocator = allocator;
         model.mesh_count = primitivesCount;
         model.material_count = cgltf_data->materials_count + 1;
-        model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
-        model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
-        model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+        model.meshes = (rf_mesh*) rf_alloc(allocator, model.mesh_count * sizeof(rf_mesh));
+        model.materials = (rf_material*) rf_alloc(allocator, model.material_count * sizeof(rf_material));
+        model.mesh_material = (int*) rf_alloc(allocator, model.mesh_count * sizeof(int));
 
         memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
 
         for (rf_int i = 0; i < model.mesh_count; i++)
         {
-            model.meshes[i].vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+            model.meshes[i].vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
             memset(model.meshes[i].vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
         }
 
@@ -1058,7 +1058,7 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
                 // NOTE: Tint isn't need for other textures.. pass null or clear?
                 // Just set as white, multiplying by white has no effect
-                tint = RF_WHITE;
+                tint = rf_white;
 
                 if (cgltf_data->materials[i].pbr_metallic_roughness.metallic_roughness_texture.texture)
                 {
@@ -1093,14 +1093,14 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
                     {
                         cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].attributes[j].data;
                         model.meshes[primitiveIndex].vertex_count = acc->count;
-                        model.meshes[primitiveIndex].vertices = (float*) RF_ALLOC(allocator, sizeof(float)*model.meshes[primitiveIndex].vertex_count * 3);
+                        model.meshes[primitiveIndex].vertices = (float*) rf_alloc(allocator, sizeof(float) * model.meshes[primitiveIndex].vertex_count * 3);
 
                         rf_load_accessor(float, 3, acc, model.meshes[primitiveIndex].vertices)
                     }
                     else if (cgltf_data->meshes[i].primitives[p].attributes[j].type == cgltf_attribute_type_normal)
                     {
                         cgltf_accessor* acc = cgltf_data->meshes[i].primitives[p].attributes[j].data;
-                        model.meshes[primitiveIndex].normals = (float*) RF_ALLOC(allocator, sizeof(float)*acc->count * 3);
+                        model.meshes[primitiveIndex].normals = (float*) rf_alloc(allocator, sizeof(float) * acc->count * 3);
 
                         rf_load_accessor(float, 3, acc, model.meshes[primitiveIndex].normals)
                     }
@@ -1110,13 +1110,13 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 
                         if (acc->component_type == cgltf_component_type_r_32f)
                         {
-                            model.meshes[primitiveIndex].texcoords = (float*) RF_ALLOC(allocator, sizeof(float)*acc->count * 2);
+                            model.meshes[primitiveIndex].texcoords = (float*) rf_alloc(allocator, sizeof(float) * acc->count * 2);
                             rf_load_accessor(float, 2, acc, model.meshes[primitiveIndex].texcoords)
                         }
                         else
                         {
                             // TODO: Support normalized unsigned unsigned char/unsigned short texture coordinates
-                            RF_LOG(RF_LOG_TYPE_WARNING, "[%s] rf_texture coordinates must be float", filename);
+                            rf_log(rf_log_type_warning, "[%s] rf_texture coordinates must be float", filename);
                         }
                     }
                 }
@@ -1128,13 +1128,13 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
                     if (acc->component_type == cgltf_component_type_r_16u)
                     {
                         model.meshes[primitiveIndex].triangle_count = acc->count/3;
-                        model.meshes[primitiveIndex].indices = (unsigned short*) RF_ALLOC(allocator, sizeof(unsigned short)*model.meshes[primitiveIndex].triangle_count * 3);
+                        model.meshes[primitiveIndex].indices = (unsigned short*) rf_alloc(allocator, sizeof(unsigned short) * model.meshes[primitiveIndex].triangle_count * 3);
                         rf_load_accessor(unsigned short, 1, acc, model.meshes[primitiveIndex].indices)
                     }
                     else
                     {
                         // TODO: Support unsigned unsigned char/unsigned int
-                        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] Indices must be unsigned short", filename);
+                        rf_log(rf_log_type_warning, "[%s] Indices must be unsigned short", filename);
                     }
                 }
                 else
@@ -1161,10 +1161,10 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
     }
     else
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "[%s] glTF cgltf_data could not be loaded", filename);
+        rf_log(rf_log_type_warning, "[%s] glTF cgltf_data could not be loaded", filename);
     }
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     return model;
 
@@ -1172,23 +1172,23 @@ RF_API rf_model rf_load_model_from_gltf(const char* filename, rf_allocator alloc
 }
 
 // Load model from generated mesh. Note: The function takes ownership of the mesh in model.meshes[0]
-RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator)
+rf_public rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator)
 {
     rf_model model = {0};
 
     model.transform = rf_mat_identity();
 
     model.mesh_count = 1;
-    model.meshes = (rf_mesh*) RF_ALLOC(allocator, model.mesh_count * sizeof(rf_mesh));
+    model.meshes = (rf_mesh*) rf_alloc(allocator, model.mesh_count * sizeof(rf_mesh));
     memset(model.meshes, 0, model.mesh_count * sizeof(rf_mesh));
     model.meshes[0] = mesh;
 
     model.material_count = 1;
-    model.materials = (rf_material*) RF_ALLOC(allocator, model.material_count * sizeof(rf_material));
+    model.materials = (rf_material*) rf_alloc(allocator, model.material_count * sizeof(rf_material));
     memset(model.materials, 0, model.material_count * sizeof(rf_material));
     model.materials[0] = rf_load_default_material(allocator);
 
-    model.mesh_material = (int*) RF_ALLOC(allocator, model.mesh_count * sizeof(int));
+    model.mesh_material = (int*) rf_alloc(allocator, model.mesh_count * sizeof(int));
     memset(model.mesh_material, 0, model.mesh_count * sizeof(int));
     model.mesh_material[0] = 0; // First material index
 
@@ -1196,7 +1196,7 @@ RF_API rf_model rf_load_model_from_mesh(rf_mesh mesh, rf_allocator allocator)
 }
 
 // Get collision info between ray and model
-RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model)
+rf_public rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model)
 {
     rf_ray_hit_info result = {0};
 
@@ -1245,33 +1245,33 @@ RF_API rf_ray_hit_info rf_collision_ray_model(rf_ray ray, rf_model model)
 }
 
 // Unload model from memory (RAM and/or VRAM)
-RF_API void rf_unload_model(rf_model model, rf_allocator allocator)
+rf_public void rf_unload_model(rf_model model, rf_allocator allocator)
 {
     for (rf_int i = 0; i < model.mesh_count; i++) rf_unload_mesh(model.meshes[i], allocator);
 
     // As the user could be sharing shaders and textures between models,
     // we don't unload the material but just free it's maps, the user
     // is responsible for freeing models shaders and textures
-    for (rf_int i = 0; i < model.material_count; i++) RF_FREE(allocator, model.materials[i].maps);
+    for (rf_int i = 0; i < model.material_count; i++) rf_free(allocator, model.materials[i].maps);
 
-    RF_FREE(allocator, model.meshes);
-    RF_FREE(allocator, model.materials);
-    RF_FREE(allocator, model.mesh_material);
+    rf_free(allocator, model.meshes);
+    rf_free(allocator, model.materials);
+    rf_free(allocator, model.mesh_material);
 
     // Unload animation data
-    RF_FREE(allocator, model.bones);
-    RF_FREE(allocator, model.bind_pose);
+    rf_free(allocator, model.bones);
+    rf_free(allocator, model.bind_pose);
 
-    RF_LOG(RF_LOG_TYPE_INFO, "Unloaded model data from RAM and VRAM");
+    rf_log(rf_log_type_info, "Unloaded model data from RAM and VRAM");
 }
 
 #pragma region materials
 
 // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
-RF_API rf_material rf_load_default_material(rf_allocator allocator)
+rf_public rf_material rf_load_default_material(rf_allocator allocator)
 {
     rf_material material = {0};
-    material.maps = (rf_material_map*) RF_ALLOC(allocator, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
+    material.maps = (rf_material_map*) rf_alloc(allocator, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
     memset(material.maps, 0, RF_MAX_MATERIAL_MAPS * sizeof(rf_material_map));
 
     material.shader = rf_get_default_shader();
@@ -1279,8 +1279,8 @@ RF_API rf_material rf_load_default_material(rf_allocator allocator)
     //material.maps[RF_MAP_NORMAL].texture;         // NOTE: By default, not set
     //material.maps[RF_MAP_SPECULAR].texture;       // NOTE: By default, not set
 
-    material.maps[RF_MAP_DIFFUSE].color = RF_WHITE; // Diffuse color
-    material.maps[RF_MAP_SPECULAR].color = RF_WHITE; // Specular color
+    material.maps[RF_MAP_DIFFUSE].color = rf_white; // Diffuse color
+    material.maps[RF_MAP_SPECULAR].color = rf_white; // Specular color
 
     return material;
 }
@@ -1288,14 +1288,14 @@ RF_API rf_material rf_load_default_material(rf_allocator allocator)
 // TODO: Support IQM and GLTF for materials parsing
 // TODO: Process materials to return
 // Load materials from model file
-RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_allocator allocator, rf_io_callbacks io)
+rf_public rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_allocator allocator, rf_io_callbacks io)
 {
     if (!filename) return (rf_materials_array) {0};
 
     rf_materials_array result = {0};
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(allocator);
-    RF_SET_TINYOBJ_IO_CALLBACKS(io);
+    rf_set_global_dependencies_allocator(allocator);
+    rf_set_tinyobj_io_callbacks(io);
     {
         size_t size = 0;
         tinyobj_material_t* mats = 0;
@@ -1307,8 +1307,8 @@ RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_al
 
         result.size = size;
     }
-    RF_SET_TINYOBJ_IO_CALLBACKS(RF_NULL_IO);
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_tinyobj_io_callbacks((rf_io_callbacks) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Set materials shader to default (DIFFUSE, SPECULAR, NORMAL)
     for (rf_int i = 0; i < result.size; i++)
@@ -1319,7 +1319,7 @@ RF_API rf_materials_array rf_load_materials_from_mtl(const char* filename, rf_al
     return result;
 }
 
-RF_API void rf_unload_material(rf_material material, rf_allocator allocator)
+rf_public void rf_unload_material(rf_material material, rf_allocator allocator)
 {
     // Unload material shader (avoid unloading default shader, managed by raylib)
     if (material.shader.id != rf_get_default_shader().id)
@@ -1336,29 +1336,29 @@ RF_API void rf_unload_material(rf_material material, rf_allocator allocator)
         }
     }
 
-    RF_FREE(allocator, material.maps);
+    rf_free(allocator, material.maps);
 }
 
-RF_API void rf_set_material_texture(rf_material* material, rf_material_map_type map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
+rf_public void rf_set_material_texture(rf_material* material, rf_material_map_type map_type, rf_texture2d texture); // Set texture for a material map type (rf_map_diffuse, rf_map_specular...)
 
-RF_API void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
+rf_public void rf_set_model_mesh_material(rf_model* model, int mesh_id, int material_id); // Set material for a mesh
 
 #pragma endregion
 
 #pragma region model animations
-RF_API rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_model_animation_array rf_load_model_animations_from_iqm_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
-    int size = RF_FILE_SIZE(io, filename);
-    void* data = RF_ALLOC(temp_allocator, size);
+    int size = rf_file_size(io, filename);
+    void* data = rf_alloc(temp_allocator, size);
 
     rf_model_animation_array result = rf_load_model_animations_from_iqm(data, size, allocator, temp_allocator);
 
-    RF_FREE(temp_allocator, data);
+    rf_free(temp_allocator, data);
 
     return result;
 }
 
-RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned char* data, int data_size, rf_allocator allocator, rf_allocator temp_allocator)
 {
     if (!data || !data_size) return (rf_model_animation_array) {0};
 
@@ -1411,14 +1411,14 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
     {
         char temp_str[sizeof(RF_IQM_MAGIC) + 1] = {0};
         memcpy(temp_str, iqm.magic, sizeof(RF_IQM_MAGIC));
-        RF_LOG_ERROR(RF_BAD_FORMAT, "Magic Number \"%s\"does not match.", temp_str);
+        rf_log_error(rf_bad_format, "Magic Number \"%s\"does not match.", temp_str);
 
         return (rf_model_animation_array){0};
     }
 
     if (iqm.version != RF_IQM_VERSION)
     {
-        RF_LOG_ERROR(RF_BAD_FORMAT, "IQM version %i is incorrect.", iqm.version);
+        rf_log_error(rf_bad_format, "IQM version %i is incorrect.", iqm.version);
 
         return (rf_model_animation_array){0};
     }
@@ -1428,28 +1428,28 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
     };
 
     // Get bones data
-    rf_iqm_pose* poses = (rf_iqm_pose*) RF_ALLOC(temp_allocator, iqm.num_poses * sizeof(rf_iqm_pose));
+    rf_iqm_pose* poses = (rf_iqm_pose*) rf_alloc(temp_allocator, iqm.num_poses * sizeof(rf_iqm_pose));
     memcpy(poses, data + iqm.ofs_poses, iqm.num_poses * sizeof(rf_iqm_pose));
 
     // Get animations data
-    rf_iqm_anim* anim = (rf_iqm_anim*) RF_ALLOC(temp_allocator, iqm.num_anims * sizeof(rf_iqm_anim));
+    rf_iqm_anim* anim = (rf_iqm_anim*) rf_alloc(temp_allocator, iqm.num_anims * sizeof(rf_iqm_anim));
     memcpy(anim, data + iqm.ofs_anims, iqm.num_anims * sizeof(rf_iqm_anim));
 
-    rf_model_animation* animations = (rf_model_animation*) RF_ALLOC(allocator, iqm.num_anims * sizeof(rf_model_animation));
+    rf_model_animation* animations = (rf_model_animation*) rf_alloc(allocator, iqm.num_anims * sizeof(rf_model_animation));
 
     result.anims       = animations;
     result.size = iqm.num_anims;
 
     // frameposes
-    unsigned short* framedata = (unsigned short*) RF_ALLOC(temp_allocator, iqm.num_frames * iqm.num_framechannels * sizeof(unsigned short));
+    unsigned short* framedata = (unsigned short*) rf_alloc(temp_allocator, iqm.num_frames * iqm.num_framechannels * sizeof(unsigned short));
     memcpy(framedata, data + iqm.ofs_frames, iqm.num_frames*iqm.num_framechannels * sizeof(unsigned short));
 
     for (rf_int a = 0; a < iqm.num_anims; a++)
     {
         animations[a].frame_count = anim[a].num_frames;
         animations[a].bone_count  = iqm.num_poses;
-        animations[a].bones       = (rf_bone_info*) RF_ALLOC(allocator, iqm.num_poses * sizeof(rf_bone_info));
-        animations[a].frame_poses = (rf_transform**) RF_ALLOC(allocator, anim[a].num_frames * sizeof(rf_transform*));
+        animations[a].bones       = (rf_bone_info*) rf_alloc(allocator, iqm.num_poses * sizeof(rf_bone_info));
+        animations[a].frame_poses = (rf_transform**) rf_alloc(allocator, anim[a].num_frames * sizeof(rf_transform*));
         //animations[a].framerate = anim.framerate;     // TODO: Use framerate?
 
         for (rf_int j = 0; j < iqm.num_poses; j++)
@@ -1460,7 +1460,7 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
 
         for (rf_int j = 0; j < anim[a].num_frames; j++)
         {
-            animations[a].frame_poses[j] = (rf_transform*) RF_ALLOC(allocator, iqm.num_poses * sizeof(rf_transform));
+            animations[a].frame_poses[j] = (rf_transform*) rf_alloc(allocator, iqm.num_poses * sizeof(rf_transform));
         }
 
         int dcounter = anim[a].first_frame*iqm.num_framechannels;
@@ -1569,15 +1569,15 @@ RF_API rf_model_animation_array rf_load_model_animations_from_iqm(const unsigned
         }
     }
 
-    RF_FREE(temp_allocator, framedata);
-    RF_FREE(temp_allocator, poses);
-    RF_FREE(temp_allocator, anim);
+    rf_free(temp_allocator, framedata);
+    rf_free(temp_allocator, poses);
+    rf_free(temp_allocator, anim);
 
     return result;
 }
 
 // Update model animated vertex data (positions and normals) for a given frame
-RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, int frame)
+rf_public void rf_update_model_animation(rf_model model, rf_model_animation anim, int frame)
 {
     if ((anim.frame_count > 0) && (anim.bones != NULL) && (anim.frame_poses != NULL))
     {
@@ -1646,7 +1646,7 @@ RF_API void rf_update_model_animation(rf_model model, rf_model_animation anim, i
 }
 
 // Check model animation skeleton match. Only number of bones and parent connections are checked
-RF_API rf_bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim)
+rf_public rf_bool rf_is_model_animation_valid(rf_model model, rf_model_animation anim)
 {
     int result = true;
 
@@ -1663,21 +1663,21 @@ RF_API rf_bool rf_is_model_animation_valid(rf_model model, rf_model_animation an
 }
 
 // Unload animation data
-RF_API void rf_unload_model_animation(rf_model_animation anim, rf_allocator allocator)
+rf_public void rf_unload_model_animation(rf_model_animation anim, rf_allocator allocator)
 {
-    for (rf_int i = 0; i < anim.frame_count; i++) RF_FREE(allocator, anim.frame_poses[i]);
+    for (rf_int i = 0; i < anim.frame_count; i++) rf_free(allocator, anim.frame_poses[i]);
 
-    RF_FREE(allocator, anim.bones);
-    RF_FREE(allocator, anim.frame_poses);
+    rf_free(allocator, anim.bones);
+    rf_free(allocator, anim.frame_poses);
 }
 #pragma endregion
 
 #pragma region mesh generation
 
-RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     #define rf_custom_mesh_gen_cube //Todo: Investigate this macro
@@ -1706,9 +1706,9 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
         par_shapes_translate(cube, -width / 2, 0.0f, -length / 2);
         par_shapes_compute_normals(cube);
 
-        mesh.vertices = (float*) RF_ALLOC(allocator, cube->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, cube->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals = (float*) RF_ALLOC(allocator, cube->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices = (float*) rf_alloc(allocator, cube->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, cube->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals = (float*) rf_alloc(allocator, cube->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count = cube->ntriangles * 3;
         mesh.triangle_count = cube->ntriangles;
@@ -1738,35 +1738,35 @@ RF_API rf_mesh rf_gen_mesh_cube(float width, float height, float length, rf_allo
 }
 
 // Generate polygonal mesh
-RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
     int vertex_count = sides * 3;
 
     // Vertices definition
-    rf_vec3* vertices = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
+    rf_vec3* vertices = (rf_vec3*) rf_alloc(temp_allocator, vertex_count * sizeof(rf_vec3));
     for (rf_int i = 0, v = 0; i < 360; i += 360/sides, v += 3)
     {
         vertices[v    ] = (rf_vec3){ 0.0f, 0.0f, 0.0f };
-        vertices[v + 1] = (rf_vec3) { sinf(RF_DEG2RAD * i) * radius, 0.0f, cosf(RF_DEG2RAD * i) * radius };
-        vertices[v + 2] = (rf_vec3) { sinf(RF_DEG2RAD * (i + 360 / sides)) * radius, 0.0f, cosf(RF_DEG2RAD * (i + 360 / sides)) * radius };
+        vertices[v + 1] = (rf_vec3) {sinf(rf_deg2rad * i) * radius, 0.0f, cosf(rf_deg2rad * i) * radius };
+        vertices[v + 2] = (rf_vec3) {sinf(rf_deg2rad * (i + 360 / sides)) * radius, 0.0f, cosf(rf_deg2rad * (i + 360 / sides)) * radius };
     }
 
     // Normals definition
-    rf_vec3* normals = (rf_vec3*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec3));
+    rf_vec3* normals = (rf_vec3*) rf_alloc(temp_allocator, vertex_count * sizeof(rf_vec3));
     for (rf_int n = 0; n < vertex_count; n++) normals[n] = (rf_vec3){0.0f, 1.0f, 0.0f }; // rf_vec3.up;
 
     // TexCoords definition
-    rf_vec2* texcoords = (rf_vec2*) RF_ALLOC(temp_allocator, vertex_count * sizeof(rf_vec2));
+    rf_vec2* texcoords = (rf_vec2*) rf_alloc(temp_allocator, vertex_count * sizeof(rf_vec2));
     for (rf_int n = 0; n < vertex_count; n++) texcoords[n] = (rf_vec2) {0.0f, 0.0f };
 
     mesh.vertex_count = vertex_count;
     mesh.triangle_count = sides;
-    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
-    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
-    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.vertices  = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) rf_alloc(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.normals   = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
 
     // rf_mesh vertices position array
     for (rf_int i = 0; i < mesh.vertex_count; i++)
@@ -1791,9 +1791,9 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
         mesh.normals[3*i + 2] = normals[i].z;
     }
 
-    RF_FREE(temp_allocator, vertices);
-    RF_FREE(temp_allocator, normals);
-    RF_FREE(temp_allocator, texcoords);
+    rf_free(temp_allocator, vertices);
+    rf_free(temp_allocator, normals);
+    rf_free(temp_allocator, texcoords);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1802,27 +1802,27 @@ RF_API rf_mesh rf_gen_mesh_poly(int sides, float radius, rf_allocator allocator,
 }
 
 // Generate plane mesh (with subdivisions)
-RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     #define rf_custom_mesh_gen_plane //Todo: Investigate this macro
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         par_shapes_mesh* plane = par_shapes_create_plane(res_x, res_z); // No normals/texcoords generated!!!
         par_shapes_scale(plane, width, length, 1.0f);
 
         float axis[] = { 1, 0, 0 };
-        par_shapes_rotate(plane, -RF_PI / 2.0f, axis);
+        par_shapes_rotate(plane, -rf_pi / 2.0f, axis);
         par_shapes_translate(plane, -width / 2, 0.0f, length / 2);
 
-        mesh.vertices   = (float*) RF_ALLOC(allocator, plane->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords  = (float*) RF_ALLOC(allocator, plane->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals    = (float*) RF_ALLOC(allocator, plane->ntriangles * 3 * 3 * sizeof(float));
-        mesh.vbo_id     = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+        mesh.vertices   = (float*) rf_alloc(allocator, plane->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords  = (float*) rf_alloc(allocator, plane->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals    = (float*) rf_alloc(allocator, plane->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vbo_id     = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
         memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
         mesh.vertex_count   = plane->ntriangles * 3;
@@ -1844,7 +1844,7 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z
 
         par_shapes_free_mesh(plane);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1853,21 +1853,21 @@ RF_API rf_mesh rf_gen_mesh_plane(float width, float length, int res_x, int res_z
 }
 
 // Generate sphere mesh (standard sphere)
-RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         par_shapes_mesh* sphere = par_shapes_create_parametric_sphere(slices, rings);
         par_shapes_scale(sphere, radius, radius, radius);
         // NOTE: Soft normals are computed internally
 
-        mesh.vertices  = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals   = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices  = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count = sphere->ntriangles * 3;
         mesh.triangle_count = sphere->ntriangles;
@@ -1888,7 +1888,7 @@ RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_alloca
 
         par_shapes_free_mesh(sphere);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1897,21 +1897,21 @@ RF_API rf_mesh rf_gen_mesh_sphere(float radius, int rings, int slices, rf_alloca
 }
 
 // Generate hemi-sphere mesh (half sphere, no bottom cap)
-RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         par_shapes_mesh* sphere = par_shapes_create_hemisphere(slices, rings);
         par_shapes_scale(sphere, radius, radius, radius);
         // NOTE: Soft normals are computed internally
 
-        mesh.vertices  = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals   = (float*) RF_ALLOC(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices  = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) rf_alloc(allocator, sphere->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count   = sphere->ntriangles * 3;
         mesh.triangle_count = sphere->ntriangles;
@@ -1932,7 +1932,7 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_a
 
         par_shapes_free_mesh(sphere);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -1941,13 +1941,13 @@ RF_API rf_mesh rf_gen_mesh_hemi_sphere(float radius, int rings, int slices, rf_a
 }
 
 // Generate cylinder mesh
-RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         // Instance a cylinder that sits on the Z=0 plane using the given tessellation
         // levels across the UV domain.  Think of "slices" like a number of pizza
@@ -1956,7 +1956,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
         par_shapes_mesh* cylinder = par_shapes_create_cylinder(slices, 8);
         par_shapes_scale(cylinder, radius, radius, height);
         float axis[] = { 1, 0, 0 };
-        par_shapes_rotate(cylinder, -RF_PI / 2.0f, axis);
+        par_shapes_rotate(cylinder, -rf_pi / 2.0f, axis);
 
         // Generate an orientable disk shape (top cap)
         float center[] = { 0, 0, 0 };
@@ -1969,21 +1969,21 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
             cap_top->tcoords[i] = 0.0f;
         }
 
-        par_shapes_rotate(cap_top, -RF_PI / 2.0f, axis);
+        par_shapes_rotate(cap_top, -rf_pi / 2.0f, axis);
         par_shapes_translate(cap_top, 0, height, 0);
 
         // Generate an orientable disk shape (bottom cap)
         par_shapes_mesh* cap_bottom = par_shapes_create_disk(radius, slices, center, normal_minus_1);
         cap_bottom->tcoords = PAR_MALLOC(float, 2*cap_bottom->npoints);
         for (rf_int i = 0; i < 2*cap_bottom->npoints; i++) cap_bottom->tcoords[i] = 0.95f;
-        par_shapes_rotate(cap_bottom, RF_PI / 2.0f, axis);
+        par_shapes_rotate(cap_bottom, rf_pi / 2.0f, axis);
 
         par_shapes_merge_and_free(cylinder, cap_top);
         par_shapes_merge_and_free(cylinder, cap_bottom);
 
-        mesh.vertices  = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals   = (float*) RF_ALLOC(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices  = (float*) rf_alloc(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, cylinder->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) rf_alloc(allocator, cylinder->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count   = cylinder->ntriangles * 3;
         mesh.triangle_count = cylinder->ntriangles;
@@ -2004,7 +2004,7 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
 
         par_shapes_free_mesh(cylinder);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -2013,25 +2013,25 @@ RF_API rf_mesh rf_gen_mesh_cylinder(float radius, float height, int slices, rf_a
 }
 
 // Generate torus mesh
-RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     if (radius > 1.0f)      radius = 1.0f;
     else if (radius < 0.1f) radius = 0.1f;
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         // Create a donut that sits on the Z=0 plane with the specified inner radius
         // The outer radius can be controlled with par_shapes_scale
         par_shapes_mesh* torus = par_shapes_create_torus(rad_seg, sides, radius);
         par_shapes_scale(torus, size/2, size/2, size/2);
 
-        mesh.vertices  = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals   = (float*) RF_ALLOC(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices  = (float*) rf_alloc(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, torus->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) rf_alloc(allocator, torus->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count   = torus->ntriangles * 3;
         mesh.triangle_count = torus->ntriangles;
@@ -2052,7 +2052,7 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
 
         par_shapes_free_mesh(torus);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -2061,23 +2061,23 @@ RF_API rf_mesh rf_gen_mesh_torus(float radius, float size, int rad_seg, int side
 }
 
 // Generate trefoil knot mesh
-RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     if (radius > 3.0f)      radius = 3.0f;
     else if (radius < 0.5f) radius = 0.5f;
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         par_shapes_mesh* knot = par_shapes_create_trefoil_knot(rad_seg, sides, radius);
         par_shapes_scale(knot, size, size, size);
 
-        mesh.vertices  = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
-        mesh.texcoords = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 2 * sizeof(float));
-        mesh.normals   = (float*) RF_ALLOC(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
+        mesh.vertices  = (float*) rf_alloc(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
+        mesh.texcoords = (float*) rf_alloc(allocator, knot->ntriangles * 3 * 2 * sizeof(float));
+        mesh.normals   = (float*) rf_alloc(allocator, knot->ntriangles * 3 * 3 * sizeof(float));
 
         mesh.vertex_count   = knot->ntriangles * 3;
         mesh.triangle_count = knot->ntriangles;
@@ -2098,7 +2098,7 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
 
         par_shapes_free_mesh(knot);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -2108,12 +2108,12 @@ RF_API rf_mesh rf_gen_mesh_knot(float radius, float size, int rad_seg, int sides
 
 // Generate a mesh from heightmap
 // NOTE: Vertex data is uploaded to GPU
-RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_allocator allocator, rf_allocator temp_allocator)
 {
 #define RF_GRAY_VALUE(c) ((c.r+c.g+c.b)/3)
 
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     int map_x = heightmap.width;
@@ -2126,9 +2126,9 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
 
     mesh.vertex_count = mesh.triangle_count * 3;
 
-    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
-    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
-    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.vertices  = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.normals   = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) rf_alloc(allocator, mesh.vertex_count * 2 * sizeof(float));
     mesh.colors    = NULL;
 
     int vertex_pos_counter      = 0; // Used to count vertices float by float
@@ -2210,7 +2210,7 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
         }
     }
 
-    RF_FREE(temp_allocator, pixels);
+    rf_free(temp_allocator, pixels);
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);
@@ -2220,10 +2220,10 @@ RF_API rf_mesh rf_gen_mesh_heightmap(rf_image heightmap, rf_vec3 size, rf_alloca
 
 // Generate a cubes mesh from pixel data
 // NOTE: Vertex data is uploaded to GPU
-RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_mesh mesh = {0};
-    mesh.vbo_id = (unsigned int*) RF_ALLOC(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
+    mesh.vbo_id = (unsigned int*) rf_alloc(allocator, RF_MAX_MESH_VBO * sizeof(unsigned int));
     memset(mesh.vbo_id, 0, RF_MAX_MESH_VBO * sizeof(unsigned int));
 
     rf_color* cubicmap_pixels = rf_image_pixels_to_rgba32(cubicmap, temp_allocator);
@@ -2242,9 +2242,9 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     float h = cube_size.z;
     float h2 = cube_size.y;
 
-    rf_vec3* map_vertices  = (rf_vec3*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
-    rf_vec2 *map_texcoords = (rf_vec2*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec2));
-    rf_vec3* map_normals   = (rf_vec3*) RF_ALLOC(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
+    rf_vec3* map_vertices  = (rf_vec3*) rf_alloc(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
+    rf_vec2 *map_texcoords = (rf_vec2*) rf_alloc(temp_allocator, maxTriangles * 3 * sizeof(rf_vec2));
+    rf_vec3* map_normals   = (rf_vec3*) rf_alloc(temp_allocator, maxTriangles * 3 * sizeof(rf_vec3));
 
     // Define the 6 normals of the cube, we will combine them accordingly later...
     rf_vec3 n1 = {  1.0f,  0.0f,  0.0f };
@@ -2533,9 +2533,9 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
     mesh.vertex_count = vertex_pos_counter;
     mesh.triangle_count = vertex_pos_counter/3;
 
-    mesh.vertices  = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
-    mesh.normals   = (float*) RF_ALLOC(allocator, mesh.vertex_count * 3 * sizeof(float));
-    mesh.texcoords = (float*) RF_ALLOC(allocator, mesh.vertex_count * 2 * sizeof(float));
+    mesh.vertices  = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.normals   = (float*) rf_alloc(allocator, mesh.vertex_count * 3 * sizeof(float));
+    mesh.texcoords = (float*) rf_alloc(allocator, mesh.vertex_count * 2 * sizeof(float));
     mesh.colors = NULL;
 
     int f_counter = 0;
@@ -2570,11 +2570,11 @@ RF_API rf_mesh rf_gen_mesh_cubicmap(rf_image cubicmap, rf_vec3 cube_size, rf_all
         f_counter += 2;
     }
 
-    RF_FREE(temp_allocator, map_vertices);
-    RF_FREE(temp_allocator, map_normals);
-    RF_FREE(temp_allocator, map_texcoords);
+    rf_free(temp_allocator, map_vertices);
+    rf_free(temp_allocator, map_normals);
+    rf_free(temp_allocator, map_texcoords);
 
-    RF_FREE(temp_allocator, cubicmap_pixels); // Free image pixel data
+    rf_free(temp_allocator, cubicmap_pixels); // Free image pixel data
 
     // Upload vertex data to GPU (static mesh)
     rf_gfx_load_mesh(&mesh, false);

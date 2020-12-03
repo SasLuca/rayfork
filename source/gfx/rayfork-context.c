@@ -1,9 +1,9 @@
 #include "rayfork-gfx-internal.h"
 #include "rayfork-texture.h"
 
-RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
+rf_internal void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data);
 
-RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data)
+rf_public void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data)
 {
     *ctx = (rf_gfx_context) {0};
     rf_set_global_gfx_context_pointer(ctx);
@@ -24,15 +24,15 @@ RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height
     {
         // Init default white texture
         unsigned char pixels[4] = { 255, 255, 255, 255 }; // 1 pixel RGBA (4 bytes)
-        rf_ctx.default_texture_id = rf_gfx_load_texture(pixels, 1, 1, RF_UNCOMPRESSED_R8G8B8A8, 1);
+        rf_ctx.default_texture_id = rf_gfx_load_texture(pixels, 1, 1, rf_pixel_format_r8g8b8a8, 1);
 
         if (rf_ctx.default_texture_id != 0)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "Base white texture loaded successfully. [ Texture ID: %d ]", rf_ctx.default_texture_id);
+            rf_log(rf_log_type_info, "Base white texture loaded successfully. [ Texture ID: %d ]", rf_ctx.default_texture_id);
         }
         else
         {
-            RF_LOG(RF_LOG_TYPE_WARNING, "Base white texture could not be loaded");
+            rf_log(rf_log_type_warning, "Base white texture could not be loaded");
         }
 
         // Init default shader (customized for GL 3.3 and ES2)
@@ -140,7 +140,7 @@ RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height
                 for (rf_int j = 31; j >= 0; j--)
                 {
                     const int bit_check = (default_font_data[counter]) & (1u << j);
-                    if (bit_check) font_pixels[i + j] = RF_WHITE;
+                    if (bit_check) font_pixels[i + j] = rf_white;
                 }
 
                 counter++;
@@ -148,15 +148,15 @@ RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height
                 if (counter > 512) counter = 0; // Security check...
             }
 
-            rf_bool format_success = rf_format_pixels(font_pixels, 128 * 128 * sizeof(rf_color), RF_UNCOMPRESSED_R8G8B8A8,
-                                                   rf_ctx.default_font_buffers.pixels, 128 * 128 * 2, RF_UNCOMPRESSED_GRAY_ALPHA);
+            rf_bool format_success = rf_format_pixels(font_pixels, 128 * 128 * sizeof(rf_color), rf_pixel_format_r8g8b8a8,
+                                                      rf_ctx.default_font_buffers.pixels, 128 * 128 * 2, rf_pixel_format_gray_alpha);
 
-            RF_ASSERT(format_success);
+            rf_assert(format_success);
         }
 
         rf_image font_image = {
             .data = rf_ctx.default_font_buffers.pixels,
-            .format = RF_UNCOMPRESSED_GRAY_ALPHA,
+            .format = rf_pixel_format_gray_alpha,
             .width = 128,
             .height = 128,
             .valid = true,
@@ -203,7 +203,7 @@ RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height
         rf_ctx.default_font.base_size = (int)rf_ctx.default_font.glyphs[0].rec.height;
         rf_ctx.default_font.valid = true;
 
-        RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Default font loaded successfully", rf_ctx.default_font.texture.id);
+        rf_log(rf_log_type_info, "[TEX ID %i] Default font loaded successfully", rf_ctx.default_font.texture.id);
     }
     #endif
 }
@@ -211,38 +211,38 @@ RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height
 #pragma region getters
 
 // Get the default font, useful to be used with extended parameters
-RF_API rf_font rf_get_default_font()
+rf_public rf_font rf_get_default_font()
 {
     return rf_ctx.default_font;
 }
 
 // Get default shader
-RF_API rf_shader rf_get_default_shader()
+rf_public rf_shader rf_get_default_shader()
 {
     return rf_ctx.default_shader;
 }
 
 // Get default internal texture (white texture)
-RF_API rf_texture2d rf_get_default_texture()
+rf_public rf_texture2d rf_get_default_texture()
 {
     rf_texture2d texture = {0};
     texture.id = rf_ctx.default_texture_id;
     texture.width = 1;
     texture.height = 1;
     texture.mipmaps = 1;
-    texture.format = RF_UNCOMPRESSED_R8G8B8A8;
+    texture.format = rf_pixel_format_r8g8b8a8;
 
     return texture;
 }
 
 //Get the context pointer
-RF_API rf_gfx_context* rf_get_gfx_context()
+rf_public rf_gfx_context* rf_get_gfx_context()
 {
     return &rf_ctx;
 }
 
 // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
-RF_API rf_image rf_get_screen_data(rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_get_screen_data(rf_color* dst, rf_int dst_size)
 {
     rf_image image = {0};
 
@@ -253,14 +253,14 @@ RF_API rf_image rf_get_screen_data(rf_color* dst, rf_int dst_size)
         image.data   = dst;
         image.width  = rf_ctx.render_width;
         image.height = rf_ctx.render_height;
-        image.format = RF_UNCOMPRESSED_R8G8B8A8;
+        image.format = rf_pixel_format_r8g8b8a8;
         image.valid  = true;
     }
 
     return image;
 }
 
-RF_API rf_log_type rf_get_current_log_filter()
+rf_public rf_log_type rf_get_current_log_filter()
 {
     return rf_ctx.logger_filter;
 }
@@ -270,20 +270,20 @@ RF_API rf_log_type rf_get_current_log_filter()
 #pragma region setters
 
 // Define default texture used to draw shapes
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
+rf_public void rf_set_shapes_texture(rf_texture2d texture, rf_rec source)
 {
     rf_ctx.tex_shapes = texture;
     rf_ctx.rec_tex_shapes = source;
 }
 
 // Set the global context pointer
-RF_API void rf_set_global_gfx_context_pointer(rf_gfx_context* ctx)
+rf_public void rf_set_global_gfx_context_pointer(rf_gfx_context* ctx)
 {
     rf__global_gfx_context_ptr = ctx;
 }
 
 // Set viewport for a provided width and height
-RF_API void rf_set_viewport(int width, int height)
+rf_public void rf_set_viewport(int width, int height)
 {
     rf_ctx.render_width = width;
     rf_ctx.render_height = height;
@@ -301,7 +301,7 @@ RF_API void rf_set_viewport(int width, int height)
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
 }
 
-RF_API inline rf_int rf_libc_rand_wrapper(rf_int min, rf_int max)
+rf_public inline rf_int rf_libc_rand_wrapper(rf_int min, rf_int max)
 {
     return rand() % (max + 1 - min) + min;
 }

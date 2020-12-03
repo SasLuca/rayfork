@@ -55,20 +55,20 @@ typedef struct rf_gfx_context
     rf_log_type logger_filter;
 } rf_gfx_context;
 
-RF_API void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data);
+rf_public void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_height, rf_gfx_backend_data* gfx_data);
 
-RF_API rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
-RF_API rf_shader   rf_load_default_shader();
+rf_public rf_material rf_load_default_material(rf_allocator allocator); // Load default material (Supports: DIFFUSE, SPECULAR, NORMAL maps)
+rf_public rf_shader   rf_load_default_shader();
 
-RF_API rf_render_batch* rf_get_current_render_batch();                      // Return a pointer to the current render batch
-RF_API rf_font          rf_get_default_font();                              // Get the default font, useful to be used with extended parameters
-RF_API rf_shader        rf_get_default_shader();                            // Get default shader
-RF_API rf_texture2d     rf_get_default_texture();                           // Get default internal texture (white texture)
-RF_API rf_gfx_context*  rf_get_gfx_context();                               // Get the context pointer
-RF_API rf_image         rf_get_screen_data(rf_color* dst, rf_int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
+rf_public rf_render_batch* rf_get_current_render_batch();                      // Return a pointer to the current render batch
+rf_public rf_font          rf_get_default_font();                              // Get the default font, useful to be used with extended parameters
+rf_public rf_shader        rf_get_default_shader();                            // Get default shader
+rf_public rf_texture2d     rf_get_default_texture();                           // Get default internal texture (white texture)
+rf_public rf_gfx_context*  rf_get_gfx_context();                               // Get the context pointer
+rf_public rf_image         rf_get_screen_data(rf_color* dst, rf_int dst_size); // Get pixel data from GPU frontbuffer and return an rf_image (screenshot)
 
-RF_API void rf_set_global_gfx_context_pointer(rf_gfx_context* ctx);     // Set the global context pointer
-RF_API void rf_set_viewport(int width, int height);                     // Set viewport for a provided width and height
-RF_API void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
+rf_public void rf_set_global_gfx_context_pointer(rf_gfx_context* ctx);     // Set the global context pointer
+rf_public void rf_set_viewport(int width, int height);                     // Set viewport for a provided width and height
+rf_public void rf_set_shapes_texture(rf_texture2d texture, rf_rec source); // Define default texture used to draw shapes
 
 #endif // RAYFORK_CONTEXT_H

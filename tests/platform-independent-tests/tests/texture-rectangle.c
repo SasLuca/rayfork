@@ -27,10 +27,10 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
-    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
-    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
+    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", rf_default_allocator, rf_default_io);
     frame_rec = (rf_rec) {
         .width = scarfy.width / 6,
         .height = scarfy.height
@@ -60,29 +60,29 @@ extern void game_update(const platform_input_state* input)
     // Draw
     rf_begin();
 
-    rf_clear(RF_RAYWHITE);
+    rf_clear(rf_raywhite);
 
-    rf_draw_texture(scarfy, 15, 40, RF_WHITE);
-    rf_draw_rectangle_outline((rf_rec){ 15, 40, scarfy.width, scarfy.height }, 1, RF_LIME);
-    rf_draw_rectangle_outline((rf_rec){ 15 + frame_rec.x, 40 + frame_rec.y, frame_rec.width, frame_rec.height }, 1, RF_RED);
+    rf_draw_texture(scarfy, 15, 40, rf_white);
+    rf_draw_rectangle_outline((rf_rec){ 15, 40, scarfy.width, scarfy.height }, 1, rf_lime);
+    rf_draw_rectangle_outline((rf_rec){ 15 + frame_rec.x, 40 + frame_rec.y, frame_rec.width, frame_rec.height }, 1, rf_red);
 
-    rf_draw_text("FRAME SPEED: ", 165, 210, 10, RF_DARKGRAY);
+    rf_draw_text("FRAME SPEED: ", 165, 210, 10, rf_dark_gray);
 
     char text[1024] = {0};
     snprintf(text, sizeof(text), "%02i FPS", frames_speed);
-    rf_draw_text(text, 575, 210, 10, RF_DARKGRAY);
+    rf_draw_text(text, 575, 210, 10, rf_dark_gray);
 
-    rf_draw_text("PRESS RIGHT/LEFT KEYS to CHANGE SPEED!", 290, 240, 10, RF_DARKGRAY);
+    rf_draw_text("PRESS RIGHT/LEFT KEYS to CHANGE SPEED!", 290, 240, 10, rf_dark_gray);
 
     for (int i = 0; i < MAX_FRAME_SPEED; i++)
     {
-        if (i < frames_speed) rf_draw_rectangle(250 + 21 * i, 205, 20, 20, RF_RED);
-        rf_draw_rectangle_outline((rf_rec){ 250 + 21 * i, 205, 20, 20 }, 1, RF_MAROON);
+        if (i < frames_speed) rf_draw_rectangle(250 + 21 * i, 205, 20, 20, rf_red);
+        rf_draw_rectangle_outline((rf_rec){ 250 + 21 * i, 205, 20, 20 }, 1, rf_maroon);
     }
 
-    rf_draw_texture_region(scarfy, frame_rec, (rf_rec) { position.x, position.y, frame_rec.width, frame_rec.height }, (rf_vec2){ 0.0f, 0.0f }, 0.0f, RF_WHITE);  // Draw part of the texture
+    rf_draw_texture_region(scarfy, frame_rec, (rf_rec) { position.x, position.y, frame_rec.width, frame_rec.height }, (rf_vec2){ 0.0f, 0.0f }, 0.0f, rf_white);  // Draw part of the texture
 
-    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, RF_GRAY);
+    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, rf_gray);
 
     rf_end();
 }

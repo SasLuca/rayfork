@@ -43,13 +43,13 @@ Because of this you can easily compile rayfork for any platform be it PC, Mobile
 
 ### 2. Provide full control over IO and memory
 
-Functions that do IO are often optional and explicitly ask for IO callbacks. A simple wrapper for the libc IO functions is provided as `RF_DEFAULT_IO`.
+Functions that do IO are often optional and explicitly ask for IO callbacks. A simple wrapper for the libc IO functions is provided as `rf_default_io`.
 
-Functions that allocate explicitly ask for an allocator and sometimes also for a temporary memory allocator (memory that is freed inside the function). A simple wrapper for libc's malloc/free is provided as `RF_DEFAULT_ALLOCATOR`.
+Functions that allocate explicitly ask for an allocator and sometimes also for a temporary memory allocator (memory that is freed inside the function). A simple wrapper for libc's malloc/free is provided as `rf_default_allocator`.
 
 All dependencies are also used with custom allocators in mind, the library will never allocate without you knowing.
 
-Every function that requires an allocator or io callbacks has an `_ez` version which wraps the original function and calls it with `RF_DEFAULT_ALLOCATOR` and/or `RF_DEFAULT_IO`, this is useful for testing code quickly.
+Every function that requires an allocator or io callbacks has an `_ez` version which wraps the original function and calls it with `rf_default_allocator` and/or `rf_default_io`, this is useful for testing code quickly.
 
 ### 3. Easy to build
 
@@ -91,7 +91,7 @@ I am also looking for help in developing things outside my expertise:
 
 - Keep the naming convention to snake case, use `rf_function_name` for interface functions and `_rf_function_name` for private functions.
 
-- Prefix all functions with `RF_API` or `RF_INTERNAL`
+- Prefix all functions with `rf_public` or `RF_INTERNAL`
 
 - Don't include additional headers in the interface, work towards minimizing includes in general.
 

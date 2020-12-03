@@ -5,7 +5,7 @@
 #pragma region internal functions
 
 // Get texture to draw shapes, the user can customize this using rf_set_shapes_texture
-RF_INTERNAL rf_texture2d rf_get_shapes_texture()
+rf_internal rf_texture2d rf_get_shapes_texture()
 {
     if (rf_ctx.tex_shapes.id == 0)
     {
@@ -17,7 +17,7 @@ RF_INTERNAL rf_texture2d rf_get_shapes_texture()
 }
 
 // Cubic easing in-out. Note: Required for rf_draw_line_bezier()
-RF_INTERNAL float rf_shapes_ease_cubic_in_out(float t, float b, float c, float d)
+rf_internal float rf_shapes_ease_cubic_in_out(float t, float b, float c, float d)
 {
     if ((t /= 0.5f*d) < 1) return 0.5f*c*t*t*t + b;
 
@@ -28,21 +28,21 @@ RF_INTERNAL float rf_shapes_ease_cubic_in_out(float t, float b, float c, float d
 
 #pragma endregion
 
-RF_API rf_vec2 rf_center_to_screen(float w, float h)
+rf_public rf_vec2 rf_center_to_screen(float w, float h)
 {
     rf_vec2 result = { rf_ctx.render_width / 2 - w / 2, rf_ctx.render_height / 2 - h / 2 };
     return result;
 }
 
 // Set background color (framebuffer clear color)
-RF_API void rf_clear(rf_color color)
+rf_public void rf_clear(rf_color color)
 {
     rf_gfx_clear_color(color.r, color.g, color.b, color.a); // Set clear color
     rf_gfx_clear_screen_buffers(); // Clear current framebuffers
 }
 
 // Setup canvas (framebuffer) to start drawing
-RF_API void rf_begin()
+rf_public void rf_begin()
 {
     rf_gfx_load_identity(); // Reset current matrix (MODELVIEW)
     rf_gfx_mult_matrixf(rf_mat_to_float16(rf_ctx.screen_scaling).v); // Apply screen scaling
@@ -51,13 +51,13 @@ RF_API void rf_begin()
 }
 
 // End canvas drawing and swap buffers (double buffering)
-RF_API void rf_end()
+rf_public void rf_end()
 {
     rf_gfx_draw();
 }
 
 // Initialize 2D mode with custom camera (2D)
-RF_API void rf_begin_2d(rf_camera2d camera)
+rf_public void rf_begin_2d(rf_camera2d camera)
 {
     rf_gfx_draw();
 
@@ -71,7 +71,7 @@ RF_API void rf_begin_2d(rf_camera2d camera)
 }
 
 // Ends 2D mode with custom camera
-RF_API void rf_end_2d()
+rf_public void rf_end_2d()
 {
     rf_gfx_draw();
 
@@ -80,7 +80,7 @@ RF_API void rf_end_2d()
 }
 
 // Initializes 3D mode with custom camera (3D)
-RF_API void rf_begin_3d(rf_camera3d camera)
+rf_public void rf_begin_3d(rf_camera3d camera)
 {
     rf_gfx_draw();
 
@@ -93,7 +93,7 @@ RF_API void rf_begin_3d(rf_camera3d camera)
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Setup perspective GL_PROJECTION
-        double top = 0.01 * tan(camera.fovy*0.5*RF_DEG2RAD);
+        double top = 0.01 * tan(camera.fovy * 0.5 * rf_deg2rad);
         double right = top*aspect;
 
         rf_gfx_frustum(-right, right, -top, top, 0.01, 1000.0);
@@ -120,7 +120,7 @@ RF_API void rf_begin_3d(rf_camera3d camera)
 }
 
 // Ends 3D mode and returns to default 2D orthographic mode
-RF_API void rf_end_3d()
+rf_public void rf_end_3d()
 {
     rf_gfx_draw(); // Process internal buffers (update + draw)
 
@@ -136,7 +136,7 @@ RF_API void rf_end_3d()
 }
 
 // Initializes render texture for drawing
-RF_API void rf_begin_render_to_texture(rf_render_texture2d target)
+rf_public void rf_begin_render_to_texture(rf_render_texture2d target)
 {
     rf_gfx_draw();
 
@@ -164,7 +164,7 @@ RF_API void rf_begin_render_to_texture(rf_render_texture2d target)
 }
 
 // Ends drawing to render texture
-RF_API void rf_end_render_to_texture()
+rf_public void rf_end_render_to_texture()
 {
     rf_gfx_draw();
 
@@ -180,7 +180,7 @@ RF_API void rf_end_render_to_texture()
 
 // Begin scissor mode (define screen area for following drawing)
 // NOTE: Scissor rec refers to bottom-left corner, we change it to upper-left
-RF_API void rf_begin_scissor_mode(int x, int y, int width, int height)
+rf_public void rf_begin_scissor_mode(int x, int y, int width, int height)
 {
     rf_gfx_draw(); // Force drawing elements
 
@@ -189,14 +189,14 @@ RF_API void rf_begin_scissor_mode(int x, int y, int width, int height)
 }
 
 // End scissor mode
-RF_API void rf_end_scissor_mode()
+rf_public void rf_end_scissor_mode()
 {
     rf_gfx_draw(); // Force drawing elements
     rf_gfx_disable_scissor_test();
 }
 
 // Begin custom shader mode
-RF_API void rf_begin_shader(rf_shader shader)
+rf_public void rf_begin_shader(rf_shader shader)
 {
     if (rf_ctx.current_shader.id != shader.id)
     {
@@ -206,25 +206,25 @@ RF_API void rf_begin_shader(rf_shader shader)
 }
 
 // End custom shader mode (returns to default shader)
-RF_API void rf_end_shader()
+rf_public void rf_end_shader()
 {
     rf_begin_shader(rf_ctx.default_shader);
 }
 
 // Begin blending mode (alpha, additive, multiplied). Default blend mode is alpha
-RF_API void rf_begin_blend_mode(rf_blend_mode mode)
+rf_public void rf_begin_blend_mode(rf_blend_mode mode)
 {
     rf_gfx_blend_mode(mode);
 }
 
 // End blending mode (reset to default: alpha blending)
-RF_API void rf_end_blend_mode()
+rf_public void rf_end_blend_mode()
 {
     rf_gfx_blend_mode(RF_BLEND_ALPHA);
 }
 
 // Draw a pixel
-RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color)
+rf_public void rf_draw_pixel(int pos_x, int pos_y, rf_color color)
 {
     rf_gfx_begin(RF_LINES);
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
@@ -234,13 +234,13 @@ RF_API void rf_draw_pixel(int pos_x, int pos_y, rf_color color)
 }
 
 // Draw a pixel (Vector version)
-RF_API void rf_draw_pixel_v(rf_vec2 position, rf_color color)
+rf_public void rf_draw_pixel_v(rf_vec2 position, rf_color color)
 {
     rf_draw_pixel(position.x, position.y, color);
 }
 
 // Draw a line
-RF_API void rf_draw_line(int startPosX, int startPosY, int endPosX, int endPosY, rf_color color)
+rf_public void rf_draw_line(int startPosX, int startPosY, int endPosX, int endPosY, rf_color color)
 {
     rf_gfx_begin(RF_LINES);
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
@@ -250,13 +250,13 @@ RF_API void rf_draw_line(int startPosX, int startPosY, int endPosX, int endPosY,
 }
 
 // Draw a line (Vector version)
-RF_API void rf_draw_line_v(rf_vec2 startPos, rf_vec2 endPos, rf_color color)
+rf_public void rf_draw_line_v(rf_vec2 startPos, rf_vec2 endPos, rf_color color)
 {
     rf_draw_line(startPos.x, startPos.y, endPos.x, endPos.y, color);
 }
 
 // Draw a line defining thickness
-RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color)
+rf_public void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color)
 {
     if (start_pos.x > end_pos.x)
     {
@@ -275,7 +275,7 @@ RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_
 
     rf_gfx_push_matrix();
     rf_gfx_translatef((float)start_pos.x, (float)start_pos.y, 0.0f);
-    rf_gfx_rotatef(RF_RAD2DEG * angle, 0.0f, 0.0f, 1.0f);
+    rf_gfx_rotatef(rf_rad2deg * angle, 0.0f, 0.0f, 1.0f);
     rf_gfx_translatef(0, (thick > 1.0f)? -thick/2.0f : -1.0f, 0.0f);
 
     rf_gfx_begin(RF_QUADS);
@@ -300,7 +300,7 @@ RF_API void rf_draw_line_ex(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_
 }
 
 // Draw line using cubic-bezier curves in-out
-RF_API void rf_draw_line_bezier(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color)
+rf_public void rf_draw_line_bezier(rf_vec2 start_pos, rf_vec2 end_pos, float thick, rf_color color)
 {
 #define RF_LINE_DIVISIONS 24 // Bezier line divisions
 
@@ -323,7 +323,7 @@ RF_API void rf_draw_line_bezier(rf_vec2 start_pos, rf_vec2 end_pos, float thick,
 }
 
 // Draw lines sequence
-RF_API void rf_draw_line_strip(rf_vec2 *points, int points_count, rf_color color)
+rf_public void rf_draw_line_strip(rf_vec2 *points, int points_count, rf_color color)
 {
     if (points_count >= 2)
     {
@@ -342,19 +342,19 @@ RF_API void rf_draw_line_strip(rf_vec2 *points, int points_count, rf_color color
 }
 
 // Draw a color-filled circle
-RF_API void rf_draw_circle(int center_x, int center_y, float radius, rf_color color)
+rf_public void rf_draw_circle(int center_x, int center_y, float radius, rf_color color)
 {
     rf_draw_circle_sector((rf_vec2) {center_x, center_y }, radius, 0, 360, 36, color);
 }
 
 // Draw a color-filled circle (Vector version)
-RF_API void rf_draw_circle_v(rf_vec2 center, float radius, rf_color color)
+rf_public void rf_draw_circle_v(rf_vec2 center, float radius, rf_color color)
 {
     rf_draw_circle(center.x, center.y, radius, color);
 }
 
 // Draw a piece of a circle
-RF_API void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle, int end_angle, int segments, rf_color color)
+rf_public void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle, int end_angle, int segments, rf_color color)
 {
     if (radius <= 0.0f) radius = 0.1f; // Avoid div by zero
 
@@ -374,7 +374,7 @@ RF_API void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle,
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/radius, 2) - 1);
-        segments = (end_angle - start_angle) * ceilf(2 * RF_PI / th) / 360;
+        segments = (end_angle - start_angle) * ceilf(2 * rf_pi / th) / 360;
 
         if (segments <= 0) segments = 4;
     }
@@ -389,15 +389,15 @@ RF_API void rf_draw_circle_sector(rf_vec2 center, float radius, int start_angle,
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
         rf_gfx_vertex2f(center.x, center.y);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*radius, center.y + cosf(RF_DEG2RAD*angle)*radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * radius, center.y + cosf(rf_deg2rad * angle) * radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * radius);
 
         angle += step_length;
     }
     rf_gfx_end();
 }
 
-RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_angle, int end_angle, int segments, rf_color color)
+rf_public void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_angle, int end_angle, int segments, rf_color color)
 {
     if (radius <= 0.0f) radius = 0.1f; // Avoid div by zero issue
 
@@ -419,7 +419,7 @@ RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/radius, 2) - 1);
-        segments = (end_angle - start_angle) * ceilf(2 * RF_PI / th) / 360;
+        segments = (end_angle - start_angle) * ceilf(2 * rf_pi / th) / 360;
 
         if (segments <= 0) segments = 4;
     }
@@ -439,15 +439,15 @@ RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
         rf_gfx_vertex2f(center.x, center.y);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*radius, center.y + cosf(RF_DEG2RAD*angle)*radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * radius, center.y + cosf(rf_deg2rad * angle) * radius);
     }
 
     for (rf_int i = 0; i < segments; i++)
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*radius, center.y + cosf(RF_DEG2RAD*angle)*radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * radius, center.y + cosf(rf_deg2rad * angle) * radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * radius);
 
         angle += step_length;
     }
@@ -456,14 +456,14 @@ RF_API void rf_draw_circle_sector_lines(rf_vec2 center, float radius, int start_
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
         rf_gfx_vertex2f(center.x, center.y);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*radius, center.y + cosf(RF_DEG2RAD*angle)*radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * radius, center.y + cosf(rf_deg2rad * angle) * radius);
     }
     rf_gfx_end();
 }
 
 // Draw a gradient-filled circle
 // NOTE: Gradient goes from center (color1) to border (color2)
-RF_API void rf_draw_circle_gradient(int center_x, int center_y, float radius, rf_color color1, rf_color color2)
+rf_public void rf_draw_circle_gradient(int center_x, int center_y, float radius, rf_color color1, rf_color color2)
 {
     if (rf_gfx_check_buffer_limit(3 * 36)) rf_gfx_draw();
 
@@ -473,15 +473,15 @@ RF_API void rf_draw_circle_gradient(int center_x, int center_y, float radius, rf
         rf_gfx_color4ub(color1.r, color1.g, color1.b, color1.a);
         rf_gfx_vertex2f(center_x, center_y);
         rf_gfx_color4ub(color2.r, color2.g, color2.b, color2.a);
-        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD*i)*radius, center_y + cosf(RF_DEG2RAD*i)*radius);
+        rf_gfx_vertex2f(center_x + sinf(rf_deg2rad * i) * radius, center_y + cosf(rf_deg2rad * i) * radius);
         rf_gfx_color4ub(color2.r, color2.g, color2.b, color2.a);
-        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD*(i + 10))*radius, center_y + cosf(RF_DEG2RAD*(i + 10))*radius);
+        rf_gfx_vertex2f(center_x + sinf(rf_deg2rad * (i + 10)) * radius, center_y + cosf(rf_deg2rad * (i + 10)) * radius);
     }
     rf_gfx_end();
 }
 
 // Draw circle outline
-RF_API void rf_draw_circle_lines(int center_x, int center_y, float radius, rf_color color)
+rf_public void rf_draw_circle_lines(int center_x, int center_y, float radius, rf_color color)
 {
     if (rf_gfx_check_buffer_limit(2 * 36)) rf_gfx_draw();
 
@@ -491,13 +491,13 @@ RF_API void rf_draw_circle_lines(int center_x, int center_y, float radius, rf_co
     // NOTE: Circle outline is drawn pixel by pixel every degree (0 to 360)
     for (rf_int i = 0; i < 360; i += 10)
     {
-        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD*i)*radius, center_y + cosf(RF_DEG2RAD*i)*radius);
-        rf_gfx_vertex2f(center_x + sinf(RF_DEG2RAD*(i + 10))*radius, center_y + cosf(RF_DEG2RAD*(i + 10))*radius);
+        rf_gfx_vertex2f(center_x + sinf(rf_deg2rad * i) * radius, center_y + cosf(rf_deg2rad * i) * radius);
+        rf_gfx_vertex2f(center_x + sinf(rf_deg2rad * (i + 10)) * radius, center_y + cosf(rf_deg2rad * (i + 10)) * radius);
     }
     rf_gfx_end();
 }
 
-RF_API void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius, int start_angle, int end_angle, int segments, rf_color color)
+rf_public void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius, int start_angle, int end_angle, int segments, rf_color color)
 {
     if (start_angle == end_angle) return;
 
@@ -529,7 +529,7 @@ RF_API void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius,
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/outer_radius, 2) - 1);
-        segments = (end_angle - start_angle) * ceilf(2 * RF_PI / th) / 360;
+        segments = (end_angle - start_angle) * ceilf(2 * rf_pi / th) / 360;
 
         if (segments <= 0) segments = 4;
     }
@@ -550,13 +550,13 @@ RF_API void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius,
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*inner_radius, center.y + cosf(RF_DEG2RAD*angle)*inner_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*inner_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * inner_radius, center.y + cosf(rf_deg2rad * angle) * inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * inner_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * inner_radius);
 
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*inner_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*inner_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*outer_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * inner_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * outer_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * outer_radius);
 
         angle += step_length;
     }
@@ -564,7 +564,7 @@ RF_API void rf_draw_ring(rf_vec2 center, float inner_radius, float outer_radius,
 
 }
 
-RF_API void rf_draw_ring_lines(rf_vec2 center, float inner_radius, float outer_radius, int start_angle, int end_angle, int segments, rf_color color)
+rf_public void rf_draw_ring_lines(rf_vec2 center, float inner_radius, float outer_radius, int start_angle, int end_angle, int segments, rf_color color)
 {
     if (start_angle == end_angle) return;
 
@@ -595,7 +595,7 @@ RF_API void rf_draw_ring_lines(rf_vec2 center, float inner_radius, float outer_r
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/outer_radius, 2) - 1);
-        segments = (end_angle - start_angle) * ceilf(2 * RF_PI / th) / 360;
+        segments = (end_angle - start_angle) * ceilf(2 * rf_pi / th) / 360;
 
         if (segments <= 0) segments = 4;
     }
@@ -619,19 +619,19 @@ RF_API void rf_draw_ring_lines(rf_vec2 center, float inner_radius, float outer_r
     if (show_cap_lines)
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*inner_radius, center.y + cosf(RF_DEG2RAD*angle)*inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * inner_radius, center.y + cosf(rf_deg2rad * angle) * inner_radius);
     }
 
     for (rf_int i = 0; i < segments; i++)
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*outer_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * outer_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * outer_radius);
 
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*inner_radius, center.y + cosf(RF_DEG2RAD*angle)*inner_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*inner_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * inner_radius, center.y + cosf(rf_deg2rad * angle) * inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * inner_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * inner_radius);
 
         angle += step_length;
     }
@@ -639,32 +639,32 @@ RF_API void rf_draw_ring_lines(rf_vec2 center, float inner_radius, float outer_r
     if (show_cap_lines)
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-        rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*inner_radius, center.y + cosf(RF_DEG2RAD*angle)*inner_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+        rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * inner_radius, center.y + cosf(rf_deg2rad * angle) * inner_radius);
     }
     rf_gfx_end();
 }
 
 // Draw a color-filled rectangle
-RF_API void rf_draw_rectangle(int posX, int posY, int width, int height, rf_color color)
+rf_public void rf_draw_rectangle(int posX, int posY, int width, int height, rf_color color)
 {
     rf_draw_rectangle_v((rf_vec2){ (float)posX, (float)posY }, (rf_vec2){ (float)width, (float)height }, color);
 }
 
 // Draw a color-filled rectangle (Vector version)
-RF_API void rf_draw_rectangle_v(rf_vec2 position, rf_vec2 size, rf_color color)
+rf_public void rf_draw_rectangle_v(rf_vec2 position, rf_vec2 size, rf_color color)
 {
     rf_draw_rectangle_pro((rf_rec) { position.x, position.y, size.x, size.y }, (rf_vec2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle
-RF_API void rf_draw_rectangle_rec(rf_rec rec, rf_color color)
+rf_public void rf_draw_rectangle_rec(rf_rec rec, rf_color color)
 {
     rf_draw_rectangle_pro(rec, (rf_vec2){ 0.0f, 0.0f }, 0.0f, color);
 }
 
 // Draw a color-filled rectangle with pro parameters
-RF_API void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf_color color)
+rf_public void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf_color color)
 {
     rf_gfx_enable_texture(rf_get_shapes_texture().id);
 
@@ -696,21 +696,21 @@ RF_API void rf_draw_rectangle_pro(rf_rec rec, rf_vec2 origin, float rotation, rf
 
 // Draw a vertical-gradient-filled rectangle
 // NOTE: Gradient goes from bottom (color1) to top (color2)
-RF_API void rf_draw_rectangle_gradient_v(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2)
+rf_public void rf_draw_rectangle_gradient_v(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2)
 {
     rf_draw_rectangle_gradient((rf_rec) {(float)pos_x, (float)pos_y, (float)width, (float)height }, color1, color2, color2, color1);
 }
 
 // Draw a horizontal-gradient-filled rectangle
 // NOTE: Gradient goes from bottom (color1) to top (color2)
-RF_API void rf_draw_rectangle_gradient_h(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2)
+rf_public void rf_draw_rectangle_gradient_h(int pos_x, int pos_y, int width, int height, rf_color color1, rf_color color2)
 {
     rf_draw_rectangle_gradient((rf_rec) {(float)pos_x, (float)pos_y, (float)width, (float)height }, color1, color1, color2, color2);
 }
 
 // Draw a gradient-filled rectangle
 // NOTE: Colors refer to corners, starting at top-lef corner and counter-clockwise
-RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4)
+rf_public void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2, rf_color col3, rf_color col4)
 {
     rf_gfx_enable_texture(rf_get_shapes_texture().id);
 
@@ -741,7 +741,7 @@ RF_API void rf_draw_rectangle_gradient(rf_rec rec, rf_color col1, rf_color col2,
 }
 
 // Draw rectangle outline with extended parameters
-RF_API void rf_draw_rectangle_outline(rf_rec rec, int line_thick, rf_color color)
+rf_public void rf_draw_rectangle_outline(rf_rec rec, int line_thick, rf_color color)
 {
     if (line_thick > rec.width || line_thick > rec.height)
     {
@@ -756,7 +756,7 @@ RF_API void rf_draw_rectangle_outline(rf_rec rec, int line_thick, rf_color color
 }
 
 // Draw rectangle with rounded edges
-RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments, rf_color color)
+rf_public void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments, rf_color color)
 {
     // Not a rounded rectangle
     if ((roundness <= 0.0f) || (rec.width < 1) || (rec.height < 1 ))
@@ -780,7 +780,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments,
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/radius, 2) - 1);
-        segments = ceilf(2 * RF_PI / th) / 4;
+        segments = ceilf(2 * rf_pi / th) / 4;
         if (segments <= 0) segments = 4;
     }
 
@@ -825,8 +825,8 @@ RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments,
         {
             rf_gfx_color4ub(color.r, color.g, color.b, color.a);
             rf_gfx_vertex2f(center.x, center.y);
-            rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*radius, center.y + cosf(RF_DEG2RAD*angle)*radius);
-            rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*radius);
+            rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * radius, center.y + cosf(rf_deg2rad * angle) * radius);
+            rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * radius);
             angle += step_length;
         }
     }
@@ -880,7 +880,7 @@ RF_API void rf_draw_rectangle_rounded(rf_rec rec, float roundness, int segments,
 }
 
 // Draw rectangle with rounded edges outline
-RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int segments, int line_thick, rf_color color)
+rf_public void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int segments, int line_thick, rf_color color)
 {
     if (line_thick < 0) line_thick = 0;
 
@@ -906,7 +906,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int seg
 
         // Calculate the maximum angle between segments based on the error rate.
         float th = acosf(2*powf(1 - CIRCLE_ERROR_RATE/radius, 2) - 1);
-        segments = ceilf(2 * RF_PI / th) / 2;
+        segments = ceilf(2 * rf_pi / th) / 2;
         if (segments <= 0) segments = 4;
     }
 
@@ -966,13 +966,13 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int seg
             {
                 rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*inner_radius, center.y + cosf(RF_DEG2RAD*angle)*inner_radius);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*inner_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*inner_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * inner_radius, center.y + cosf(rf_deg2rad * angle) * inner_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * inner_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * inner_radius);
 
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*inner_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*inner_radius);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*outer_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*outer_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * inner_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * inner_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * outer_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * outer_radius);
 
                 angle += step_length;
             }
@@ -1032,8 +1032,8 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int seg
             for (rf_int i = 0; i < segments; i++)
             {
                 rf_gfx_color4ub(color.r, color.g, color.b, color.a);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*angle)*outer_radius, center.y + cosf(RF_DEG2RAD*angle)*outer_radius);
-                rf_gfx_vertex2f(center.x + sinf(RF_DEG2RAD*(angle + step_length))*outer_radius, center.y + cosf(RF_DEG2RAD*(angle + step_length))*outer_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * angle) * outer_radius, center.y + cosf(rf_deg2rad * angle) * outer_radius);
+                rf_gfx_vertex2f(center.x + sinf(rf_deg2rad * (angle + step_length)) * outer_radius, center.y + cosf(rf_deg2rad * (angle + step_length)) * outer_radius);
                 angle += step_length;
             }
         }
@@ -1050,7 +1050,7 @@ RF_API void rf_draw_rectangle_rounded_lines(rf_rec rec, float roundness, int seg
 
 // Draw a triangle
 // NOTE: Vertex must be provided in counter-clockwise order
-RF_API void rf_draw_triangle(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
+rf_public void rf_draw_triangle(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
 {
     if (rf_gfx_check_buffer_limit(4)) rf_gfx_draw();
     rf_gfx_begin(RF_TRIANGLES);
@@ -1064,7 +1064,7 @@ RF_API void rf_draw_triangle(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
 
 // Draw a triangle using lines
 // NOTE: Vertex must be provided in counter-clockwise order
-RF_API void rf_draw_triangle_lines(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
+rf_public void rf_draw_triangle_lines(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color color)
 {
     if (rf_gfx_check_buffer_limit(6)) rf_gfx_draw();
 
@@ -1083,7 +1083,7 @@ RF_API void rf_draw_triangle_lines(rf_vec2 v1, rf_vec2 v2, rf_vec2 v3, rf_color 
 
 // Draw a triangle fan defined by points
 // NOTE: First vertex provided is the center, shared by all triangles
-RF_API void rf_draw_triangle_fan(rf_vec2 *points, int points_count, rf_color color)
+rf_public void rf_draw_triangle_fan(rf_vec2 *points, int points_count, rf_color color)
 {
     if (points_count >= 3)
     {
@@ -1114,7 +1114,7 @@ RF_API void rf_draw_triangle_fan(rf_vec2 *points, int points_count, rf_color col
 
 // Draw a triangle strip defined by points
 // NOTE: Every new vertex connects with previous two
-RF_API void rf_draw_triangle_strip(rf_vec2 *points, int points_count, rf_color color)
+rf_public void rf_draw_triangle_strip(rf_vec2 *points, int points_count, rf_color color)
 {
     if (points_count >= 3)
     {
@@ -1143,7 +1143,7 @@ RF_API void rf_draw_triangle_strip(rf_vec2 *points, int points_count, rf_color c
 }
 
 // Draw a regular polygon of n sides (Vector version)
-RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color)
+rf_public void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation, rf_color color)
 {
     if (sides < 3) sides = 3;
     float centralAngle = 0.0f;
@@ -1159,10 +1159,10 @@ RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
         rf_gfx_vertex2f(0, 0);
-        rf_gfx_vertex2f(sinf(RF_DEG2RAD*centralAngle)*radius, cosf(RF_DEG2RAD*centralAngle)*radius);
+        rf_gfx_vertex2f(sinf(rf_deg2rad * centralAngle) * radius, cosf(rf_deg2rad * centralAngle) * radius);
 
         centralAngle += 360.0f/(float)sides;
-        rf_gfx_vertex2f(sinf(RF_DEG2RAD*centralAngle)*radius, cosf(RF_DEG2RAD*centralAngle)*radius);
+        rf_gfx_vertex2f(sinf(rf_deg2rad * centralAngle) * radius, cosf(rf_deg2rad * centralAngle) * radius);
     }
     rf_gfx_end();
 
@@ -1170,13 +1170,13 @@ RF_API void rf_draw_poly(rf_vec2 center, int sides, float radius, float rotation
 }
 
 // Draw a rf_texture2d with extended parameters
-RF_API void rf_draw_texture(rf_texture2d texture, int x, int y, rf_color tint)
+rf_public void rf_draw_texture(rf_texture2d texture, int x, int y, rf_color tint)
 {
     rf_draw_texture_ex(texture, x, y, texture.width, texture.height, 0, tint);
 }
 
 // Draw a rf_texture2d with extended parameters
-RF_API void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h, float rotation, rf_color tint)
+rf_public void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h, float rotation, rf_color tint)
 {
     rf_rec source_rec = { 0.0f, 0.0f, (float)texture.width, (float)texture.height };
     rf_rec dest_rec = { x, y, w, h };
@@ -1186,7 +1186,7 @@ RF_API void rf_draw_texture_ex(rf_texture2d texture, int x, int y, int w, int h,
 }
 
 // Draw a part of a texture (defined by a rectangle) with 'pro' parameters. Note: origin is relative to destination rectangle size
-RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
+rf_public void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
 {
     // Check if texture is valid
     if (texture.id > 0)
@@ -1237,7 +1237,7 @@ RF_API void rf_draw_texture_region(rf_texture2d texture, rf_rec source_rec, rf_r
 }
 
 // Draws a texture (or part of it) that stretches or shrinks nicely using n-patch info
-RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_info, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
+rf_public void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_info, rf_rec dest_rec, rf_vec2 origin, float rotation, rf_color tint)
 {
     if (texture.id > 0)
     {
@@ -1434,7 +1434,7 @@ RF_API void rf_draw_texture_npatch(rf_texture2d texture, rf_npatch_info n_patch_
 }
 
 // Draw text (using default font)
-RF_API void rf_draw_string(const char* text, int text_len, int posX, int posY, int fontSize, rf_color color)
+rf_public void rf_draw_string(const char* text, int text_len, int posX, int posY, int fontSize, rf_color color)
 {
     // Check if default font has been loaded
     if (rf_get_default_font().texture.id == 0 || text_len == 0) return;
@@ -1449,7 +1449,7 @@ RF_API void rf_draw_string(const char* text, int text_len, int posX, int posY, i
 }
 
 // Draw text with custom font
-RF_API void rf_draw_string_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint)
+rf_public void rf_draw_string_ex(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint)
 {
     int text_offset_y = 0; // Required for line break!
     float text_offset_x = 0.0f; // Offset between characters
@@ -1496,14 +1496,14 @@ RF_API void rf_draw_string_ex(rf_font font, const char* text, int text_len, rf_v
 }
 
 // Draw text wrapped
-RF_API void rf_draw_string_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode)
+rf_public void rf_draw_string_wrap(rf_font font, const char* text, int text_len, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode)
 {
     rf_rec rec = { 0, 0, wrap_width, FLT_MAX };
     rf_draw_string_rec(font, text, text_len, rec, font_size, spacing, mode, tint);
 }
 
 // Draw text using font inside rectangle limits
-RF_API void rf_draw_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint)
+rf_public void rf_draw_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint)
 {
     int   text_offset_x = 0; // Offset between characters
     int   text_offset_y = 0; // Required for line break!
@@ -1635,15 +1635,15 @@ RF_API void rf_draw_string_rec(rf_font font, const char* text, int text_len, rf_
     }
 }
 
-RF_API void rf_draw_text(const char* text, int posX, int posY, int font_size, rf_color color) { rf_draw_string(text, strlen(text), posX, posY, font_size, color); }
+rf_public void rf_draw_text(const char* text, int posX, int posY, int font_size, rf_color color) { rf_draw_string(text, strlen(text), posX, posY, font_size, color); }
 
-RF_API void rf_draw_text_ex(rf_font font, const char* text, rf_vec2 position, float fontSize, float spacing, rf_color tint) { rf_draw_string_ex(font, text, strlen(text), position, fontSize, spacing, tint); }
+rf_public void rf_draw_text_ex(rf_font font, const char* text, rf_vec2 position, float fontSize, float spacing, rf_color tint) { rf_draw_string_ex(font, text, strlen(text), position, fontSize, spacing, tint); }
 
-RF_API void rf_draw_text_wrap(rf_font font, const char* text, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode) { rf_draw_string_wrap(font, text, strlen(text), position, font_size, spacing, tint, wrap_width, mode); }
+rf_public void rf_draw_text_wrap(rf_font font, const char* text, rf_vec2 position, float font_size, float spacing, rf_color tint, float wrap_width, rf_text_wrap_mode mode) { rf_draw_string_wrap(font, text, strlen(text), position, font_size, spacing, tint, wrap_width, mode); }
 
-RF_API void rf_draw_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint) { rf_draw_string_rec(font, text, strlen(text), rec, font_size, spacing, wrap, tint); }
+rf_public void rf_draw_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float spacing, rf_text_wrap_mode wrap, rf_color tint) { rf_draw_string_rec(font, text, strlen(text), rec, font_size, spacing, wrap, tint); }
 
-RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color)
+rf_public void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color)
 {
     rf_gfx_begin(RF_LINES);
     rf_gfx_color4ub(color.r, color.g, color.b, color.a);
@@ -1653,7 +1653,7 @@ RF_API void rf_draw_line3d(rf_vec3 start_pos, rf_vec3 end_pos, rf_color color)
 }
 
 // Draw a circle in 3D world space
-RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotationAngle, rf_color color)
+rf_public void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis, float rotationAngle, rf_color color)
 {
     if (rf_gfx_check_buffer_limit(2 * 36)) rf_gfx_draw();
 
@@ -1666,8 +1666,8 @@ RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis
     {
         rf_gfx_color4ub(color.r, color.g, color.b, color.a);
 
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius, cosf(RF_DEG2RAD*i)*radius, 0.0f);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 10))*radius, cosf(RF_DEG2RAD*(i + 10))*radius, 0.0f);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius, cosf(rf_deg2rad * i) * radius, 0.0f);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 10)) * radius, cosf(rf_deg2rad * (i + 10)) * radius, 0.0f);
     }
     rf_gfx_end();
     rf_gfx_pop_matrix();
@@ -1675,7 +1675,7 @@ RF_API void rf_draw_circle3d(rf_vec3 center, float radius, rf_vec3 rotation_axis
 
 // Draw cube
 // NOTE: Cube position is the center position
-RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color)
+rf_public void rf_draw_cube(rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -1750,7 +1750,7 @@ RF_API void rf_draw_cube(rf_vec3 position, float width, float height, float leng
 }
 
 // Draw cube wires
-RF_API void rf_draw_cube_wires(rf_vec3 position, float width, float height, float length, rf_color color)
+rf_public void rf_draw_cube_wires(rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = 0.0f;
     float y = 0.0f;
@@ -1821,7 +1821,7 @@ RF_API void rf_draw_cube_wires(rf_vec3 position, float width, float height, floa
 
 // Draw cube
 // NOTE: Cube position is the center position
-RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float width, float height, float length, rf_color color)
+rf_public void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float width, float height, float length, rf_color color)
 {
     float x = position.x;
     float y = position.y;
@@ -1882,13 +1882,13 @@ RF_API void rf_draw_cube_texture(rf_texture2d texture, rf_vec3 position, float w
 }
 
 // Draw sphere
-RF_API void rf_draw_sphere(rf_vec3 center_pos, float radius, rf_color color)
+rf_public void rf_draw_sphere(rf_vec3 center_pos, float radius, rf_color color)
 {
     rf_draw_sphere_ex(center_pos, radius, 16, 16, color);
 }
 
 // Draw sphere with extended parameters
-RF_API void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
+rf_public void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
 {
     int num_vertex = (rings + 2)*slices*6;
     if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
@@ -1905,25 +1905,25 @@ RF_API void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int s
     {
         for (rf_int j = 0; j < slices; j++)
         {
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * cosf(rf_deg2rad * (j * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * ((j + 1) * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * ((j + 1) * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * (j * 360 / slices)));
 
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * cosf(rf_deg2rad * (j * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i))) * sinf(rf_deg2rad * ((j + 1) * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i))) * cosf(rf_deg2rad * ((j + 1) * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * ((j + 1) * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * ((j + 1) * 360 / slices)));
         }
     }
     rf_gfx_end();
@@ -1931,7 +1931,7 @@ RF_API void rf_draw_sphere_ex(rf_vec3 center_pos, float radius, int rings, int s
 }
 
 // Draw sphere wires
-RF_API void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
+rf_public void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, int slices, rf_color color)
 {
     int num_vertex = (rings + 2)*slices*6;
     if (rf_gfx_check_buffer_limit(num_vertex)) rf_gfx_draw();
@@ -1948,27 +1948,27 @@ RF_API void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, in
     {
         for (rf_int j = 0; j < slices; j++)
         {
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * cosf(rf_deg2rad * (j * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * ((j + 1) * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * ((j + 1) * 360 / slices)));
 
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*((j+1) * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*((j+1) * 360/slices)));
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * ((j + 1) * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * ((j + 1) * 360 / slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * (j * 360 / slices)));
 
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1))),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*(i+1)))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * (i + 1))) * cosf(rf_deg2rad * (j * 360 / slices)));
 
-            rf_gfx_vertex3f(cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*sinf(RF_DEG2RAD*(j * 360/slices)),
-                           sinf(RF_DEG2RAD*(270+(180/(rings + 1))*i)),
-                           cosf(RF_DEG2RAD*(270+(180/(rings + 1))*i))*cosf(RF_DEG2RAD*(j * 360/slices)));
+            rf_gfx_vertex3f(cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * sinf(rf_deg2rad * (j * 360 / slices)),
+                           sinf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)),
+                            cosf(rf_deg2rad * (270 + (180 / (rings + 1)) * i)) * cosf(rf_deg2rad * (j * 360 / slices)));
         }
     }
 
@@ -1978,7 +1978,7 @@ RF_API void rf_draw_sphere_wires(rf_vec3 center_pos, float radius, int rings, in
 
 // Draw a cylinder
 // NOTE: It could be also used for pyramid and cone
-RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
+rf_public void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
 {
     if (sides < 3) sides = 3;
 
@@ -1996,21 +1996,21 @@ RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bo
         // Draw Body -------------------------------------------------------------------------------------
         for (rf_int i = 0; i < 360; i += 360 / sides)
         {
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * i) * radius_bottom, 0, cosf(RF_DEG2RAD * i) * radius_bottom);                                   // Bottom Left
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * (i + 360 / sides)) * radius_bottom, 0,   cosf(RF_DEG2RAD * (i + 360 / sides)) * radius_bottom); // Bottom Right
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * (i + 360 / sides)) * radius_top, height, cosf(RF_DEG2RAD * (i + 360 / sides)) * radius_top);    // Top Right
+            rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);                                   // Bottom Left
+            rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_bottom, 0, cosf(rf_deg2rad * (i + 360 / sides)) * radius_bottom); // Bottom Right
+            rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_top, height, cosf(rf_deg2rad * (i + 360 / sides)) * radius_top);    // Top Right
 
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * i) * radius_top, height, cosf(RF_DEG2RAD * i) * radius_top);                                 // Top Left
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * i) * radius_bottom, 0,   cosf(RF_DEG2RAD * i) * radius_bottom);                              // Bottom Left
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD * (i + 360 / sides)) * radius_top, height, cosf(RF_DEG2RAD * (i + 360 / sides)) * radius_top); // Top Right
+            rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_top, height, cosf(rf_deg2rad * i) * radius_top);                                 // Top Left
+            rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);                              // Bottom Left
+            rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_top, height, cosf(rf_deg2rad * (i + 360 / sides)) * radius_top); // Top Right
         }
 
         // Draw Cap --------------------------------------------------------------------------------------
         for (rf_int i = 0; i < 360; i += 360/sides)
         {
             rf_gfx_vertex3f(0, height, 0);
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
+            rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_top, height, cosf(rf_deg2rad * i) * radius_top);
+            rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_top, height, cosf(rf_deg2rad * (i + 360 / sides)) * radius_top);
         }
     }
     else
@@ -2019,8 +2019,8 @@ RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bo
         for (rf_int i = 0; i < 360; i += 360/sides)
         {
             rf_gfx_vertex3f(0, height, 0);
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
-            rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+            rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);
+            rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_bottom, 0, cosf(rf_deg2rad * (i + 360 / sides)) * radius_bottom);
         }
     }
 
@@ -2028,8 +2028,8 @@ RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bo
     for (rf_int i = 0; i < 360; i += 360/sides)
     {
         rf_gfx_vertex3f(0, 0, 0);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_bottom, 0, cosf(rf_deg2rad * (i + 360 / sides)) * radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);
     }
 
     rf_gfx_end();
@@ -2038,7 +2038,7 @@ RF_API void rf_draw_cylinder(rf_vec3 position, float radius_top, float radius_bo
 
 // Draw a wired cylinder
 // NOTE: It could be also used for pyramid and cone
-RF_API void rf_draw_cylinder_wires(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
+rf_public void rf_draw_cylinder_wires(rf_vec3 position, float radius_top, float radius_bottom, float height, int sides, rf_color color)
 {
     if (sides < 3) sides = 3;
 
@@ -2053,24 +2053,24 @@ RF_API void rf_draw_cylinder_wires(rf_vec3 position, float radius_top, float rad
 
     for (rf_int i = 0; i < 360; i += 360/sides)
     {
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_bottom, 0, cosf(rf_deg2rad * (i + 360 / sides)) * radius_bottom);
 
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_bottom, 0, cosf(RF_DEG2RAD*(i + 360/sides))*radius_bottom);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_bottom, 0, cosf(rf_deg2rad * (i + 360 / sides)) * radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_top, height, cosf(rf_deg2rad * (i + 360 / sides)) * radius_top);
 
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*(i + 360/sides))*radius_top, height, cosf(RF_DEG2RAD*(i + 360/sides))*radius_top);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * (i + 360 / sides)) * radius_top, height, cosf(rf_deg2rad * (i + 360 / sides)) * radius_top);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_top, height, cosf(rf_deg2rad * i) * radius_top);
 
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_top, height, cosf(RF_DEG2RAD*i)*radius_top);
-        rf_gfx_vertex3f(sinf(RF_DEG2RAD*i)*radius_bottom, 0, cosf(RF_DEG2RAD*i)*radius_bottom);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_top, height, cosf(rf_deg2rad * i) * radius_top);
+        rf_gfx_vertex3f(sinf(rf_deg2rad * i) * radius_bottom, 0, cosf(rf_deg2rad * i) * radius_bottom);
     }
     rf_gfx_end();
     rf_gfx_pop_matrix();
 }
 
 // Draw a plane
-RF_API void rf_draw_plane(rf_vec3 center_pos, rf_vec2 size, rf_color color)
+rf_public void rf_draw_plane(rf_vec3 center_pos, rf_vec2 size, rf_color color)
 {
     if (rf_gfx_check_buffer_limit(4)) rf_gfx_draw();
 
@@ -2092,7 +2092,7 @@ RF_API void rf_draw_plane(rf_vec3 center_pos, rf_vec2 size, rf_color color)
 }
 
 // Draw a ray line
-RF_API void rf_draw_ray(rf_ray ray, rf_color color)
+rf_public void rf_draw_ray(rf_ray ray, rf_color color)
 {
     float scale = 10000;
 
@@ -2106,7 +2106,7 @@ RF_API void rf_draw_ray(rf_ray ray, rf_color color)
 }
 
 // Draw a grid centered at (0, 0, 0)
-RF_API void rf_draw_grid(int slices, float spacing)
+rf_public void rf_draw_grid(int slices, float spacing)
 {
     int half_slices = slices/2;
 
@@ -2140,7 +2140,7 @@ RF_API void rf_draw_grid(int slices, float spacing)
 }
 
 // Draw gizmo
-RF_API void rf_draw_gizmo(rf_vec3 position)
+rf_public void rf_draw_gizmo(rf_vec3 position)
 {
     // NOTE: RGB = XYZ
     float length = 1.0f;
@@ -2163,7 +2163,7 @@ RF_API void rf_draw_gizmo(rf_vec3 position)
 }
 
 // Draw a model (with texture if set)
-RF_API void rf_draw_model(rf_model model, rf_vec3 position, float scale, rf_color tint)
+rf_public void rf_draw_model(rf_model model, rf_vec3 position, float scale, rf_color tint)
 {
     rf_vec3 vScale = { scale, scale, scale };
     rf_vec3 rotationAxis = { 0.0f, 1.0f, 0.0f };
@@ -2172,12 +2172,12 @@ RF_API void rf_draw_model(rf_model model, rf_vec3 position, float scale, rf_colo
 }
 
 // Draw a model with extended parameters
-RF_API void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
+rf_public void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
 {
     // Calculate transformation matrix from function parameters
     // Get transform matrix (rotation -> scale -> translation)
     rf_mat mat_scale = rf_mat_scale(scale.x, scale.y, scale.z);
-    rf_mat mat_rotation = rf_mat_rotate(rotation_axis, rotationAngle * RF_DEG2RAD);
+    rf_mat mat_rotation = rf_mat_rotate(rotation_axis, rotationAngle * rf_deg2rad);
     rf_mat mat_translation = rf_mat_translate(position.x, position.y, position.z);
 
     rf_mat mat_transform = rf_mat_mul(rf_mat_mul(mat_scale, mat_rotation), mat_translation);
@@ -2190,7 +2190,7 @@ RF_API void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_
         // TODO: Review color + tint premultiplication mechanism
         rf_color color = model.materials[model.mesh_material[i]].maps[RF_MAP_DIFFUSE].color;
 
-        rf_color color_tint = RF_WHITE;
+        rf_color color_tint = rf_white;
         color_tint.r = (((float)color.r/255.0)*((float)tint.r/255.0))*255;
         color_tint.g = (((float)color.g/255.0)*((float)tint.g/255.0))*255;
         color_tint.b = (((float)color.b/255.0)*((float)tint.b/255.0))*255;
@@ -2203,7 +2203,7 @@ RF_API void rf_draw_model_ex(rf_model model, rf_vec3 position, rf_vec3 rotation_
 }
 
 // Draw a model wires (with texture if set) with extended parameters
-RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
+rf_public void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotation_axis, float rotationAngle, rf_vec3 scale, rf_color tint)
 {
     rf_gfx_enable_wire_mode();
 
@@ -2213,7 +2213,7 @@ RF_API void rf_draw_model_wires(rf_model model, rf_vec3 position, rf_vec3 rotati
 }
 
 // Draw a bounding box with wires
-RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color)
+rf_public void rf_draw_bounding_box(rf_bounding_box box, rf_color color)
 {
     rf_vec3 size;
 
@@ -2227,7 +2227,7 @@ RF_API void rf_draw_bounding_box(rf_bounding_box box, rf_color color)
 }
 
 // Draw a billboard
-RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint)
+rf_public void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 center, float size, rf_color tint)
 {
     rf_rec source_rec = {0.0f, 0.0f, (float)texture.width, (float)texture.height };
 
@@ -2235,7 +2235,7 @@ RF_API void rf_draw_billboard(rf_camera3d camera, rf_texture2d texture, rf_vec3 
 }
 
 // Draw a billboard (part of a texture defined by a rectangle)
-RF_API void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint)
+rf_public void rf_draw_billboard_rec(rf_camera3d camera, rf_texture2d texture, rf_rec source_rec, rf_vec3 center, float size, rf_color tint)
 {
     // NOTE: Billboard size will maintain source_rec aspect ratio, size will represent billboard width
     rf_vec2 size_ratio = {size, size * (float)source_rec.height / source_rec.width };

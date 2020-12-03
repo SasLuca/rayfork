@@ -1,7 +1,7 @@
 #include "rayfork-camera.h"
 
 // Get world coordinates from screen coordinates
-RF_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
+rf_public rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 {
     rf_vec3 result = {0.0f, 0.0f, 0.0f};
 
@@ -24,7 +24,7 @@ RF_API rf_vec3 rf_unproject(rf_vec3 source, rf_mat proj, rf_mat view)
 }
 
 // Returns a ray trace from mouse position
-RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera)
+rf_public rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_camera3d camera)
 {
     rf_ray ray = {0};
 
@@ -45,7 +45,7 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate projection matrix from perspective
-        mat_proj = rf_mat_perspective(camera.fovy * RF_DEG2RAD, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
+        mat_proj = rf_mat_perspective(camera.fovy * rf_deg2rad, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
     else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
@@ -86,13 +86,13 @@ RF_API rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, rf_
 }
 
 // Get transform matrix for camera
-RF_API rf_mat rf_get_camera_matrix(rf_camera3d camera)
+rf_public rf_mat rf_get_camera_matrix(rf_camera3d camera)
 {
     return rf_mat_look_at(camera.position, camera.target, camera.up);
 }
 
 // Returns camera 2d transform matrix
-RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
+rf_public rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 {
     rf_mat mat_transform = {0};
 // The camera in world-space is set by
@@ -110,7 +110,7 @@ RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 //   2. Rotate and Scale
 //   3. Move by -target
     rf_mat mat_origin = rf_mat_translate(-camera.target.x, -camera.target.y, 0.0f);
-    rf_mat mat_rotation = rf_mat_rotate((rf_vec3) {0.0f, 0.0f, 1.0f}, camera.rotation * RF_DEG2RAD);
+    rf_mat mat_rotation = rf_mat_rotate((rf_vec3) {0.0f, 0.0f, 1.0f}, camera.rotation * rf_deg2rad);
     rf_mat mat_scale = rf_mat_scale(camera.zoom, camera.zoom, 1.0f);
     rf_mat mat_translation = rf_mat_translate(camera.offset.x, camera.offset.y, 0.0f);
 
@@ -120,7 +120,7 @@ RF_API rf_mat rf_get_camera_matrix2d(rf_camera2d camera)
 }
 
 // Returns the screen space position from a 3d world space position
-RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera)
+rf_public rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf_camera3d camera)
 {
     // Calculate projection matrix from perspective instead of frustum
     rf_mat mat_proj = rf_mat_identity();
@@ -128,7 +128,7 @@ RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf
     if (camera.type == RF_CAMERA_PERSPECTIVE)
     {
         // Calculate projection matrix from perspective
-        mat_proj = rf_mat_perspective(camera.fovy * RF_DEG2RAD, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
+        mat_proj = rf_mat_perspective(camera.fovy * rf_deg2rad, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
     else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
     {
@@ -163,7 +163,7 @@ RF_API rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position, rf
 }
 
 // Returns the screen space position for a 2d camera world space position
-RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
+rf_public rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
 {
     rf_mat mat_camera = rf_get_camera_matrix2d(camera);
     rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, mat_camera);
@@ -172,7 +172,7 @@ RF_API rf_vec2 rf_get_world_to_screen2d(rf_vec2 position, rf_camera2d camera)
 }
 
 // Returns the world space position for a 2d camera screen space position
-RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
+rf_public rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
 {
     rf_mat inv_mat_camera = rf_mat_invert(rf_get_camera_matrix2d(camera));
     rf_vec3 transform = rf_vec3_transform((rf_vec3) {position.x, position.y, 0}, inv_mat_camera);
@@ -181,7 +181,7 @@ RF_API rf_vec2 rf_get_screen_to_world2d(rf_vec2 position, rf_camera2d camera)
 }
 
 // Select camera mode (multiple camera modes available)
-RF_API void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, rf_builtin_camera3d_mode mode)
+rf_public void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, rf_builtin_camera3d_mode mode)
 {
     rf_vec3 v1 = camera.position;
     rf_vec3 v2 = camera.target;
@@ -215,7 +215,7 @@ RF_API void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera, r
 //       Mouse: IsMouseButtonDown(), GetMousePosition(), GetMouseWheelMove()
 //       Keys:  IsKeyDown()
 // TODO: Port to quaternion-based camera
-RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state)
+rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state)
 {
     // rf_camera3d mouse movement sensitivity
     #define RF_CAMERA_MOUSE_MOVE_SENSITIVITY 0.003f
@@ -264,7 +264,7 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf
         rf_move_down
     } rf_camera_move;
 
-    // RF_INTERNAL float player_eyes_position = 1.85f;
+    // rf_internal float player_eyes_position = 1.85f;
 
     // TODO: CRF_INTERNAL rf_ctx->gl_ctx.camera_target_distance and rf_ctx->gl_ctx.camera_angle here
 
@@ -374,11 +374,11 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf
                         state->camera_angle.y += mouse_position_delta.y*-RF_CAMERA_FREE_MOUSE_SENSITIVITY;
 
                         // Angle clamp
-                        if (state->camera_angle.y > RF_CAMERA_FREE_MIN_CLAMP * RF_DEG2RAD) {
-                            state->camera_angle.y = RF_CAMERA_FREE_MIN_CLAMP * RF_DEG2RAD;
+                        if (state->camera_angle.y > RF_CAMERA_FREE_MIN_CLAMP * rf_deg2rad) {
+                            state->camera_angle.y = RF_CAMERA_FREE_MIN_CLAMP * rf_deg2rad;
                         }
-                        else if (state->camera_angle.y < RF_CAMERA_FREE_MAX_CLAMP * RF_DEG2RAD) {
-                            state->camera_angle.y = RF_CAMERA_FREE_MAX_CLAMP * RF_DEG2RAD;
+                        else if (state->camera_angle.y < RF_CAMERA_FREE_MAX_CLAMP * rf_deg2rad) {
+                            state->camera_angle.y = RF_CAMERA_FREE_MAX_CLAMP * rf_deg2rad;
                         }
                     }
                 }
@@ -440,11 +440,11 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf
             state->camera_angle.y += (mouse_position_delta.y*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
 
             // Angle clamp
-            if (state->camera_angle.y > RF_CAMERA_FIRST_PERSON_MIN_CLAMP * RF_DEG2RAD) {
-                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MIN_CLAMP * RF_DEG2RAD;
+            if (state->camera_angle.y > RF_CAMERA_FIRST_PERSON_MIN_CLAMP * rf_deg2rad) {
+                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MIN_CLAMP * rf_deg2rad;
             }
-            else if (state->camera_angle.y < RF_CAMERA_FIRST_PERSON_MAX_CLAMP * RF_DEG2RAD) {
-                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MAX_CLAMP * RF_DEG2RAD;
+            else if (state->camera_angle.y < RF_CAMERA_FIRST_PERSON_MAX_CLAMP * rf_deg2rad) {
+                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MAX_CLAMP * rf_deg2rad;
             }
 
             // Camera is always looking at player
@@ -487,13 +487,13 @@ RF_API void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf
             state->camera_angle.y += (mouse_position_delta.y*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
 
             // Angle clamp
-            if (state->camera_angle.y > RF_CAMERA_THIRD_PERSON_MIN_CLAMP * RF_DEG2RAD)
+            if (state->camera_angle.y > RF_CAMERA_THIRD_PERSON_MIN_CLAMP * rf_deg2rad)
             {
-                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MIN_CLAMP * RF_DEG2RAD;
+                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MIN_CLAMP * rf_deg2rad;
             }
-            else if (state->camera_angle.y < RF_CAMERA_THIRD_PERSON_MAX_CLAMP * RF_DEG2RAD)
+            else if (state->camera_angle.y < RF_CAMERA_THIRD_PERSON_MAX_CLAMP * rf_deg2rad)
             {
-                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MAX_CLAMP * RF_DEG2RAD;
+                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MAX_CLAMP * rf_deg2rad;
             }
 
             // Camera zoom

@@ -2,98 +2,98 @@
 
 #pragma region pixel format
 
-RF_API const char* rf_pixel_format_string(rf_pixel_format format)
+rf_public const char* rf_pixel_format_string(rf_pixel_format format)
 {
     switch (format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE: return "RF_UNCOMPRESSED_GRAYSCALE";
-        case RF_UNCOMPRESSED_GRAY_ALPHA: return "RF_UNCOMPRESSED_GRAY_ALPHA";
-        case RF_UNCOMPRESSED_R5G6B5: return "RF_UNCOMPRESSED_R5G6B5";
-        case RF_UNCOMPRESSED_R8G8B8: return "RF_UNCOMPRESSED_R8G8B8";
-        case RF_UNCOMPRESSED_R5G5B5A1: return "RF_UNCOMPRESSED_R5G5B5A1";
-        case RF_UNCOMPRESSED_R4G4B4A4: return "RF_UNCOMPRESSED_R4G4B4A4";
-        case RF_UNCOMPRESSED_R8G8B8A8: return "RF_UNCOMPRESSED_R8G8B8A8";
-        case RF_UNCOMPRESSED_R32: return "RF_UNCOMPRESSED_R32";
-        case RF_UNCOMPRESSED_R32G32B32: return "RF_UNCOMPRESSED_R32G32B32";
-        case RF_UNCOMPRESSED_R32G32B32A32: return "RF_UNCOMPRESSED_R32G32B32A32";
-        case RF_COMPRESSED_DXT1_RGB: return "RF_COMPRESSED_DXT1_RGB";
-        case RF_COMPRESSED_DXT1_RGBA: return "RF_COMPRESSED_DXT1_RGBA";
-        case RF_COMPRESSED_DXT3_RGBA: return "RF_COMPRESSED_DXT3_RGBA";
-        case RF_COMPRESSED_DXT5_RGBA: return "RF_COMPRESSED_DXT5_RGBA";
-        case RF_COMPRESSED_ETC1_RGB: return "RF_COMPRESSED_ETC1_RGB";
-        case RF_COMPRESSED_ETC2_RGB: return "RF_COMPRESSED_ETC2_RGB";
-        case RF_COMPRESSED_ETC2_EAC_RGBA: return "RF_COMPRESSED_ETC2_EAC_RGBA";
-        case RF_COMPRESSED_PVRT_RGB: return "RF_COMPRESSED_PVRT_RGB";
-        case RF_COMPRESSED_PVRT_RGBA: return "RF_COMPRESSED_PVRT_RGBA";
-        case RF_COMPRESSED_ASTC_4x4_RGBA: return "RF_COMPRESSED_ASTC_4x4_RGBA";
-        case RF_COMPRESSED_ASTC_8x8_RGBA: return "RF_COMPRESSED_ASTC_8x8_RGBA";
+        case rf_pixel_format_grayscale: return "RF_UNCOMPRESSED_GRAYSCALE";
+        case rf_pixel_format_gray_alpha: return "RF_UNCOMPRESSED_GRAY_ALPHA";
+        case rf_pixel_format_r5g6b5: return "RF_UNCOMPRESSED_R5G6B5";
+        case rf_pixel_format_r8g8b8: return "RF_UNCOMPRESSED_R8G8B8";
+        case rf_pixel_format_r5g5b5a1: return "RF_UNCOMPRESSED_R5G5B5A1";
+        case rf_pixel_format_r4g4b4a4: return "RF_UNCOMPRESSED_R4G4B4A4";
+        case rf_pixel_format_r8g8b8a8: return "RF_UNCOMPRESSED_R8G8B8A8";
+        case rf_pixel_format_r32: return "RF_UNCOMPRESSED_R32";
+        case rf_pixel_format_r32g32b32: return "RF_UNCOMPRESSED_R32G32B32";
+        case rf_pixel_format_r32g32b32a32: return "RF_UNCOMPRESSED_R32G32B32A32";
+        case rf_pixel_format_dxt1_rgb: return "RF_COMPRESSED_DXT1_RGB";
+        case rf_pixel_format_dxt1_rgba: return "RF_COMPRESSED_DXT1_RGBA";
+        case rf_pixel_format_dxt3_rgba: return "RF_COMPRESSED_DXT3_RGBA";
+        case rf_pixel_format_dxt5_rgba: return "RF_COMPRESSED_DXT5_RGBA";
+        case rf_pixel_format_etc1_rgb: return "RF_COMPRESSED_ETC1_RGB";
+        case rf_pixel_format_etc2_rgb: return "RF_COMPRESSED_ETC2_RGB";
+        case rf_pixel_format_etc2_eac_rgba: return "RF_COMPRESSED_ETC2_EAC_RGBA";
+        case rf_pixel_format_pvrt_rgb: return "RF_COMPRESSED_PVRT_RGB";
+        case rf_pixel_format_prvt_rgba: return "RF_COMPRESSED_PVRT_RGBA";
+        case rf_pixel_format_astc_4x4_rgba: return "RF_COMPRESSED_ASTC_4x4_RGBA";
+        case rf_pixel_format_astc_8x8_rgba: return "RF_COMPRESSED_ASTC_8x8_RGBA";
         default: return NULL;
     }
 }
 
-RF_API rf_bool rf_is_uncompressed_format(rf_pixel_format format)
+rf_public rf_bool rf_is_uncompressed_format(rf_pixel_format format)
 {
-    return format >= RF_UNCOMPRESSED_GRAYSCALE && format <= RF_UNCOMPRESSED_R32G32B32A32;
+    return format >= rf_pixel_format_grayscale && format <= rf_pixel_format_r32g32b32a32;
 }
 
-RF_API rf_bool rf_is_compressed_format(rf_pixel_format format)
+rf_public rf_bool rf_is_compressed_format(rf_pixel_format format)
 {
-    return format >= RF_COMPRESSED_DXT1_RGB && format <= RF_COMPRESSED_ASTC_8x8_RGBA;
+    return format >= rf_pixel_format_dxt1_rgb && format <= rf_pixel_format_astc_8x8_rgba;
 }
 
-RF_API int rf_bits_per_pixel(rf_pixel_format format)
+rf_public int rf_bits_per_pixel(rf_pixel_format format)
 {
     switch (format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE: return 8; // 8 bit per pixel (no alpha)
-        case RF_UNCOMPRESSED_GRAY_ALPHA: return 8 * 2; // 8 * 2 bpp (2 channels)
-        case RF_UNCOMPRESSED_R5G6B5: return 16; // 16 bpp
-        case RF_UNCOMPRESSED_R8G8B8: return 24; // 24 bpp
-        case RF_UNCOMPRESSED_R5G5B5A1: return 16; // 16 bpp (1 bit alpha)
-        case RF_UNCOMPRESSED_R4G4B4A4: return 16; // 16 bpp (4 bit alpha)
-        case RF_UNCOMPRESSED_R8G8B8A8: return 32; // 32 bpp
-        case RF_UNCOMPRESSED_R32: return 32; // 32 bpp (1 channel - float)
-        case RF_UNCOMPRESSED_R32G32B32: return 32 * 3; // 32 * 3 bpp (3 channels - float)
-        case RF_UNCOMPRESSED_R32G32B32A32: return 32 * 4; // 32 * 4 bpp (4 channels - float)
-        case RF_COMPRESSED_DXT1_RGB: return 4; // 4 bpp (no alpha)
-        case RF_COMPRESSED_DXT1_RGBA: return 4; // 4 bpp (1 bit alpha)
-        case RF_COMPRESSED_DXT3_RGBA: return 8; // 8 bpp
-        case RF_COMPRESSED_DXT5_RGBA: return 8; // 8 bpp
-        case RF_COMPRESSED_ETC1_RGB: return 4; // 4 bpp
-        case RF_COMPRESSED_ETC2_RGB: return 4; // 4 bpp
-        case RF_COMPRESSED_ETC2_EAC_RGBA: return 8; // 8 bpp
-        case RF_COMPRESSED_PVRT_RGB: return 4; // 4 bpp
-        case RF_COMPRESSED_PVRT_RGBA: return 4; // 4 bpp
-        case RF_COMPRESSED_ASTC_4x4_RGBA: return 8; // 8 bpp
-        case RF_COMPRESSED_ASTC_8x8_RGBA: return 2; // 2 bpp
+        case rf_pixel_format_grayscale: return 8; // 8 bit per pixel (no alpha)
+        case rf_pixel_format_gray_alpha: return 8 * 2; // 8 * 2 bpp (2 channels)
+        case rf_pixel_format_r5g6b5: return 16; // 16 bpp
+        case rf_pixel_format_r8g8b8: return 24; // 24 bpp
+        case rf_pixel_format_r5g5b5a1: return 16; // 16 bpp (1 bit alpha)
+        case rf_pixel_format_r4g4b4a4: return 16; // 16 bpp (4 bit alpha)
+        case rf_pixel_format_r8g8b8a8: return 32; // 32 bpp
+        case rf_pixel_format_r32: return 32; // 32 bpp (1 channel - float)
+        case rf_pixel_format_r32g32b32: return 32 * 3; // 32 * 3 bpp (3 channels - float)
+        case rf_pixel_format_r32g32b32a32: return 32 * 4; // 32 * 4 bpp (4 channels - float)
+        case rf_pixel_format_dxt1_rgb: return 4; // 4 bpp (no alpha)
+        case rf_pixel_format_dxt1_rgba: return 4; // 4 bpp (1 bit alpha)
+        case rf_pixel_format_dxt3_rgba: return 8; // 8 bpp
+        case rf_pixel_format_dxt5_rgba: return 8; // 8 bpp
+        case rf_pixel_format_etc1_rgb: return 4; // 4 bpp
+        case rf_pixel_format_etc2_rgb: return 4; // 4 bpp
+        case rf_pixel_format_etc2_eac_rgba: return 8; // 8 bpp
+        case rf_pixel_format_pvrt_rgb: return 4; // 4 bpp
+        case rf_pixel_format_prvt_rgba: return 4; // 4 bpp
+        case rf_pixel_format_astc_4x4_rgba: return 8; // 8 bpp
+        case rf_pixel_format_astc_8x8_rgba: return 2; // 2 bpp
         default: return 0;
     }
 }
 
-RF_API int rf_bytes_per_pixel(rf_uncompressed_pixel_format format)
+rf_public int rf_bytes_per_pixel(rf_uncompressed_pixel_format format)
 {
     switch (format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE: return 1;
-        case RF_UNCOMPRESSED_GRAY_ALPHA: return 2;
-        case RF_UNCOMPRESSED_R5G5B5A1: return 2;
-        case RF_UNCOMPRESSED_R5G6B5: return 2;
-        case RF_UNCOMPRESSED_R4G4B4A4: return 2;
-        case RF_UNCOMPRESSED_R8G8B8A8: return 4;
-        case RF_UNCOMPRESSED_R8G8B8: return 3;
-        case RF_UNCOMPRESSED_R32: return 4;
-        case RF_UNCOMPRESSED_R32G32B32: return 12;
-        case RF_UNCOMPRESSED_R32G32B32A32: return 16;
+        case rf_pixel_format_grayscale: return 1;
+        case rf_pixel_format_gray_alpha: return 2;
+        case rf_pixel_format_r5g5b5a1: return 2;
+        case rf_pixel_format_r5g6b5: return 2;
+        case rf_pixel_format_r4g4b4a4: return 2;
+        case rf_pixel_format_r8g8b8a8: return 4;
+        case rf_pixel_format_r8g8b8: return 3;
+        case rf_pixel_format_r32: return 4;
+        case rf_pixel_format_r32g32b32: return 12;
+        case rf_pixel_format_r32g32b32a32: return 16;
         default: return 0;
     }
 }
 
-RF_API int rf_pixel_buffer_size(int width, int height, rf_pixel_format format)
+rf_public int rf_pixel_buffer_size(int width, int height, rf_pixel_format format)
 {
     return width * height * rf_bits_per_pixel(format) / 8;
 }
 
-RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, rf_int dst_size)
+rf_public rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_vec4* dst, rf_int dst_size)
 {
     rf_bool success = 0;
 
@@ -103,7 +103,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
 
     if (dst_pixel_count >= src_pixel_count)
     {
-        if (src_format == RF_UNCOMPRESSED_R32G32B32A32)
+        if (src_format == rf_pixel_format_r32g32b32a32)
         {
             success = 1;
             memcpy(dst, src, src_size);
@@ -115,7 +115,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
             #define RF_FOR_EACH_PIXEL for (rf_int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
             switch (src_format)
             {
-                case RF_UNCOMPRESSED_GRAYSCALE:
+                case rf_pixel_format_grayscale:
                     RF_FOR_EACH_PIXEL
                     {
                         float value = ((unsigned char*)src)[src_iter] / 255.0f;
@@ -127,7 +127,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_GRAY_ALPHA:
+                case rf_pixel_format_gray_alpha:
                     RF_FOR_EACH_PIXEL
                     {
                         float value0 = (float)((unsigned char*)src)[src_iter + 0] / 255.0f;
@@ -140,7 +140,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R5G5B5A1:
+                case rf_pixel_format_r5g5b5a1:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*) src)[src_iter];
@@ -152,7 +152,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R5G6B5:
+                case rf_pixel_format_r5g6b5:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*)src)[src_iter];
@@ -164,7 +164,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R4G4B4A4:
+                case rf_pixel_format_r4g4b4a4:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*)src)[src_iter];
@@ -176,7 +176,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R8G8B8A8:
+                case rf_pixel_format_r8g8b8a8:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].x = (float)((unsigned char*)src)[src_iter + 0] / 255.0f;
@@ -186,7 +186,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R8G8B8:
+                case rf_pixel_format_r8g8b8:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].x = (float)((unsigned char*)src)[src_iter + 0] / 255.0f;
@@ -196,7 +196,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32:
+                case rf_pixel_format_r32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].x = ((float*)src)[src_iter];
@@ -206,7 +206,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32G32B32:
+                case rf_pixel_format_r32g32b32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].x = ((float*)src)[src_iter + 0];
@@ -216,7 +216,7 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32G32B32A32:
+                case rf_pixel_format_r32g32b32a32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].x = ((float*)src)[src_iter + 0];
@@ -231,12 +231,12 @@ RF_API rf_bool rf_format_pixels_to_normalized(const void* src, rf_int src_size, 
             #undef RF_FOR_EACH_PIXEL
         }
     }
-    else RF_LOG_ERROR(RF_BAD_BUFFER_SIZE, "Buffer is size %d but function expected a size of at least %d.", dst_size, src_pixel_count * sizeof(rf_vec4));
+    else rf_log_error(rf_bad_buffer_size, "Buffer is size %d but function expected a size of at least %d.", dst_size, src_pixel_count * sizeof(rf_vec4));
 
     return success;
 }
 
-RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, rf_int dst_size)
+rf_public rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, rf_color* dst, rf_int dst_size)
 {
     rf_bool success = 0;
 
@@ -246,7 +246,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
 
     if (dst_pixel_count >= src_pixel_count)
     {
-        if (src_format == RF_UNCOMPRESSED_R8G8B8A8)
+        if (src_format == rf_pixel_format_r8g8b8a8)
         {
             success = 1;
             memcpy(dst, src, src_size);
@@ -257,7 +257,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
             #define RF_FOR_EACH_PIXEL for (rf_int dst_iter = 0, src_iter = 0; src_iter < src_size && dst_iter < dst_size; dst_iter++, src_iter += src_bpp)
             switch (src_format)
             {
-                case RF_UNCOMPRESSED_GRAYSCALE:
+                case rf_pixel_format_grayscale:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned char value = ((unsigned char*) src)[src_iter];
@@ -268,7 +268,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_GRAY_ALPHA:
+                case rf_pixel_format_gray_alpha:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned char value0 = ((unsigned char*) src)[src_iter + 0];
@@ -281,7 +281,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R5G5B5A1:
+                case rf_pixel_format_r5g5b5a1:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*) src)[src_iter];
@@ -293,7 +293,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R5G6B5:
+                case rf_pixel_format_r5g6b5:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*) src)[src_iter];
@@ -305,7 +305,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R4G4B4A4:
+                case rf_pixel_format_r4g4b4a4:
                     RF_FOR_EACH_PIXEL
                     {
                         unsigned short pixel = ((unsigned short*) src)[src_iter];
@@ -317,7 +317,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R8G8B8A8:
+                case rf_pixel_format_r8g8b8a8:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].r = ((unsigned char*) src)[src_iter + 0];
@@ -327,7 +327,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R8G8B8:
+                case rf_pixel_format_r8g8b8:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].r = (unsigned char)((unsigned char*) src)[src_iter + 0];
@@ -337,7 +337,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32:
+                case rf_pixel_format_r32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].r = (unsigned char)(((float*) src)[src_iter + 0] * 255.0f);
@@ -347,7 +347,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32G32B32:
+                case rf_pixel_format_r32g32b32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].r = (unsigned char)(((float*) src)[src_iter + 0] * 255.0f);
@@ -357,7 +357,7 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
                     }
                     break;
 
-                case RF_UNCOMPRESSED_R32G32B32A32:
+                case rf_pixel_format_r32g32b32a32:
                     RF_FOR_EACH_PIXEL
                     {
                         dst[dst_iter].r = (unsigned char)(((float*) src)[src_iter + 0] * 255.0f);
@@ -372,20 +372,20 @@ RF_API rf_bool rf_format_pixels_to_rgba32(const void* src, rf_int src_size, rf_u
             #undef RF_FOR_EACH_PIXEL
         }
     }
-    else RF_LOG_ERROR(RF_BAD_BUFFER_SIZE, "Buffer is size %d but function expected a size of at least %d", dst_size, src_pixel_count * sizeof(rf_color));
+    else rf_log_error(rf_bad_buffer_size, "Buffer is size %d but function expected a size of at least %d", dst_size, src_pixel_count * sizeof(rf_color));
 
     return success;
 }
 
-RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
+rf_public rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompressed_pixel_format src_format, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     rf_bool success = 0;
 
-    if (rf_is_uncompressed_format(src_format) && dst_format == RF_UNCOMPRESSED_R32G32B32A32)
+    if (rf_is_uncompressed_format(src_format) && dst_format == rf_pixel_format_r32g32b32a32)
     {
         success = rf_format_pixels_to_normalized(src, src_size, src_format, dst, dst_size);
     }
-    else if (rf_is_uncompressed_format(src_format) && dst_format == RF_UNCOMPRESSED_R8G8B8A8)
+    else if (rf_is_uncompressed_format(src_format) && dst_format == rf_pixel_format_r8g8b8a8)
     {
         success = rf_format_pixels_to_rgba32(src, src_size, src_format, dst, dst_size);
     }
@@ -412,7 +412,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
             {
                 switch (dst_format)
                 {
-                    case RF_UNCOMPRESSED_GRAYSCALE:
+                    case rf_pixel_format_grayscale:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -420,7 +420,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_GRAY_ALPHA:
+                    case rf_pixel_format_gray_alpha:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -430,7 +430,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R5G6B5:
+                    case rf_pixel_format_r5g6b5:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -443,7 +443,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R8G8B8:
+                    case rf_pixel_format_r8g8b8:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -454,7 +454,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R5G5B5A1:
+                    case rf_pixel_format_r5g5b5a1:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -469,7 +469,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R4G4B4A4:
+                    case rf_pixel_format_r4g4b4a4:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -483,7 +483,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R32:
+                    case rf_pixel_format_r32:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -492,7 +492,7 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
                         }
                         break;
 
-                    case RF_UNCOMPRESSED_R32G32B32:
+                    case rf_pixel_format_r32g32b32:
                         RF_FOR_EACH_PIXEL
                         {
                             rf_vec4 normalized = RF_COMPUTE_NORMALIZED_PIXEL();
@@ -509,20 +509,20 @@ RF_API rf_bool rf_format_pixels(const void* src, rf_int src_size, rf_uncompresse
             #undef RF_FOR_EACH_PIXEL
             #undef RF_COMPUTE_NORMALIZED_PIXEL
         }
-        else RF_LOG_ERROR(RF_BAD_BUFFER_SIZE, "Buffer is size %d but function expected a size of at least %d.", dst_size, src_pixel_count * dst_bpp);
+        else rf_log_error(rf_bad_buffer_size, "Buffer is size %d but function expected a size of at least %d.", dst_size, src_pixel_count * dst_bpp);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function expected uncompressed pixel formats. Source format: %d, Destination format: %d.", src_format, dst_format);
+    else rf_log_error(rf_bad_argument, "Function expected uncompressed pixel formats. Source format: %d, Destination format: %d.", src_format, dst_format);
 
     return success;
 }
 
-RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format)
+rf_public rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompressed_pixel_format src_format)
 {
     rf_vec4 result = {0};
 
     switch (src_format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE:
+        case rf_pixel_format_grayscale:
         {
             float value = ((unsigned char*)src)[0] / 255.0f;
 
@@ -533,7 +533,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_GRAY_ALPHA:
+        case rf_pixel_format_gray_alpha:
         {
             float value0 = (float)((unsigned char*)src)[0] / 255.0f;
             float value1 = (float)((unsigned char*)src)[1] / 255.0f;
@@ -545,7 +545,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R5G5B5A1:
+        case rf_pixel_format_r5g5b5a1:
         {
             unsigned short pixel = ((unsigned short*) src)[0];
 
@@ -556,7 +556,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R5G6B5:
+        case rf_pixel_format_r5g6b5:
         {
             unsigned short pixel = ((unsigned short*)src)[0];
 
@@ -567,7 +567,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R4G4B4A4:
+        case rf_pixel_format_r4g4b4a4:
         {
             unsigned short pixel = ((unsigned short*)src)[0];
 
@@ -578,7 +578,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R8G8B8A8:
+        case rf_pixel_format_r8g8b8a8:
         {
             result.x = (float)((unsigned char*)src)[0] / 255.0f;
             result.y = (float)((unsigned char*)src)[1] / 255.0f;
@@ -587,7 +587,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R8G8B8:
+        case rf_pixel_format_r8g8b8:
         {
             result.x = (float)((unsigned char*)src)[0] / 255.0f;
             result.y = (float)((unsigned char*)src)[1] / 255.0f;
@@ -596,7 +596,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R32:
+        case rf_pixel_format_r32:
         {
             result.x = ((float*)src)[0];
             result.y = 0.0f;
@@ -605,7 +605,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R32G32B32:
+        case rf_pixel_format_r32g32b32:
         {
             result.x = ((float*)src)[0];
             result.y = ((float*)src)[1];
@@ -614,7 +614,7 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
         }
         break;
 
-        case RF_UNCOMPRESSED_R32G32B32A32:
+        case rf_pixel_format_r32g32b32a32:
         {
             result.x = ((float*)src)[0];
             result.y = ((float*)src)[1];
@@ -629,13 +629,13 @@ RF_API rf_vec4 rf_format_one_pixel_to_normalized(const void* src, rf_uncompresse
     return result;
 }
 
-RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format)
+rf_public rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_pixel_format src_format)
 {
     rf_color result = {0};
 
     switch (src_format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE:
+        case rf_pixel_format_grayscale:
         {
             unsigned char value = ((unsigned char*) src)[0];
             result.r = value;
@@ -645,7 +645,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_GRAY_ALPHA:
+        case rf_pixel_format_gray_alpha:
         {
             unsigned char value0 = ((unsigned char*) src)[0];
             unsigned char value1 = ((unsigned char*) src)[1];
@@ -657,7 +657,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R5G5B5A1:
+        case rf_pixel_format_r5g5b5a1:
         {
             unsigned short pixel = ((unsigned short*) src)[0];
 
@@ -668,7 +668,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R5G6B5:
+        case rf_pixel_format_r5g6b5:
         {
             unsigned short pixel = ((unsigned short*) src)[0];
 
@@ -679,7 +679,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R4G4B4A4:
+        case rf_pixel_format_r4g4b4a4:
         {
             unsigned short pixel = ((unsigned short*) src)[0];
 
@@ -690,7 +690,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R8G8B8A8:
+        case rf_pixel_format_r8g8b8a8:
         {
             result.r = ((unsigned char*) src)[0];
             result.g = ((unsigned char*) src)[1];
@@ -699,7 +699,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R8G8B8:
+        case rf_pixel_format_r8g8b8:
         {
             result.r = (unsigned char)((unsigned char*) src)[0];
             result.g = (unsigned char)((unsigned char*) src)[1];
@@ -708,7 +708,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R32:
+        case rf_pixel_format_r32:
         {
             result.r = (unsigned char)(((float*) src)[0] * 255.0f);
             result.g = 0;
@@ -717,7 +717,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R32G32B32:
+        case rf_pixel_format_r32g32b32:
         {
             result.r = (unsigned char)(((float*) src)[0] * 255.0f);
             result.g = (unsigned char)(((float*) src)[1] * 255.0f);
@@ -726,7 +726,7 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
         }
         break;
 
-        case RF_UNCOMPRESSED_R32G32B32A32:
+        case rf_pixel_format_r32g32b32a32:
         {
             result.r = (unsigned char)(((float*) src)[0] * 255.0f);
             result.g = (unsigned char)(((float*) src)[1] * 255.0f);
@@ -741,17 +741,17 @@ RF_API rf_color rf_format_one_pixel_to_rgba32(const void* src, rf_uncompressed_p
     return result;
 }
 
-RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format)
+rf_public void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format src_format, void* dst, rf_uncompressed_pixel_format dst_format)
 {
     if (src_format == dst_format && rf_is_uncompressed_format(src_format) && rf_is_uncompressed_format(dst_format))
     {
         memcpy(dst, src, rf_bytes_per_pixel(src_format));
     }
-    else if (rf_is_uncompressed_format(src_format) && dst_format == RF_UNCOMPRESSED_R32G32B32A32)
+    else if (rf_is_uncompressed_format(src_format) && dst_format == rf_pixel_format_r32g32b32a32)
     {
         *((rf_vec4*)dst) = rf_format_one_pixel_to_normalized(src, src_format);
     }
-    else if (rf_is_uncompressed_format(src_format) && dst_format == RF_UNCOMPRESSED_R8G8B8A8)
+    else if (rf_is_uncompressed_format(src_format) && dst_format == rf_pixel_format_r8g8b8a8)
     {
         *((rf_color*)dst) = rf_format_one_pixel_to_rgba32(src, src_format);
     }
@@ -759,14 +759,14 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
     {
         switch (dst_format)
         {
-            case RF_UNCOMPRESSED_GRAYSCALE:
+            case rf_pixel_format_grayscale:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((unsigned char*)dst)[0] = (unsigned char)((normalized.x * 0.299f + normalized.y * 0.587f + normalized.z * 0.114f) * 255.0f);
             }
             break;
 
-            case RF_UNCOMPRESSED_GRAY_ALPHA:
+            case rf_pixel_format_gray_alpha:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((unsigned char*)dst)[0    ] = (unsigned char)((normalized.x * 0.299f + (float)normalized.y * 0.587f + (float)normalized.z * 0.114f) * 255.0f);
@@ -774,7 +774,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R5G6B5:
+            case rf_pixel_format_r5g6b5:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 unsigned char r = (unsigned char)(round(normalized.x * 31.0f));
@@ -785,7 +785,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R8G8B8:
+            case rf_pixel_format_r8g8b8:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((unsigned char*)dst)[0    ] = (unsigned char)(normalized.x * 255.0f);
@@ -794,7 +794,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R5G5B5A1:
+            case rf_pixel_format_r5g5b5a1:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 int ALPHA_THRESHOLD = 50;
@@ -807,7 +807,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R4G4B4A4:
+            case rf_pixel_format_r4g4b4a4:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 unsigned char r = (unsigned char)(round(normalized.x * 15.0f));
@@ -819,7 +819,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R8G8B8A8:
+            case rf_pixel_format_r8g8b8a8:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((unsigned char*)dst)[0    ] = (unsigned char)(normalized.x * 255.0f);
@@ -829,14 +829,14 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R32:
+            case rf_pixel_format_r32:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((float*)dst)[0] = (float)(normalized.x * 0.299f + normalized.y * 0.587f + normalized.z * 0.114f);
             }
             break;
 
-            case RF_UNCOMPRESSED_R32G32B32:
+            case rf_pixel_format_r32g32b32:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((float*)dst)[0    ] = normalized.x;
@@ -845,7 +845,7 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
             }
             break;
 
-            case RF_UNCOMPRESSED_R32G32B32A32:
+            case rf_pixel_format_r32g32b32a32:
             {
                 rf_vec4 normalized = rf_format_one_pixel_to_normalized(src, src_format);
                 ((float*)dst)[0    ] = normalized.x;
@@ -865,25 +865,25 @@ RF_API void rf_format_one_pixel(const void* src, rf_uncompressed_pixel_format sr
 #pragma region color
 
 // Returns 1 if the two colors have the same values for the rgb components
-RF_API rf_bool rf_color_match_rgb(rf_color a, rf_color b)
+rf_public rf_bool rf_color_match_rgb(rf_color a, rf_color b)
 {
     return a.r == b.r && a.g == b.g && a.b == b.b;
 }
 
 // Returns 1 if the two colors have the same values
-RF_API rf_bool rf_color_match(rf_color a, rf_color b)
+rf_public rf_bool rf_color_match(rf_color a, rf_color b)
 {
     return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
 }
 
 // Returns hexadecimal value for a rf_color
-RF_API int rf_color_to_int(rf_color color)
+rf_public int rf_color_to_int(rf_color color)
 {
     return (((int) color.r << 24) | ((int) color.g << 16) | ((int) color.b << 8) | (int) color.a);
 }
 
 // Returns color normalized as float [0..1]
-RF_API rf_vec4 rf_color_normalize(rf_color color)
+rf_public rf_vec4 rf_color_normalize(rf_color color)
 {
     rf_vec4 result;
 
@@ -896,7 +896,7 @@ RF_API rf_vec4 rf_color_normalize(rf_color color)
 }
 
 // Returns color from normalized values [0..1]
-RF_API rf_color rf_color_from_normalized(rf_vec4 normalized)
+rf_public rf_color rf_color_from_normalized(rf_vec4 normalized)
 {
     rf_color result;
 
@@ -909,7 +909,7 @@ RF_API rf_color rf_color_from_normalized(rf_vec4 normalized)
 }
 
 // Returns HSV values for a rf_color. Hue is returned as degrees [0..360]
-RF_API rf_vec3 rf_color_to_hsv(rf_color color)
+rf_public rf_vec3 rf_color_to_hsv(rf_color color)
 {
     rf_vec3 rgb = { (float) color.r / 255.0f, (float) color.g / 255.0f, (float) color.b / 255.0f };
     rf_vec3 hsv = { 0.0f, 0.0f, 0.0f };
@@ -960,7 +960,7 @@ RF_API rf_vec3 rf_color_to_hsv(rf_color color)
 }
 
 // Returns a rf_color from HSV values. rf_color->HSV->rf_color conversion will not yield exactly the same color due to rounding errors. Implementation reference: https://en.wikipedia.org/wiki/HSL_and_HSV#Alternative_HSV_conversion
-RF_API rf_color rf_color_from_hsv(rf_vec3 hsv)
+rf_public rf_color rf_color_from_hsv(rf_vec3 hsv)
 {
     rf_color color = {0, 0, 0, 255};
     float h = hsv.x, s = hsv.y, v = hsv.z;
@@ -993,7 +993,7 @@ RF_API rf_color rf_color_from_hsv(rf_vec3 hsv)
 }
 
 // Returns a rf_color struct from hexadecimal value
-RF_API rf_color rf_color_from_int(int hex_value)
+rf_public rf_color rf_color_from_int(int hex_value)
 {
     rf_color color;
 
@@ -1006,7 +1006,7 @@ RF_API rf_color rf_color_from_int(int hex_value)
 }
 
 // rf_color fade-in or fade-out, alpha goes from 0.0f to 1.0f
-RF_API rf_color rf_fade(rf_color color, float alpha)
+rf_public rf_color rf_fade(rf_color color, float alpha)
 {
     if (alpha < 0.0f) alpha = 0.0f;
     else if (alpha > 1.0f) alpha = 1.0f;

@@ -1,6 +1,6 @@
 #include "rayfork-gfx-internal.h"
 
-RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count)
+rf_public rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buffer* vertex_buffers, rf_int vertex_buffers_count, rf_draw_call* draw_calls, rf_int draw_calls_count)
 {
     if (!vertex_buffers || !draw_calls || vertex_buffers_count < 0 || draw_calls_count < 0) {
         return (rf_render_batch) {0};
@@ -56,7 +56,7 @@ RF_API rf_render_batch rf_create_custom_render_batch_from_buffers(rf_vertex_buff
 }
 
 // TODO: Not working yet
-RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator)
+rf_public rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count, rf_int draw_calls_count, rf_int vertex_buffer_elements_count, rf_allocator allocator)
 {
     if (vertex_buffers_count < 0 || draw_calls_count < 0 || vertex_buffer_elements_count < 0) {
         return (rf_render_batch) {0};
@@ -69,7 +69,7 @@ RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count
     rf_int draw_calls_array_size = sizeof(rf_draw_call) * draw_calls_count;
     rf_int allocation_size = vertex_buffer_array_size + draw_calls_array_size + vertex_buffers_memory_size;
 
-    char* memory = RF_ALLOC(allocator, allocation_size);
+    char* memory = rf_alloc(allocator, allocation_size);
 
     if (memory)
     {
@@ -77,9 +77,9 @@ RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count
         rf_draw_call* draw_calls = (rf_draw_call*) (memory + vertex_buffer_array_size);
         char* buffers_memory = memory + vertex_buffer_array_size + draw_calls_array_size;
 
-        RF_ASSERT(((char*)draw_calls - memory) == draw_calls_array_size + vertex_buffers_memory_size);
-        RF_ASSERT((buffers_memory - memory) == vertex_buffers_memory_size);
-        RF_ASSERT((buffers_memory - memory) == sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count * vertex_buffers_count);
+        rf_assert(((char*)draw_calls - memory) == draw_calls_array_size + vertex_buffers_memory_size);
+        rf_assert((buffers_memory - memory) == vertex_buffers_memory_size);
+        rf_assert((buffers_memory - memory) == sizeof(rf_one_element_vertex_buffer) * vertex_buffer_elements_count * vertex_buffers_count);
 
         for (rf_int i = 0; i < vertex_buffers_count; i++)
         {
@@ -104,7 +104,7 @@ RF_API rf_render_batch rf_create_custom_render_batch(rf_int vertex_buffers_count
     return result;
 }
 
-RF_API rf_render_batch rf_create_default_render_batch_from_memory(rf_default_render_batch* memory)
+rf_public rf_render_batch rf_create_default_render_batch_from_memory(rf_default_render_batch* memory)
 {
     if (!memory) {
         return (rf_render_batch) {0};
@@ -122,18 +122,18 @@ RF_API rf_render_batch rf_create_default_render_batch_from_memory(rf_default_ren
     return rf_create_custom_render_batch_from_buffers(memory->vertex_buffers, RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT, memory->draw_calls, RF_DEFAULT_BATCH_DRAW_CALLS_COUNT);
 }
 
-RF_API rf_render_batch rf_create_default_render_batch(rf_allocator allocator)
+rf_public rf_render_batch rf_create_default_render_batch(rf_allocator allocator)
 {
-    rf_default_render_batch* memory = RF_ALLOC(allocator, sizeof(rf_default_render_batch));
+    rf_default_render_batch* memory = rf_alloc(allocator, sizeof(rf_default_render_batch));
     return rf_create_default_render_batch_from_memory(memory);
 }
 
-RF_API void rf_set_active_render_batch(rf_render_batch* batch)
+rf_public void rf_set_active_render_batch(rf_render_batch* batch)
 {
     rf_ctx.current_batch = batch;
 }
 
-RF_API void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator)
+rf_public void rf_unload_render_batch(rf_render_batch batch, rf_allocator allocator)
 {
-    RF_FREE(allocator, batch.vertex_buffers);
+    rf_free(allocator, batch.vertex_buffers);
 }

@@ -5,20 +5,20 @@
 
 #pragma region stb_image
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)                     RF_ALLOC(rf__global_allocator_for_dependencies, sz)
-#define STBI_FREE(p)                        RF_FREE(rf__global_allocator_for_dependencies, p)
+#define STBI_MALLOC(sz)                     rf_alloc(rf__global_allocator_for_dependencies, sz)
+#define STBI_FREE(p)                        rf_free(rf__global_allocator_for_dependencies, p)
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) rf_default_realloc(rf__global_allocator_for_dependencies, p, oldsz, newsz)
-#define STBI_ASSERT(it)                     RF_ASSERT(it)
-#define STBIDEF                             RF_INTERNAL
+#define STBI_ASSERT(it)                     rf_assert(it)
+#define STBIDEF                             rf_internal
 #include "stb_image.h"
 #pragma endregion
 
 #pragma region stb_image_resize
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR_MALLOC(sz,c)   ((void)(c), RF_ALLOC(rf__global_allocator_for_dependencies, sz))
-#define STBIR_FREE(p,c)      ((void)(c), RF_FREE(rf__global_allocator_for_dependencies, p))
-#define STBIR_ASSERT(it)     RF_ASSERT(it)
-#define STBIRDEF RF_INTERNAL
+#define STBIR_MALLOC(sz,c)   ((void)(c), rf_alloc(rf__global_allocator_for_dependencies, sz))
+#define STBIR_FREE(p,c)      ((void)(c), rf_free(rf__global_allocator_for_dependencies, p))
+#define STBIR_ASSERT(it)     rf_assert(it)
+#define STBIRDEF rf_internal
 #include "stb_image_resize.h"
 #pragma endregion
 
@@ -31,7 +31,7 @@
 
 #pragma region stb_perlin
 #define STB_PERLIN_IMPLEMENTATION
-#define STBPDEF RF_INTERNAL
+#define STBPDEF rf_internal
 #include "stb_perlin.h"
 #pragma endregion
 
@@ -39,98 +39,98 @@
 
 #pragma region extract image data functions
 
-RF_API int rf_image_size(rf_image image)
+rf_public int rf_image_size(rf_image image)
 {
     return rf_pixel_buffer_size(image.width, image.height, image.format);
 }
 
-RF_API int rf_image_size_in_format(rf_image image, rf_pixel_format format)
+rf_public int rf_image_size_in_format(rf_image image, rf_pixel_format format)
 {
     return image.width * image.height * rf_bytes_per_pixel(format);
 }
 
-RF_API rf_bool rf_image_get_pixels_as_rgba32_to_buffer(rf_image image, rf_color* dst, rf_int dst_size)
+rf_public rf_bool rf_image_get_pixels_as_rgba32_to_buffer(rf_image image, rf_color* dst, rf_int dst_size)
 {
     rf_bool success = 0;
 
     if (rf_is_uncompressed_format(image.format))
     {
-        if (image.format == RF_UNCOMPRESSED_R32 || image.format == RF_UNCOMPRESSED_R32G32B32 || image.format == RF_UNCOMPRESSED_R32G32B32A32)
+        if (image.format == rf_pixel_format_r32 || image.format == rf_pixel_format_r32g32b32 || image.format == rf_pixel_format_r32g32b32a32)
         {
-            RF_LOG(RF_LOG_TYPE_WARNING, "32bit pixel format converted to 8bit per channel.");
+            rf_log(rf_log_type_warning, "32bit pixel format converted to 8bit per channel.");
         }
 
         success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, dst, dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 
     return success;
 }
 
-RF_API rf_bool rf_image_get_pixels_as_normalized_to_buffer(rf_image image, rf_vec4* dst, rf_int dst_size)
+rf_public rf_bool rf_image_get_pixels_as_normalized_to_buffer(rf_image image, rf_vec4* dst, rf_int dst_size)
 {
     rf_bool success = 0;
 
     if (rf_is_uncompressed_format(image.format))
     {
-        if ((image.format == RF_UNCOMPRESSED_R32) || (image.format == RF_UNCOMPRESSED_R32G32B32) || (image.format == RF_UNCOMPRESSED_R32G32B32A32))
+        if ((image.format == rf_pixel_format_r32) || (image.format == rf_pixel_format_r32g32b32) || (image.format == rf_pixel_format_r32g32b32a32))
         {
-            RF_LOG(RF_LOG_TYPE_WARNING, "32bit pixel format converted to 8bit per channel");
+            rf_log(rf_log_type_warning, "32bit pixel format converted to 8bit per channel");
         }
 
-        success = rf_format_pixels_to_normalized(image.data, rf_image_size(image), RF_UNCOMPRESSED_R32G32B32A32, dst, dst_size);
+        success = rf_format_pixels_to_normalized(image.data, rf_image_size(image), rf_pixel_format_r32g32b32a32, dst, dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 
     return success;
 }
 
 // Get pixel data from image in the form of rf_color struct array
-RF_API rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator)
+rf_public rf_color* rf_image_pixels_to_rgba32(rf_image image, rf_allocator allocator)
 {
     rf_color* result = NULL;
 
     if (rf_is_uncompressed_format(image.format))
     {
         int size = image.width * image.height * sizeof(rf_color);
-        result = RF_ALLOC(allocator, size);
+        result = rf_alloc(allocator, size);
 
         if (result)
         {
             rf_bool success = rf_image_get_pixels_as_rgba32_to_buffer(image, result, size);
-            RF_ASSERT(success);
+            rf_assert(success);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", size);
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 
     return result;
 }
 
 // Get pixel data from image as rf_vec4 array (float normalized)
-RF_API rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator)
+rf_public rf_vec4* rf_image_compute_pixels_to_normalized(rf_image image, rf_allocator allocator)
 {
     rf_vec4* result = NULL;
 
     if (rf_is_compressed_format(image.format))
     {
         int size = image.width * image.height * sizeof(rf_color);
-        result = RF_ALLOC(allocator, size);
+        result = rf_alloc(allocator, size);
 
         if (result)
         {
             rf_bool success = rf_image_get_pixels_as_normalized_to_buffer(image, result, size);
-            RF_ASSERT(success);
+            rf_assert(success);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", size);
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 
     return result;
 }
 
 // Extract color palette from image to maximum size
-RF_API void rf_image_extract_palette_to_buffer(rf_image image, rf_color* palette_dst, rf_int palette_size)
+rf_public void rf_image_extract_palette_to_buffer(rf_image image, rf_color* palette_dst, rf_int palette_size)
 {
     if (rf_is_uncompressed_format(image.format))
     {
@@ -162,18 +162,18 @@ RF_API void rf_image_extract_palette_to_buffer(rf_image image, rf_color* palette
                 }
             }
         }
-        else RF_LOG(RF_LOG_TYPE_WARNING, "Palette size was 0.");
+        else rf_log(rf_log_type_warning, "Palette size was 0.");
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 }
 
-RF_API rf_palette rf_image_extract_palette(rf_image image, rf_int palette_size, rf_allocator allocator)
+rf_public rf_palette rf_image_extract_palette(rf_image image, rf_int palette_size, rf_allocator allocator)
 {
     rf_palette result = {0};
 
     if (rf_is_uncompressed_format(image.format))
     {
-        rf_color* dst = RF_ALLOC(allocator, sizeof(rf_color) * palette_size);
+        rf_color* dst = rf_alloc(allocator, sizeof(rf_color) * palette_size);
         rf_image_extract_palette_to_buffer(image, dst, palette_size);
 
         result.colors = dst;
@@ -184,7 +184,7 @@ RF_API rf_palette rf_image_extract_palette(rf_image image, rf_int palette_size, 
 }
 
 // Get image alpha border rectangle
-RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold)
+rf_public rf_rec rf_image_alpha_border(rf_image image, float threshold)
 {
     rf_rec crop = {0};
 
@@ -219,7 +219,7 @@ RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold)
 
         crop = (rf_rec) { x_min, y_min, (x_max + 1) - x_min, (y_max + 1) - y_min };
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Function only works for uncompressed formats but was called with format %d.", image.format);
+    else rf_log_error(rf_bad_argument, "Function only works for uncompressed formats but was called with format %d.", image.format);
 
     return crop;
 }
@@ -228,7 +228,7 @@ RF_API rf_rec rf_image_alpha_border(rf_image image, float threshold)
 
 #pragma region loading and unloading functions
 
-RF_API rf_bool rf_supports_image_file_type(const char* filename)
+rf_public rf_bool rf_supports_image_file_type(const char* filename)
 {
     return       rf_is_file_extension(filename, ".png")
               || rf_is_file_extension(filename, ".bmp")
@@ -238,9 +238,9 @@ RF_API rf_bool rf_supports_image_file_type(const char* filename)
               || rf_is_file_extension(filename, ".hdr");
 }
 
-RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size, rf_desired_channels channels, rf_allocator temp_allocator)
+rf_public rf_image rf_load_image_from_file_data_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size, rf_desired_channels channels, rf_allocator temp_allocator)
 {
-    if (src == NULL || src_size <= 0) { RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `image` was invalid."); return (rf_image){0}; }
+    if (src == NULL || src_size <= 0) { rf_log_error(rf_bad_argument, "Argument `image` was invalid."); return (rf_image){0}; }
 
     rf_image result = {0};
 
@@ -248,9 +248,9 @@ RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, rf_int s
     int img_height = 0;
     int img_bpp    = 0;
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     if (output_buffer)
     {
@@ -265,30 +265,30 @@ RF_API rf_image rf_load_image_from_file_data_to_buffer(const void* src, rf_int s
 
             switch (img_bpp)
             {
-                case 1: result.format = RF_UNCOMPRESSED_GRAYSCALE; break;
-                case 2: result.format = RF_UNCOMPRESSED_GRAY_ALPHA; break;
-                case 3: result.format = RF_UNCOMPRESSED_R8G8B8; break;
-                case 4: result.format = RF_UNCOMPRESSED_R8G8B8A8; break;
+                case 1: result.format = rf_pixel_format_grayscale; break;
+                case 2: result.format = rf_pixel_format_gray_alpha; break;
+                case 3: result.format = rf_pixel_format_r8g8b8; break;
+                case 4: result.format = rf_pixel_format_r8g8b8a8; break;
                 default: break;
             }
 
             memcpy(dst, output_buffer, output_buffer_size);
         }
-        else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Buffer is not big enough", img_width, img_height, img_bpp);
+        else rf_log_error(rf_bad_argument, "Buffer is not big enough", img_width, img_height, img_bpp);
 
-        RF_FREE(temp_allocator, output_buffer);
+        rf_free(temp_allocator, output_buffer);
     }
-    else RF_LOG_ERROR(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", img_width, img_height, img_bpp);
+    else rf_log_error(rf_stbi_failed, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", img_width, img_height, img_bpp);
 
     return result;
 }
 
-RF_API rf_image rf_load_image_from_file_data(const void* src, rf_int src_size, rf_desired_channels desired_channels, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_load_image_from_file_data(const void* src, rf_int src_size, rf_desired_channels desired_channels, rf_allocator allocator, rf_allocator temp_allocator)
 {
     // Preconditions
     if (!src || src_size <= 0)
     {
-        RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `src` was null.");
+        rf_log_error(rf_bad_argument, "Argument `src` was null.");
         return (rf_image) {0};
     }
 
@@ -297,15 +297,15 @@ RF_API rf_image rf_load_image_from_file_data(const void* src, rf_int src_size, r
 
     // Use stb image with the `temp_allocator` to decompress the image and get it's data
     int width = 0, height = 0, channels = 0;
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &channels, desired_channels);
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     if (stbi_result && channels)
     {
         // Allocate a result buffer using the `allocator` and copy the data to it
         int stbi_result_size = width * height * channels;
-        void* result_buffer = RF_ALLOC(allocator, stbi_result_size);
+        void* result_buffer = rf_alloc(allocator, stbi_result_size);
 
         if (result_buffer)
         {
@@ -317,26 +317,26 @@ RF_API rf_image rf_load_image_from_file_data(const void* src, rf_int src_size, r
             // Set the format appropriately depending on the `channels` count
             switch (channels)
             {
-                case 1: result.format = RF_UNCOMPRESSED_GRAYSCALE; break;
-                case 2: result.format = RF_UNCOMPRESSED_GRAY_ALPHA; break;
-                case 3: result.format = RF_UNCOMPRESSED_R8G8B8; break;
-                case 4: result.format = RF_UNCOMPRESSED_R8G8B8A8; break;
+                case 1: result.format = rf_pixel_format_grayscale; break;
+                case 2: result.format = rf_pixel_format_gray_alpha; break;
+                case 3: result.format = rf_pixel_format_r8g8b8; break;
+                case 4: result.format = rf_pixel_format_r8g8b8a8; break;
                 default: break;
             }
 
             memcpy(result_buffer, stbi_result, stbi_result_size);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Buffer is not big enough", width, height, channels);
+        else rf_log_error(rf_bad_alloc, "Buffer is not big enough", width, height, channels);
 
         // Free the temp buffer allocated by stbi
-        RF_FREE(temp_allocator, stbi_result);
+        rf_free(temp_allocator, stbi_result);
     }
-    else RF_LOG_ERROR(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, channels);
+    else rf_log_error(rf_stbi_failed, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, channels);
 
     return result;
 }
 
-RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size, rf_desired_channels channels, rf_allocator temp_allocator)
+rf_public rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size, rf_desired_channels channels, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -345,9 +345,9 @@ RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, rf_i
         int img_width = 0, img_height = 0, img_bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+        rf_set_global_dependencies_allocator(temp_allocator);
         void* output_buffer = stbi_load_from_memory(src, src_size, &img_width, &img_height, &img_bpp, channels);
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+        rf_set_global_dependencies_allocator((rf_allocator) {0});
 
         if (output_buffer)
         {
@@ -360,24 +360,24 @@ RF_API rf_image rf_load_image_from_hdr_file_data_to_buffer(const void* src, rf_i
                 result.height = img_height;
                 result.valid  = 1;
 
-                     if (img_bpp == 1) result.format = RF_UNCOMPRESSED_R32;
-                else if (img_bpp == 3) result.format = RF_UNCOMPRESSED_R32G32B32;
-                else if (img_bpp == 4) result.format = RF_UNCOMPRESSED_R32G32B32A32;
+                     if (img_bpp == 1) result.format = rf_pixel_format_r32;
+                else if (img_bpp == 3) result.format = rf_pixel_format_r32g32b32;
+                else if (img_bpp == 4) result.format = rf_pixel_format_r32g32b32a32;
 
                 memcpy(dst, output_buffer, output_buffer_size);
             }
-            else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Buffer is not big enough", img_width, img_height, img_bpp);
+            else rf_log_error(rf_bad_argument, "Buffer is not big enough", img_width, img_height, img_bpp);
 
-            RF_FREE(temp_allocator, output_buffer);
+            rf_free(temp_allocator, output_buffer);
         }
-        else RF_LOG_ERROR(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", img_width, img_height, img_bpp);
+        else rf_log_error(rf_stbi_failed, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", img_width, img_height, img_bpp);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `image` was invalid.");
+    else rf_log_error(rf_bad_argument, "Argument `image` was invalid.");
 
     return result;
 }
 
-RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, rf_int src_size, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_load_image_from_hdr_file_data(const void* src, rf_int src_size, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -386,14 +386,14 @@ RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, rf_int src_siz
         int width = 0, height = 0, bpp = 0;
 
         // NOTE: Using stb_image to load images (Supports multiple image formats)
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+        rf_set_global_dependencies_allocator(temp_allocator);
         void* stbi_result = stbi_load_from_memory(src, src_size, &width, &height, &bpp, RF_ANY_CHANNELS);
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+        rf_set_global_dependencies_allocator((rf_allocator) {0});
 
         if (stbi_result && bpp)
         {
             int stbi_result_size = width * height * bpp;
-            void* result_buffer = RF_ALLOC(allocator, stbi_result_size);
+            void* result_buffer = rf_alloc(allocator, stbi_result_size);
 
             if (result_buffer)
             {
@@ -402,24 +402,24 @@ RF_API rf_image rf_load_image_from_hdr_file_data(const void* src, rf_int src_siz
                 result.height = height;
                 result.valid  = 1;
 
-                     if (bpp == 1) result.format = RF_UNCOMPRESSED_R32;
-                else if (bpp == 3) result.format = RF_UNCOMPRESSED_R32G32B32;
-                else if (bpp == 4) result.format = RF_UNCOMPRESSED_R32G32B32A32;
+                     if (bpp == 1) result.format = rf_pixel_format_r32;
+                else if (bpp == 3) result.format = rf_pixel_format_r32g32b32;
+                else if (bpp == 4) result.format = rf_pixel_format_r32g32b32a32;
 
                 memcpy(result_buffer, stbi_result, stbi_result_size);
             }
-            else RF_LOG_ERROR(RF_BAD_ALLOC, "Buffer is not big enough", width, height, bpp);
+            else rf_log_error(rf_bad_alloc, "Buffer is not big enough", width, height, bpp);
 
-            RF_FREE(temp_allocator, stbi_result);
+            rf_free(temp_allocator, stbi_result);
         }
-        else RF_LOG_ERROR(RF_STBI_FAILED, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, bpp);
+        else rf_log_error(rf_stbi_failed, "File format not supported or could not be loaded. STB Image returned { x: %d, y: %d, channels: %d }", width, height, bpp);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Argument `image` was invalid.");
+    else rf_log_error(rf_bad_argument, "Argument `image` was invalid.");
 
     return result;
 }
 
-RF_API rf_image rf_load_image_from_format_to_buffer(const void* src, rf_int src_size, int src_width, int src_height, rf_uncompressed_pixel_format src_format, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
+rf_public rf_image rf_load_image_from_format_to_buffer(const void* src, rf_int src_size, int src_width, int src_height, rf_uncompressed_pixel_format src_format, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     rf_image result = {0};
 
@@ -433,27 +433,27 @@ RF_API rf_image rf_load_image_from_format_to_buffer(const void* src, rf_int src_
         };
 
         rf_bool success = rf_format_pixels(src, src_size, src_format, dst, dst_size, dst_format);
-        RF_ASSERT(success);
+        rf_assert(success);
     }
 
     return result;
 }
 
-RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_image rf_load_image_from_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_image image = {0};
 
     if (rf_supports_image_file_type(filename))
     {
-        int file_size = RF_FILE_SIZE(io, filename);
+        int file_size = rf_file_size(io, filename);
 
         if (file_size > 0)
         {
-            unsigned char* image_file_buffer = RF_ALLOC(temp_allocator, file_size);
+            unsigned char* image_file_buffer = rf_alloc(temp_allocator, file_size);
 
             if (image_file_buffer)
             {
-                if (RF_READ_FILE(io, filename, image_file_buffer, file_size))
+                if (rf_read_file(io, filename, image_file_buffer, file_size))
                 {
                     if (rf_is_file_extension(filename, ".hdr"))
                     {
@@ -464,22 +464,22 @@ RF_API rf_image rf_load_image_from_file(const char* filename, rf_allocator alloc
                         image = rf_load_image_from_file_data(image_file_buffer, file_size, RF_ANY_CHANNELS, allocator, temp_allocator);
                     }
                 }
-                else RF_LOG_ERROR(RF_BAD_IO, "File size for %s is 0", filename);
+                else rf_log_error(rf_bad_io, "File size for %s is 0", filename);
 
-                RF_FREE(temp_allocator, image_file_buffer);
+                rf_free(temp_allocator, image_file_buffer);
             }
-            else RF_LOG_ERROR(RF_BAD_ALLOC, "Temporary allocation of size %d failed", file_size);
+            else rf_log_error(rf_bad_alloc, "Temporary allocation of size %d failed", file_size);
         }
-        else RF_LOG_ERROR(RF_BAD_IO, "File size for %s is 0", filename);
+        else rf_log_error(rf_bad_io, "File size for %s is 0", filename);
     }
-    else RF_LOG_ERROR(RF_UNSUPPORTED, "Image fileformat not supported", filename);
+    else rf_log_error(rf_unsupported, "Image fileformat not supported", filename);
 
     return image;
 }
 
-RF_API void rf_unload_image(rf_image image, rf_allocator allocator)
+rf_public void rf_unload_image(rf_image image, rf_allocator allocator)
 {
-    RF_FREE(allocator, image.data);
+    rf_free(allocator, image.data);
 }
 
 #pragma endregion
@@ -493,7 +493,7 @@ RF_API void rf_unload_image(rf_image image, rf_allocator allocator)
  * @param dst_size size of the `dst` buffer.
  * @return a deep copy of the image into the provided `dst` buffer.
  */
-RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_copy_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -513,9 +513,9 @@ RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, rf_int dst_si
             result.format  = image.format;
             result.valid   = 1;
         }
-        else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Destination buffer is too small. Expected at least %d bytes but was %d", size, dst_size);
+        else rf_log_error(rf_bad_argument, "Destination buffer is too small. Expected at least %d bytes but was %d", size, dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image was invalid.");
+    else rf_log_error(rf_bad_argument, "Image was invalid.");
 
     return result;
 }
@@ -526,22 +526,22 @@ RF_API rf_image rf_image_copy_to_buffer(rf_image image, void* dst, rf_int dst_si
  * @param allocator used to allocate the new buffer for the resulting image.
  * @return a deep copy of the image.
  */
-RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
+rf_public rf_image rf_image_copy(rf_image image, rf_allocator allocator)
 {
     rf_image result = {0};
 
     if (image.valid)
     {
         int size  = image.width * image.height * rf_bytes_per_pixel(image.format);
-        void* dst = RF_ALLOC(allocator, size);
+        void* dst = rf_alloc(allocator, size);
 
         if (dst)
         {
             result = rf_image_copy_to_buffer(image, dst, size);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Failed to allocate %d bytes", size);
+        else rf_log_error(rf_bad_alloc, "Failed to allocate %d bytes", size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image was invalid.");
+    else rf_log_error(rf_bad_argument, "Image was invalid.");
 
     return result;
 }
@@ -554,7 +554,7 @@ RF_API rf_image rf_image_copy(rf_image image, rf_allocator allocator)
  * @param dst_size size of the `dst` buffer.
  * @return a cropped image using the `dst` buffer in the same format as `image`.
  */
-RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
+rf_public rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, rf_int dst_size, rf_uncompressed_pixel_format dst_format)
 {
     rf_image result = {0};
 
@@ -594,8 +594,8 @@ RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, 
 
                         int src_pixel = (src_y * image.width + src_x) * src_bpp;
                         int dst_pixel = (y * crop_w + x) * src_bpp;
-                        RF_ASSERT(src_pixel < src_size);
-                        RF_ASSERT(dst_pixel < dst_size);
+                        rf_assert(src_pixel < src_size);
+                        rf_assert(dst_pixel < dst_size);
 
                         rf_format_one_pixel(&src_ptr[src_pixel], src_format, &dst_ptr[dst_pixel], dst_format);
                     }
@@ -607,11 +607,11 @@ RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, 
                 result.height = crop.height;
                 result.valid  = 1;
             }
-            else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Destination buffer is too small. Expected at least %d bytes but was %d", expected_size, dst_size);
+            else rf_log_error(rf_bad_argument, "Destination buffer is too small. Expected at least %d bytes but was %d", expected_size, dst_size);
         }
-        else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image can not be cropped, crop rectangle out of bounds.");
+        else rf_log_error(rf_bad_argument, "Image can not be cropped, crop rectangle out of bounds.");
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
@@ -624,41 +624,41 @@ RF_API rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* dst, 
  * @param dst_size size of the `dst` buffer.
  * @return a cropped image using the `dst` buffer in the same format as `image`.
  */
-RF_API rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator)
+rf_public rf_image rf_image_crop(rf_image image, rf_rec crop, rf_allocator allocator)
 {
     rf_image result = {0};
 
     if (image.valid)
     {
         int size = rf_pixel_buffer_size(crop.width, crop.height, image.format);
-        void* dst = RF_ALLOC(allocator, size);
+        void* dst = rf_alloc(allocator, size);
 
         if (dst)
         {
             result = rf_image_crop_to_buffer(image, crop, dst, size, image.format);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", size);
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
-RF_INTERNAL int rf_format_to_stb_channel_count(rf_pixel_format format)
+rf_internal int rf_format_to_stb_channel_count(rf_pixel_format format)
 {
     switch (format)
     {
-        case RF_UNCOMPRESSED_GRAYSCALE: return 1;
-        case RF_UNCOMPRESSED_GRAY_ALPHA: return 2;
-        case RF_UNCOMPRESSED_R8G8B8: return 3;
-        case RF_UNCOMPRESSED_R8G8B8A8: return 4;
+        case rf_pixel_format_grayscale: return 1;
+        case rf_pixel_format_gray_alpha: return 2;
+        case rf_pixel_format_r8g8b8: return 3;
+        case rf_pixel_format_r8g8b8a8: return 4;
         default: return 0;
     }
 }
 
 // Resize and image to new size.
 // Note: Uses stb default scaling filters (both bicubic): STBIR_DEFAULT_FILTER_UPSAMPLE STBIR_FILTER_CATMULLROM STBIR_DEFAULT_FILTER_DOWNSAMPLE STBIR_FILTER_MITCHELL (high-quality Catmull-Rom)
-RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new_height, void* dst, rf_int dst_size, rf_allocator temp_allocator)
+rf_public rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new_height, void* dst, rf_int dst_size, rf_allocator temp_allocator)
 {
     if (!image.valid || dst_size < new_width * new_height * rf_bytes_per_pixel(image.format)) return (rf_image){0};
 
@@ -668,9 +668,9 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
 
     if (stb_format)
     {
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+        rf_set_global_dependencies_allocator(temp_allocator);
         stbir_resize_uint8((unsigned char*) image.data, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, stb_format);
-        RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+        rf_set_global_dependencies_allocator((rf_allocator) {0});
 
         result.data   = dst;
         result.width  = new_width;
@@ -680,20 +680,20 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
     }
     else // if the format of the image is not supported by stbir
     {
-        int pixels_size = image.width * image.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-        rf_color* pixels = RF_ALLOC(temp_allocator, pixels_size);
+        int pixels_size = image.width * image.height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+        rf_color* pixels = rf_alloc(temp_allocator, pixels_size);
 
         if (pixels)
         {
             rf_bool format_success = rf_format_pixels_to_rgba32(image.data, rf_image_size(image), image.format, pixels, pixels_size);
-            RF_ASSERT(format_success);
+            rf_assert(format_success);
 
-            RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+            rf_set_global_dependencies_allocator(temp_allocator);
             stbir_resize_uint8((unsigned char*)pixels, image.width, image.height, 0, (unsigned char*) dst, new_width, new_height, 0, 4);
-            RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+            rf_set_global_dependencies_allocator((rf_allocator) {0});
 
-            format_success = rf_format_pixels(pixels, pixels_size, RF_UNCOMPRESSED_R8G8B8A8, dst, dst_size, image.format);
-            RF_ASSERT(format_success);
+            format_success = rf_format_pixels(pixels, pixels_size, rf_pixel_format_r8g8b8a8, dst, dst_size, image.format);
+            rf_assert(format_success);
 
             result.data   = dst;
             result.width  = new_width;
@@ -701,30 +701,30 @@ RF_API rf_image rf_image_resize_to_buffer(rf_image image, int new_width, int new
             result.format = image.format;
             result.valid  = 1;
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", image.width * image.height * sizeof(rf_color));
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", image.width * image.height * sizeof(rf_color));
 
-        RF_FREE(temp_allocator, pixels);
+        rf_free(temp_allocator, pixels);
     }
 
     return result;
 }
 
-RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_image_resize(rf_image image, int new_width, int new_height, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
     if (image.valid)
     {
         int dst_size = new_width * new_height * rf_bytes_per_pixel(image.format);
-        void* dst = RF_ALLOC(allocator, dst_size);
+        void* dst = rf_alloc(allocator, dst_size);
 
         if (dst)
         {
             result = rf_image_resize_to_buffer(image, new_width, new_height, dst, dst_size, temp_allocator);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", dst_size);
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
@@ -738,7 +738,7 @@ RF_API rf_image rf_image_resize(rf_image image, int new_width, int new_height, r
  * @param dst_size
  * @return a resized version of the `image`, with the `dst` buffer, in the same format.
  */
-RF_API rf_image rf_image_resize_nn_to_buffer(rf_image image, int new_width, int new_height, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_resize_nn_to_buffer(rf_image image, int new_width, int new_height, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -774,35 +774,35 @@ RF_API rf_image rf_image_resize_nn_to_buffer(rf_image image, int new_width, int 
             result.format = image.format;
             result.valid  = 1;
         }
-        else RF_LOG_ERROR(RF_BAD_BUFFER_SIZE, "Expected `dst` to be at least %d bytes but was %d bytes", expected_size, dst_size);
+        else rf_log_error(rf_bad_buffer_size, "Expected `dst` to be at least %d bytes but was %d bytes", expected_size, dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
-RF_API rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator allocator)
+rf_public rf_image rf_image_resize_nn(rf_image image, int new_width, int new_height, rf_allocator allocator)
 {
     rf_image result = {0};
 
     if (image.valid)
     {
         int dst_size = new_width * new_height * rf_bytes_per_pixel(image.format);
-        void* dst = RF_ALLOC(allocator, dst_size);
+        void* dst = rf_alloc(allocator, dst_size);
 
         if (dst)
         {
             result = rf_image_resize_nn_to_buffer(image, new_width, new_height, dst, dst_size);
         }
-        else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", dst_size);
+        else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", dst_size);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
 // Convert image data to desired format
-RF_API rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_format dst_format, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_format dst_format, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -811,7 +811,7 @@ RF_API rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_
         if (rf_is_uncompressed_format(dst_format) && rf_is_uncompressed_format(image.format))
         {
             rf_bool success = rf_format_pixels(image.data, rf_image_size(image), image.format, dst, dst_size, dst_format);
-            RF_ASSERT(success);
+            rf_assert(success);
 
             result = (rf_image)
             {
@@ -822,14 +822,14 @@ RF_API rf_image rf_image_format_to_buffer(rf_image image, rf_uncompressed_pixel_
                 .valid = 1,
             };
         }
-        else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Cannot format compressed pixel formats. Image format: %d, Destination format: %d.", image.format, dst_format);
+        else rf_log_error(rf_bad_argument, "Cannot format compressed pixel formats. Image format: %d, Destination format: %d.", image.format, dst_format);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
-RF_API rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new_format, rf_allocator allocator)
+rf_public rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new_format, rf_allocator allocator)
 {
     rf_image result = {0};
 
@@ -838,12 +838,12 @@ RF_API rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new
         if (rf_is_uncompressed_format(new_format) && rf_is_uncompressed_format(image.format))
         {
             int dst_size = image.width * image.height * rf_bytes_per_pixel(image.format);
-            void* dst = RF_ALLOC(allocator, dst_size);
+            void* dst = rf_alloc(allocator, dst_size);
 
             if (dst)
             {
                 rf_bool format_success = rf_format_pixels(image.data, rf_image_size(image), image.format, dst, dst_size, new_format);
-                RF_ASSERT(format_success);
+                rf_assert(format_success);
 
                 result = (rf_image)
                 {
@@ -854,17 +854,17 @@ RF_API rf_image rf_image_format(rf_image image, rf_uncompressed_pixel_format new
                     .valid = 1,
                 };
             }
-            else RF_LOG_ERROR(RF_BAD_ALLOC, "Allocation of size %d failed.", dst_size);
+            else rf_log_error(rf_bad_alloc, "Allocation of size %d failed.", dst_size);
         }
-        else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Cannot format compressed pixel formats. `image.format`: %d, `dst_format`: %d", image.format, new_format);
+        else rf_log_error(rf_bad_argument, "Cannot format compressed pixel formats. `image.format`: %d, `dst_format`: %d", image.format, new_format);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
 // Apply alpha mask to image. Note 1: Returned image is GRAY_ALPHA (16bit) or RGBA (32bit). Note 2: alphaMask should be same size as image
-RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mask, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mask, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -872,15 +872,15 @@ RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mas
     {
         if (image.width == alpha_mask.width && image.height == alpha_mask.height)
         {
-            if (rf_is_compressed_format(image.format) && alpha_mask.format == RF_UNCOMPRESSED_GRAYSCALE)
+            if (rf_is_compressed_format(image.format) && alpha_mask.format == rf_pixel_format_grayscale)
             {
-                if (dst_size >= rf_image_size_in_format(image, RF_UNCOMPRESSED_GRAY_ALPHA))
+                if (dst_size >= rf_image_size_in_format(image, rf_pixel_format_gray_alpha))
                 {
                     // Apply alpha mask to alpha channel
                     for (rf_int i = 0; i < image.width * image.height; i++)
                     {
                         unsigned char mask_pixel = 0;
-                        rf_format_one_pixel(((unsigned char*)alpha_mask.data) + i, alpha_mask.format, &mask_pixel, RF_UNCOMPRESSED_GRAYSCALE);
+                        rf_format_one_pixel(((unsigned char*)alpha_mask.data) + i, alpha_mask.format, &mask_pixel, rf_pixel_format_grayscale);
 
                         // Todo: Finish implementing this function
                         //((unsigned char*)dst)[k] = mask_pixel;
@@ -889,18 +889,18 @@ RF_API rf_image rf_image_alpha_mask_to_buffer(rf_image image, rf_image alpha_mas
                     result.data   = dst;
                     result.width  = image.width;
                     result.height = image.height;
-                    result.format = RF_UNCOMPRESSED_GRAY_ALPHA;
+                    result.format = rf_pixel_format_gray_alpha;
                     result.valid  = 1;
                 }
-            } else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Expected compressed pixel formats. `image.format`: %d, `alpha_mask.format`: %d", image.format, alpha_mask.format);
-        } else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Alpha mask must be same size as image but was w: %d, h: %d", alpha_mask.width, alpha_mask.height);
-    } else RF_LOG_ERROR(RF_BAD_ARGUMENT, "One image was invalid. `image.valid`: %d, `alpha_mask.valid`: %d", image.valid, alpha_mask.valid);
+            } else rf_log_error(rf_bad_argument, "Expected compressed pixel formats. `image.format`: %d, `alpha_mask.format`: %d", image.format, alpha_mask.format);
+        } else rf_log_error(rf_bad_argument, "Alpha mask must be same size as image but was w: %d, h: %d", alpha_mask.width, alpha_mask.height);
+    } else rf_log_error(rf_bad_argument, "One image was invalid. `image.valid`: %d, `alpha_mask.valid`: %d", image.valid, alpha_mask.valid);
 
     return result;
 }
 
 // Clear alpha channel to desired color. Note: Threshold defines the alpha limit, 0.0f to 1.0f
-RF_API rf_image rf_image_alpha_clear(rf_image image, rf_color color, float threshold, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_image_alpha_clear(rf_image image, rf_color color, float threshold, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -922,22 +922,22 @@ RF_API rf_image rf_image_alpha_clear(rf_image image, rf_color color, float thres
                 .data = pixels,
                 .width = image.width,
                 .height = image.height,
-                .format = RF_UNCOMPRESSED_R8G8B8A8,
+                .format = rf_pixel_format_r8g8b8a8,
                 .valid = 1
             };
 
             result = rf_image_format(temp_image, image.format, allocator);
         }
 
-        RF_FREE(temp_allocator, pixels);
+        rf_free(temp_allocator, pixels);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
 // Premultiply alpha channel
-RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -960,21 +960,21 @@ RF_API rf_image rf_image_alpha_premultiply(rf_image image, rf_allocator allocato
                 .data = pixels,
                 .width = image.width,
                 .height = image.height,
-                .format = RF_UNCOMPRESSED_RGBA32,
+                .format = rf_pixel_format_r8g8b8a8,
                 .valid = 1,
             };
 
             result = rf_image_format(temp_image, image.format, allocator);
         }
 
-        RF_FREE(temp_allocator, pixels);
+        rf_free(temp_allocator, pixels);
     }
-    else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Image is invalid.");
+    else rf_log_error(rf_bad_argument, "Image is invalid.");
 
     return result;
 }
 
-RF_API rf_rec rf_image_alpha_crop_rec(rf_image image, float threshold)
+rf_public rf_rec rf_image_alpha_crop_rec(rf_image image, float threshold)
 {
     if (!image.valid) return (rf_rec){0};
 
@@ -1008,7 +1008,7 @@ RF_API rf_rec rf_image_alpha_crop_rec(rf_image image, float threshold)
 }
 
 // Crop image depending on alpha value
-RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator)
+rf_public rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocator allocator)
 {
     rf_rec crop = rf_image_alpha_crop_rec(image, threshold);
 
@@ -1016,21 +1016,21 @@ RF_API rf_image rf_image_alpha_crop(rf_image image, float threshold, rf_allocato
 }
 
 // Dither image data to 16bpp or lower (Floyd-Steinberg dithering) Note: In case selected bpp do not represent an known 16bit format, dithered data is stored in the LSB part of the unsigned short
-RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
     if (image.valid)
     {
-        if (image.format == RF_UNCOMPRESSED_R8G8B8)
+        if (image.format == rf_pixel_format_r8g8b8)
         {
-            if (image.format == RF_UNCOMPRESSED_R8G8B8 && (r_bpp + g_bpp + b_bpp + a_bpp) < 16)
+            if (image.format == rf_pixel_format_r8g8b8 && (r_bpp + g_bpp + b_bpp + a_bpp) < 16)
             {
                 rf_color* pixels = rf_image_pixels_to_rgba32(image, temp_allocator);
 
-                if ((image.format != RF_UNCOMPRESSED_R8G8B8) && (image.format != RF_UNCOMPRESSED_R8G8B8A8))
+                if ((image.format != rf_pixel_format_r8g8b8) && (image.format != rf_pixel_format_r8g8b8a8))
                 {
-                    RF_LOG(RF_LOG_TYPE_WARNING, "rf_image format is already 16bpp or lower, dithering could have no effect");
+                    rf_log(rf_log_type_warning, "rf_image format is already 16bpp or lower, dithering could have no effect");
                 }
 
                 // Todo: Finish implementing this function
@@ -1047,8 +1047,8 @@ RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int 
                 // // NOTE: We will store the dithered data as unsigned short (16bpp)
                 // image.data = (unsigned short*) RF_ALLOC(image.allocator, image.width * image.height * sizeof(unsigned short));
 
-                rf_color old_pixel = RF_WHITE;
-                rf_color new_pixel  = RF_WHITE;
+                rf_color old_pixel = rf_white;
+                rf_color new_pixel  = rf_white;
 
                 int r_error, g_error, b_error;
                 unsigned short r_pixel, g_pixel, b_pixel, a_pixel; // Used for 16bit pixel composition
@@ -1111,9 +1111,9 @@ RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int 
                     }
                 }
 
-                RF_FREE(temp_allocator, pixels);
+                rf_free(temp_allocator, pixels);
             }
-            else RF_LOG_ERROR(RF_BAD_ARGUMENT, "Unsupported dithering bpps (%ibpp), only 16bpp or lower modes supported", (r_bpp + g_bpp + b_bpp + a_bpp));
+            else rf_log_error(rf_bad_argument, "Unsupported dithering bpps (%ibpp), only 16bpp or lower modes supported", (r_bpp + g_bpp + b_bpp + a_bpp));
         }
     }
 
@@ -1121,7 +1121,7 @@ RF_API rf_image rf_image_dither(const rf_image image, int r_bpp, int g_bpp, int 
 }
 
 // Flip image vertically
-RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1150,21 +1150,21 @@ RF_API rf_image rf_image_flip_vertical_to_buffer(rf_image image, void* dst, rf_i
     return result;
 }
 
-RF_API rf_image rf_image_flip_vertical(rf_image image, rf_allocator allocator)
+rf_public rf_image rf_image_flip_vertical(rf_image image, rf_allocator allocator)
 {
     if (!image.valid) return (rf_image) {0};
 
     int size = rf_image_size(image);
-    void* dst = RF_ALLOC(allocator, size);
+    void* dst = rf_alloc(allocator, size);
 
     rf_image result = rf_image_flip_vertical_to_buffer(image, dst, size);
-    if (!result.valid) RF_FREE(allocator, dst);
+    if (!result.valid) rf_free(allocator, dst);
 
     return result;
 }
 
 // Flip image horizontally
-RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1193,21 +1193,21 @@ RF_API rf_image rf_image_flip_horizontal_to_buffer(rf_image image, void* dst, rf
     return result;
 }
 
-RF_API rf_image rf_image_flip_horizontal(rf_image image, rf_allocator allocator)
+rf_public rf_image rf_image_flip_horizontal(rf_image image, rf_allocator allocator)
 {
     if (!image.valid) return (rf_image) {0};
 
     int size = rf_image_size(image);
-    void* dst = RF_ALLOC(allocator, size);
+    void* dst = rf_alloc(allocator, size);
 
     rf_image result = rf_image_flip_horizontal_to_buffer(image, dst, size);
-    if (!result.valid) RF_FREE(allocator, dst);
+    if (!result.valid) rf_free(allocator, dst);
 
     return result;
 }
 
 // Rotate image clockwise 90deg
-RF_API rf_image rf_image_rotate_cw_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_rotate_cw_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1236,13 +1236,13 @@ RF_API rf_image rf_image_rotate_cw_to_buffer(rf_image image, void* dst, rf_int d
     return result;
 }
 
-RF_API rf_image rf_image_rotate_cw(rf_image image)
+rf_public rf_image rf_image_rotate_cw(rf_image image)
 {
     return rf_image_rotate_cw_to_buffer(image, image.data, rf_image_size(image));
 }
 
 // Rotate image counter-clockwise 90deg
-RF_API rf_image rf_image_rotate_ccw_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_rotate_ccw_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1271,13 +1271,13 @@ RF_API rf_image rf_image_rotate_ccw_to_buffer(rf_image image, void* dst, rf_int 
     return result;
 }
 
-RF_API rf_image rf_image_rotate_ccw(rf_image image)
+rf_public rf_image rf_image_rotate_ccw(rf_image image)
 {
     return rf_image_rotate_ccw_to_buffer(image, image.data, rf_image_size(image));
 }
 
 // Modify image color: tint
-RF_API rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1307,7 +1307,7 @@ RF_API rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, vo
                     pixel_rgba32.b = (unsigned char) (255.f * (((float)pixel_rgba32.b) / 255.f * c_b));
                     pixel_rgba32.a = (unsigned char) (255.f * (((float)pixel_rgba32.a) / 255.f * c_a));
 
-                    rf_format_one_pixel(&pixel_rgba32, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
+                    rf_format_one_pixel(&pixel_rgba32, rf_pixel_format_r8g8b8a8, dst_pixel, image.format);
                 }
             }
 
@@ -1319,13 +1319,13 @@ RF_API rf_image rf_image_color_tint_to_buffer(rf_image image, rf_color color, vo
     return result;
 }
 
-RF_API rf_image rf_image_color_tint(rf_image image, rf_color color)
+rf_public rf_image rf_image_color_tint(rf_image image, rf_color color)
 {
     return rf_image_color_tint_to_buffer(image, color, image.data, rf_image_size(image));
 }
 
 // Modify image color: invert
-RF_API rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1348,7 +1348,7 @@ RF_API rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, rf_in
                     pixel_rgba32.g = 255 - pixel_rgba32.g;
                     pixel_rgba32.b = 255 - pixel_rgba32.b;
 
-                    rf_format_one_pixel(&pixel_rgba32, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
+                    rf_format_one_pixel(&pixel_rgba32, rf_pixel_format_r8g8b8a8, dst_pixel, image.format);
                 }
             }
 
@@ -1360,18 +1360,18 @@ RF_API rf_image rf_image_color_invert_to_buffer(rf_image image, void* dst, rf_in
     return result;
 }
 
-RF_API rf_image rf_image_color_invert(rf_image image)
+rf_public rf_image rf_image_color_invert(rf_image image)
 {
     return rf_image_color_invert_to_buffer(image, image.data, rf_image_size(image));
 }
 
 // Modify image color: grayscale
-RF_API rf_image rf_image_color_grayscale_to_buffer(rf_image image, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_grayscale_to_buffer(rf_image image, void* dst, rf_int dst_size)
 {
-    return rf_image_format_to_buffer(image, RF_UNCOMPRESSED_GRAYSCALE, dst, dst_size);
+    return rf_image_format_to_buffer(image, rf_pixel_format_grayscale, dst, dst_size);
 }
 
-RF_API rf_image rf_image_color_grayscale(rf_image image)
+rf_public rf_image rf_image_color_grayscale(rf_image image)
 {
     rf_image result = {0};
 
@@ -1385,7 +1385,7 @@ RF_API rf_image rf_image_color_grayscale(rf_image image)
 
 // Modify image color: contrast
 // NOTE: Contrast values between -100 and 100
-RF_API rf_image rf_image_color_contrast_to_buffer(rf_image image, float contrast, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_contrast_to_buffer(rf_image image, float contrast, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1439,7 +1439,7 @@ RF_API rf_image rf_image_color_contrast_to_buffer(rf_image image, float contrast
                     src_pixel_rgba32.g = (unsigned char)p_g;
                     src_pixel_rgba32.b = (unsigned char)p_b;
 
-                    rf_format_one_pixel(&src_pixel_rgba32, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
+                    rf_format_one_pixel(&src_pixel_rgba32, rf_pixel_format_r8g8b8a8, dst_pixel, image.format);
                 }
             }
 
@@ -1451,14 +1451,14 @@ RF_API rf_image rf_image_color_contrast_to_buffer(rf_image image, float contrast
     return result;
 }
 
-RF_API rf_image rf_image_color_contrast(rf_image image, int contrast)
+rf_public rf_image rf_image_color_contrast(rf_image image, int contrast)
 {
     return rf_image_color_contrast_to_buffer(image, contrast, image.data, rf_image_size(image));
 }
 
 // Modify image color: brightness
 // NOTE: Brightness values between -255 and 255
-RF_API rf_image rf_image_color_brightness_to_buffer(rf_image image, int brightness, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_brightness_to_buffer(rf_image image, int brightness, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1499,7 +1499,7 @@ RF_API rf_image rf_image_color_brightness_to_buffer(rf_image image, int brightne
                     pixel_rgba32.g = (unsigned char) c_g;
                     pixel_rgba32.b = (unsigned char) c_b;
 
-                    rf_format_one_pixel(&pixel_rgba32, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
+                    rf_format_one_pixel(&pixel_rgba32, rf_pixel_format_r8g8b8a8, dst_pixel, image.format);
                 }
             }
 
@@ -1511,13 +1511,13 @@ RF_API rf_image rf_image_color_brightness_to_buffer(rf_image image, int brightne
     return result;
 }
 
-RF_API rf_image rf_image_color_brightness(rf_image image, int brightness)
+rf_public rf_image rf_image_color_brightness(rf_image image, int brightness)
 {
     return rf_image_color_brightness_to_buffer(image, brightness, image.data, rf_image_size(image));
 }
 
 // Modify image color: replace color
-RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color, rf_color replace, void* dst, rf_int dst_size)
+rf_public rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color, rf_color replace, void* dst, rf_int dst_size)
 {
     if (image.valid && dst_size >= rf_image_size(image)) return (rf_image) {0};
 
@@ -1538,7 +1538,7 @@ RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color,
 
             if (rf_color_match(pixel_rgba32, color))
             {
-                rf_format_one_pixel(&replace, RF_UNCOMPRESSED_R8G8B8A8, dst_pixel, image.format);
+                rf_format_one_pixel(&replace, rf_pixel_format_r8g8b8a8, dst_pixel, image.format);
             }
         }
     }
@@ -1549,13 +1549,13 @@ RF_API rf_image rf_image_color_replace_to_buffer(rf_image image, rf_color color,
     return result;
 }
 
-RF_API rf_image rf_image_color_replace(rf_image image, rf_color color, rf_color replace)
+rf_public rf_image rf_image_color_replace(rf_image image, rf_color color, rf_color replace)
 {
     return rf_image_color_replace_to_buffer(image, color, replace, image.data, rf_image_size(image));
 }
 
 // Generate image: plain color
-RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color color, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1568,17 +1568,17 @@ RF_API rf_image rf_gen_image_color_to_buffer(int width, int height, rf_color col
         .data   = dst,
         .width  = width,
         .height = height,
-        .format = RF_UNCOMPRESSED_R8G8B8A8,
+        .format = rf_pixel_format_r8g8b8a8,
         .valid  = 1,
     };
 }
 
-RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_allocator allocator)
+rf_public rf_image rf_gen_image_color(int width, int height, rf_color color, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    void* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    void* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1589,11 +1589,11 @@ RF_API rf_image rf_gen_image_color(int width, int height, rf_color color, rf_all
 }
 
 // Generate image: vertical gradient
-RF_API rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_color top, rf_color bottom, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_color top, rf_color bottom, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         for (rf_int j = 0; j < height; j++)
         {
@@ -1613,7 +1613,7 @@ RF_API rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_colo
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1
         };
     }
@@ -1621,12 +1621,12 @@ RF_API rf_image rf_gen_image_gradient_v_to_buffer(int width, int height, rf_colo
     return result;
 }
 
-RF_API rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_color bottom, rf_allocator allocator)
+rf_public rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_color bottom, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1637,11 +1637,11 @@ RF_API rf_image rf_gen_image_gradient_v(int width, int height, rf_color top, rf_
 }
 
 // Generate image: horizontal gradient
-RF_API rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_color left, rf_color right, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_color left, rf_color right, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         for (rf_int i = 0; i < width; i++)
         {
@@ -1661,7 +1661,7 @@ RF_API rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_colo
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1
         };
     }
@@ -1669,12 +1669,12 @@ RF_API rf_image rf_gen_image_gradient_h_to_buffer(int width, int height, rf_colo
     return result;
 }
 
-RF_API rf_image rf_gen_image_gradient_h(int width, int height, rf_color left, rf_color right, rf_allocator allocator)
+rf_public rf_image rf_gen_image_gradient_h(int width, int height, rf_color left, rf_color right, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1685,11 +1685,11 @@ RF_API rf_image rf_gen_image_gradient_h(int width, int height, rf_color left, rf
 }
 
 // Generate image: radial gradient
-RF_API rf_image rf_gen_image_gradient_radial_to_buffer(int width, int height, float density, rf_color inner, rf_color outer, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_gradient_radial_to_buffer(int width, int height, float density, rf_color inner, rf_color outer, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         float radius = (width < height) ? ((float)width) / 2.0f : ((float)height) / 2.0f;
 
@@ -1718,7 +1718,7 @@ RF_API rf_image rf_gen_image_gradient_radial_to_buffer(int width, int height, fl
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1,
         };
     }
@@ -1726,12 +1726,12 @@ RF_API rf_image rf_gen_image_gradient_radial_to_buffer(int width, int height, fl
     return result;
 }
 
-RF_API rf_image rf_gen_image_gradient_radial(int width, int height, float density, rf_color inner, rf_color outer, rf_allocator allocator)
+rf_public rf_image rf_gen_image_gradient_radial(int width, int height, float density, rf_color inner, rf_color outer, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1742,11 +1742,11 @@ RF_API rf_image rf_gen_image_gradient_radial(int width, int height, float densit
 }
 
 // Generate image: checked
-RF_API rf_image rf_gen_image_checked_to_buffer(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_checked_to_buffer(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         float radius = (width < height) ? ((float)width) / 2.0f : ((float)height) / 2.0f;
 
@@ -1767,7 +1767,7 @@ RF_API rf_image rf_gen_image_checked_to_buffer(int width, int height, int checks
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1,
         };
     }
@@ -1775,12 +1775,12 @@ RF_API rf_image rf_gen_image_checked_to_buffer(int width, int height, int checks
     return result;
 }
 
-RF_API rf_image rf_gen_image_checked(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_allocator allocator)
+rf_public rf_image rf_gen_image_checked(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1791,9 +1791,9 @@ RF_API rf_image rf_gen_image_checked(int width, int height, int checks_x, int ch
 }
 
 // Generate image: white noise
-RF_API rf_image rf_gen_image_white_noise_to_buffer(int width, int height, float factor, rf_rand_proc rand, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_white_noise_to_buffer(int width, int height, float factor, rf_rand_proc rand, rf_color* dst, rf_int dst_size)
 {
-    int result_image_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
+    int result_image_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
     rf_image result = {0};
 
     if (dst_size < result_image_size || !rand || result_image_size <= 0) return result;
@@ -1802,11 +1802,11 @@ RF_API rf_image rf_gen_image_white_noise_to_buffer(int width, int height, float 
     {
         if (rand(0, 99) < (int)(factor * 100.0f))
         {
-            dst[i] = RF_WHITE;
+            dst[i] = rf_white;
         }
         else
         {
-            dst[i] = RF_BLACK;
+            dst[i] = rf_black;
         }
     }
 
@@ -1815,33 +1815,33 @@ RF_API rf_image rf_gen_image_white_noise_to_buffer(int width, int height, float 
         .data = dst,
         .width = width,
         .height = height,
-        .format = RF_UNCOMPRESSED_R8G8B8A8,
+        .format = rf_pixel_format_r8g8b8a8,
         .valid = 1,
     };
 
     return result;
 }
 
-RF_API rf_image rf_gen_image_white_noise(int width, int height, float factor, rf_rand_proc rand, rf_allocator allocator)
+rf_public rf_image rf_gen_image_white_noise(int width, int height, float factor, rf_rand_proc rand, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
 
     if (!rand || dst_size <= 0) return result;
 
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    rf_color* dst = rf_alloc(allocator, dst_size);
     result = rf_gen_image_white_noise_to_buffer(width, height, factor, rand, dst, dst_size);
 
     return result;
 }
 
 // Generate image: perlin noise
-RF_API rf_image rf_gen_image_perlin_noise_to_buffer(int width, int height, int offset_x, int offset_y, float scale, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_perlin_noise_to_buffer(int width, int height, int offset_x, int offset_y, float scale, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         for (rf_int y = 0; y < height; y++)
         {
@@ -1868,7 +1868,7 @@ RF_API rf_image rf_gen_image_perlin_noise_to_buffer(int width, int height, int o
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1,
         };
     }
@@ -1876,12 +1876,12 @@ RF_API rf_image rf_gen_image_perlin_noise_to_buffer(int width, int height, int o
     return result;
 }
 
-RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, int offset_y, float scale, rf_allocator allocator)
+rf_public rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, int offset_y, float scale, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1891,7 +1891,7 @@ RF_API rf_image rf_gen_image_perlin_noise(int width, int height, int offset_x, i
     return result;
 }
 
-RF_API rf_vec2 rf_get_seed_for_cellular_image(int seeds_per_row, int tile_size, int i, rf_rand_proc rand)
+rf_public rf_vec2 rf_get_seed_for_cellular_image(int seeds_per_row, int tile_size, int i, rf_rand_proc rand)
 {
     rf_vec2 result = {0};
 
@@ -1903,7 +1903,7 @@ RF_API rf_vec2 rf_get_seed_for_cellular_image(int seeds_per_row, int tile_size, 
 }
 
 // Generate image: cellular algorithm. Bigger tileSize means bigger cells
-RF_API rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_size, rf_rand_proc rand, rf_color* dst, rf_int dst_size)
+rf_public rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_size, rf_rand_proc rand, rf_color* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -1911,7 +1911,7 @@ RF_API rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_
     int seeds_per_col = height / tile_size;
     int seeds_count = seeds_per_row * seeds_per_col;
 
-    if (dst_size >= width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8))
+    if (dst_size >= width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8))
     {
         for (rf_int y = 0; y < height; y++)
         {
@@ -1952,7 +1952,7 @@ RF_API rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_
             .data = dst,
             .width = width,
             .height = height,
-            .format = RF_UNCOMPRESSED_R8G8B8A8,
+            .format = rf_pixel_format_r8g8b8a8,
             .valid = 1,
         };
     }
@@ -1960,13 +1960,13 @@ RF_API rf_image rf_gen_image_cellular_to_buffer(int width, int height, int tile_
     return result;
 }
 
-RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_rand_proc rand, rf_allocator allocator)
+rf_public rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_rand_proc rand, rf_allocator allocator)
 {
     rf_image result = {0};
 
-    int dst_size = width * height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
+    int dst_size = width * height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
 
-    rf_color* dst = RF_ALLOC(allocator, dst_size);
+    rf_color* dst = rf_alloc(allocator, dst_size);
 
     if (dst)
     {
@@ -1978,7 +1978,7 @@ RF_API rf_image rf_gen_image_cellular(int width, int height, int tile_size, rf_r
 
 // Draw an image (source) within an image (destination)
 // NOTE: rf_color tint is applied to source image
-RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator)
+rf_public void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec dst_rec, rf_color tint, rf_allocator temp_allocator)
 {
     if (src.valid && dst->valid)
     {
@@ -1990,13 +1990,13 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec ds
         if ((src_rec.x + src_rec.width) > src.width)
         {
             src_rec.width = src.width - src_rec.x;
-            RF_LOG(RF_LOG_TYPE_WARNING, "Source rectangle width out of bounds, rescaled width: %i", src_rec.width);
+            rf_log(rf_log_type_warning, "Source rectangle width out of bounds, rescaled width: %i", src_rec.width);
         }
 
         if ((src_rec.y + src_rec.height) > src.height)
         {
             src_rec.height = src.height - src_rec.y;
-            RF_LOG(RF_LOG_TYPE_WARNING, "Source rectangle height out of bounds, rescaled height: %i", src_rec.height);
+            rf_log(rf_log_type_warning, "Source rectangle height out of bounds, rescaled height: %i", src_rec.height);
         }
 
         rf_image src_copy = rf_image_copy(src, temp_allocator); // Make a copy of source src to work with it
@@ -2102,12 +2102,12 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec ds
                 }
             }
 
-            rf_bool format_success = rf_format_pixels(dst_pixels, rf_image_size_in_format(*dst, RF_UNCOMPRESSED_R8G8B8A8), RF_UNCOMPRESSED_R8G8B8A8,
-                             dst->data, rf_image_size(*dst), dst->format);
-            RF_ASSERT(format_success);
+            rf_bool format_success = rf_format_pixels(dst_pixels, rf_image_size_in_format(*dst, rf_pixel_format_r8g8b8a8), rf_pixel_format_r8g8b8a8,
+                                                      dst->data, rf_image_size(*dst), dst->format);
+            rf_assert(format_success);
 
-            RF_FREE(temp_allocator, src_pixels);
-            RF_FREE(temp_allocator, dst_pixels);
+            rf_free(temp_allocator, src_pixels);
+            rf_free(temp_allocator, dst_pixels);
 
             dst->valid = 1;
         }
@@ -2115,7 +2115,7 @@ RF_API void rf_image_draw(rf_image* dst, rf_image src, rf_rec src_rec, rf_rec ds
 }
 
 // Draw rectangle within an image
-RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator)
+rf_public void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, rf_allocator temp_allocator)
 {
     if (dst->valid)
     {
@@ -2127,7 +2127,7 @@ RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, r
         {
             rf_rec src_rec = (rf_rec){ 0, 0, rec.width, rec.height };
 
-            rf_image_draw(dst, src, src_rec, rec, RF_WHITE, temp_allocator);
+            rf_image_draw(dst, src, src_rec, rec, rf_white, temp_allocator);
 
             rf_unload_image(src, temp_allocator);
         }
@@ -2135,7 +2135,7 @@ RF_API void rf_image_draw_rectangle(rf_image* dst, rf_rec rec, rf_color color, r
 }
 
 // Draw rectangle lines within an image
-RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator)
+rf_public void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, rf_color color, rf_allocator temp_allocator)
 {
     rf_image_draw_rectangle(dst, (rf_rec) { rec.x, rec.y, rec.width, thick }, color, temp_allocator);
     rf_image_draw_rectangle(dst, (rf_rec) { rec.x, rec.y + thick, thick, rec.height - thick * 2 }, color, temp_allocator);
@@ -2147,7 +2147,7 @@ RF_API void rf_image_draw_rectangle_lines(rf_image* dst, rf_rec rec, int thick, 
 
 #pragma region mipmaps
 
-RF_API int rf_mipmaps_image_size(rf_mipmaps_image image)
+rf_public int rf_mipmaps_image_size(rf_mipmaps_image image)
 {
     int size   = 0;
     int width  = image.width;
@@ -2168,7 +2168,7 @@ RF_API int rf_mipmaps_image_size(rf_mipmaps_image image)
     return size;
 }
 
-RF_API rf_mipmaps_stats rf_compute_mipmaps_stats(rf_image image, int desired_mipmaps_count)
+rf_public rf_mipmaps_stats rf_compute_mipmaps_stats(rf_image image, int desired_mipmaps_count)
 {
     if (!image.valid) return (rf_mipmaps_stats) {0};
 
@@ -2196,7 +2196,7 @@ RF_API rf_mipmaps_stats rf_compute_mipmaps_stats(rf_image image, int desired_mip
 }
 
 // Generate all mipmap levels for a provided image. image.data is scaled to include mipmap levels. Mipmaps format is the same as base image
-RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_mipmaps_count, void* dst, rf_int dst_size, rf_allocator temp_allocator)
+rf_public rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_mipmaps_count, void* dst, rf_int dst_size, rf_allocator temp_allocator)
 {
     if (image.valid) return (rf_mipmaps_image) {0};
 
@@ -2215,8 +2215,8 @@ RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_m
             dst_iter += rf_image_size(image);
 
             // Create a rgba32 buffer for the mipmap result, half the image size is enough for any mipmap level
-            int temp_mipmap_buffer_size = (image.width / 2) * (image.height / 2) * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-            void* temp_mipmap_buffer = RF_ALLOC(temp_allocator, temp_mipmap_buffer_size);
+            int temp_mipmap_buffer_size = (image.width / 2) * (image.height / 2) * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+            void* temp_mipmap_buffer = rf_alloc(temp_allocator, temp_mipmap_buffer_size);
 
             if (temp_mipmap_buffer)
             {
@@ -2232,7 +2232,7 @@ RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_m
                         int dst_iter_size = dst_size - ((int)(dst_iter - ((unsigned char*)(dst))));
 
                         rf_bool success = rf_format_pixels(mipmap.data, rf_image_size(mipmap), mipmap.format, dst_iter, dst_iter_size, image.format);
-                        RF_ASSERT(success);
+                        rf_assert(success);
                     }
                     else break;
 
@@ -2260,15 +2260,15 @@ RF_API rf_mipmaps_image rf_image_gen_mipmaps_to_buffer(rf_image image, int gen_m
                 }
             }
 
-            RF_FREE(temp_allocator, temp_mipmap_buffer);
+            rf_free(temp_allocator, temp_mipmap_buffer);
         }
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_image mipmaps already available");
+    else rf_log(rf_log_type_warning, "rf_image mipmaps already available");
 
     return result;
 }
 
-RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps_count, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps_count, rf_allocator allocator, rf_allocator temp_allocator)
 {
     if (!image.valid) return (rf_mipmaps_image) {0};
 
@@ -2277,14 +2277,14 @@ RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps
 
     if (mipmap_stats.possible_mip_counts <= desired_mipmaps_count)
     {
-        void* dst = RF_ALLOC(allocator, mipmap_stats.mipmaps_buffer_size);
+        void* dst = rf_alloc(allocator, mipmap_stats.mipmaps_buffer_size);
 
         if (dst)
         {
             result = rf_image_gen_mipmaps_to_buffer(image, desired_mipmaps_count, dst, mipmap_stats.mipmaps_buffer_size, temp_allocator);
             if (!result.valid)
             {
-                RF_FREE(allocator, dst);
+                rf_free(allocator, dst);
             }
         }
     }
@@ -2292,9 +2292,9 @@ RF_API rf_mipmaps_image rf_image_gen_mipmaps(rf_image image, int desired_mipmaps
     return result;
 }
 
-RF_API void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator)
+rf_public void rf_unload_mipmaps_image(rf_mipmaps_image image, rf_allocator allocator)
 {
-    RF_FREE(allocator, image.data);
+    rf_free(allocator, image.data);
 }
 
 #pragma endregion
@@ -2350,7 +2350,7 @@ struct rf_dds_header
     unsigned int reserved_2;
 };
 
-RF_API rf_int rf_get_dds_image_size(const void* src, rf_int src_size)
+rf_public rf_int rf_get_dds_image_size(const void* src, rf_int src_size)
 {
     int result = 0;
 
@@ -2404,7 +2404,7 @@ RF_API rf_int rf_get_dds_image_size(const void* src, rf_int src_size)
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
+rf_public rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
 {
     rf_mipmaps_image result = { 0 };
 
@@ -2431,7 +2431,7 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                     if (src_size >= dds_result_size && dst_size >= dds_result_size)
                     {
                         memcpy(dst, src, dds_result_size);
-                        result.format = RF_UNCOMPRESSED_R5G6B5;
+                        result.format = rf_pixel_format_r5g6b5;
                         result.data   = dst;
                         result.valid  = 1;
                     }
@@ -2456,7 +2456,7 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                                 ((unsigned short*)result.data)[i] += alpha;
                             }
 
-                            result.format = RF_UNCOMPRESSED_R5G5B5A1;
+                            result.format = rf_pixel_format_r5g5b5a1;
                             result.data   = dst;
                             result.valid  = 1;
                         }
@@ -2479,7 +2479,7 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                                 ((unsigned short*)result.data)[i] += alpha;
                             }
 
-                            result.format = RF_UNCOMPRESSED_R4G4B4A4;
+                            result.format = rf_pixel_format_r4g4b4a4;
                             result.data   = dst;
                             result.valid  = 1;
                         }
@@ -2493,7 +2493,7 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                 if (src_size >= dds_result_size && dst_size >= dds_result_size)
                 {
                     memcpy(dst, src, dds_result_size);
-                    result.format = RF_UNCOMPRESSED_R8G8B8;
+                    result.format = rf_pixel_format_r8g8b8;
                     result.data   = dst;
                     result.valid  = 1;
                 }
@@ -2518,7 +2518,7 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                         ((unsigned char*)dst)[i + 2] = blue;
                     }
 
-                    result.format = RF_UNCOMPRESSED_R8G8B8A8;
+                    result.format = rf_pixel_format_r8g8b8a8;
                     result.data   = dst;
                     result.valid  = 1;
                 }
@@ -2533,9 +2533,9 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
 
                     switch (header.ddspf.four_cc)
                     {
-                        case RF_FOURCC_DXT1: result.format = header.ddspf.flags == 0x04 ? RF_COMPRESSED_DXT1_RGB : RF_COMPRESSED_DXT1_RGBA; break;
-                        case RF_FOURCC_DXT3: result.format = RF_COMPRESSED_DXT3_RGBA; break;
-                        case RF_FOURCC_DXT5: result.format = RF_COMPRESSED_DXT5_RGBA; break;
+                        case RF_FOURCC_DXT1: result.format = header.ddspf.flags == 0x04 ? rf_pixel_format_dxt1_rgb : rf_pixel_format_dxt1_rgba; break;
+                        case RF_FOURCC_DXT3: result.format = rf_pixel_format_dxt3_rgba; break;
+                        case RF_FOURCC_DXT5: result.format = rf_pixel_format_dxt5_rgba; break;
                         default: break;
                     }
 
@@ -2544,37 +2544,37 @@ RF_API rf_mipmaps_image rf_load_dds_image_to_buffer(const void* src, rf_int src_
                 }
             }
         }
-        else RF_LOG_ERROR(RF_BAD_FORMAT, "DDS file does not seem to be a valid result");
+        else rf_log_error(rf_bad_format, "DDS file does not seem to be a valid result");
     }
 
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_dds_image(const void* src, rf_int src_size, rf_allocator allocator)
+rf_public rf_mipmaps_image rf_load_dds_image(const void* src, rf_int src_size, rf_allocator allocator)
 {
     rf_mipmaps_image result = {0};
 
     int dst_size = rf_get_dds_image_size(src, src_size);
-    void* dst = RF_ALLOC(allocator, dst_size);
+    void* dst = rf_alloc(allocator, dst_size);
 
     result = rf_load_dds_image_to_buffer(src, src_size, dst, dst_size);
 
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_dds_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_mipmaps_image rf_load_dds_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_mipmaps_image result = {0};
 
-    int src_size = RF_FILE_SIZE(io, file);
-    void* src = RF_ALLOC(temp_allocator, src_size);
+    int src_size = rf_file_size(io, file);
+    void* src = rf_alloc(temp_allocator, src_size);
 
-    if (RF_READ_FILE(io, file, src, src_size))
+    if (rf_read_file(io, file, src, src_size))
     {
         result = rf_load_dds_image(src, src_size, allocator);
     }
 
-    RF_FREE(temp_allocator, src);
+    rf_free(temp_allocator, src);
 
     return result;
 }
@@ -2613,7 +2613,7 @@ struct rf_pkm_header
     unsigned short orig_height; // Original height (big-endian)
 };
 
-RF_API rf_int rf_get_pkm_image_size(const void* src, rf_int src_size)
+rf_public rf_int rf_get_pkm_image_size(const void* src, rf_int src_size)
 {
     int result = 0;
 
@@ -2634,14 +2634,14 @@ RF_API rf_int rf_get_pkm_image_size(const void* src, rf_int src_size)
 
             result = header.width * header.height * bpp / 8;
         }
-        else RF_LOG_ERROR(RF_BAD_FORMAT, "PKM file does not seem to be a valid image");
+        else rf_log_error(rf_bad_format, "PKM file does not seem to be a valid image");
     }
 
     return result;
 }
 
 // Load image from .pkm
-RF_API rf_image rf_load_pkm_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
+rf_public rf_image rf_load_pkm_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
 {
     rf_image result = {0};
 
@@ -2667,27 +2667,27 @@ RF_API rf_image rf_load_pkm_image_to_buffer(const void* src, rf_int src_size, vo
             {
                 memcpy(dst, src, size);
 
-                     if (header.format == 0) result.format = RF_COMPRESSED_ETC1_RGB;
-                else if (header.format == 1) result.format = RF_COMPRESSED_ETC2_RGB;
-                else if (header.format == 3) result.format = RF_COMPRESSED_ETC2_EAC_RGBA;
+                     if (header.format == 0) result.format = rf_pixel_format_etc1_rgb;
+                else if (header.format == 1) result.format = rf_pixel_format_etc2_rgb;
+                else if (header.format == 3) result.format = rf_pixel_format_etc2_eac_rgba;
 
                 result.valid = 1;
             }
         }
-        else RF_LOG_ERROR(RF_BAD_FORMAT, "PKM file does not seem to be a valid image");
+        else rf_log_error(rf_bad_format, "PKM file does not seem to be a valid image");
     }
 
     return result;
 }
 
-RF_API rf_image rf_load_pkm_image(const void* src, rf_int src_size, rf_allocator allocator)
+rf_public rf_image rf_load_pkm_image(const void* src, rf_int src_size, rf_allocator allocator)
 {
     rf_image result = {0};
 
     if (src && src_size > 0)
     {
         int dst_size = rf_get_pkm_image_size(src, src_size);
-        void* dst = RF_ALLOC(allocator, dst_size);
+        void* dst = rf_alloc(allocator, dst_size);
 
         result = rf_load_pkm_image_to_buffer(src, src_size, dst, dst_size);
     }
@@ -2695,19 +2695,19 @@ RF_API rf_image rf_load_pkm_image(const void* src, rf_int src_size, rf_allocator
     return result;
 }
 
-RF_API rf_image rf_load_pkm_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_image rf_load_pkm_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_image result = {0};
 
-    int src_size = RF_FILE_SIZE(io, file);
-    void* src = RF_ALLOC(temp_allocator, src_size);
+    int src_size = rf_file_size(io, file);
+    void* src = rf_alloc(temp_allocator, src_size);
 
-    if (RF_READ_FILE(io, file, src, src_size))
+    if (rf_read_file(io, file, src, src_size))
     {
         result = rf_load_pkm_image(src, src_size, allocator);
     }
 
-    RF_FREE(temp_allocator, src);
+    rf_free(temp_allocator, src);
 
     return result;
 }
@@ -2753,7 +2753,7 @@ struct rf_ktx_header
     unsigned int key_value_data_size;     // Used to encode any arbitrary data...
 };
 
-RF_API rf_int rf_get_ktx_image_size(const void* src, rf_int src_size)
+rf_public rf_int rf_get_ktx_image_size(const void* src, rf_int src_size)
 {
     int result = 0;
 
@@ -2775,7 +2775,7 @@ RF_API rf_int rf_get_ktx_image_size(const void* src, rf_int src_size)
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_ktx_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
+rf_public rf_mipmaps_image rf_load_ktx_image_to_buffer(const void* src, rf_int src_size, void* dst, rf_int dst_size)
 {
     rf_mipmaps_image result = {0};
 
@@ -2805,9 +2805,9 @@ RF_API rf_mipmaps_image rf_load_ktx_image_to_buffer(const void* src, rf_int src_
 
                     switch (header.gl_internal_format)
                     {
-                        case 0x8D64: result.format = RF_COMPRESSED_ETC1_RGB; break;
-                        case 0x9274: result.format = RF_COMPRESSED_ETC2_RGB; break;
-                        case 0x9278: result.format = RF_COMPRESSED_ETC2_EAC_RGBA; break;
+                        case 0x8D64: result.format = rf_pixel_format_etc1_rgb; break;
+                        case 0x9274: result.format = rf_pixel_format_etc2_rgb; break;
+                        case 0x9278: result.format = rf_pixel_format_etc2_eac_rgba; break;
                         default: return result;
                     }
 
@@ -2820,14 +2820,14 @@ RF_API rf_mipmaps_image rf_load_ktx_image_to_buffer(const void* src, rf_int src_
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_ktx_image(const void* src, rf_int src_size, rf_allocator allocator)
+rf_public rf_mipmaps_image rf_load_ktx_image(const void* src, rf_int src_size, rf_allocator allocator)
 {
     rf_mipmaps_image result = {0};
 
     if (src && src_size > 0)
     {
         int dst_size = rf_get_ktx_image_size(src, src_size);
-        void* dst    = RF_ALLOC(allocator, dst_size);
+        void* dst    = rf_alloc(allocator, dst_size);
 
         result = rf_load_ktx_image_to_buffer(src, src_size, dst, dst_size);
     }
@@ -2835,19 +2835,19 @@ RF_API rf_mipmaps_image rf_load_ktx_image(const void* src, rf_int src_size, rf_a
     return result;
 }
 
-RF_API rf_mipmaps_image rf_load_ktx_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_mipmaps_image rf_load_ktx_image_from_file(const char* file, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_mipmaps_image result = {0};
 
-    int src_size = RF_FILE_SIZE(io, file);
-    void* src = RF_ALLOC(temp_allocator, src_size);
+    int src_size = rf_file_size(io, file);
+    void* src = rf_alloc(temp_allocator, src_size);
 
-    if (RF_READ_FILE(io, file, src, src_size))
+    if (rf_read_file(io, file, src, src_size))
     {
         result = rf_load_ktx_image(src, src_size, allocator);
     }
 
-    RF_FREE(temp_allocator, src);
+    rf_free(temp_allocator, src);
 
     return result;
 }
@@ -2861,55 +2861,55 @@ RF_API rf_mipmaps_image rf_load_ktx_image_from_file(const char* file, rf_allocat
 //  - Number of frames is returned through 'frames' parameter
 //  - Frames delay is returned through 'delays' parameter (int array)
 //  - All frames are returned in RGBA format
-RF_API rf_gif rf_load_animated_gif(const void* data, rf_int data_size, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_gif rf_load_animated_gif(const void* data, rf_int data_size, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_gif gif = {0};
 
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR(temp_allocator);
+    rf_set_global_dependencies_allocator(temp_allocator);
     {
         int component_count = 0;
         void* loaded_gif = stbi_load_gif_from_memory(data, data_size, &gif.frame_delays, &gif.width, &gif.height, &gif.frames_count, &component_count, 4);
 
         if (loaded_gif && component_count == 4)
         {
-            int loaded_gif_size = gif.width * gif.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8);
-            void* dst = RF_ALLOC(allocator, loaded_gif_size);
+            int loaded_gif_size = gif.width * gif.height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8);
+            void* dst = rf_alloc(allocator, loaded_gif_size);
 
             if (dst)
             {
                 memcpy(dst, loaded_gif, loaded_gif_size);
 
                 gif.data   = dst;
-                gif.format = RF_UNCOMPRESSED_R8G8B8A8;
+                gif.format = rf_pixel_format_r8g8b8a8;
                 gif.valid  = 1;
             }
         }
 
-        RF_FREE(temp_allocator, loaded_gif);
+        rf_free(temp_allocator, loaded_gif);
     }
-    RF_SET_GLOBAL_DEPENDENCIES_ALLOCATOR((rf_allocator) {0});
+    rf_set_global_dependencies_allocator((rf_allocator) {0});
 
     return gif;
 }
 
-RF_API rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_gif rf_load_animated_gif_file(const char* filename, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_gif result = (rf_gif) {0};
 
-    int file_size = RF_FILE_SIZE(io, filename);
-    unsigned char* buffer = RF_ALLOC(temp_allocator, file_size);
+    int file_size = rf_file_size(io, filename);
+    unsigned char* buffer = rf_alloc(temp_allocator, file_size);
 
-    if (RF_READ_FILE(io, filename, buffer, file_size))
+    if (rf_read_file(io, filename, buffer, file_size))
     {
         result = rf_load_animated_gif(buffer, file_size, allocator, temp_allocator);
     }
 
-    RF_FREE(temp_allocator, buffer);
+    rf_free(temp_allocator, buffer);
 
     return result;
 }
 
-RF_API rf_sizei rf_gif_frame_size(rf_gif gif)
+rf_public rf_sizei rf_gif_frame_size(rf_gif gif)
 {
     rf_sizei result = {0};
 
@@ -2922,7 +2922,7 @@ RF_API rf_sizei rf_gif_frame_size(rf_gif gif)
 }
 
 // Returns an image pointing to the frame in the gif
-RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame)
+rf_public rf_image rf_get_frame_from_gif(rf_gif gif, int frame)
 {
     rf_image result = {0};
 
@@ -2943,11 +2943,11 @@ RF_API rf_image rf_get_frame_from_gif(rf_gif gif, int frame)
     return result;
 }
 
-RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator)
+rf_public void rf_unload_gif(rf_gif gif, rf_allocator allocator)
 {
     if (gif.valid)
     {
-        RF_FREE(allocator, gif.frame_delays);
+        rf_free(allocator, gif.frame_delays);
         rf_unload_image(gif.image, allocator);
     }
 }
@@ -2958,72 +2958,72 @@ RF_API void rf_unload_gif(rf_gif gif, rf_allocator allocator)
 #ifdef RAYFORK_EZ
 
 #pragma region extract image data functions
-RF_API rf_color* rf_image_pixels_to_rgba32_ez(rf_image image) { return rf_image_pixels_to_rgba32(image, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_vec4* rf_image_compute_pixels_to_normalized_ez(rf_image image) { return rf_image_compute_pixels_to_normalized(image, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_palette rf_image_extract_palette_ez(rf_image image, int palette_size) { return rf_image_extract_palette(image, palette_size, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_color* rf_image_pixels_to_rgba32_ez(rf_image image) { return rf_image_pixels_to_rgba32(image, rf_default_allocator); }
+rf_public rf_vec4* rf_image_compute_pixels_to_normalized_ez(rf_image image) { return rf_image_compute_pixels_to_normalized(image, rf_default_allocator); }
+rf_public rf_palette rf_image_extract_palette_ez(rf_image image, int palette_size) { return rf_image_extract_palette(image, palette_size, rf_default_allocator); }
 #pragma endregion
 
 #pragma region loading & unloading functions
-RF_API rf_image rf_load_image_from_file_data_ez(const void* src, int src_size) { return rf_load_image_from_file_data(src, src_size, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_load_image_from_hdr_file_data_ez(const void* src, int src_size) { return rf_load_image_from_hdr_file_data(src, src_size, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_load_image_from_file_ez(const char* filename) { return rf_load_image_from_file(filename, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }
-RF_API void rf_unload_image_ez(rf_image image) { rf_unload_image(image, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_load_image_from_file_data_ez(const void* src, int src_size) { return rf_load_image_from_file_data(src, src_size, rf_default_allocator, rf_default_allocator); }
+rf_public rf_image rf_load_image_from_hdr_file_data_ez(const void* src, int src_size) { return rf_load_image_from_hdr_file_data(src, src_size, rf_default_allocator, rf_default_allocator); }
+rf_public rf_image rf_load_image_from_file_ez(const char* filename) { return rf_load_image_from_file(filename, rf_default_allocator, rf_default_allocator, rf_default_io); }
+rf_public void rf_unload_image_ez(rf_image image) { rf_unload_image(image, rf_default_allocator); }
 #pragma endregion
 
 #pragma region image manipulation
-RF_API rf_image rf_image_copy_ez(rf_image image) { return rf_image_copy(image, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_copy_ez(rf_image image) { return rf_image_copy(image, rf_default_allocator); }
 
-RF_API rf_image rf_image_crop_ez(rf_image image, rf_rec crop) { return rf_image_crop(image, crop, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_crop_ez(rf_image image, rf_rec crop) { return rf_image_crop(image, crop, rf_default_allocator); }
 
-RF_API rf_image rf_image_resize_ez(rf_image image, int new_width, int new_height) { return rf_image_resize(image, new_width, new_height, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_image_resize_nn_ez(rf_image image, int new_width, int new_height) { return rf_image_resize_nn(image, new_width, new_height, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_resize_ez(rf_image image, int new_width, int new_height) { return rf_image_resize(image, new_width, new_height, rf_default_allocator, rf_default_allocator); }
+rf_public rf_image rf_image_resize_nn_ez(rf_image image, int new_width, int new_height) { return rf_image_resize_nn(image, new_width, new_height, rf_default_allocator); }
 
-RF_API rf_image rf_image_format_ez(rf_image image, rf_uncompressed_pixel_format new_format) { return rf_image_format(image, new_format, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_format_ez(rf_image image, rf_uncompressed_pixel_format new_format) { return rf_image_format(image, new_format, rf_default_allocator); }
 
-RF_API rf_image rf_image_alpha_clear_ez(rf_image image, rf_color color, float threshold) { return rf_image_alpha_clear(image, color, threshold, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_image_alpha_premultiply_ez(rf_image image) { return rf_image_alpha_premultiply(image, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_image_alpha_crop_ez(rf_image image, float threshold) { return rf_image_alpha_crop(image, threshold, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp) { return rf_image_dither(image, r_bpp, g_bpp, b_bpp, a_bpp, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_alpha_clear_ez(rf_image image, rf_color color, float threshold) { return rf_image_alpha_clear(image, color, threshold, rf_default_allocator, rf_default_allocator); }
+rf_public rf_image rf_image_alpha_premultiply_ez(rf_image image) { return rf_image_alpha_premultiply(image, rf_default_allocator, rf_default_allocator); }
+rf_public rf_image rf_image_alpha_crop_ez(rf_image image, float threshold) { return rf_image_alpha_crop(image, threshold, rf_default_allocator); }
+rf_public rf_image rf_image_dither_ez(rf_image image, int r_bpp, int g_bpp, int b_bpp, int a_bpp) { return rf_image_dither(image, r_bpp, g_bpp, b_bpp, a_bpp, rf_default_allocator, rf_default_allocator); }
 
-RF_API rf_image rf_image_flip_vertical_ez(rf_image image) { return rf_image_flip_vertical(image, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_image_flip_horizontal_ez(rf_image image) { return rf_image_flip_horizontal(image, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_image rf_image_flip_vertical_ez(rf_image image) { return rf_image_flip_vertical(image, rf_default_allocator); }
+rf_public rf_image rf_image_flip_horizontal_ez(rf_image image) { return rf_image_flip_horizontal(image, rf_default_allocator); }
 
-RF_API rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i) { return rf_get_seed_for_cellular_image(
-        seeds_per_row, tile_size, i, RF_DEFAULT_RAND_PROC); }
+rf_public rf_vec2 rf_get_seed_for_cellular_image_ez(int seeds_per_row, int tile_size, int i) { return rf_get_seed_for_cellular_image(
+        seeds_per_row, tile_size, i, rf_default_rand_proc); }
 
-RF_API rf_image rf_gen_image_color_ez(int width, int height, rf_color color) { return rf_gen_image_color(width, height, color, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_gradient_v_ez(int width, int height, rf_color top, rf_color bottom) { return rf_gen_image_gradient_v(width, height, top, bottom, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_gradient_h_ez(int width, int height, rf_color left, rf_color right) { return rf_gen_image_gradient_h(width, height, left, right, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_gradient_radial_ez(int width, int height, float density, rf_color inner, rf_color outer) { return rf_gen_image_gradient_radial(width, height, density, inner, outer, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_checked_ez(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2) { return rf_gen_image_checked(width, height, checks_x, checks_y, col1, col2, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_white_noise_ez(int width, int height, float factor) { return rf_gen_image_white_noise(
-        width, height, factor, RF_DEFAULT_RAND_PROC, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_perlin_noise_ez(int width, int height, int offset_x, int offset_y, float scale) { return rf_gen_image_perlin_noise(width, height, offset_x, offset_y, scale, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_gen_image_cellular_ez(int width, int height, int tile_size) { return rf_gen_image_cellular(width,
+rf_public rf_image rf_gen_image_color_ez(int width, int height, rf_color color) { return rf_gen_image_color(width, height, color, rf_default_allocator); }
+rf_public rf_image rf_gen_image_gradient_v_ez(int width, int height, rf_color top, rf_color bottom) { return rf_gen_image_gradient_v(width, height, top, bottom, rf_default_allocator); }
+rf_public rf_image rf_gen_image_gradient_h_ez(int width, int height, rf_color left, rf_color right) { return rf_gen_image_gradient_h(width, height, left, right, rf_default_allocator); }
+rf_public rf_image rf_gen_image_gradient_radial_ez(int width, int height, float density, rf_color inner, rf_color outer) { return rf_gen_image_gradient_radial(width, height, density, inner, outer, rf_default_allocator); }
+rf_public rf_image rf_gen_image_checked_ez(int width, int height, int checks_x, int checks_y, rf_color col1, rf_color col2) { return rf_gen_image_checked(width, height, checks_x, checks_y, col1, col2, rf_default_allocator); }
+rf_public rf_image rf_gen_image_white_noise_ez(int width, int height, float factor) { return rf_gen_image_white_noise(
+        width, height, factor, rf_default_rand_proc, rf_default_allocator); }
+rf_public rf_image rf_gen_image_perlin_noise_ez(int width, int height, int offset_x, int offset_y, float scale) { return rf_gen_image_perlin_noise(width, height, offset_x, offset_y, scale, rf_default_allocator); }
+rf_public rf_image rf_gen_image_cellular_ez(int width, int height, int tile_size) { return rf_gen_image_cellular(width,
                                                                                                               height,
                                                                                                               tile_size,
-                                                                                                              RF_DEFAULT_RAND_PROC,
-                                                                                                              RF_DEFAULT_ALLOCATOR); }
+                                                                                                              rf_default_rand_proc,
+                                                                                                              rf_default_allocator); }
 #pragma endregion
 
 #pragma region mipmaps
-RF_API rf_mipmaps_image rf_image_gen_mipmaps_ez(rf_image image, int gen_mipmaps_count) { return rf_image_gen_mipmaps(image, gen_mipmaps_count, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR); }
-RF_API void rf_unload_mipmaps_image_ez(rf_mipmaps_image image) { rf_unload_mipmaps_image(image, RF_DEFAULT_ALLOCATOR); }
+rf_public rf_mipmaps_image rf_image_gen_mipmaps_ez(rf_image image, int gen_mipmaps_count) { return rf_image_gen_mipmaps(image, gen_mipmaps_count, rf_default_allocator, rf_default_allocator); }
+rf_public void rf_unload_mipmaps_image_ez(rf_mipmaps_image image) { rf_unload_mipmaps_image(image, rf_default_allocator); }
 #pragma endregion
 
 #pragma region dds
-RF_API rf_mipmaps_image rf_load_dds_image_ez(const void* src, int src_size) { return rf_load_dds_image(src, src_size, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_mipmaps_image rf_load_dds_image_from_file_ez(const char* file) { return rf_load_dds_image_from_file(file, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }
+rf_public rf_mipmaps_image rf_load_dds_image_ez(const void* src, int src_size) { return rf_load_dds_image(src, src_size, rf_default_allocator); }
+rf_public rf_mipmaps_image rf_load_dds_image_from_file_ez(const char* file) { return rf_load_dds_image_from_file(file, rf_default_allocator, rf_default_allocator, rf_default_io); }
 #pragma endregion
 
 #pragma region pkm
-RF_API rf_image rf_load_pkm_image_ez(const void* src, int src_size) { return rf_load_pkm_image(src, src_size, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_image rf_load_pkm_image_from_file_ez(const char* file) { return rf_load_pkm_image_from_file(file, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }
+rf_public rf_image rf_load_pkm_image_ez(const void* src, int src_size) { return rf_load_pkm_image(src, src_size, rf_default_allocator); }
+rf_public rf_image rf_load_pkm_image_from_file_ez(const char* file) { return rf_load_pkm_image_from_file(file, rf_default_allocator, rf_default_allocator, rf_default_io); }
 #pragma endregion
 
 #pragma region ktx
-RF_API rf_mipmaps_image rf_load_ktx_image_ez(const void* src, int src_size) { return rf_load_ktx_image(src, src_size, RF_DEFAULT_ALLOCATOR); }
-RF_API rf_mipmaps_image rf_load_ktx_image_from_file_ez(const char* file) { return rf_load_ktx_image_from_file(file, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); }
+rf_public rf_mipmaps_image rf_load_ktx_image_ez(const void* src, int src_size) { return rf_load_ktx_image(src, src_size, rf_default_allocator); }
+rf_public rf_mipmaps_image rf_load_ktx_image_from_file_ez(const char* file) { return rf_load_ktx_image_from_file(file, rf_default_allocator, rf_default_allocator, rf_default_io); }
 #pragma endregion
 
 #endif // RAYFORK_EZ

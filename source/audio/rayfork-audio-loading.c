@@ -15,7 +15,7 @@
 
 #pragma region drlibs allocator wrappers
 
-RF_INTERNAL void* rf_drlib_malloc_wrapper(size_t sz, void* pUserData)
+rf_internal void* rf_drlib_malloc_wrapper(size_t sz, void* pUserData)
 {
     void* result = 0;
     rf_allocator* allocator = pUserData;
@@ -23,7 +23,7 @@ RF_INTERNAL void* rf_drlib_malloc_wrapper(size_t sz, void* pUserData)
     return result;
 }
 
-RF_INTERNAL void* rf_drlib_realloc_wrapper(void* p, size_t szNew, size_t szOld, void* pUserData)
+rf_internal void* rf_drlib_realloc_wrapper(void* p, size_t szNew, size_t szOld, void* pUserData)
 {
     void* result = 0;
     rf_allocator* allocator = pUserData;
@@ -31,7 +31,7 @@ RF_INTERNAL void* rf_drlib_realloc_wrapper(void* p, size_t szNew, size_t szOld, 
     return result;
 }
 
-RF_INTERNAL void rf_drlib_free_wrapper(void* p, void* pUserData)
+rf_internal void rf_drlib_free_wrapper(void* p, void* pUserData)
 {
     rf_allocator* allocator = pUserData;
     RF_FREE(*allocator, p);

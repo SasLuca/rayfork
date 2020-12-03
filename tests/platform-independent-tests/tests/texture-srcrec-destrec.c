@@ -31,10 +31,10 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
     // Initialize the rendering batch
-    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
-    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO);
+    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", rf_default_allocator, rf_default_io);
 
     frame_width = scarfy.width / 6;
     frame_height = scarfy.height;
@@ -57,19 +57,19 @@ extern void game_update(const platform_input_state* input)
     // Draw
     rf_begin();
 
-    rf_clear(RF_RAYWHITE);
+    rf_clear(rf_raywhite);
 
     // NOTE: Using DrawTexturePro() we can easily rotate and scale the part of the texture we draw
     // sourceRec defines the part of the texture we use for drawing
     // destRec defines the rectangle where our texture part will fit (scaling it to fit)
     // origin defines the point of the texture used as reference for rotation and scaling
     // rotation defines the texture rotation (using origin as rotation point)
-    rf_draw_texture_region(scarfy, source_rec, dest_rec, origin, (float)rotation, RF_WHITE);
+    rf_draw_texture_region(scarfy, source_rec, dest_rec, origin, (float)rotation, rf_white);
 
-    rf_draw_line((int)dest_rec.x, 0, (int)dest_rec.x, window.height, RF_GRAY);
-    rf_draw_line(0, (int)dest_rec.y, window.width, (int)dest_rec.y, RF_GRAY);
+    rf_draw_line((int)dest_rec.x, 0, (int)dest_rec.x, window.height, rf_gray);
+    rf_draw_line(0, (int)dest_rec.y, window.width, (int)dest_rec.y, rf_gray);
 
-    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, RF_GRAY);
+    rf_draw_text("(c) Scarfy sprite by Eiden Marsal", window.width - 200, window.height - 20, 10, rf_gray);
 
     rf_end();
 }

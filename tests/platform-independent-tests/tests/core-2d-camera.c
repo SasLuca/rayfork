@@ -26,7 +26,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
-    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
     srand(time(NULL));
@@ -82,36 +82,36 @@ extern void game_update(const platform_input_state* input)
     //Render
     rf_begin();
 
-    rf_clear(RF_RAYWHITE);
+    rf_clear(rf_raywhite);
 
     rf_begin_2d(camera);
 
-        rf_draw_rectangle(-6000, 320, 13000, 8000, RF_GRAY);
+        rf_draw_rectangle(-6000, 320, 13000, 8000, rf_gray);
 
         for (int i = 0; i < max_buildings; i++) rf_draw_rectangle_rec(buildings[i], buildColors[i]);
 
-        rf_draw_rectangle_rec(player, RF_RED);
+        rf_draw_rectangle_rec(player, rf_red);
 
-        rf_draw_line(camera.target.x, -window.height * 10, camera.target.x, window.height * 10, RF_GREEN);
-        rf_draw_line(-window.width * 10, camera.target.y, window.width * 10, camera.target.y, RF_GREEN);
+        rf_draw_line(camera.target.x, -window.height * 10, camera.target.x, window.height * 10, rf_green);
+        rf_draw_line(-window.width * 10, camera.target.y, window.width * 10, camera.target.y, rf_green);
 
     rf_end_2d();
 
-    rf_draw_text("SCREEN AREA", 640, 10, 20, RF_RED);
+    rf_draw_text("SCREEN AREA", 640, 10, 20, rf_red);
 
-    rf_draw_rectangle(0, 0, window.width, 5, RF_RED);
-    rf_draw_rectangle(0, 5, 5, window.height - 10, RF_RED);
-    rf_draw_rectangle(window.width - 5, 5, 5, window.height - 10, RF_RED);
-    rf_draw_rectangle(0, window.height - 5, window.width, 5, RF_RED);
+    rf_draw_rectangle(0, 0, window.width, 5, rf_red);
+    rf_draw_rectangle(0, 5, 5, window.height - 10, rf_red);
+    rf_draw_rectangle(window.width - 5, 5, 5, window.height - 10, rf_red);
+    rf_draw_rectangle(0, window.height - 5, window.width, 5, rf_red);
 
-    rf_draw_rectangle( 10, 10, 250, 113, rf_fade(RF_SKYBLUE, 0.5f));
-    rf_draw_rectangle_outline((rf_rec){ 10, 10, 250, 113 }, 1, RF_BLUE);
+    rf_draw_rectangle( 10, 10, 250, 113, rf_fade(rf_sky_blue, 0.5f));
+    rf_draw_rectangle_outline((rf_rec){ 10, 10, 250, 113 }, 1, rf_blue);
 
-    rf_draw_text("Free 2d camera controls:", 20, 20, 10, RF_BLACK);
-    rf_draw_text("- Right/Left to move Offset", 40, 40, 10, RF_DARKGRAY);
-    rf_draw_text("- Mouse Wheel to Zoom in-out", 40, 60, 10, RF_DARKGRAY);
-    rf_draw_text("- A / S to Rotate", 40, 80, 10, RF_DARKGRAY);
-    rf_draw_text("- R to reset Zoom and Rotation", 40, 100, 10, RF_DARKGRAY);
+    rf_draw_text("Free 2d camera controls:", 20, 20, 10, rf_black);
+    rf_draw_text("- Right/Left to move Offset", 40, 40, 10, rf_dark_gray);
+    rf_draw_text("- Mouse Wheel to Zoom in-out", 40, 60, 10, rf_dark_gray);
+    rf_draw_text("- A / S to Rotate", 40, 80, 10, rf_dark_gray);
+    rf_draw_text("- R to reset Zoom and Rotation", 40, 100, 10, rf_dark_gray);
 
     rf_end();
 }

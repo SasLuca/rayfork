@@ -10,7 +10,7 @@
    but that character is not supported by the default font in raylib
    TODO: optimize this code for speed!!
 */
-RF_API rf_decoded_rune rf_decode_utf8_char(const char* src, rf_int size)
+rf_public rf_decoded_rune rf_decode_utf8_char(const char* src, rf_int size)
 {
     /*
     UTF8 specs from https://www.ietf.org/rfc/rfc3629.txt
@@ -171,7 +171,7 @@ RF_API rf_decoded_rune rf_decode_utf8_char(const char* src, rf_int size)
     return (rf_decoded_rune) { .codepoint = RF_INVALID_CODEPOINT, .bytes_processed = 1 };
 }
 
-RF_API rf_utf8_stats rf_count_utf8_chars(const char* src, rf_int size)
+rf_public rf_utf8_stats rf_count_utf8_chars(const char* src, rf_int size)
 {
     rf_utf8_stats result = {0};
 
@@ -194,7 +194,7 @@ RF_API rf_utf8_stats rf_count_utf8_chars(const char* src, rf_int size)
     return result;
 }
 
-RF_API rf_utf8_stats rf_count_utf8_chars_til(const char* src, rf_int size, rf_int n)
+rf_public rf_utf8_stats rf_count_utf8_chars_til(const char* src, rf_int size, rf_int n)
 {
     rf_utf8_stats result = {0};
 
@@ -218,7 +218,7 @@ RF_API rf_utf8_stats rf_count_utf8_chars_til(const char* src, rf_int size, rf_in
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* src, rf_int size, rf_rune* dst, rf_int dst_size)
+rf_public rf_decoded_string rf_decode_utf8_to_buffer(const char* src, rf_int size, rf_rune* dst, rf_int dst_size)
 {
     rf_decoded_string result = {0};
 
@@ -253,11 +253,11 @@ RF_API rf_decoded_string rf_decode_utf8_to_buffer(const char* src, rf_int size, 
     return result;
 }
 
-RF_API rf_decoded_string rf_decode_utf8(const char* src, rf_int size, rf_allocator allocator)
+rf_public rf_decoded_string rf_decode_utf8(const char* src, rf_int size, rf_allocator allocator)
 {
     rf_decoded_string result = {0};
 
-    rf_rune* dst = RF_ALLOC(allocator, sizeof(rf_rune) * size);
+    rf_rune* dst = rf_alloc(allocator, sizeof(rf_rune) * size);
 
     result = rf_decode_utf8_to_buffer(src, size, dst, size);
 
@@ -265,12 +265,107 @@ RF_API rf_decoded_string rf_decode_utf8(const char* src, rf_int size, rf_allocat
 }
 #pragma endregion
 
+#pragma region ascii
+rf_int rf_str_to_int(rf_str src)
+{
+    rf_int result = 0;
+    rf_int sign   = 1;
+
+    src = rf_str_eat_spaces(src);
+
+    if (rf_str_valid(src) && src.data[0] == '-')
+    {
+        sign = -1;
+        src = rf_str_advance_b(src, 1);
+    }
+
+    while (rf_str_valid(src) && rf_is_digit(src.data[0]))
+    {
+        result *= 10;
+        result += rf_to_digit(src.data[0]);
+        src     = rf_str_advance_b(src, 1);
+    }
+
+    result *= sign;
+
+    return result;
+}
+
+float rf_str_to_float(rf_str src);
+
+int rf_to_digit(char c)
+{
+    int result = c - '0';
+    return result;
+}
+
+char rf_to_upper(char c)
+{
+    char result = c;
+    if (rf_is_upper(c)) {
+        result = c + 'A' - 'a';
+    }
+    return result;
+}
+
+char rf_to_lower(char c)
+{
+    char result = c;
+    if (rf_is_lower(c)) {
+        result = c + 'a' - 'A';
+    }
+    return result;
+}
+
+rf_bool rf_is_ascii(char c)
+{
+    rf_bool result = 0;
+    return result;
+}
+
+rf_bool rf_is_lower(char c)
+{
+    rf_bool result = c >= 'a' && c <= 'z';
+    return result;
+}
+
+rf_bool rf_is_upper(char c)
+{
+    rf_bool result = c >= 'A' && c <= 'Z';
+    return result;
+}
+
+rf_bool rf_is_alpha(char c)
+{
+    rf_bool result = rf_is_lower(c) || rf_is_upper(c);
+    return result;
+}
+
+rf_bool rf_is_digit(char c)
+{
+    rf_bool result = c >= '0' && c <= '9';
+    return result;
+}
+
+rf_bool rf_is_alnum(char c)
+{
+    rf_bool result = rf_is_alpha(c) && rf_is_alnum(c);
+    return result;
+}
+
+rf_bool rf_is_space(char c)
+{
+    rf_bool result = c == ' ' || c == '\t';
+    return result;
+}
+#pragma endregion
+
 #pragma region strbuf
-RF_API rf_strbuf rf_strbuf_make_ex(rf_int initial_amount, rf_allocator allocator)
+rf_public rf_strbuf rf_strbuf_make_ex(rf_int initial_amount, rf_allocator allocator)
 {
     rf_strbuf result = {0};
 
-    void* data = RF_ALLOC(allocator, initial_amount);
+    void* data = rf_alloc(allocator, initial_amount);
 
     if (data)
     {
@@ -283,7 +378,7 @@ RF_API rf_strbuf rf_strbuf_make_ex(rf_int initial_amount, rf_allocator allocator
     return result;
 }
 
-RF_API rf_strbuf rf_strbuf_clone_ex(rf_strbuf this_buf, rf_allocator allocator)
+rf_public rf_strbuf rf_strbuf_clone_ex(rf_strbuf this_buf, rf_allocator allocator)
 {
     rf_strbuf result = {0};
 
@@ -296,7 +391,7 @@ RF_API rf_strbuf rf_strbuf_clone_ex(rf_strbuf this_buf, rf_allocator allocator)
     return result;
 }
 
-RF_API rf_str rf_strbuf_to_str(rf_strbuf src)
+rf_public rf_str rf_strbuf_to_str(rf_strbuf src)
 {
     rf_str result = {0};
 
@@ -309,17 +404,17 @@ RF_API rf_str rf_strbuf_to_str(rf_strbuf src)
     return result;
 }
 
-RF_API rf_int rf_strbuf_remaining_capacity(const rf_strbuf* this_buf)
+rf_public rf_int rf_strbuf_remaining_capacity(const rf_strbuf* this_buf)
 {
     rf_int result = this_buf->capacity - this_buf->size;
     return result;
 }
 
-RF_API void rf_strbuf_reserve(rf_strbuf* this_buf, rf_int new_capacity)
+rf_public void rf_strbuf_reserve(rf_strbuf* this_buf, rf_int new_capacity)
 {
     if (new_capacity > this_buf->capacity)
     {
-        char* new_buf = RF_REALLOC(this_buf->allocator, this_buf->data, new_capacity, this_buf->capacity);
+        char* new_buf = rf_realloc(this_buf->allocator, this_buf->data, new_capacity, this_buf->capacity);
         if (new_buf)
         {
             this_buf->data = new_buf;
@@ -332,7 +427,7 @@ RF_API void rf_strbuf_reserve(rf_strbuf* this_buf, rf_int new_capacity)
     }
 }
 
-RF_API void rf_strbuf_ensure_capacity_for(rf_strbuf* this_buf, rf_int size)
+rf_public void rf_strbuf_ensure_capacity_for(rf_strbuf* this_buf, rf_int size)
 {
     rf_int remaining_capacity = rf_strbuf_remaining_capacity(this_buf);
     if (remaining_capacity < size)
@@ -343,7 +438,7 @@ RF_API void rf_strbuf_ensure_capacity_for(rf_strbuf* this_buf, rf_int size)
     }
 }
 
-RF_API void rf_strbuf_append(rf_strbuf* this_buf, rf_str it)
+rf_public void rf_strbuf_append(rf_strbuf* this_buf, rf_str it)
 {
     rf_strbuf_ensure_capacity_for(this_buf, it.size);
 
@@ -352,7 +447,7 @@ RF_API void rf_strbuf_append(rf_strbuf* this_buf, rf_str it)
     this_buf->data[this_buf->size] = 0;
 }
 
-RF_API void rf_strbuf_prepend(rf_strbuf* this_buf, rf_str it)
+rf_public void rf_strbuf_prepend(rf_strbuf* this_buf, rf_str it)
 {
     rf_strbuf_ensure_capacity_for(this_buf, it.size);
 
@@ -362,7 +457,7 @@ RF_API void rf_strbuf_prepend(rf_strbuf* this_buf, rf_str it)
     this_buf->data[this_buf->size] = 0;
 }
 
-RF_API void rf_strbuf_insert_utf8(rf_strbuf* this_buf, rf_str str_to_insert, rf_int insert_at)
+rf_public void rf_strbuf_insert_utf8(rf_strbuf* this_buf, rf_str str_to_insert, rf_int insert_at)
 {
     rf_strbuf_ensure_capacity_for(this_buf, str_to_insert.size);
 
@@ -390,7 +485,7 @@ RF_API void rf_strbuf_insert_utf8(rf_strbuf* this_buf, rf_str str_to_insert, rf_
     }
 }
 
-RF_API void rf_strbuf_insert_b(rf_strbuf* this_buf, rf_str str_to_insert, rf_int insert_at)
+rf_public void rf_strbuf_insert_b(rf_strbuf* this_buf, rf_str str_to_insert, rf_int insert_at)
 {
     if (rf_str_valid(str_to_insert) && insert_at > 0)
     {
@@ -415,13 +510,13 @@ RF_API void rf_strbuf_insert_b(rf_strbuf* this_buf, rf_str str_to_insert, rf_int
     }
 }
 
-RF_API void rf_strbuf_remove_range(rf_strbuf*, rf_int begin, rf_int end);
+rf_public void rf_strbuf_remove_range(rf_strbuf*, rf_int begin, rf_int end);
 
-RF_API void rf_strbuf_remove_range_b(rf_strbuf*, rf_int begin, rf_int end);
+rf_public void rf_strbuf_remove_range_b(rf_strbuf*, rf_int begin, rf_int end);
 
-RF_API void rf_strbuf_free(rf_strbuf* this_buf)
+rf_public void rf_strbuf_free(rf_strbuf* this_buf)
 {
-    RF_FREE(this_buf->allocator, this_buf->data);
+    rf_free(this_buf->allocator, this_buf->data);
 
     this_buf->size = 0;
     this_buf->capacity = 0;
@@ -429,19 +524,19 @@ RF_API void rf_strbuf_free(rf_strbuf* this_buf)
 #pragma endregion
 
 #pragma region str
-RF_API rf_bool rf_str_valid(rf_str src)
+rf_public rf_bool rf_str_valid(rf_str src)
 {
     return src.size != 0 && src.data;
 }
 
-RF_API rf_int rf_str_len(rf_str src)
+rf_public rf_int rf_str_len(rf_str src)
 {
     rf_utf8_stats stats = rf_count_utf8_chars(src.data, src.size);
 
     return stats.total_rune_count;
 }
 
-RF_API rf_str rf_cstr(const char* src)
+rf_public rf_str rf_cstr(const char* src)
 {
     rf_int size = strlen(src);
     rf_str result = {
@@ -452,14 +547,31 @@ RF_API rf_str rf_cstr(const char* src)
     return result;
 }
 
-RF_API rf_rune rf_str_get_rune(rf_str src, rf_int n)
+rf_public rf_str rf_str_advance_b(rf_str src, rf_int amount)
+{
+    rf_str result = {0};
+    result = rf_str_sub_b(src, amount, src.size);
+    return result;
+}
+
+rf_public rf_str rf_str_eat_spaces(rf_str src)
+{
+    while (rf_str_valid(src) && rf_is_space(src.data[0]))
+    {
+        src = rf_str_advance_b(src, 1);
+    }
+
+    return src;
+}
+
+rf_public rf_rune rf_str_get_rune(rf_str src, rf_int n)
 {
     rf_str target = rf_str_sub_utf8(src, n, 0);
     rf_rune result = rf_decode_utf8_char(target.data, target.size).codepoint;
     return result;
 }
 
-RF_API rf_utf8_char rf_str_get_utf8_n(rf_str src, rf_int n)
+rf_public rf_utf8_char rf_str_get_utf8_n(rf_str src, rf_int n)
 {
     rf_utf8_char result = 0;
     rf_str target = rf_str_sub_utf8(src, n, 0);
@@ -470,7 +582,7 @@ RF_API rf_utf8_char rf_str_get_utf8_n(rf_str src, rf_int n)
     return result;
 }
 
-RF_API rf_str rf_str_sub_utf8(rf_str src, rf_int begin, rf_int end)
+rf_public rf_str rf_str_sub_utf8(rf_str src, rf_int begin, rf_int end)
 {
     rf_str result = {0};
 
@@ -501,7 +613,7 @@ RF_API rf_str rf_str_sub_utf8(rf_str src, rf_int begin, rf_int end)
     return result;
 }
 
-RF_API rf_str rf_str_sub_b(rf_str src, rf_int begin, rf_int end)
+rf_public rf_str rf_str_sub_b(rf_str src, rf_int begin, rf_int end)
 {
     rf_str result = {0};
 
@@ -522,27 +634,27 @@ RF_API rf_str rf_str_sub_b(rf_str src, rf_int begin, rf_int end)
     return result;
 }
 
-RF_API int rf_str_cmp(rf_str a, rf_str b)
+rf_public int rf_str_cmp(rf_str a, rf_str b)
 {
     int result = memcmp(a.data, b.data, rf_min_i(a.size, b.size));
     return result;
 }
 
-RF_API rf_bool rf_str_match(rf_str a, rf_str b)
+rf_public rf_bool rf_str_match(rf_str a, rf_str b)
 {
     if (a.size != b.size) return 0;
     int cmp = memcmp(a.data, b.data, a.size);
     return cmp == 0;
 }
 
-RF_API rf_bool rf_str_match_prefix(rf_str str, rf_str prefix)
+rf_public rf_bool rf_str_match_prefix(rf_str str, rf_str prefix)
 {
     if (str.size < prefix.size) return 0;
     int cmp = memcmp(str.data, prefix.data, prefix.size);
     return cmp == 0;
 }
 
-RF_API rf_bool rf_str_match_suffix(rf_str str, rf_str suffix)
+rf_public rf_bool rf_str_match_suffix(rf_str str, rf_str suffix)
 {
     if (str.size < suffix.size) return 0;
     rf_int offset = str.size - suffix.size;
@@ -550,10 +662,10 @@ RF_API rf_bool rf_str_match_suffix(rf_str str, rf_str suffix)
     return cmp == 0;
 }
 
-RF_API rf_int rf_str_find_first(rf_str haystack, rf_str needle)
+rf_public rf_int rf_str_find_first(rf_str haystack, rf_str needle)
 {
-    rf_int result = RF_INVALID_INDEX;
-    if (needle.size < haystack.size)
+    rf_int result = rf_invalid_index;
+    if (needle.size <= haystack.size)
     {
         rf_int char_ct = 0;
         for (rf_str sub = haystack; sub.size >= needle.size; sub = rf_str_sub_b(sub, 1, 0))
@@ -569,16 +681,15 @@ RF_API rf_int rf_str_find_first(rf_str haystack, rf_str needle)
             }
         }
     }
-
     return result;
 }
 
-RF_API rf_int rf_str_find_last(rf_str haystack, rf_str needle)
+rf_public rf_int rf_str_find_last(rf_str haystack, rf_str needle)
 {
-    rf_int result = RF_INVALID_INDEX;
-    if (needle.size < haystack.size)
+    rf_int result = rf_invalid_index;
+    if (needle.size <= haystack.size)
     {
-        rf_int char_ct = 0;
+        rf_int char_ct = haystack.size - 1;
         for (rf_str sub = haystack; rf_str_valid(sub); sub = rf_str_sub_b(sub, 0, -1))
         {
             if (rf_str_match_suffix(sub, needle))
@@ -588,33 +699,25 @@ RF_API rf_int rf_str_find_last(rf_str haystack, rf_str needle)
             }
             else
             {
-                char_ct++;
+                char_ct--;
             }
         }
     }
     return result;
 }
 
-RF_API rf_bool rf_str_contains(rf_str haystack, rf_str needle)
+rf_public rf_bool rf_str_contains(rf_str haystack, rf_str needle)
 {
-    rf_bool result = 0;
-    for (rf_str sub = haystack; rf_str_valid(sub); sub = rf_str_sub_b(sub, 1, 0))
-    {
-        if (rf_str_match_prefix(sub, needle))
-        {
-            result = 1;
-            break;
-        }
-    }
+    rf_bool result = rf_str_find_first(haystack, needle) != rf_invalid_index;
     return result;
 }
 
-RF_API rf_str rf_str_pop_first_split(rf_str* src, rf_str split_by)
+rf_public rf_str rf_str_pop_first_split(rf_str* src, rf_str split_by)
 {
     rf_str result = {0};
 
     rf_int i = rf_str_find_first(*src, split_by);
-    if (i != RF_INVALID_INDEX)
+    if (i != rf_invalid_index)
     {
         result.data  = src->data;
         result.size  = i;
@@ -630,12 +733,12 @@ RF_API rf_str rf_str_pop_first_split(rf_str* src, rf_str split_by)
     return result;
 }
 
-RF_API rf_str rf_str_pop_last_split(rf_str* src, rf_str split_by)
+rf_public rf_str rf_str_pop_last_split(rf_str* src, rf_str split_by)
 {
     rf_str result = {0};
 
     rf_int i = rf_str_find_last(*src, split_by);
-    if (i != RF_INVALID_INDEX)
+    if (i != rf_invalid_index)
     {
         result.data  = src->data + i;
         result.size  = src->size - i;
@@ -650,14 +753,14 @@ RF_API rf_str rf_str_pop_last_split(rf_str* src, rf_str split_by)
     return result;
 }
 
-RF_API rf_utf8_char rf_rune_to_utf8_char(rf_rune src)
+rf_public rf_utf8_char rf_rune_to_utf8_char(rf_rune src)
 {
     rf_utf8_char result = 0;
     memcpy(&result, &src, sizeof(rf_rune));
     return result;
 }
 
-RF_API rf_rune rf_utf8_char_to_rune(rf_utf8_char src)
+rf_public rf_rune rf_utf8_char_to_rune(rf_utf8_char src)
 {
     rf_rune result = 0;
     int len = strlen((char*)&src);

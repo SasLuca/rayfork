@@ -2,24 +2,24 @@
 
 #pragma region misc
 
-RF_API float rf_next_pot(float it)
+rf_public float rf_next_pot(float it)
 {
     return powf(2, ceilf(logf(it) / logf(2)));
 }
 
-RF_API rf_vec2 rf_center_to_object(rf_sizef center_this, rf_rec to_this)
+rf_public rf_vec2 rf_center_to_object(rf_sizef center_this, rf_rec to_this)
 {
     rf_vec2 result = { to_this.x + to_this.width / 2 - center_this.width / 2, to_this.y + to_this.height / 2 - center_this.height / 2 };
     return result;
 }
 
-RF_API float rf_clamp(float value, float min, float max)
+rf_public float rf_clamp(float value, float min, float max)
 {
     const float res = value < min ? min : value;
     return res > max ? max : res;
 }
 
-RF_API float rf_lerp(float start, float end, float amount)
+rf_public float rf_lerp(float start, float end, float amount)
 {
     return start + amount * (end - start);
 }
@@ -28,7 +28,7 @@ RF_API float rf_lerp(float start, float end, float amount)
 
 #pragma region base64
 
-RF_API int rf_get_size_base64(const unsigned char *input)
+rf_public int rf_get_size_base64(const unsigned char *input)
 {
     int size = 0;
 
@@ -44,7 +44,7 @@ RF_API int rf_get_size_base64(const unsigned char *input)
     return size;
 }
 
-RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator)
+rf_public rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocator allocator)
 {
     static const unsigned char rf_base64_table[] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -64,7 +64,7 @@ RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocato
 
     rf_base64_output result;
     result.size = rf_get_size_base64(input);
-    result.buffer = RF_ALLOC(allocator, result.size);
+    result.buffer = rf_alloc(allocator, result.size);
 
     for (rf_int i = 0; i < result.size / 3; i++)
     {
@@ -104,92 +104,92 @@ RF_API rf_base64_output rf_decode_base64(const unsigned char* input, rf_allocato
 #pragma region vec and matrix math
 
 // Add two vectors (v1 + v2)
-RF_API rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2)
+rf_public rf_vec2 rf_vec2_add(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x + v2.x, v1.y + v2.y};
     return result;
 }
 
 // Subtract two vectors (v1 - v2)
-RF_API rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2)
+rf_public rf_vec2 rf_vec2_sub(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x - v2.x, v1.y - v2.y};
     return result;
 }
 
 // Calculate vector length
-RF_API float rf_vec2_len(rf_vec2 v)
+rf_public float rf_vec2_len(rf_vec2 v)
 {
     float result = sqrt((v.x * v.x) + (v.y * v.y));
     return result;
 }
 
 // Calculate two vectors dot product
-RF_API float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2)
+rf_public float rf_vec2_dot_product(rf_vec2 v1, rf_vec2 v2)
 {
     float result = (v1.x * v2.x + v1.y * v2.y);
     return result;
 }
 
 // Calculate distance between two vectors
-RF_API float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2)
+rf_public float rf_vec2_distance(rf_vec2 v1, rf_vec2 v2)
 {
     float result = sqrt((v1.x - v2.x) * (v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
     return result;
 }
 
 // Calculate angle from two vectors in X-axis
-RF_API float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2)
+rf_public float rf_vec2_angle(rf_vec2 v1, rf_vec2 v2)
 {
-    float result = atan2f(v2.y - v1.y, v2.x - v1.x) * (180.0f / RF_PI);
+    float result = atan2f(v2.y - v1.y, v2.x - v1.x) * (180.0f / rf_pi);
     if (result < 0) result += 360.0f;
     return result;
 }
 
 // Scale vector (multiply by value)
-RF_API rf_vec2 rf_vec2_scale(rf_vec2 v, float scale)
+rf_public rf_vec2 rf_vec2_scale(rf_vec2 v, float scale)
 {
     rf_vec2 result = {v.x * scale, v.y * scale};
     return result;
 }
 
 // Multiply vector by vector
-RF_API rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2)
+rf_public rf_vec2 rf_vec2_mul_v(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x * v2.x, v1.y * v2.y};
     return result;
 }
 
 // Negate vector
-RF_API rf_vec2 rf_vec2_negate(rf_vec2 v)
+rf_public rf_vec2 rf_vec2_negate(rf_vec2 v)
 {
     rf_vec2 result = {-v.x, -v.y};
     return result;
 }
 
 // Divide vector by a float value
-RF_API rf_vec2 rf_vec2_div(rf_vec2 v, float div)
+rf_public rf_vec2 rf_vec2_div(rf_vec2 v, float div)
 {
     rf_vec2 result = {v.x / div, v.y / div};
     return result;
 }
 
 // Divide vector by vector
-RF_API rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2)
+rf_public rf_vec2 rf_vec2_div_v(rf_vec2 v1, rf_vec2 v2)
 {
     rf_vec2 result = {v1.x / v2.x, v1.y / v2.y};
     return result;
 }
 
 // Normalize provided vector
-RF_API rf_vec2 rf_vec2_normalize(rf_vec2 v)
+rf_public rf_vec2 rf_vec2_normalize(rf_vec2 v)
 {
     rf_vec2 result = rf_vec2_div(v, rf_vec2_len(v));
     return result;
 }
 
 // Calculate linear interpolation between two vectors
-RF_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
+rf_public rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
 {
     rf_vec2 result = {0};
 
@@ -200,42 +200,42 @@ RF_API rf_vec2 rf_vec2_lerp(rf_vec2 v1, rf_vec2 v2, float amount)
 }
 
 // Add two vectors
-RF_API rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_add(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
     return result;
 }
 
 // Subtract two vectors
-RF_API rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_sub(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
     return result;
 }
 
 // Multiply vector by scalar
-RF_API rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar)
+rf_public rf_vec3 rf_vec3_mul(rf_vec3 v, float scalar)
 {
     rf_vec3 result = {v.x * scalar, v.y * scalar, v.z * scalar};
     return result;
 }
 
 // Multiply vector by vector
-RF_API rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_mul_v(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
     return result;
 }
 
 // Calculate two vectors cross product
-RF_API rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_cross_product(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x};
     return result;
 }
 
 // Calculate one vector perpendicular vector
-RF_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
+rf_public rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
 {
     rf_vec3 result = {0};
 
@@ -261,21 +261,21 @@ RF_API rf_vec3 rf_vec3_perpendicular(rf_vec3 v)
 }
 
 // Calculate vector length
-RF_API float rf_vec3_len(rf_vec3 v)
+rf_public float rf_vec3_len(rf_vec3 v)
 {
     float result = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     return result;
 }
 
 // Calculate two vectors dot product
-RF_API float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2)
+rf_public float rf_vec3_dot_product(rf_vec3 v1, rf_vec3 v2)
 {
     float result = (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
     return result;
 }
 
 // Calculate distance between two vectors
-RF_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
+rf_public float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
 {
     float dx = v2.x - v1.x;
     float dy = v2.y - v1.y;
@@ -285,35 +285,35 @@ RF_API float rf_vec3_distance(rf_vec3 v1, rf_vec3 v2)
 }
 
 // Scale provided vector
-RF_API rf_vec3 rf_vec3_scale(rf_vec3 v, float scale)
+rf_public rf_vec3 rf_vec3_scale(rf_vec3 v, float scale)
 {
     rf_vec3 result = {v.x * scale, v.y * scale, v.z * scale};
     return result;
 }
 
 // Negate provided vector (invert direction)
-RF_API rf_vec3 rf_vec3_negate(rf_vec3 v)
+rf_public rf_vec3 rf_vec3_negate(rf_vec3 v)
 {
     rf_vec3 result = {-v.x, -v.y, -v.z};
     return result;
 }
 
 // Divide vector by a float value
-RF_API rf_vec3 rf_vec3_div(rf_vec3 v, float div)
+rf_public rf_vec3 rf_vec3_div(rf_vec3 v, float div)
 {
     rf_vec3 result = {v.x / div, v.y / div, v.z / div};
     return result;
 }
 
 // Divide vector by vector
-RF_API rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_div_v(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {v1.x / v2.x, v1.y / v2.y, v1.z / v2.z};
     return result;
 }
 
 // Normalize provided vector
-RF_API rf_vec3 rf_vec3_normalize(rf_vec3 v)
+rf_public rf_vec3 rf_vec3_normalize(rf_vec3 v)
 {
     rf_vec3 result = v;
 
@@ -332,7 +332,7 @@ RF_API rf_vec3 rf_vec3_normalize(rf_vec3 v)
 // Orthonormalize provided vectors
 // Makes vectors normalized and orthogonal to each other
 // Gram-Schmidt function implementation
-RF_API void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
+rf_public void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
 {
     *v1 = rf_vec3_normalize(*v1);
     rf_vec3 vn = rf_vec3_cross_product(*v1, *v2);
@@ -341,7 +341,7 @@ RF_API void rf_vec3_ortho_normalize(rf_vec3 *v1, rf_vec3 *v2)
 }
 
 // Transforms a rf_vec3 by a given rf_mat
-RF_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
+rf_public rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
 {
     rf_vec3 result = {0};
     float x = v.x;
@@ -356,7 +356,7 @@ RF_API rf_vec3 rf_vec3_transform(rf_vec3 v, rf_mat mat)
 }
 
 // rf_transform a vector by quaternion rotation
-RF_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
+rf_public rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
 {
     rf_vec3 result = {0};
 
@@ -371,7 +371,7 @@ RF_API rf_vec3 rf_vec3_rotate_by_quaternion(rf_vec3 v, rf_quaternion q)
 }
 
 // Calculate linear interpolation between two vectors
-RF_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
+rf_public rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
 {
     rf_vec3 result = {0};
 
@@ -383,7 +383,7 @@ RF_API rf_vec3 rf_vec3_lerp(rf_vec3 v1, rf_vec3 v2, float amount)
 }
 
 // Calculate reflected vector to normal
-RF_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
+rf_public rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
 {
 // I is the original vector
 // N is the normal of the incident plane
@@ -401,7 +401,7 @@ RF_API rf_vec3 rf_vec3_reflect(rf_vec3 v, rf_vec3 normal)
 }
 
 // Return min value for each pair of components
-RF_API rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {0};
 
@@ -413,7 +413,7 @@ RF_API rf_vec3 rf_vec3_min(rf_vec3 v1, rf_vec3 v2)
 }
 
 // Return max value for each pair of components
-RF_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
+rf_public rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
 {
     rf_vec3 result = {0};
 
@@ -426,7 +426,7 @@ RF_API rf_vec3 rf_vec3_max(rf_vec3 v1, rf_vec3 v2)
 
 // Compute barycenter coordinates (u, v, w) for point p with respect to triangle (a, b, c)
 // NOTE: Assumes P is on the plane of the triangle
-RF_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c)
+rf_public rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c)
 {
 //Vector v0 = b - a, v1 = c - a, v2 = p - a;
 
@@ -451,7 +451,7 @@ RF_API rf_vec3 rf_vec3_barycenter(rf_vec3 p, rf_vec3 a, rf_vec3 b, rf_vec3 c)
 }
 
 // Compute matrix determinant
-RF_API float rf_mat_determinant(rf_mat mat)
+rf_public float rf_mat_determinant(rf_mat mat)
 {
     float result = 0.0;
 
@@ -472,14 +472,14 @@ RF_API float rf_mat_determinant(rf_mat mat)
 }
 
 // Returns the trace of the matrix (sum of the values along the diagonal)
-RF_API float rf_mat_trace(rf_mat mat)
+rf_public float rf_mat_trace(rf_mat mat)
 {
     float result = (mat.m0 + mat.m5 + mat.m10 + mat.m15);
     return result;
 }
 
 // Transposes provided matrix
-RF_API rf_mat rf_mat_transpose(rf_mat mat)
+rf_public rf_mat rf_mat_transpose(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -504,7 +504,7 @@ RF_API rf_mat rf_mat_transpose(rf_mat mat)
 }
 
 // Invert provided matrix
-RF_API rf_mat rf_mat_invert(rf_mat mat)
+rf_public rf_mat rf_mat_invert(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -551,7 +551,7 @@ RF_API rf_mat rf_mat_invert(rf_mat mat)
 }
 
 // Normalize provided matrix
-RF_API rf_mat rf_mat_normalize(rf_mat mat)
+rf_public rf_mat rf_mat_normalize(rf_mat mat)
 {
     rf_mat result = {0};
 
@@ -578,7 +578,7 @@ RF_API rf_mat rf_mat_normalize(rf_mat mat)
 }
 
 // Returns identity matrix
-RF_API rf_mat rf_mat_identity(void)
+rf_public rf_mat rf_mat_identity(void)
 {
     rf_mat result = {1.0f, 0.0f, 0.0f, 0.0f,
                      0.0f, 1.0f, 0.0f, 0.0f,
@@ -589,7 +589,7 @@ RF_API rf_mat rf_mat_identity(void)
 }
 
 // Add two matrices
-RF_API rf_mat rf_mat_add(rf_mat left, rf_mat right)
+rf_public rf_mat rf_mat_add(rf_mat left, rf_mat right)
 {
     rf_mat result = rf_mat_identity();
 
@@ -614,7 +614,7 @@ RF_API rf_mat rf_mat_add(rf_mat left, rf_mat right)
 }
 
 // Subtract two matrices (left - right)
-RF_API rf_mat rf_mat_sub(rf_mat left, rf_mat right)
+rf_public rf_mat rf_mat_sub(rf_mat left, rf_mat right)
 {
     rf_mat result = rf_mat_identity();
 
@@ -639,7 +639,7 @@ RF_API rf_mat rf_mat_sub(rf_mat left, rf_mat right)
 }
 
 // Returns translation matrix
-RF_API rf_mat rf_mat_translate(float x, float y, float z)
+rf_public rf_mat rf_mat_translate(float x, float y, float z)
 {
     rf_mat result = {1.0f, 0.0f, 0.0f, x,
                      0.0f, 1.0f, 0.0f, y,
@@ -651,7 +651,7 @@ RF_API rf_mat rf_mat_translate(float x, float y, float z)
 
 // Create rotation matrix from axis and angle
 // NOTE: Angle should be provided in radians
-RF_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
+rf_public rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
 {
     rf_mat result = {0};
 
@@ -695,7 +695,7 @@ RF_API rf_mat rf_mat_rotate(rf_vec3 axis, float angle)
 }
 
 // Returns xyz-rotation matrix (angles in radians)
-RF_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
+rf_public rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
 {
     rf_mat result = rf_mat_identity();
 
@@ -722,7 +722,7 @@ RF_API rf_mat rf_mat_rotate_xyz(rf_vec3 ang)
 }
 
 // Returns x-rotation matrix (angle in radians)
-RF_API rf_mat rf_mat_rotate_x(float angle)
+rf_public rf_mat rf_mat_rotate_x(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -738,7 +738,7 @@ RF_API rf_mat rf_mat_rotate_x(float angle)
 }
 
 // Returns y-rotation matrix (angle in radians)
-RF_API rf_mat rf_mat_rotate_y(float angle)
+rf_public rf_mat rf_mat_rotate_y(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -754,7 +754,7 @@ RF_API rf_mat rf_mat_rotate_y(float angle)
 }
 
 // Returns z-rotation matrix (angle in radians)
-RF_API rf_mat rf_mat_rotate_z(float angle)
+rf_public rf_mat rf_mat_rotate_z(float angle)
 {
     rf_mat result = rf_mat_identity();
 
@@ -770,7 +770,7 @@ RF_API rf_mat rf_mat_rotate_z(float angle)
 }
 
 // Returns scaling matrix
-RF_API rf_mat rf_mat_scale(float x, float y, float z)
+rf_public rf_mat rf_mat_scale(float x, float y, float z)
 {
     rf_mat result = {x, 0.0f, 0.0f, 0.0f,
                      0.0f, y, 0.0f, 0.0f,
@@ -782,7 +782,7 @@ RF_API rf_mat rf_mat_scale(float x, float y, float z)
 
 // Returns two matrix multiplication
 // NOTE: When multiplying matrices... the order matters!
-RF_API rf_mat rf_mat_mul(rf_mat left, rf_mat right)
+rf_public rf_mat rf_mat_mul(rf_mat left, rf_mat right)
 {
     rf_mat result = {0};
 
@@ -807,7 +807,7 @@ RF_API rf_mat rf_mat_mul(rf_mat left, rf_mat right)
 }
 
 // Returns perspective GL_PROJECTION matrix
-RF_API rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val)
+rf_public rf_mat rf_mat_frustum(double left, double right, double bottom, double top, double near_val, double far_val)
 {
     rf_mat result = {0};
 
@@ -840,7 +840,7 @@ RF_API rf_mat rf_mat_frustum(double left, double right, double bottom, double to
 
 // Returns perspective GL_PROJECTION matrix
 // NOTE: Angle should be provided in radians
-RF_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val)
+rf_public rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, double far_val)
 {
     double top = near_val * tan(fovy * 0.5);
     double right = top * aspect;
@@ -850,7 +850,7 @@ RF_API rf_mat rf_mat_perspective(double fovy, double aspect, double near_val, do
 }
 
 // Returns orthographic GL_PROJECTION matrix
-RF_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val)
+rf_public rf_mat rf_mat_ortho(double left, double right, double bottom, double top, double near_val, double far_val)
 {
     rf_mat result = {0};
 
@@ -879,7 +879,7 @@ RF_API rf_mat rf_mat_ortho(double left, double right, double bottom, double top,
 }
 
 // Returns camera look-at matrix (view matrix)
-RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
+rf_public rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
 {
     rf_mat result = {0};
 
@@ -912,7 +912,7 @@ RF_API rf_mat rf_mat_look_at(rf_vec3 eye, rf_vec3 target, rf_vec3 up)
     return result;
 }
 
-RF_API rf_float16 rf_mat_to_float16(rf_mat mat)
+rf_public rf_float16 rf_mat_to_float16(rf_mat mat)
 {
     rf_float16 buffer = {0};
 
@@ -937,21 +937,21 @@ RF_API rf_float16 rf_mat_to_float16(rf_mat mat)
 }
 
 // Returns identity quaternion
-RF_API rf_quaternion rf_quaternion_identity(void)
+rf_public rf_quaternion rf_quaternion_identity(void)
 {
     rf_quaternion result = {0.0f, 0.0f, 0.0f, 1.0f};
     return result;
 }
 
 // Computes the length of a quaternion
-RF_API float rf_quaternion_len(rf_quaternion q)
+rf_public float rf_quaternion_len(rf_quaternion q)
 {
     float result = (float) sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
     return result;
 }
 
 // Normalize provided quaternion
-RF_API rf_quaternion rf_quaternion_normalize(rf_quaternion q)
+rf_public rf_quaternion rf_quaternion_normalize(rf_quaternion q)
 {
     rf_quaternion result = {0};
 
@@ -969,7 +969,7 @@ RF_API rf_quaternion rf_quaternion_normalize(rf_quaternion q)
 }
 
 // Invert provided quaternion
-RF_API rf_quaternion rf_quaternion_invert(rf_quaternion q)
+rf_public rf_quaternion rf_quaternion_invert(rf_quaternion q)
 {
     rf_quaternion result = q;
     float length = rf_quaternion_len(q);
@@ -989,7 +989,7 @@ RF_API rf_quaternion rf_quaternion_invert(rf_quaternion q)
 }
 
 // Calculate two quaternion multiplication
-RF_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
+rf_public rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
 {
     rf_quaternion result = {0};
 
@@ -1005,7 +1005,7 @@ RF_API rf_quaternion rf_quaternion_mul(rf_quaternion q1, rf_quaternion q2)
 }
 
 // Calculate linear interpolation between two quaternions
-RF_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount)
+rf_public rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = {0};
 
@@ -1018,7 +1018,7 @@ RF_API rf_quaternion rf_quaternion_lerp(rf_quaternion q1, rf_quaternion q2, floa
 }
 
 // Calculate slerp-optimized interpolation between two quaternions
-RF_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount)
+rf_public rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = rf_quaternion_lerp(q1, q2, amount);
     result = rf_quaternion_normalize(result);
@@ -1027,7 +1027,7 @@ RF_API rf_quaternion rf_quaternion_nlerp(rf_quaternion q1, rf_quaternion q2, flo
 }
 
 // Calculates spherical linear interpolation between two quaternions
-RF_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount)
+rf_public rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, float amount)
 {
     rf_quaternion result = {0};
 
@@ -1062,7 +1062,7 @@ RF_API rf_quaternion rf_quaternion_slerp(rf_quaternion q1, rf_quaternion q2, flo
 }
 
 // Calculate quaternion based on the rotation from one vector to another
-RF_API rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf_vec3 to)
+rf_public rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf_vec3 to)
 {
     rf_quaternion result = {0};
 
@@ -1084,7 +1084,7 @@ RF_API rf_quaternion rf_quaternion_from_vector3_to_vector3(rf_vec3 from, rf_vec3
 }
 
 // Returns a quaternion for a given rotation matrix
-RF_API rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
+rf_public rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
 {
     rf_quaternion result = {0};
 
@@ -1137,7 +1137,7 @@ RF_API rf_quaternion rf_quaternion_from_matrix(rf_mat mat)
 }
 
 // Returns a matrix for a given quaternion
-RF_API rf_mat rf_quaternion_to_matrix(rf_quaternion q)
+rf_public rf_mat rf_quaternion_to_matrix(rf_quaternion q)
 {
     rf_mat result = {0};
 
@@ -1184,7 +1184,7 @@ RF_API rf_mat rf_quaternion_to_matrix(rf_quaternion q)
 
 // Returns rotation quaternion for an angle and axis
 // NOTE: angle must be provided in radians
-RF_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle)
+rf_public rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle)
 {
     rf_quaternion result = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -1208,7 +1208,7 @@ RF_API rf_quaternion rf_quaternion_from_axis_angle(rf_vec3 axis, float angle)
 }
 
 // Returns the rotation angle and axis for a given quaternion
-RF_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, float *outAngle)
+rf_public void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, float *outAngle)
 {
     if (fabs(q.w) > 1.0f) q = rf_quaternion_normalize(q);
 
@@ -1235,7 +1235,7 @@ RF_API void rf_quaternion_to_axis_angle(rf_quaternion q, rf_vec3 *outAxis, float
 }
 
 // Returns he quaternion equivalent to Euler angles
-RF_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw)
+rf_public rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw)
 {
     rf_quaternion q = {0};
 
@@ -1256,31 +1256,31 @@ RF_API rf_quaternion rf_quaternion_from_euler(float roll, float pitch, float yaw
 
 // Return the Euler angles equivalent to quaternion (roll, pitch, yaw)
 // NOTE: Angles are returned in a rf_vec3 struct in degrees
-RF_API rf_vec3 rf_quaternion_to_euler(rf_quaternion q)
+rf_public rf_vec3 rf_quaternion_to_euler(rf_quaternion q)
 {
     rf_vec3 result = {0};
 
 // roll (x-axis rotation)
     float x0 = 2.0f * (q.w * q.x + q.y * q.z);
     float x1 = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
-    result.x = atan2f(x0, x1) * RF_RAD2DEG;
+    result.x = atan2f(x0, x1) * rf_rad2deg;
 
 // pitch (y-axis rotation)
     float y0 = 2.0f * (q.w * q.y - q.z * q.x);
     y0 = y0 > 1.0f ? 1.0f : y0;
     y0 = y0 < -1.0f ? -1.0f : y0;
-    result.y = sinf(y0) * RF_RAD2DEG;
+    result.y = sinf(y0) * rf_rad2deg;
 
 // yaw (z-axis rotation)
     float z0 = 2.0f * (q.w * q.z + q.x * q.y);
     float z1 = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
-    result.z = atan2f(z0, z1) * RF_RAD2DEG;
+    result.z = atan2f(z0, z1) * rf_rad2deg;
 
     return result;
 }
 
 // rf_transform a quaternion given a transformation matrix
-RF_API rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat)
+rf_public rf_quaternion rf_quaternion_transform(rf_quaternion q, rf_mat mat)
 {
     rf_quaternion result = {0};
 
@@ -1448,7 +1448,7 @@ rf_rec rf_get_collision_rec(rf_rec rec1, rf_rec rec2)
 }
 
 // Detect collision between two spheres
-RF_API rf_bool rf_check_collision_spheres(rf_vec3 center_a, float radius_a, rf_vec3 center_b, float radius_b)
+rf_public rf_bool rf_check_collision_spheres(rf_vec3 center_a, float radius_a, rf_vec3 center_b, float radius_b)
 {
     rf_bool collision = 0;
 
@@ -1472,7 +1472,7 @@ if (distance <= (radiusA + radiusB)) collision = 1;
 }
 
 // Detect collision between two boxes. Note: Boxes are defined by two points minimum and maximum
-RF_API rf_bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2)
+rf_public rf_bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box box2)
 {
     rf_bool collision = 1;
 
@@ -1486,7 +1486,7 @@ RF_API rf_bool rf_check_collision_boxes(rf_bounding_box box1, rf_bounding_box bo
 }
 
 // Detect collision between box and sphere
-RF_API rf_bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius)
+rf_public rf_bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center, float radius)
 {
     rf_bool collision = 0;
 
@@ -1507,7 +1507,7 @@ RF_API rf_bool rf_check_collision_box_sphere(rf_bounding_box box, rf_vec3 center
 }
 
 // Detect collision between ray and sphere
-RF_API rf_bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius)
+rf_public rf_bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float radius)
 {
     rf_bool collision = 0;
 
@@ -1522,7 +1522,7 @@ RF_API rf_bool rf_check_collision_ray_sphere(rf_ray ray, rf_vec3 center, float r
 }
 
 // Detect collision between ray and sphere with extended parameters and collision point detection
-RF_API rf_bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3 *collision_point)
+rf_public rf_bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, float radius, rf_vec3 *collision_point)
 {
     rf_bool collision = 0;
 
@@ -1550,7 +1550,7 @@ RF_API rf_bool rf_check_collision_ray_sphere_ex(rf_ray ray, rf_vec3 center, floa
 }
 
 // Detect collision between ray and bounding box
-RF_API rf_bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box)
+rf_public rf_bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box)
 {
     rf_bool collision = 0;
 
@@ -1570,7 +1570,7 @@ RF_API rf_bool rf_check_collision_ray_box(rf_ray ray, rf_bounding_box box)
 }
 
 // Get collision info between ray and triangle. Note: Based on https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-RF_API rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3)
+rf_public rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3 p2, rf_vec3 p3)
 {
     rf_ray_hit_info result = {0};
     rf_vec3 edge1  = {0};
@@ -1634,7 +1634,7 @@ RF_API rf_ray_hit_info rf_collision_ray_triangle(rf_ray ray, rf_vec3 p1, rf_vec3
 }
 
 // Get collision info between ray and ground plane (Y-normal plane)
-RF_API rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height)
+rf_public rf_ray_hit_info rf_collision_ray_ground(rf_ray ray, float ground_height)
 {
     rf_ray_hit_info result = {0};
     double epsilon = 0.000001; // Just a small number

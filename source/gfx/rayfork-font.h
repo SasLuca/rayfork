@@ -82,33 +82,33 @@ typedef struct rf_font
 typedef int rf_glyph_index;
 
 #pragma region ttf font
-RF_API rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, rf_int font_size);
-RF_API void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, rf_int codepoints_count, rf_glyph_info* dst, rf_int dst_count);
-RF_API int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
-RF_API rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator);
-RF_API rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
+rf_public rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, rf_int font_size);
+rf_public void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, rf_int codepoints_count, rf_glyph_info* dst, rf_int dst_count);
+rf_public int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
+rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator);
+rf_public rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
 
-RF_API rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator);
-RF_API rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator);
+rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 #pragma endregion
 
 #pragma region image font
-RF_API rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_info* dst, rf_int codepoints_and_dst_count);
-RF_API rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_info* glyphs, rf_int glyphs_count);
-RF_API rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator allocator);
-RF_API rf_font rf_load_image_font_from_file(const char* path, rf_color key, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+rf_public rf_bool rf_compute_glyph_metrics_from_image(rf_image image, rf_color key, const int* codepoints, rf_glyph_info* dst, rf_int codepoints_and_dst_count);
+rf_public rf_font rf_load_image_font_from_data(rf_image image, rf_glyph_info* glyphs, rf_int glyphs_count);
+rf_public rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator allocator);
+rf_public rf_font rf_load_image_font_from_file(const char* path, rf_color key, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 #pragma endregion
 
 #pragma region font utils
-RF_API void rf_unload_font(rf_font font, rf_allocator allocator);
-RF_API rf_glyph_index rf_get_glyph_index(rf_font font, int character);
-RF_API int rf_font_height(rf_font font, float font_size);
+rf_public void rf_unload_font(rf_font font, rf_allocator allocator);
+rf_public rf_glyph_index rf_get_glyph_index(rf_font font, int character);
+rf_public int rf_font_height(rf_font font, float font_size);
 
-RF_API rf_sizef rf_measure_text(rf_font font, const char* text, float font_size, float extra_spacing);
-RF_API rf_sizef rf_measure_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float extra_spacing, rf_bool wrap);
+rf_public rf_sizef rf_measure_text(rf_font font, const char* text, float font_size, float extra_spacing);
+rf_public rf_sizef rf_measure_text_rec(rf_font font, const char* text, rf_rec rec, float font_size, float extra_spacing, rf_bool wrap);
 
-RF_API rf_sizef rf_measure_string(rf_font font, const char* text, int len, float font_size, float extra_spacing);
-RF_API rf_sizef rf_measure_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, rf_bool wrap);
+rf_public rf_sizef rf_measure_string(rf_font font, const char* text, int len, float font_size, float extra_spacing);
+rf_public rf_sizef rf_measure_string_rec(rf_font font, const char* text, int text_len, rf_rec rec, float font_size, float extra_spacing, rf_bool wrap);
 #pragma endregion
 
 #endif // RAYFORK_FONT_H

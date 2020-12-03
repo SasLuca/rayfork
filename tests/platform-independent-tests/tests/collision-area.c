@@ -33,7 +33,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 {
     rf_gfx_init(&ctx, window.width, window.height, gfx_data);
 
-    batch = rf_create_default_render_batch(RF_DEFAULT_ALLOCATOR);
+    batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
     box_a = (rf_rec) {10, (float) window.height / 2 - 50, 200, 100 };
@@ -73,26 +73,26 @@ extern void game_update(const platform_input_state* input)
     // Draw
     rf_begin();
     {
-        rf_clear(RF_RAYWHITE);
+        rf_clear(rf_raywhite);
 
-        rf_draw_rectangle(0, 0, window.width, screen_upper_limit, collision ? RF_RED : RF_BLACK);
+        rf_draw_rectangle(0, 0, window.width, screen_upper_limit, collision ? rf_red : rf_black);
 
-        rf_draw_rectangle_rec(box_a, RF_GOLD);
-        rf_draw_rectangle_rec(box_b, RF_BLUE);
+        rf_draw_rectangle_rec(box_a, rf_gold);
+        rf_draw_rectangle_rec(box_b, rf_blue);
 
         if (collision)
         {
             // Draw collision area
-            rf_draw_rectangle_rec(box_collision, RF_LIME);
+            rf_draw_rectangle_rec(box_collision, rf_lime);
 
             // Draw collision message
             const int text_width = rf_measure_text(rf_get_default_font(), "COLLISION!", 20, 1).width;
-            rf_draw_text("COLLISION!", window.width / 2 - text_width / 2, screen_upper_limit / 2 - 10, 20, RF_BLACK);
+            rf_draw_text("COLLISION!", window.width / 2 - text_width / 2, screen_upper_limit / 2 - 10, 20, rf_black);
 
             // Draw collision area
             char text_buff[512] = {0};
             snprintf(text_buff, 512, "Collision Area: %i", (int) box_collision.width * (int) box_collision.height);
-            rf_draw_text(text_buff, window.width / 2 - 100, screen_upper_limit + 10, 20, RF_BLACK);
+            rf_draw_text(text_buff, window.width / 2 - 100, screen_upper_limit + 10, 20, rf_black);
         }
     }
     rf_end();

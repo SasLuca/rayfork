@@ -3,7 +3,7 @@
 
 #include "rayfork-low-level-renderer.h"
 
-#if !defined(RF_GL_CALLING_CONVENTION) && (defined(RAYFORK_PLATFORM_WINDOWS) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__))
+#if !defined(RF_GL_CALLING_CONVENTION) && (defined(rayfork_platform_windows) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__))
     #define RF_GL_CALLING_CONVENTION __stdcall *
 #else
     #define RF_GL_CALLING_CONVENTION *
@@ -101,10 +101,10 @@ typedef struct rf_opengl_procs
 } rf_opengl_procs;
 
 #if defined(__cplusplus)
-    #define RF__GL_PROC_DEFN(ext, proc) (void*) RF_CONCAT(ext, proc)
+    #define RF__GL_PROC_DEFN(ext, proc) (void*) rf_concat(ext, proc)
     #define RF__GL_PROC_NULL(ext, proc) NULL
 #else
-    #define RF__GL_PROC_DEFN(ext, proc) .proc = (void*) RF_CONCAT(ext, proc)
+    #define RF__GL_PROC_DEFN(ext, proc) .proc = (void*) rf_concat(ext, proc)
     #define RF__GL_PROC_NULL(ext, proc) .proc = NULL
 #endif
 

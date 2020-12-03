@@ -4,7 +4,7 @@ project(rayfork LANGUAGES C CXX)
 add_library(rayfork-dev)
 target_sources(rayfork-dev PRIVATE "source/rayfork.c")
 target_compile_features(rayfork-dev PUBLIC c_std_99)
-target_include_directories(rayfork-dev PUBLIC "source" "source/core" "source/gfx" "source/audio" "source/internal" "source/math" "source/str" "source/libs" "source/audio" "source/csv")
+target_include_directories(rayfork-dev PUBLIC "source" "source/core" "source/gfx" "source/audio" "source/internal" "source/math" "source/str" "source/libs" "source/audio" "source/csv" "source/arr")
 #target_compile_definitions(rayfork-dev PUBLIC RAYFORK_GRAPHICS_BACKEND_DIRECTX)
 
 if (RAYFORK_TEST_AMALGAMATED)

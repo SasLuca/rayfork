@@ -1,7 +1,7 @@
 #include "rayfork-texture.h"
 
 // Load texture from file into GPU memory (VRAM)
-RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_texture2d result = {0};
 
@@ -15,7 +15,7 @@ RF_API rf_texture2d rf_load_texture_from_file(const char* filename, rf_allocator
 }
 
 // Load texture from an image file data
-RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, rf_int dst_size, rf_allocator temp_allocator)
+rf_public rf_texture2d rf_load_texture_from_file_data(const void* data, rf_int dst_size, rf_allocator temp_allocator)
 {
     rf_image img = rf_load_image_from_file_data(data, dst_size, RF_ANY_CHANNELS, temp_allocator, temp_allocator);
 
@@ -27,7 +27,7 @@ RF_API rf_texture2d rf_load_texture_from_file_data(const void* data, rf_int dst_
 }
 
 // Load texture from image data
-RF_API rf_texture2d rf_load_texture_from_image(rf_image image)
+rf_public rf_texture2d rf_load_texture_from_image(rf_image image)
 {
     return rf_load_texture_from_image_with_mipmaps((rf_mipmaps_image) {
         .image = image,
@@ -35,7 +35,7 @@ RF_API rf_texture2d rf_load_texture_from_image(rf_image image)
     });
 }
 
-RF_API rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image image)
+rf_public rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image image)
 {
     rf_texture2d result = {0};
 
@@ -51,13 +51,13 @@ RF_API rf_texture2d rf_load_texture_from_image_with_mipmaps(rf_mipmaps_image ima
             result.valid  = 1;
         }
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture could not be loaded from rf_image");
+    else rf_log(rf_log_type_warning, "rf_texture could not be loaded from rf_image");
 
     return result;
 }
 
 // Load cubemap from image, multiple image cubemap layouts supported
-RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_cubemap_layout_type layout_type, rf_allocator temp_allocator)
+rf_public rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_cubemap_layout_type layout_type, rf_allocator temp_allocator)
 {
     rf_texture_cubemap cubemap = {0};
 
@@ -120,7 +120,7 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
             }
 
             // Convert image data to 6 faces in a vertical column, that's the optimum layout for loading
-            rf_image faces_colors = rf_gen_image_color(size, size * 6, RF_MAGENTA, temp_allocator);
+            rf_image faces_colors = rf_gen_image_color(size, size * 6, rf_magenta, temp_allocator);
             faces = rf_image_format(faces_colors, image.format, temp_allocator);
             rf_unload_image(faces_colors, temp_allocator);
 
@@ -129,36 +129,36 @@ RF_API rf_texture_cubemap rf_load_texture_cubemap_from_image(rf_image image, rf_
 
         for (rf_int i = 0; i < 6; i++)
         {
-            rf_image_draw(&faces, image, face_recs[i], (rf_rec) {0, size * i, size, size }, RF_WHITE, temp_allocator);
+            rf_image_draw(&faces, image, face_recs[i], (rf_rec) {0, size * i, size, size }, rf_white, temp_allocator);
         }
 
         cubemap.id = rf_gfx_load_texture_cubemap(faces.data, size, faces.format);
 
-        if (cubemap.id == 0) { RF_LOG(RF_LOG_TYPE_WARNING, "Cubemap image could not be loaded."); }
+        if (cubemap.id == 0) { rf_log(rf_log_type_warning, "Cubemap image could not be loaded."); }
 
         rf_unload_image(faces, temp_allocator);
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "Cubemap image layout can not be detected.");
+    else rf_log(rf_log_type_warning, "Cubemap image layout can not be detected.");
 
     return cubemap;
 }
 
 // Load texture for rendering (framebuffer)
-RF_API rf_render_texture2d rf_load_render_texture(int width, int height)
+rf_public rf_render_texture2d rf_load_render_texture(int width, int height)
 {
-    rf_render_texture2d target = rf_gfx_load_render_texture(width, height, RF_UNCOMPRESSED_R8G8B8A8, 24, 0);
+    rf_render_texture2d target = rf_gfx_load_render_texture(width, height, rf_pixel_format_r8g8b8a8, 24, 0);
 
     return target;
 }
 
 // Update GPU texture with new data. Pixels data must match texture.format
-RF_API void rf_update_texture(rf_texture2d texture, const void* pixels, rf_int pixels_size)
+rf_public void rf_update_texture(rf_texture2d texture, const void* pixels, rf_int pixels_size)
 {
     rf_gfx_update_texture(texture.id, texture.width, texture.height, texture.format, pixels, pixels_size);
 }
 
 // Generate GPU mipmaps for a texture
-RF_API void rf_gen_texture_mipmaps(rf_texture2d* texture)
+rf_public void rf_gen_texture_mipmaps(rf_texture2d* texture)
 {
     // NOTE: NPOT textures support check inside function
     // On WebGL (OpenGL ES 2.0) NPOT textures support is limited
@@ -166,35 +166,35 @@ RF_API void rf_gen_texture_mipmaps(rf_texture2d* texture)
 }
 
 // Set texture wrapping mode
-RF_API void rf_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode)
+rf_public void rf_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode)
 {
     rf_gfx_set_texture_wrap(texture, wrap_mode);
 }
 
 // Set texture scaling filter mode
-RF_API void rf_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode)
+rf_public void rf_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode)
 {
     rf_gfx_set_texture_filter(texture, filter_mode);
 }
 
 // Unload texture from GPU memory (VRAM)
-RF_API void rf_unload_texture(rf_texture2d texture)
+rf_public void rf_unload_texture(rf_texture2d texture)
 {
     if (texture.id > 0)
     {
         rf_gfx_delete_textures(texture.id);
 
-        RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Unloaded texture data from VRAM (GPU)", texture.id);
+        rf_log(rf_log_type_info, "[TEX ID %i] Unloaded texture data from VRAM (GPU)", texture.id);
     }
 }
 
 // Unload render texture from GPU memory (VRAM)
-RF_API void rf_unload_render_texture(rf_render_texture2d target)
+rf_public void rf_unload_render_texture(rf_render_texture2d target)
 {
     if (target.id > 0)
     {
         rf_gfx_delete_render_textures(target);
 
-        RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
+        rf_log(rf_log_type_info, "[TEX ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
     }
 }

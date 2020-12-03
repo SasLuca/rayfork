@@ -862,7 +862,7 @@
 #pragma region internal renderer functions
 
 // Compile custom shader and return shader id
-RF_INTERNAL unsigned int rf_compile_shader(const char* shader_str, int type)
+rf_internal unsigned int rf_compile_shader(const char* shader_str, int type)
 {
     unsigned int shader = rf_gl.CreateShader(type);
     rf_gl.ShaderSource(shader, 1, &shader_str, NULL);
@@ -873,7 +873,7 @@ RF_INTERNAL unsigned int rf_compile_shader(const char* shader_str, int type)
 
     if (success != GL_TRUE)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Failed to compile shader...", shader);
+        rf_log(rf_log_type_warning, "[SHDR ID %i] Failed to compile shader...", shader);
         int max_len = 0;
         int length;
         rf_gl.GetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_len);
@@ -883,15 +883,15 @@ RF_INTERNAL unsigned int rf_compile_shader(const char* shader_str, int type)
 
         rf_gl.GetShaderInfoLog(shader, 1024, &length, log);
 
-        RF_LOG(RF_LOG_TYPE_INFO, "%s", log);
+        rf_log(rf_log_type_info, "%s", log);
     }
-    else RF_LOG(RF_LOG_TYPE_INFO, "[SHDR ID %i] rf_shader compiled successfully", shader);
+    else rf_log(rf_log_type_info, "[SHDR ID %i] rf_shader compiled successfully", shader);
 
     return shader;
 }
 
 // Load custom shader strings and return program id
-RF_INTERNAL unsigned int rf_load_shader_program(unsigned int v_shader_id, unsigned int f_shader_id)
+rf_internal unsigned int rf_load_shader_program(unsigned int v_shader_id, unsigned int f_shader_id)
 {
     unsigned int program = 0;
 
@@ -919,7 +919,7 @@ RF_INTERNAL unsigned int rf_load_shader_program(unsigned int v_shader_id, unsign
 
     if (success == GL_FALSE)
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Failed to link shader program...", program);
+        rf_log(rf_log_type_warning, "[SHDR ID %i] Failed to link shader program...", program);
 
         int max_len = 0;
         int length;
@@ -930,19 +930,19 @@ RF_INTERNAL unsigned int rf_load_shader_program(unsigned int v_shader_id, unsign
 
         rf_gl.GetProgramInfoLog(program, 1024, &length, log);
 
-        RF_LOG(RF_LOG_TYPE_INFO, "%s", log);
+        rf_log(rf_log_type_info, "%s", log);
 
         rf_gl.DeleteProgram(program);
 
         program = 0;
     }
-    else RF_LOG(RF_LOG_TYPE_INFO, "[SHDR ID %i] rf_shader program loaded successfully", program);
+    else rf_log(rf_log_type_info, "[SHDR ID %i] rf_shader program loaded successfully", program);
 
     return program;
 }
 
 // Get location handlers to for shader attributes and uniforms. Note: If any location is not found, loc point becomes -1
-RF_INTERNAL void rf_set_shader_default_locations(rf_shader* shader)
+rf_internal void rf_set_shader_default_locations(rf_shader* shader)
 {
     // NOTE: Default shader attrib locations have been fixed before linking:
     //          vertex position location    = 0
@@ -973,7 +973,7 @@ RF_INTERNAL void rf_set_shader_default_locations(rf_shader* shader)
 }
 
 // Unload default shader
-RF_INTERNAL void rf_unlock_shader_default()
+rf_internal void rf_unlock_shader_default()
 {
     rf_gl.UseProgram(0);
 
@@ -986,13 +986,13 @@ RF_INTERNAL void rf_unlock_shader_default()
 }
 
 // Draw default internal buffers vertex data
-RF_INTERNAL void rf_draw_buffers_default()
+rf_internal void rf_draw_buffers_default()
 {
 
 }
 
 // Unload default internal buffers vertex data from CPU and GPU
-RF_INTERNAL void rf_unload_buffers_default()
+rf_internal void rf_unload_buffers_default()
 {
     // Unbind everything
     rf_gl.BindVertexArray(0);
@@ -1017,7 +1017,7 @@ RF_INTERNAL void rf_unload_buffers_default()
 }
 
 // Renders a 1x1 XY quad in NDC
-RF_INTERNAL void rf_gen_draw_quad(void)
+rf_internal void rf_gen_draw_quad(void)
 {
     unsigned int quad_vao = 0;
     unsigned int quad_vbo = 0;
@@ -1055,7 +1055,7 @@ RF_INTERNAL void rf_gen_draw_quad(void)
 }
 
 // Renders a 1x1 3D cube in NDC
-RF_INTERNAL void rf_gen_draw_cube(void)
+rf_internal void rf_gen_draw_cube(void)
 {
     unsigned int cube_vao = 0;
     unsigned int cube_vbo = 0;
@@ -1127,7 +1127,7 @@ RF_INTERNAL void rf_gen_draw_cube(void)
     rf_gl.DeleteVertexArrays(1, &cube_vao);
 }
 
-RF_INTERNAL void rf_set_gl_extension_if_available(const char* gl_ext, int len)
+rf_internal void rf_set_gl_extension_if_available(const char* gl_ext, int len)
 {
     #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // Check NPOT textures support
@@ -1205,7 +1205,7 @@ RF_INTERNAL void rf_set_gl_extension_if_available(const char* gl_ext, int len)
 
 #pragma region init
 
-RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
+rf_internal void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
 {
     rf_gfx.gl = *((rf_opengl_procs*) gfx_data);
     rf_gfx.extensions.max_depth_bits = 16;
@@ -1253,52 +1253,52 @@ RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
                     extensions_str++;
                 }
 
-                if (rf_gfx.extensions.tex_npot_supported) RF_LOG(RF_LOG_TYPE_INFO, "[EXTENSION] NPOT textures extension detected, full NPOT textures supported");
-                else RF_LOG(RF_LOG_TYPE_WARNING, "[EXTENSION] NPOT textures extension not found, limited NPOT support (no-mipmaps, no-repeat)");
+                if (rf_gfx.extensions.tex_npot_supported) rf_log(rf_log_type_info, "[EXTENSION] NPOT textures extension detected, full NPOT textures supported");
+                else rf_log(rf_log_type_warning, "[EXTENSION] NPOT textures extension not found, limited NPOT support (no-mipmaps, no-repeat)");
             }
         }
         #endif
 
-        RF_LOG(RF_LOG_TYPE_INFO, "Number of supported extensions: %i.", num_ext);
+        rf_log(rf_log_type_info, "Number of supported extensions: %i.", num_ext);
 
         if (rf_gfx.extensions.tex_comp_dxt_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] DXT compressed textures supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] DXT compressed textures supported");
         }
 
         if (rf_gfx.extensions.tex_comp_etc1_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] ETC1 compressed textures supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] ETC1 compressed textures supported");
         }
 
         if (rf_gfx.extensions.tex_comp_etc2_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] ETC2/EAC compressed textures supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] ETC2/EAC compressed textures supported");
         }
 
         if (rf_gfx.extensions.tex_comp_pvrt_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] PVRT compressed textures supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] PVRT compressed textures supported");
         }
 
         if (rf_gfx.extensions.tex_comp_astc_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] ASTC compressed textures supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] ASTC compressed textures supported");
         }
 
         if (rf_gfx.extensions.tex_anisotropic_filter_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_gfx.extensions.max_anisotropic_level);
+            rf_log(rf_log_type_info, "[GL EXTENSION] Anisotropic textures filtering supported (max: %.0fX)", rf_gfx.extensions.max_anisotropic_level);
         }
 
         if (rf_gfx.extensions.tex_mirror_clamp_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] Mirror clamp wrap texture mode supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] Mirror clamp wrap texture mode supported");
         }
 
         if (rf_gfx.extensions.debug_marker_supported)
         {
-            RF_LOG(RF_LOG_TYPE_INFO, "[GL EXTENSION] Debug Marker supported");
+            rf_log(rf_log_type_info, "[GL EXTENSION] Debug Marker supported");
         }
     }
 
@@ -1330,7 +1330,7 @@ RF_INTERNAL void rf__gfx_backend_internal_init(rf_gfx_backend_data* gfx_data)
 #pragma region shader
 
 // Load default shader (just vertex positioning and texture coloring). Note: This shader program is used for internal buffers
-RF_API rf_shader rf_load_default_shader()
+rf_public rf_shader rf_load_default_shader()
 {
     rf_shader shader = { 0 };
     memset(shader.locs, 0, sizeof(shader.locs));
@@ -1398,7 +1398,7 @@ RF_API rf_shader rf_load_default_shader()
 
     if (shader.id > 0)
     {
-        RF_LOG(RF_LOG_TYPE_INFO, "[SHDR ID %i] Default shader loaded successfully", shader.id);
+        rf_log(rf_log_type_info, "[SHDR ID %i] Default shader loaded successfully", shader.id);
 
         // Set default shader locations: attributes locations
         shader.locs[RF_LOC_VERTEX_POSITION] = rf_gl.GetAttribLocation(shader.id, "vertex_position");
@@ -1414,13 +1414,13 @@ RF_API rf_shader rf_load_default_shader()
         // changed for external custom shaders, we just use direct bindings above
         //rf_set_shader_default_locations(&shader);
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "[SHDR ID %i] Default shader could not be loaded", shader.id);
+    else rf_log(rf_log_type_warning, "[SHDR ID %i] Default shader could not be loaded", shader.id);
 
     return shader;
 }
 
 // Load shader from code strings. If shader string is NULL, using default vertex/fragment shaders
-RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
+rf_public rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
 {
     rf_shader shader = { 0 };
     memset(shader.locs, -1, sizeof(shader.locs));
@@ -1441,7 +1441,7 @@ RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
 
         if (shader.id == 0)
         {
-            RF_LOG(RF_LOG_TYPE_WARNING, "Custom shader could not be loaded");
+            rf_log(rf_log_type_warning, "Custom shader could not be loaded");
             shader = rf_ctx.default_shader;
         }
 
@@ -1470,42 +1470,42 @@ RF_API rf_shader rf_gfx_load_shader(const char* vs_code, const char* fs_code)
         // Get the location of the named uniform
         unsigned int location = rf_gl.GetUniformLocation(shader.id, name);
 
-        RF_LOG(RF_LOG_TYPE_DEBUG, "[SHDR ID %i] Active uniform [%s] set at location: %i", shader.id, name, location);
+        rf_log(rf_log_type_debug, "[SHDR ID %i] Active uniform [%s] set at location: %i", shader.id, name, location);
     }
 
     return shader;
 }
 
 // Unload shader from GPU memory (VRAM)
-RF_API void rf_gfx_unload_shader(rf_shader shader)
+rf_public void rf_gfx_unload_shader(rf_shader shader)
 {
     if (shader.id > 0)
     {
         rf_gfx_delete_shader(shader.id);
-        RF_LOG(RF_LOG_TYPE_INFO, "[SHDR ID %i] Unloaded shader program data", shader.id);
+        rf_log(rf_log_type_info, "[SHDR ID %i] Unloaded shader program data", shader.id);
     }
 }
 
 // Get shader uniform location
-RF_API int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name)
+rf_public int rf_gfx_get_shader_location(rf_shader shader, const char* uniform_name)
 {
     int location = -1;
     location = rf_gl.GetUniformLocation(shader.id, uniform_name);
 
-    if (location == -1) RF_LOG(RF_LOG_TYPE_WARNING, "[SHDR ID %i][%s] rf_shader uniform could not be found", shader.id, uniform_name);
-    else RF_LOG(RF_LOG_TYPE_INFO, "[SHDR ID %i][%s] rf_shader uniform set at location: %i", shader.id, uniform_name, location);
+    if (location == -1) rf_log(rf_log_type_warning, "[SHDR ID %i][%s] rf_shader uniform could not be found", shader.id, uniform_name);
+    else rf_log(rf_log_type_info, "[SHDR ID %i][%s] rf_shader uniform set at location: %i", shader.id, uniform_name, location);
 
     return location;
 }
 
 // Set shader uniform value
-RF_API void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name)
+rf_public void rf_gfx_set_shader_value(rf_shader shader, int uniform_loc, const void* value, int uniform_name)
 {
     rf_gfx_set_shader_value_v(shader, uniform_loc, value, uniform_name, 1);
 }
 
 // Set shader uniform value vector
-RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count)
+rf_public void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const void* value, int uniform_name, int count)
 {
     rf_gl.UseProgram(shader.id);
 
@@ -1520,14 +1520,14 @@ RF_API void rf_gfx_set_shader_value_v(rf_shader shader, int uniform_loc, const v
         case RF_UNIFORM_IVEC3: rf_gl.Uniform3iv(uniform_loc, count, (int* )value); break;
         case RF_UNIFORM_IVEC4: rf_gl.Uniform4iv(uniform_loc, count, (int* )value); break;
         case RF_UNIFORM_SAMPLER2D: rf_gl.Uniform1iv(uniform_loc, count, (int* )value); break;
-        default: RF_LOG(RF_LOG_TYPE_WARNING, "rf_shader uniform could not be set data type not recognized");
+        default: rf_log(rf_log_type_warning, "rf_shader uniform could not be set data type not recognized");
     }
 
     //rf_gl.UseProgram(0);      // Avoid reseting current shader program, in case other uniforms are set
 }
 
 // Set shader uniform value (matrix 4x4)
-RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat)
+rf_public void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf_mat mat)
 {
     rf_gl.UseProgram(shader.id);
 
@@ -1537,7 +1537,7 @@ RF_API void rf_gfx_set_shader_value_matrix(rf_shader shader, int uniform_loc, rf
 }
 
 // Set shader uniform value for texture
-RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture)
+rf_public void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, rf_texture2d texture)
 {
     rf_gl.UseProgram(shader.id);
 
@@ -1547,12 +1547,12 @@ RF_API void rf_gfx_set_shader_value_texture(rf_shader shader, int uniform_loc, r
 }
 
 // Return internal rf_ctx->gl_ctx.projection matrix
-RF_API rf_mat rf_gfx_get_matrix_projection() {
+rf_public rf_mat rf_gfx_get_matrix_projection() {
     return rf_ctx.projection;
 }
 
 // Return internal rf_ctx->gl_ctx.modelview matrix
-RF_API rf_mat rf_gfx_get_matrix_modelview()
+rf_public rf_mat rf_gfx_get_matrix_modelview()
 {
     rf_mat matrix = rf_mat_identity();
     matrix = rf_ctx.modelview;
@@ -1560,13 +1560,13 @@ RF_API rf_mat rf_gfx_get_matrix_modelview()
 }
 
 // Set a custom projection matrix (replaces internal rf_ctx->gl_ctx.projection matrix)
-RF_API void rf_gfx_set_matrix_projection(rf_mat proj)
+rf_public void rf_gfx_set_matrix_projection(rf_mat proj)
 {
     rf_ctx.projection = proj;
 }
 
 // Set a custom rf_ctx->gl_ctx.modelview matrix (replaces internal rf_ctx->gl_ctx.modelview matrix)
-RF_API void rf_gfx_set_matrix_modelview(rf_mat view)
+rf_public void rf_gfx_set_matrix_modelview(rf_mat view)
 {
     rf_ctx.modelview = view;
 }
@@ -1576,7 +1576,7 @@ RF_API void rf_gfx_set_matrix_modelview(rf_mat view)
 #pragma region rf_gfx
 
 // Choose the blending mode (alpha, additive, multiplied)
-RF_API void rf_gfx_blend_mode(rf_blend_mode mode)
+rf_public void rf_gfx_blend_mode(rf_blend_mode mode)
 {
     rf_gfx_draw();
 
@@ -1592,7 +1592,7 @@ RF_API void rf_gfx_blend_mode(rf_blend_mode mode)
 }
 
 // Choose the current matrix to be transformed
-RF_API void rf_gfx_matrix_mode(rf_matrix_mode mode)
+rf_public void rf_gfx_matrix_mode(rf_matrix_mode mode)
 {
     if (mode == GL_PROJECTION) rf_ctx.current_matrix = &rf_ctx.projection;
     else if (mode == GL_MODELVIEW) rf_ctx.current_matrix = &rf_ctx.modelview;
@@ -1602,9 +1602,9 @@ RF_API void rf_gfx_matrix_mode(rf_matrix_mode mode)
 }
 
 // Push the current matrix into rf_ctx->gl_ctx.stack
-RF_API void rf_gfx_push_matrix()
+rf_public void rf_gfx_push_matrix()
 {
-    if (rf_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) RF_LOG_ERROR(RF_LIMIT_REACHED, "Matrix stack limit reached.");
+    if (rf_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) rf_log_error(rf_limit_reached, "Matrix stack limit reached.");
 
     if (rf_ctx.current_matrix_mode == GL_MODELVIEW)
     {
@@ -1617,7 +1617,7 @@ RF_API void rf_gfx_push_matrix()
 }
 
 // Pop lattest inserted matrix from rf_ctx->gl_ctx.stack
-RF_API void rf_gfx_pop_matrix()
+rf_public void rf_gfx_pop_matrix()
 {
     if (rf_ctx.stack_counter > 0)
     {
@@ -1634,13 +1634,13 @@ RF_API void rf_gfx_pop_matrix()
 }
 
 // Reset current matrix to identity matrix
-RF_API void rf_gfx_load_identity()
+rf_public void rf_gfx_load_identity()
 {
     *rf_ctx.current_matrix = rf_mat_identity();
 }
 
 // Multiply the current matrix by a translation matrix
-RF_API void rf_gfx_translatef(float x, float y, float z)
+rf_public void rf_gfx_translatef(float x, float y, float z)
 {
     rf_mat mat_translation = rf_mat_translate(x, y, z);
 
@@ -1649,19 +1649,19 @@ RF_API void rf_gfx_translatef(float x, float y, float z)
 }
 
 // Multiply the current matrix by a rotation matrix
-RF_API void rf_gfx_rotatef(float angleDeg, float x, float y, float z)
+rf_public void rf_gfx_rotatef(float angleDeg, float x, float y, float z)
 {
     rf_mat mat_rotation = rf_mat_identity();
 
     rf_vec3 axis = (rf_vec3){x, y, z };
-    mat_rotation = rf_mat_rotate(rf_vec3_normalize(axis), angleDeg * RF_DEG2RAD);
+    mat_rotation = rf_mat_rotate(rf_vec3_normalize(axis), angleDeg * rf_deg2rad);
 
     // NOTE: We transpose matrix with multiplication order
     *rf_ctx.current_matrix = rf_mat_mul(mat_rotation, *rf_ctx.current_matrix);
 }
 
 // Multiply the current matrix by a scaling matrix
-RF_API void rf_gfx_scalef(float x, float y, float z)
+rf_public void rf_gfx_scalef(float x, float y, float z)
 {
     rf_mat mat_scale = rf_mat_scale(x, y, z);
 
@@ -1670,7 +1670,7 @@ RF_API void rf_gfx_scalef(float x, float y, float z)
 }
 
 // Multiply the current matrix by another matrix
-RF_API void rf_gfx_mult_matrixf(float* matf)
+rf_public void rf_gfx_mult_matrixf(float* matf)
 {
     // rf_mat creation from array
     rf_mat mat = {matf[0], matf[4], matf[8], matf[12],
@@ -1682,7 +1682,7 @@ RF_API void rf_gfx_mult_matrixf(float* matf)
 }
 
 // Multiply the current matrix by a perspective matrix generated by parameters
-RF_API void rf_gfx_frustum(double left, double right, double bottom, double top, double znear, double zfar)
+rf_public void rf_gfx_frustum(double left, double right, double bottom, double top, double znear, double zfar)
 {
     rf_mat mat_perps = rf_mat_frustum(left, right, bottom, top, znear, zfar);
 
@@ -1690,7 +1690,7 @@ RF_API void rf_gfx_frustum(double left, double right, double bottom, double top,
 }
 
 // Multiply the current matrix by an orthographic matrix generated by parameters
-RF_API void rf_gfx_ortho(double left, double right, double bottom, double top, double znear, double zfar)
+rf_public void rf_gfx_ortho(double left, double right, double bottom, double top, double znear, double zfar)
 {
     rf_mat mat_ortho = rf_mat_ortho(left, right, bottom, top, znear, zfar);
 
@@ -1704,7 +1704,7 @@ void rf_gfx_viewport(int x, int y, int width, int height)
 }
 
 // Initialize drawing mode (how to organize vertex)
-RF_API void rf_gfx_begin(rf_drawing_mode mode)
+rf_public void rf_gfx_begin(rf_drawing_mode mode)
 {
     // Draw mode can be GL_LINES, GL_TRIANGLES and GL_QUADS
     // NOTE: In all three cases, vertex are accumulated over default internal vertex buffer
@@ -1742,7 +1742,7 @@ RF_API void rf_gfx_begin(rf_drawing_mode mode)
 }
 
 // Finish vertex providing
-RF_API void rf_gfx_end()
+rf_public void rf_gfx_end()
 {
     // Make sure vertex_count is the same for vertices, texcoords, colors and normals
     // NOTE: In OpenGL 1.1, one glColor call can be made for all the subsequent glVertex calls
@@ -1795,20 +1795,20 @@ RF_API void rf_gfx_end()
 }
 
 // Define one vertex (position)
-RF_API void rf_gfx_vertex2i(int x, int y)
+rf_public void rf_gfx_vertex2i(int x, int y)
 {
     rf_gfx_vertex3f((float)x, (float)y, rf_batch.current_depth);
 }
 
 // Define one vertex (position)
-RF_API void rf_gfx_vertex2f(float x, float y)
+rf_public void rf_gfx_vertex2f(float x, float y)
 {
     rf_gfx_vertex3f(x, y, rf_batch.current_depth);
 }
 
 // Define one vertex (position)
 // NOTE: Vertex position data is the basic information required for drawing
-RF_API void rf_gfx_vertex3f(float x, float y, float z)
+rf_public void rf_gfx_vertex3f(float x, float y, float z)
 {
     rf_vec3 vec = {x, y, z };
 
@@ -1825,12 +1825,12 @@ RF_API void rf_gfx_vertex3f(float x, float y, float z)
 
         rf_batch.draw_calls[rf_batch.draw_calls_counter - 1].vertex_count++;
     }
-    else RF_LOG_ERROR(RF_LIMIT_REACHED, "Render batch elements limit reached. Max bacht elements: %d", rf_batch.vertex_buffers[rf_batch.current_buffer].elements_count * 4);
+    else rf_log_error(rf_limit_reached, "Render batch elements limit reached. Max bacht elements: %d", rf_batch.vertex_buffers[rf_batch.current_buffer].elements_count * 4);
 }
 
 // Define one vertex (texture coordinate)
 // NOTE: rf_texture coordinates are limited to QUADS only
-RF_API void rf_gfx_tex_coord2f(float x, float y)
+rf_public void rf_gfx_tex_coord2f(float x, float y)
 {
     rf_batch.vertex_buffers[rf_batch.current_buffer].texcoords[2*rf_batch.vertex_buffers[rf_batch.current_buffer].tc_counter] = x;
     rf_batch.vertex_buffers[rf_batch.current_buffer].texcoords[2*rf_batch.vertex_buffers[rf_batch.current_buffer].tc_counter + 1] = y;
@@ -1839,19 +1839,19 @@ RF_API void rf_gfx_tex_coord2f(float x, float y)
 
 // Define one vertex (normal)
 // NOTE: Normals limited to TRIANGLES only?
-RF_API void rf_gfx_normal3f(float x, float y, float z)
+rf_public void rf_gfx_normal3f(float x, float y, float z)
 {
     // TODO: Normals usage...
 }
 
 // Define one vertex (color)
-RF_API void rf_gfx_color3f(float x, float y, float z)
+rf_public void rf_gfx_color3f(float x, float y, float z)
 {
     rf_gfx_color4ub((unsigned char)(x*255), (unsigned char)(y*255), (unsigned char)(z*255), 255);
 }
 
 // Define one vertex (color)
-RF_API void rf_gfx_color4ub(unsigned char x, unsigned char y, unsigned char z, unsigned char w)
+rf_public void rf_gfx_color4ub(unsigned char x, unsigned char y, unsigned char z, unsigned char w)
 {
     rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter] = x;
     rf_batch.vertex_buffers[rf_batch.current_buffer].colors[4 * rf_batch.vertex_buffers[rf_batch.current_buffer].c_counter + 1] = y;
@@ -1861,13 +1861,13 @@ RF_API void rf_gfx_color4ub(unsigned char x, unsigned char y, unsigned char z, u
 }
 
 // Define one vertex (color)
-RF_API void rf_gfx_color4f(float r, float g, float b, float a)
+rf_public void rf_gfx_color4f(float r, float g, float b, float a)
 {
     rf_gfx_color4ub((unsigned char)(r*255), (unsigned char)(g*255), (unsigned char)(b*255), (unsigned char)(a*255));
 }
 
 // Enable texture usage
-RF_API void rf_gfx_enable_texture(unsigned int id)
+rf_public void rf_gfx_enable_texture(unsigned int id)
 {
     if (rf_batch.draw_calls[rf_batch.draw_calls_counter - 1].texture_id != id)
     {
@@ -1916,7 +1916,7 @@ RF_API void rf_gfx_enable_texture(unsigned int id)
 }
 
 // Disable texture usage
-RF_API void rf_gfx_disable_texture()
+rf_public void rf_gfx_disable_texture()
 {
     // NOTE: If quads batch limit is reached,
     // we force a draw call and next batch starts
@@ -1927,7 +1927,7 @@ RF_API void rf_gfx_disable_texture()
 }
 
 // Set texture parameters (wrap mode/filter mode)
-RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode)
+rf_public void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode wrap_mode)
 {
     rf_gl.BindTexture(GL_TEXTURE_2D, texture.id);
 
@@ -1960,7 +1960,7 @@ RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode w
             }
             else
             {
-                RF_LOG(RF_LOG_TYPE_WARNING, "Clamp mirror wrap mode not supported");
+                rf_log(rf_log_type_warning, "Clamp mirror wrap mode not supported");
             }
         } break;
 
@@ -1971,7 +1971,7 @@ RF_API void rf_gfx_set_texture_wrap(rf_texture2d texture, rf_texture_wrap_mode w
 }
 
 // Set filter for texture
-RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode)
+rf_public void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mode filter_mode)
 {
     rf_gl.BindTexture(GL_TEXTURE_2D, texture.id);
 
@@ -2029,7 +2029,7 @@ RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mo
             }
             else
             {
-                RF_LOG(RF_LOG_TYPE_WARNING, "No mipmaps available for TRILINEAR texture filtering. Texture id: %d", texture.id);
+                rf_log(rf_log_type_warning, "No mipmaps available for TRILINEAR texture filtering. Texture id: %d", texture.id);
 
                 // GL_LINEAR - tex filter: BILINEAR, no mipmaps
                 rf_gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -2047,12 +2047,12 @@ RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mo
             }
             else if (rf_gfx.extensions.max_anisotropic_level > 0.0f)
             {
-                RF_LOG(RF_LOG_TYPE_WARNING, "Maximum anisotropic filter level supported is %i_x. Texture id: %d", rf_gfx.extensions.max_anisotropic_level, texture.id);
+                rf_log(rf_log_type_warning, "Maximum anisotropic filter level supported is %i_x. Texture id: %d", rf_gfx.extensions.max_anisotropic_level, texture.id);
                 rf_gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropic_value);
             }
             else
             {
-                RF_LOG(RF_LOG_TYPE_WARNING, "Anisotropic filtering not supported");
+                rf_log(rf_log_type_warning, "Anisotropic filtering not supported");
             }
         } break;
     }
@@ -2061,7 +2061,7 @@ RF_API void rf_gfx_set_texture_filter(rf_texture2d texture, rf_texture_filter_mo
 }
 
 // Enable rendering to texture (fbo)
-RF_API void rf_gfx_enable_render_texture(unsigned int id)
+rf_public void rf_gfx_enable_render_texture(unsigned int id)
 {
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, id);
 
@@ -2070,7 +2070,7 @@ RF_API void rf_gfx_enable_render_texture(unsigned int id)
 }
 
 // Disable rendering to texture
-RF_API void rf_gfx_disable_render_texture(void)
+rf_public void rf_gfx_disable_render_texture(void)
 {
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -2079,28 +2079,28 @@ RF_API void rf_gfx_disable_render_texture(void)
 }
 
 // Enable depth test
-RF_API void rf_gfx_enable_depth_test(void) { rf_gl.Enable(GL_DEPTH_TEST); }
+rf_public void rf_gfx_enable_depth_test(void) { rf_gl.Enable(GL_DEPTH_TEST); }
 
 // Disable depth test
-RF_API void rf_gfx_disable_depth_test(void) { rf_gl.Disable(GL_DEPTH_TEST); }
+rf_public void rf_gfx_disable_depth_test(void) { rf_gl.Disable(GL_DEPTH_TEST); }
 
 // Enable backface culling
-RF_API void rf_gfx_enable_backface_culling(void) { rf_gl.Enable(GL_CULL_FACE); }
+rf_public void rf_gfx_enable_backface_culling(void) { rf_gl.Enable(GL_CULL_FACE); }
 
 // Disable backface culling
-RF_API void rf_gfx_disable_backface_culling(void) { rf_gl.Disable(GL_CULL_FACE); }
+rf_public void rf_gfx_disable_backface_culling(void) { rf_gl.Disable(GL_CULL_FACE); }
 
 // Enable scissor test
-RF_API void rf_gfx_enable_scissor_test(void) { rf_gl.Enable(GL_SCISSOR_TEST); }
+rf_public void rf_gfx_enable_scissor_test(void) { rf_gl.Enable(GL_SCISSOR_TEST); }
 
 // Disable scissor test
-RF_API void rf_gfx_disable_scissor_test(void) { rf_gl.Disable(GL_SCISSOR_TEST); }
+rf_public void rf_gfx_disable_scissor_test(void) { rf_gl.Disable(GL_SCISSOR_TEST); }
 
 // Scissor test
-RF_API void rf_gfx_scissor(int x, int y, int width, int height) { rf_gl.Scissor(x, y, width, height); }
+rf_public void rf_gfx_scissor(int x, int y, int width, int height) { rf_gl.Scissor(x, y, width, height); }
 
 // Enable wire mode
-RF_API void rf_gfx_enable_wire_mode(void)
+rf_public void rf_gfx_enable_wire_mode(void)
 {
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     // NOTE: glPolygonMode() not available on OpenGL ES
@@ -2109,7 +2109,7 @@ RF_API void rf_gfx_enable_wire_mode(void)
 }
 
 // Disable wire mode
-RF_API void rf_gfx_disable_wire_mode(void)
+rf_public void rf_gfx_disable_wire_mode(void)
 {
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     // NOTE: glPolygonMode() not available on OpenGL ES
@@ -2118,13 +2118,13 @@ RF_API void rf_gfx_disable_wire_mode(void)
 }
 
 // Unload texture from GPU memory
-RF_API void rf_gfx_delete_textures(unsigned int id)
+rf_public void rf_gfx_delete_textures(unsigned int id)
 {
     if (id > 0) rf_gl.DeleteTextures(1, &id);
 }
 
 // Unload render texture from GPU memory
-RF_API void rf_gfx_delete_render_textures(rf_render_texture2d target)
+rf_public void rf_gfx_delete_render_textures(rf_render_texture2d target)
 {
     if (target.texture.id > 0) rf_gl.DeleteTextures(1, &target.texture.id);
     if (target.depth.id > 0)
@@ -2135,34 +2135,34 @@ RF_API void rf_gfx_delete_render_textures(rf_render_texture2d target)
 
     if (target.id > 0) rf_gl.DeleteFramebuffers(1, &target.id);
 
-    RF_LOG(RF_LOG_TYPE_INFO, "[FBO ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
+    rf_log(rf_log_type_info, "[FBO ID %i] Unloaded render texture data from VRAM (GPU)", target.id);
 }
 
 // Unload shader from GPU memory
-RF_API void rf_gfx_delete_shader(unsigned int id)
+rf_public void rf_gfx_delete_shader(unsigned int id)
 {
     if (id != 0) rf_gl.DeleteProgram(id);
 }
 
 // Unload vertex data (VAO) from GPU memory
-RF_API void rf_gfx_delete_vertex_arrays(unsigned int id)
+rf_public void rf_gfx_delete_vertex_arrays(unsigned int id)
 {
     if (id != 0) rf_gl.DeleteVertexArrays(1, &id);
-    RF_LOG(RF_LOG_TYPE_INFO, "[VAO ID %i] Unloaded model data from VRAM (GPU)", id);
+    rf_log(rf_log_type_info, "[VAO ID %i] Unloaded model data from VRAM (GPU)", id);
 }
 
 // Unload vertex data (VBO) from GPU memory
-RF_API void rf_gfx_delete_buffers(unsigned int id)
+rf_public void rf_gfx_delete_buffers(unsigned int id)
 {
     if (id != 0)
     {
         rf_gl.DeleteBuffers(1, &id);
-        RF_LOG(RF_LOG_TYPE_INFO, "[VBO ID %i] Unloaded model vertex data from VRAM (GPU)", id);
+        rf_log(rf_log_type_info, "[VBO ID %i] Unloaded model vertex data from VRAM (GPU)", id);
     }
 }
 
 // Clear color buffer with color
-RF_API void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+rf_public void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
     // rf_color values clamp to 0.0f(0) and 1.0f(255)
     float cr = (float)r/255;
@@ -2174,21 +2174,21 @@ RF_API void rf_gfx_clear_color(unsigned char r, unsigned char g, unsigned char b
 }
 
 // Clear used screen buffers (color and depth)
-RF_API void rf_gfx_clear_screen_buffers(void)
+rf_public void rf_gfx_clear_screen_buffers(void)
 {
     rf_gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);     // Clear used buffers: rf_color and Depth (Depth is used for 3D)
     //rf_gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);     // Stencil buffer not used...
 }
 
 // Update GPU buffer with new data
-RF_API void rf_gfx_update_buffer(int buffer_id, void* data, int data_size)
+rf_public void rf_gfx_update_buffer(int buffer_id, void* data, int data_size)
 {
     rf_gl.BindBuffer(GL_ARRAY_BUFFER, buffer_id);
     rf_gl.BufferSubData(GL_ARRAY_BUFFER, 0, data_size, data);
 }
 
 // Load a new attributes buffer
-RF_API unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, rf_bool dynamic)
+rf_public unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_loc, void* buffer, int size, rf_bool dynamic)
 {
     unsigned int id = 0;
 
@@ -2207,7 +2207,7 @@ RF_API unsigned int rf_gfx_load_attrib_buffer(unsigned int vao_id, int shader_lo
     return id;
 }
 
-RF_API void rf_gfx_init_vertex_buffer(rf_vertex_buffer* vertex_buffer)
+rf_public void rf_gfx_init_vertex_buffer(rf_vertex_buffer* vertex_buffer)
 {
     int elements_count = vertex_buffer->elements_count;
 
@@ -2247,18 +2247,18 @@ RF_API void rf_gfx_init_vertex_buffer(rf_vertex_buffer* vertex_buffer)
 }
 
 // Vertex Buffer Object deinitialization (memory free)
-RF_API void rf_gfx_close()
+rf_public void rf_gfx_close()
 {
     rf_unlock_shader_default();              // Unload default shader
     rf_unload_buffers_default();             // Unload default buffers
 
     rf_gl.DeleteTextures(1, &rf_ctx.default_texture_id); // Unload default texture
 
-    RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Unloaded texture data (base white texture) from VRAM", rf_ctx.default_texture_id);
+    rf_log(rf_log_type_info, "[TEX ID %i] Unloaded texture data (base white texture) from VRAM", rf_ctx.default_texture_id);
 }
 
 // Update and draw internal buffers
-RF_API void rf_gfx_draw()
+rf_public void rf_gfx_draw()
 {
     // Only process data if we have data to process
     if (rf_batch.vertex_buffers[rf_batch.current_buffer].v_counter > 0)
@@ -2400,13 +2400,13 @@ RF_API void rf_gfx_draw()
 }
 
 // Check internal buffer overflow for a given number of vertex
-RF_API rf_bool rf_gfx_check_buffer_limit(int v_count)
+rf_public rf_bool rf_gfx_check_buffer_limit(int v_count)
 {
     return (rf_batch.vertex_buffers[rf_batch.current_buffer].v_counter + v_count) >= (rf_batch.vertex_buffers[rf_batch.current_buffer].elements_count * 4);
 }
 
 // Set debug marker
-RF_API void rf_gfx_set_debug_marker(const char* text)
+rf_public void rf_gfx_set_debug_marker(const char* text)
 {
 #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
     //if (rf_ctx->gl_ctx.debug_marker_supported) glInsertEventMarkerEXT(0, text);
@@ -2414,40 +2414,40 @@ RF_API void rf_gfx_set_debug_marker(const char* text)
 }
 
 // Convert image data to OpenGL texture (returns OpenGL valid Id)
-RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count)
+rf_public unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pixel_format format, int mipmap_count)
 {
     rf_gl.BindTexture(GL_TEXTURE_2D, 0); // Free any old binding
 
     unsigned int id = 0;
 
     // Check texture format support by OpenGL 1.1 (compressed textures not supported)
-    if ((!rf_gfx.extensions.tex_comp_dxt_supported) && ((format == RF_COMPRESSED_DXT1_RGB) || (format == RF_COMPRESSED_DXT1_RGBA) || (format == RF_COMPRESSED_DXT3_RGBA) || (format == RF_COMPRESSED_DXT5_RGBA)))
+    if ((!rf_gfx.extensions.tex_comp_dxt_supported) && ((format == rf_pixel_format_dxt1_rgb) || (format == rf_pixel_format_dxt1_rgba) || (format == rf_pixel_format_dxt3_rgba) || (format == rf_pixel_format_dxt5_rgba)))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "DXT compressed texture format not supported");
+        rf_log(rf_log_type_warning, "DXT compressed texture format not supported");
         return id;
     }
 
-    if ((!rf_gfx.extensions.tex_comp_etc1_supported) && (format == RF_COMPRESSED_ETC1_RGB))
+    if ((!rf_gfx.extensions.tex_comp_etc1_supported) && (format == rf_pixel_format_etc1_rgb))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "ETC1 compressed texture format not supported");
+        rf_log(rf_log_type_warning, "ETC1 compressed texture format not supported");
         return id;
     }
 
-    if ((!rf_gfx.extensions.tex_comp_etc2_supported) && ((format == RF_COMPRESSED_ETC2_RGB) || (format == RF_COMPRESSED_ETC2_EAC_RGBA)))
+    if ((!rf_gfx.extensions.tex_comp_etc2_supported) && ((format == rf_pixel_format_etc2_rgb) || (format == rf_pixel_format_etc2_eac_rgba)))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "ETC2 compressed texture format not supported");
+        rf_log(rf_log_type_warning, "ETC2 compressed texture format not supported");
         return id;
     }
 
-    if ((!rf_gfx.extensions.tex_comp_pvrt_supported) && ((format == RF_COMPRESSED_PVRT_RGB) || (format == RF_COMPRESSED_PVRT_RGBA)))
+    if ((!rf_gfx.extensions.tex_comp_pvrt_supported) && ((format == rf_pixel_format_pvrt_rgb) || (format == rf_pixel_format_prvt_rgba)))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "PVRT compressed texture format not supported");
+        rf_log(rf_log_type_warning, "PVRT compressed texture format not supported");
         return id;
     }
 
-    if ((!rf_gfx.extensions.tex_comp_astc_supported) && ((format == RF_COMPRESSED_ASTC_4x4_RGBA) || (format == RF_COMPRESSED_ASTC_8x8_RGBA)))
+    if ((!rf_gfx.extensions.tex_comp_astc_supported) && ((format == rf_pixel_format_astc_4x4_rgba) || (format == rf_pixel_format_astc_8x8_rgba)))
     {
-        RF_LOG(RF_LOG_TYPE_WARNING, "ASTC compressed texture format not supported");
+        rf_log(rf_log_type_warning, "ASTC compressed texture format not supported");
         return id;
     }
 
@@ -2463,7 +2463,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pi
     int mip_height = height;
     int mip_offset = 0;          // Mipmap data offset
 
-    RF_LOG(RF_LOG_TYPE_DEBUG, "Load texture from data memory address: 0x%x", data);
+    rf_log(rf_log_type_debug, "Load texture from data memory address: 0x%x", data);
 
     // Load the different mipmap levels
     for (rf_int i = 0; i < mipmap_count; i++)
@@ -2472,7 +2472,7 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pi
 
         rf_gfx_pixel_format glformat = rf_gfx_get_internal_texture_formats(format);
 
-        RF_LOG(RF_LOG_TYPE_DEBUG, "Load mipmap level %i (%i x %i), size: %i, offset: %i", i, mip_width, mip_height, mip_size, mip_offset);
+        rf_log(rf_log_type_debug, "Load mipmap level %i (%i x %i), size: %i, offset: %i", i, mip_width, mip_height, mip_size, mip_offset);
 
         if (glformat.valid)
         {
@@ -2486,12 +2486,12 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pi
             }
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
-                if (format == RF_UNCOMPRESSED_GRAYSCALE)
+                if (format == rf_pixel_format_grayscale)
                 {
                     int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                     rf_gl.TexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
-                else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
+                else if (format == rf_pixel_format_gray_alpha)
                 {
                     int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
                     rf_gl.TexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
@@ -2548,15 +2548,15 @@ RF_API unsigned int rf_gfx_load_texture(void* data, int width, int height, rf_pi
     // Unbind current texture
     rf_gl.BindTexture(GL_TEXTURE_2D, 0);
 
-    if (id > 0) RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] rf_texture created successfully (%ix%i - %i mipmaps)", id, width, height, mipmap_count);
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture could not be created");
+    if (id > 0) rf_log(rf_log_type_info, "[TEX ID %i] rf_texture created successfully (%ix%i - %i mipmaps)", id, width, height, mipmap_count);
+    else rf_log(rf_log_type_warning, "rf_texture could not be created");
 
     return id;
 }
 
 // Load depth texture/renderbuffer (to be attached to fbo)
 // WARNING: OpenGL ES 2.0 requires GL_OES_depth_texture/WEBGL_depth_texture extensions
-RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, rf_bool use_render_buffer)
+rf_public unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, rf_bool use_render_buffer)
 {
     unsigned int id = 0;
 
@@ -2604,7 +2604,7 @@ RF_API unsigned int rf_gfx_load_texture_depth(int width, int height, int bits, r
 // Load texture cubemap
 // NOTE: Cubemap data is expected to be 6 images in a single column,
 // expected the following convention: +X, -X, +Y, -Y, +Z, -Z
-RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format)
+rf_public unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_format format)
 {
     unsigned int cubemap_id = 0;
     unsigned int data_size = size * size * rf_bytes_per_pixel(format);
@@ -2623,12 +2623,12 @@ RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_f
             else rf_gl.CompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, glformat.internal_format, size, size, 0, data_size, (unsigned char* )data + i*data_size);
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
-                if (format == RF_UNCOMPRESSED_GRAYSCALE)
+                if (format == rf_pixel_format_grayscale)
                 {
                     int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
                     rf_gl.TexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
                 }
-                else if (format == RF_UNCOMPRESSED_GRAY_ALPHA)
+                else if (format == rf_pixel_format_gray_alpha)
                 {
                     int swizzle_mask[] = { GL_RED, GL_RED, GL_RED, GL_GREEN };
                     rf_gl.TexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_SWIZZLE_RGBA, swizzle_mask);
@@ -2653,7 +2653,7 @@ RF_API unsigned int rf_gfx_load_texture_cubemap(void* data, int size, rf_pixel_f
 
 // Update already loaded texture in GPU with new data
 // NOTE: We don't know safely if internal texture format is the expected one...
-RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* pixels, int pixels_size)
+rf_public void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pixel_format format, const void* pixels, int pixels_size)
 {
     if (width * height * rf_bytes_per_pixel(format) <= pixels_size) return;
 
@@ -2665,11 +2665,11 @@ RF_API void rf_gfx_update_texture(unsigned int id, int width, int height, rf_pix
     {
         rf_gl.TexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, gfx_format.internal_format, gfx_format.type, (unsigned char*) pixels);
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format updating not supported");
+    else rf_log(rf_log_type_warning, "rf_texture format updating not supported");
 }
 
 // Get OpenGL internal formats and data type from raylib rf_pixel_format
-RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format)
+rf_public rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format format)
 {
     rf_gfx_pixel_format result = {.valid = 1};
 
@@ -2677,44 +2677,44 @@ RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format f
     {
         #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
         // NOTE: on OpenGL ES 2.0 (WebGL), internalFormat must match format and options allowed are: GL_LUMINANCE, GL_RGB, GL_RGBA
-        case RF_UNCOMPRESSED_GRAYSCALE:    result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_GRAY_ALPHA:   result.internal_format = GL_LUMINANCE_ALPHA; result.format = GL_LUMINANCE_ALPHA; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G6B5:       result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
-        case RF_UNCOMPRESSED_R8G8B8:       result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G5B5A1:     result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case RF_UNCOMPRESSED_R4G4B4A4:     result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case RF_UNCOMPRESSED_R8G8B8A8:     result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R32:          if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
-        case RF_UNCOMPRESSED_R32G32B32:    if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
-        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
+        case rf_pixel_format_grayscale: result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_gray_alpha: result.internal_format = GL_LUMINANCE_ALPHA; result.format = GL_LUMINANCE_ALPHA; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r5g6b5: result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
+        case rf_pixel_format_r8g8b8: result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r5g5b5a1: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case rf_pixel_format_r4g4b4a4: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case rf_pixel_format_r8g8b8a8: result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r32:          if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_LUMINANCE; result.format = GL_LUMINANCE; result.type = GL_FLOAT; break;   // NOTE: Requires extension OES_texture_float
+        case rf_pixel_format_r32g32b32:    if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGB; result.format = GL_RGB; result.type = GL_FLOAT; break;         // NOTE: Requires extension OES_texture_float
+        case rf_pixel_format_r32g32b32a32: if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGBA; result.format = GL_RGBA; result.type = GL_FLOAT; break;    // NOTE: Requires extension OES_texture_float
 
         #elif defined(RAYFORK_GRAPHICS_BACKEND_GL_33)
-        //case RF_UNCOMPRESSED_R5G6B5:       result.internal_format = GL_RGB565; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
-        case RF_UNCOMPRESSED_GRAYSCALE:    result.internal_format = GL_R8; result.format = GL_RED; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_GRAY_ALPHA:   result.internal_format = GL_RG8; result.format = GL_RG; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R8G8B8:       result.internal_format = GL_RGB8; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R5G5B5A1:     result.internal_format = GL_RGB5_A1; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
-        case RF_UNCOMPRESSED_R4G4B4A4:     result.internal_format = GL_RGBA4; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
-        case RF_UNCOMPRESSED_R8G8B8A8:     result.internal_format = GL_RGBA8; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
-        case RF_UNCOMPRESSED_R32:          if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_R32F; result.format = GL_RED; result.type = GL_FLOAT; break;
-        case RF_UNCOMPRESSED_R32G32B32:    if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGB32F; result.format = GL_RGB; result.type = GL_FLOAT; break;
-        case RF_UNCOMPRESSED_R32G32B32A32: if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGBA32F; result.format = GL_RGBA; result.type = GL_FLOAT; break;
+        //case rf_pixel_format_r5g6b5:       result.internal_format = GL_RGB565; result.format = GL_RGB; result.type = GL_UNSIGNED_SHORT_5_6_5; break;
+        case rf_pixel_format_grayscale:    result.internal_format = GL_R8; result.format = GL_RED; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_gray_alpha:   result.internal_format = GL_RG8; result.format = GL_RG; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r8g8b8:       result.internal_format = GL_RGB8; result.format = GL_RGB; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r5g5b5a1:     result.internal_format = GL_RGB5_A1; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_5_5_5_1; break;
+        case rf_pixel_format_r4g4b4a4:     result.internal_format = GL_RGBA4; result.format = GL_RGBA; result.type = GL_UNSIGNED_SHORT_4_4_4_4; break;
+        case rf_pixel_format_r8g8b8a8:     result.internal_format = GL_RGBA8; result.format = GL_RGBA; result.type = GL_UNSIGNED_BYTE; break;
+        case rf_pixel_format_r32:          if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_R32F; result.format = GL_RED; result.type = GL_FLOAT; break;
+        case rf_pixel_format_r32g32b32:    if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGB32F; result.format = GL_RGB; result.type = GL_FLOAT; break;
+        case rf_pixel_format_r32g32b32a32: if (rf_gfx.extensions.tex_float_supported) result.internal_format = GL_RGBA32F; result.format = GL_RGBA; result.type = GL_FLOAT; break;
         #endif
 
-        case RF_COMPRESSED_DXT1_RGB:      if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT; break;
-        case RF_COMPRESSED_DXT1_RGBA:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-        case RF_COMPRESSED_DXT3_RGBA:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-        case RF_COMPRESSED_DXT5_RGBA:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
-        case RF_COMPRESSED_ETC1_RGB:      if (rf_gfx.extensions.tex_comp_etc1_supported) result.internal_format = GL_ETC1_RGB8_OES; break;                      // NOTE: Requires OpenGL ES 2.0 or OpenGL 4.3
-        case RF_COMPRESSED_ETC2_RGB:      if (rf_gfx.extensions.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGB8_ETC2; break;               // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
-        case RF_COMPRESSED_ETC2_EAC_RGBA: if (rf_gfx.extensions.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGBA8_ETC2_EAC; break;     // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
-        case RF_COMPRESSED_PVRT_RGB:      if (rf_gfx.extensions.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG; break;    // NOTE: Requires PowerVR GPU
-        case RF_COMPRESSED_PVRT_RGBA:     if (rf_gfx.extensions.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG; break;  // NOTE: Requires PowerVR GPU
-        case RF_COMPRESSED_ASTC_4x4_RGBA: if (rf_gfx.extensions.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_4x4_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
-        case RF_COMPRESSED_ASTC_8x8_RGBA: if (rf_gfx.extensions.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_8x8_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+        case rf_pixel_format_dxt1_rgb:      if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT; break;
+        case rf_pixel_format_dxt1_rgba:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+        case rf_pixel_format_dxt3_rgba:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+        case rf_pixel_format_dxt5_rgba:     if (rf_gfx.extensions.tex_comp_dxt_supported) result.internal_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+        case rf_pixel_format_etc1_rgb:      if (rf_gfx.extensions.tex_comp_etc1_supported) result.internal_format = GL_ETC1_RGB8_OES; break;                      // NOTE: Requires OpenGL ES 2.0 or OpenGL 4.3
+        case rf_pixel_format_etc2_rgb:      if (rf_gfx.extensions.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGB8_ETC2; break;               // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case rf_pixel_format_etc2_eac_rgba: if (rf_gfx.extensions.tex_comp_etc2_supported) result.internal_format = GL_COMPRESSED_RGBA8_ETC2_EAC; break;     // NOTE: Requires OpenGL ES 3.0 or OpenGL 4.3
+        case rf_pixel_format_pvrt_rgb:      if (rf_gfx.extensions.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG; break;    // NOTE: Requires PowerVR GPU
+        case rf_pixel_format_prvt_rgba:     if (rf_gfx.extensions.tex_comp_pvrt_supported) result.internal_format = GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG; break;  // NOTE: Requires PowerVR GPU
+        case rf_pixel_format_astc_4x4_rgba: if (rf_gfx.extensions.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_4x4_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
+        case rf_pixel_format_astc_8x8_rgba: if (rf_gfx.extensions.tex_comp_astc_supported) result.internal_format = GL_COMPRESSED_RGBA_ASTC_8x8_KHR; break;  // NOTE: Requires OpenGL ES 3.1 or OpenGL 4.3
 
         default:
-            RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture format not supported");
+            rf_log(rf_log_type_warning, "rf_texture format not supported");
             result.valid = 0;
             break;
     }
@@ -2723,13 +2723,13 @@ RF_API rf_gfx_pixel_format rf_gfx_get_internal_texture_formats(rf_pixel_format f
 }
 
 // Unload texture from GPU memory
-RF_API void rf_gfx_unload_texture(unsigned int id)
+rf_public void rf_gfx_unload_texture(unsigned int id)
 {
     if (id > 0) rf_gl.DeleteTextures(1, &id);
 }
 
 // Generate mipmap data for selected texture
-RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture)
+rf_public void rf_gfx_generate_mipmaps(rf_texture2d* texture)
 {
     rf_gl.BindTexture(GL_TEXTURE_2D, texture->id);
 
@@ -2743,20 +2743,20 @@ RF_API void rf_gfx_generate_mipmaps(rf_texture2d* texture)
     {
         //glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);   // Hint for mipmaps generation algorythm: GL_FASTEST, GL_NICEST, GL_DONT_CARE
         rf_gl.GenerateMipmap(GL_TEXTURE_2D);    // Generate mipmaps automatically
-        RF_LOG(RF_LOG_TYPE_INFO, "[TEX ID %i] Mipmaps generated automatically", texture->id);
+        rf_log(rf_log_type_info, "[TEX ID %i] Mipmaps generated automatically", texture->id);
 
         rf_gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         rf_gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);   // Activate Trilinear filtering for mipmaps
 
         texture->mipmaps =  1 + (int)floor(log(texture->width > texture->height ? texture->width : texture->height)/log(2));
     }
-    else RF_LOG(RF_LOG_TYPE_WARNING, "[TEX ID %i] Mipmaps can not be generated", texture->id);
+    else rf_log(rf_log_type_warning, "[TEX ID %i] Mipmaps can not be generated", texture->id);
 
     rf_gl.BindTexture(GL_TEXTURE_2D, 0);
 }
 
 // Read texture pixel data
-RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void* dst, int dst_size)
+rf_public rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void* dst, int dst_size)
 {
     if (!texture.valid || !dst || !dst_size) return (rf_image) {0};
 
@@ -2797,7 +2797,7 @@ RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void*
                 .valid = 1,
             };
         }
-        else RF_LOG(RF_LOG_TYPE_WARNING, "rf_texture data retrieval not suported for pixel format");
+        else rf_log(rf_log_type_warning, "rf_texture data retrieval not suported for pixel format");
 
         rf_gl.BindTexture(GL_TEXTURE_2D, 0);
     }
@@ -2812,7 +2812,7 @@ RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void*
         We are using Option 1, just need to care for texture format on retrieval
         NOTE: This behaviour could be conditioned by graphic driver...
         */
-        rf_render_texture2d fbo = rf_gfx_load_render_texture(texture.width, texture.height, RF_UNCOMPRESSED_R8G8B8A8, 16, 0);
+        rf_render_texture2d fbo = rf_gfx_load_render_texture(texture.width, texture.height, rf_pixel_format_r8g8b8a8, 16, 0);
 
         rf_gl.BindFramebuffer(GL_FRAMEBUFFER, fbo.id);
         rf_gl.BindTexture(GL_TEXTURE_2D, 0);
@@ -2822,7 +2822,7 @@ RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void*
         rf_gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.id, 0);
 
         // We read data as RGBA because FBO texture is configured as RGBA, despite binding another texture format
-        if (texture.width * texture.height * rf_bytes_per_pixel(RF_UNCOMPRESSED_R8G8B8A8) <= dst_size)
+        if (texture.width * texture.height * rf_bytes_per_pixel(rf_pixel_format_r8g8b8a8) <= dst_size)
         {
             rf_gl.ReadPixels(0, 0, texture.width, texture.height, GL_RGBA, GL_UNSIGNED_BYTE, dst);
 
@@ -2848,21 +2848,21 @@ RF_API rf_image rf_gfx_read_texture_pixels_to_buffer(rf_texture2d texture, void*
     return result;
 }
 
-RF_API rf_image rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator)
+rf_public rf_image rf_gfx_read_texture_pixels(rf_texture2d texture, rf_allocator allocator)
 {
     if (!texture.valid) return (rf_image) {0};
 
     int size = texture.width * texture.height * rf_bytes_per_pixel(texture.format);
-    void* dst = RF_ALLOC(allocator, size);
+    void* dst = rf_alloc(allocator, size);
     rf_image result = rf_gfx_read_texture_pixels_to_buffer(texture, dst, size);
 
-    if (!result.valid) RF_FREE(allocator, dst);
+    if (!result.valid) rf_free(allocator, dst);
 
     return result;
 }
 
 // Read screen pixel data (color buffer)
-RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
+rf_public void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
 {
     // NOTE 1: glReadPixels returns image flipped vertically -> (0,0) is the bottom left corner of the framebuffer
     // NOTE 2: We are getting alpha channel! Be careful, it can be transparent if not cleared properly!
@@ -2883,7 +2883,7 @@ RF_API void rf_gfx_read_screen_pixels(rf_color* dst, int width, int height)
 
 // Load a texture to be used for rendering (fbo with default color and depth attachments)
 // NOTE: If colorFormat or depth_bits are no supported, no attachment is done
-RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, rf_bool use_depth_texture)
+rf_public rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_pixel_format format, int depth_bits, rf_bool use_depth_texture)
 {
     rf_render_texture2d target = { 0 };
 
@@ -2926,7 +2926,7 @@ RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_
 
     // Check if fbo is complete with attachments (valid)
     //-----------------------------------------------------------------------------------------------------
-    if (rf_gfx_render_texture_complete(target)) RF_LOG(RF_LOG_TYPE_INFO, "[FBO ID %i] Framebuffer object created successfully", target.id);
+    if (rf_gfx_render_texture_complete(target)) rf_log(rf_log_type_info, "[FBO ID %i] Framebuffer object created successfully", target.id);
     //-----------------------------------------------------------------------------------------------------
 
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2936,7 +2936,7 @@ RF_API rf_render_texture2d rf_gfx_load_render_texture(int width, int height, rf_
 
 // Attach color buffer texture to an fbo (unloads previous attachment)
 // NOTE: Attach type: 0-rf_color, 1-Depth renderbuffer, 2-Depth texture
-RF_API void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned int id, int attach_type)
+rf_public void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned int id, int attach_type)
 {
     rf_gl.BindFramebuffer(GL_FRAMEBUFFER, target.id);
 
@@ -2951,7 +2951,7 @@ RF_API void rf_gfx_render_texture_attach(rf_render_texture2d target, unsigned in
 }
 
 // Verify render texture is complete
-RF_API rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target)
+rf_public rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target)
 {
     rf_bool result = 0;
 
@@ -2963,14 +2963,14 @@ RF_API rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target)
     {
         switch (status)
         {
-            case GL_FRAMEBUFFER_UNSUPPORTED: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer is unsupported"); break;
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has incomplete attachment"); break;
+            case GL_FRAMEBUFFER_UNSUPPORTED: rf_log(rf_log_type_warning, "Framebuffer is unsupported"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: rf_log(rf_log_type_warning, "Framebuffer has incomplete attachment"); break;
 
             #if defined(RAYFORK_GRAPHICS_BACKEND_GL_ES3)
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has incomplete dimensions"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: rf_log(rf_log_type_warning, "Framebuffer has incomplete dimensions"); break;
             #endif
 
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: RF_LOG(RF_LOG_TYPE_WARNING, "Framebuffer has a missing attachment"); break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: rf_log(rf_log_type_warning, "Framebuffer has a missing attachment"); break;
             default: break;
         }
     }
@@ -2983,12 +2983,12 @@ RF_API rf_bool rf_gfx_render_texture_complete(rf_render_texture2d target)
 }
 
 // Upload vertex data into a VAO (if supported) and VBO
-RF_API void rf_gfx_load_mesh(rf_mesh* mesh, rf_bool dynamic)
+rf_public void rf_gfx_load_mesh(rf_mesh* mesh, rf_bool dynamic)
 {
     if (mesh->vao_id > 0)
     {
         // Check if mesh has already been loaded in GPU
-        RF_LOG(RF_LOG_TYPE_WARNING, "Trying to re-load an already loaded mesh");
+        rf_log(rf_log_type_warning, "Trying to re-load an already loaded mesh");
         return;
     }
 
@@ -3096,12 +3096,12 @@ RF_API void rf_gfx_load_mesh(rf_mesh* mesh, rf_bool dynamic)
         rf_gl.BufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short)*mesh->triangle_count * 3, mesh->indices, draw_hint);
     }
 
-    if (mesh->vao_id > 0) RF_LOG(RF_LOG_TYPE_INFO, "[VAO ID %i] rf_mesh uploaded successfully to VRAM (GPU)", mesh->vao_id);
-    else RF_LOG(RF_LOG_TYPE_WARNING, "rf_mesh could not be uploaded to VRAM (GPU)");
+    if (mesh->vao_id > 0) rf_log(rf_log_type_info, "[VAO ID %i] rf_mesh uploaded successfully to VRAM (GPU)", mesh->vao_id);
+    else rf_log(rf_log_type_warning, "rf_mesh could not be uploaded to VRAM (GPU)");
 }
 
 // Update vertex or index data on GPU (upload new data to one buffer)
-RF_API void rf_gfx_update_mesh(rf_mesh mesh, int buffer, int num)
+rf_public void rf_gfx_update_mesh(rf_mesh mesh, int buffer, int num)
 {
     rf_gfx_update_mesh_at(mesh, buffer, num, 0);
 }
@@ -3109,7 +3109,7 @@ RF_API void rf_gfx_update_mesh(rf_mesh mesh, int buffer, int num)
 // Update vertex or index data on GPU, at index
 // WARNING: error checking is in place that will cause the data to not be
 //          updated if offset + size exceeds what the buffer can hold
-RF_API void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index)
+rf_public void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index)
 {
     // Activate mesh VAO
     rf_gl.BindVertexArray(mesh.vao_id);
@@ -3187,7 +3187,7 @@ RF_API void rf_gfx_update_mesh_at(rf_mesh mesh, int buffer, int num, int index)
 }
 
 // Draw a 3d mesh with material and transform
-RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform)
+rf_public void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transform)
 {
     // Bind shader program
     rf_gl.UseProgram(material.shader.id);
@@ -3282,7 +3282,7 @@ RF_API void rf_gfx_draw_mesh(rf_mesh mesh, rf_material material, rf_mat transfor
 }
 
 // Unload mesh data from the GPU
-RF_API void rf_gfx_unload_mesh(rf_mesh mesh)
+rf_public void rf_gfx_unload_mesh(rf_mesh mesh)
 {
     rf_gfx_delete_buffers(mesh.vbo_id[0]);   // vertex
     rf_gfx_delete_buffers(mesh.vbo_id[1]);   // texcoords
@@ -3299,7 +3299,7 @@ RF_API void rf_gfx_unload_mesh(rf_mesh mesh)
 
 #pragma region gen textures
 // Generate cubemap texture from HDR texture
-RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, rf_int size)
+rf_public rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hdr, rf_int size)
 {
     rf_texture2d cubemap = { 0 };
     // NOTE: rf_set_shader_default_locations() already setups locations for rf_ctx->gl_ctx.projection and view rf_mat in shader
@@ -3334,7 +3334,7 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
     rf_gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Create rf_ctx->gl_ctx.projection and different views for each face
-    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * rf_deg2rad, 1.0, 0.01, 1000.0);
     rf_mat fbo_views[6] = {
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
@@ -3373,13 +3373,13 @@ RF_API rf_texture2d rf_gen_texture_cubemap(rf_shader shader, rf_texture2d sky_hd
     cubemap.width = size;
     cubemap.height = size;
     cubemap.mipmaps = 1;
-    cubemap.format = RF_UNCOMPRESSED_R32G32B32;
+    cubemap.format = rf_pixel_format_r32g32b32;
 
     return cubemap;
 }
 
 // Generate irradiance texture using cubemap data
-RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, rf_int size)
+rf_public rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cubemap, rf_int size)
 {
     rf_texture2d irradiance = { 0 };
 
@@ -3410,7 +3410,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
     rf_gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Create rf_ctx->gl_ctx.projection (transposed) and different views for each face
-    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * rf_deg2rad, 1.0, 0.01, 1000.0);
     rf_mat fbo_views[6] = {
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
@@ -3453,7 +3453,7 @@ RF_API rf_texture2d rf_gen_texture_irradiance(rf_shader shader, rf_texture2d cub
 }
 
 // Generate prefilter texture using cubemap data
-RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, rf_int size)
+rf_public rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cubemap, rf_int size)
 {
     rf_texture2d prefilter = { 0 };
 
@@ -3489,7 +3489,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
     rf_gl.GenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     // Create rf_ctx->gl_ctx.projection (transposed) and different views for each face
-    rf_mat fbo_projection = rf_mat_perspective(90.0 * RF_DEG2RAD, 1.0, 0.01, 1000.0);
+    rf_mat fbo_projection = rf_mat_perspective(90.0 * rf_deg2rad, 1.0, 0.01, 1000.0);
     rf_mat fbo_views[6] = {
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
             rf_mat_look_at((rf_vec3) {0.0f, 0.0f, 0.0f}, (rf_vec3) {-1.0f, 0.0f, 0.0f}, (rf_vec3) {0.0f, -1.0f, 0.0f}),
@@ -3546,7 +3546,7 @@ RF_API rf_texture2d rf_gen_texture_prefilter(rf_shader shader, rf_texture2d cube
 }
 
 // Generate BRDF texture using cubemap data. Todo: Review implementation: https://github.com/HectorMF/BRDFGenerator
-RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, rf_int size)
+rf_public rf_texture2d rf_gen_texture_brdf(rf_shader shader, rf_int size)
 {
     rf_texture2d brdf = { 0 };
     // Generate BRDF convolution texture
@@ -3586,7 +3586,7 @@ RF_API rf_texture2d rf_gen_texture_brdf(rf_shader shader, rf_int size)
     brdf.width = size;
     brdf.height = size;
     brdf.mipmaps = 1;
-    brdf.format = RF_UNCOMPRESSED_R32G32B32;
+    brdf.format = rf_pixel_format_r32g32b32;
 
     return brdf;
 }
