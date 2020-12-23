@@ -39,8 +39,8 @@
     #define RF_DEFAULT_BATCH_VERTEX_BUFFERS_COUNT (1) // Max number of buffers for batching (multi-buffering)
 #endif
 
-#if !defined(RF_MAX_MATRIX_STACK_SIZE)
-    #define RF_MAX_MATRIX_STACK_SIZE (32) // Max size of rf_mat rf__ctx->gl_ctx.stack
+#if !defined(rf_max_matrix_stack_size)
+    #define rf_max_matrix_stack_size (32) // Max size of rf_mat rf__ctx->gl_ctx.stack
 #endif
 
 #if !defined(RF_DEFAULT_BATCH_DRAW_CALLS_COUNT)

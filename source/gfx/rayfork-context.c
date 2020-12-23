@@ -43,7 +43,7 @@ rf_public void rf_gfx_init(rf_gfx_context* ctx, int screen_width, int screen_hei
         rf_ctx.transform = rf_mat_identity();
 
         // Init internal matrix stack (emulating OpenGL 1)
-        for (rf_int i = 0; i < RF_MAX_MATRIX_STACK_SIZE; i++)
+        for (rf_int i = 0; i < rf_max_matrix_stack_size; i++)
         {
             rf_ctx.stack[i] = rf_mat_identity();
         }

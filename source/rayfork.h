@@ -11,7 +11,7 @@
 #include "rayfork-gfx.h"
 #endif
 
-#if defined(rayfork_no_audio)
+#if !defined(rayfork_no_audio)
 #include "rayfork-audio.h"
 #endif
 

@@ -8,7 +8,7 @@
 typedef struct rf_default_font
 {
     unsigned short  pixels       [128 * 128];
-    rf_glyph_info   chars        [RF_BUILTIN_FONT_CHARS_COUNT];
+    rf_glyph_info   chars        [rf_builtin_font_chars_count];
     unsigned short  chars_pixels [128 * 128];
 } rf_default_font;
 
@@ -32,7 +32,7 @@ typedef struct rf_gfx_context
     rf_mat         projection;
     rf_mat         transform;
     rf_bool        transform_matrix_required;
-    rf_mat         stack[RF_MAX_MATRIX_STACK_SIZE];
+    rf_mat         stack[rf_max_matrix_stack_size];
     int            stack_counter;
 
     unsigned int default_texture_id;       // Default texture (1px white) useful for plain color polys (required by shader)

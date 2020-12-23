@@ -39,7 +39,6 @@ typedef int rf_bool;
     #define rayfork_platform_ios
 #endif
 
-
 #ifndef rf_extern
     #ifdef __cplusplus
         #define rf_extern extern "C"
@@ -123,6 +122,7 @@ typedef struct rf_source_location
 
 #pragma region allocator
 
+#define rf_old_allocation_size_unknown                 (-1)
 #define rf_default_allocator                           (rf_lit(rf_allocator) { 0, rf_libc_allocator_wrapper })
 #define rf_calloc(allocator, size)                     (rf_calloc_wrapper((allocator), 1, size))
 #define rf_alloc(allocator, size)                      ((allocator).allocator_proc(&(allocator), rf_current_source_location, rf_allocator_mode_alloc,   (rf_lit(rf_allocator_args) { 0, (size), 0 })))

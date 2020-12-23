@@ -6,27 +6,27 @@ rf_public const char* rf_pixel_format_string(rf_pixel_format format)
 {
     switch (format)
     {
-        case rf_pixel_format_grayscale: return "RF_UNCOMPRESSED_GRAYSCALE";
-        case rf_pixel_format_gray_alpha: return "RF_UNCOMPRESSED_GRAY_ALPHA";
-        case rf_pixel_format_r5g6b5: return "RF_UNCOMPRESSED_R5G6B5";
-        case rf_pixel_format_r8g8b8: return "RF_UNCOMPRESSED_R8G8B8";
-        case rf_pixel_format_r5g5b5a1: return "RF_UNCOMPRESSED_R5G5B5A1";
-        case rf_pixel_format_r4g4b4a4: return "RF_UNCOMPRESSED_R4G4B4A4";
-        case rf_pixel_format_r8g8b8a8: return "RF_UNCOMPRESSED_R8G8B8A8";
-        case rf_pixel_format_r32: return "RF_UNCOMPRESSED_R32";
-        case rf_pixel_format_r32g32b32: return "RF_UNCOMPRESSED_R32G32B32";
-        case rf_pixel_format_r32g32b32a32: return "RF_UNCOMPRESSED_R32G32B32A32";
-        case rf_pixel_format_dxt1_rgb: return "RF_COMPRESSED_DXT1_RGB";
-        case rf_pixel_format_dxt1_rgba: return "RF_COMPRESSED_DXT1_RGBA";
-        case rf_pixel_format_dxt3_rgba: return "RF_COMPRESSED_DXT3_RGBA";
-        case rf_pixel_format_dxt5_rgba: return "RF_COMPRESSED_DXT5_RGBA";
-        case rf_pixel_format_etc1_rgb: return "RF_COMPRESSED_ETC1_RGB";
-        case rf_pixel_format_etc2_rgb: return "RF_COMPRESSED_ETC2_RGB";
-        case rf_pixel_format_etc2_eac_rgba: return "RF_COMPRESSED_ETC2_EAC_RGBA";
-        case rf_pixel_format_pvrt_rgb: return "RF_COMPRESSED_PVRT_RGB";
-        case rf_pixel_format_prvt_rgba: return "RF_COMPRESSED_PVRT_RGBA";
-        case rf_pixel_format_astc_4x4_rgba: return "RF_COMPRESSED_ASTC_4x4_RGBA";
-        case rf_pixel_format_astc_8x8_rgba: return "RF_COMPRESSED_ASTC_8x8_RGBA";
+        case rf_pixel_format_grayscale:     return "rf_pixel_format_grayscale";
+        case rf_pixel_format_gray_alpha:    return "rf_pixel_format_gray_alpha";
+        case rf_pixel_format_r5g6b5:        return "rf_pixel_format_r5g6b5";
+        case rf_pixel_format_r8g8b8:        return "rf_pixel_format_r8g8b8";
+        case rf_pixel_format_r5g5b5a1:      return "rf_pixel_format_r5g5b5a1";
+        case rf_pixel_format_r4g4b4a4:      return "rf_pixel_format_r4g4b4a4";
+        case rf_pixel_format_r8g8b8a8:      return "rf_pixel_format_r8g8b8a8";
+        case rf_pixel_format_r32:           return "rf_pixel_format_r32";
+        case rf_pixel_format_r32g32b32:     return "rf_pixel_format_r32g32b32";
+        case rf_pixel_format_r32g32b32a32:  return "rf_pixel_format_r32g32b32a32";
+        case rf_pixel_format_dxt1_rgb:      return "rf_pixel_format_dxt1_rgb";
+        case rf_pixel_format_dxt1_rgba:     return "rf_pixel_format_dxt1_rgba";
+        case rf_pixel_format_dxt3_rgba:     return "rf_pixel_format_dxt3_rgba";
+        case rf_pixel_format_dxt5_rgba:     return "rf_pixel_format_dxt5_rgba";
+        case rf_pixel_format_etc1_rgb:      return "rf_pixel_format_etc1_rgb";
+        case rf_pixel_format_etc2_rgb:      return "rf_pixel_format_etc2_rgb";
+        case rf_pixel_format_etc2_eac_rgba: return "rf_pixel_format_etc2_eac_rgba";
+        case rf_pixel_format_pvrt_rgb:      return "rf_pixel_format_pvrt_rgb";
+        case rf_pixel_format_prvt_rgba:     return "rf_pixel_format_prvt_rgba";
+        case rf_pixel_format_astc_4x4_rgba: return "rf_pixel_format_astc_4x4_rgba";
+        case rf_pixel_format_astc_8x8_rgba: return "rf_pixel_format_astc_8x8_rgba";
         default: return NULL;
     }
 }
@@ -45,27 +45,27 @@ rf_public int rf_bits_per_pixel(rf_pixel_format format)
 {
     switch (format)
     {
-        case rf_pixel_format_grayscale: return 8; // 8 bit per pixel (no alpha)
-        case rf_pixel_format_gray_alpha: return 8 * 2; // 8 * 2 bpp (2 channels)
-        case rf_pixel_format_r5g6b5: return 16; // 16 bpp
-        case rf_pixel_format_r8g8b8: return 24; // 24 bpp
-        case rf_pixel_format_r5g5b5a1: return 16; // 16 bpp (1 bit alpha)
-        case rf_pixel_format_r4g4b4a4: return 16; // 16 bpp (4 bit alpha)
-        case rf_pixel_format_r8g8b8a8: return 32; // 32 bpp
-        case rf_pixel_format_r32: return 32; // 32 bpp (1 channel - float)
-        case rf_pixel_format_r32g32b32: return 32 * 3; // 32 * 3 bpp (3 channels - float)
-        case rf_pixel_format_r32g32b32a32: return 32 * 4; // 32 * 4 bpp (4 channels - float)
-        case rf_pixel_format_dxt1_rgb: return 4; // 4 bpp (no alpha)
-        case rf_pixel_format_dxt1_rgba: return 4; // 4 bpp (1 bit alpha)
-        case rf_pixel_format_dxt3_rgba: return 8; // 8 bpp
-        case rf_pixel_format_dxt5_rgba: return 8; // 8 bpp
-        case rf_pixel_format_etc1_rgb: return 4; // 4 bpp
-        case rf_pixel_format_etc2_rgb: return 4; // 4 bpp
-        case rf_pixel_format_etc2_eac_rgba: return 8; // 8 bpp
-        case rf_pixel_format_pvrt_rgb: return 4; // 4 bpp
-        case rf_pixel_format_prvt_rgba: return 4; // 4 bpp
-        case rf_pixel_format_astc_4x4_rgba: return 8; // 8 bpp
-        case rf_pixel_format_astc_8x8_rgba: return 2; // 2 bpp
+        case rf_pixel_format_grayscale:     return 8;      // 8 bit per pixel (no alpha)
+        case rf_pixel_format_gray_alpha:    return 8 * 2;  // 8 * 2 bpp (2 channels)
+        case rf_pixel_format_r5g6b5:        return 16;     // 16 bpp
+        case rf_pixel_format_r8g8b8:        return 24;     // 24 bpp
+        case rf_pixel_format_r5g5b5a1:      return 16;     // 16 bpp (1 bit alpha)
+        case rf_pixel_format_r4g4b4a4:      return 16;     // 16 bpp (4 bit alpha)
+        case rf_pixel_format_r8g8b8a8:      return 32;     // 32 bpp
+        case rf_pixel_format_r32:           return 32;     // 32 bpp (1 channel - float)
+        case rf_pixel_format_r32g32b32:     return 32 * 3; // 32 * 3 bpp (3 channels - float)
+        case rf_pixel_format_r32g32b32a32:  return 32 * 4; // 32 * 4 bpp (4 channels - float)
+        case rf_pixel_format_dxt1_rgb:      return 4;      // 4 bpp (no alpha)
+        case rf_pixel_format_dxt1_rgba:     return 4;      // 4 bpp (1 bit alpha)
+        case rf_pixel_format_dxt3_rgba:     return 8;      // 8 bpp
+        case rf_pixel_format_dxt5_rgba:     return 8;      // 8 bpp
+        case rf_pixel_format_etc1_rgb:      return 4;      // 4 bpp
+        case rf_pixel_format_etc2_rgb:      return 4;      // 4 bpp
+        case rf_pixel_format_etc2_eac_rgba: return 8;      // 8 bpp
+        case rf_pixel_format_pvrt_rgb:      return 4;      // 4 bpp
+        case rf_pixel_format_prvt_rgba:     return 4;      // 4 bpp
+        case rf_pixel_format_astc_4x4_rgba: return 8;      // 8 bpp
+        case rf_pixel_format_astc_8x8_rgba: return 2;      // 2 bpp
         default: return 0;
     }
 }
@@ -74,17 +74,17 @@ rf_public int rf_bytes_per_pixel(rf_uncompressed_pixel_format format)
 {
     switch (format)
     {
-        case rf_pixel_format_grayscale: return 1;
-        case rf_pixel_format_gray_alpha: return 2;
-        case rf_pixel_format_r5g5b5a1: return 2;
-        case rf_pixel_format_r5g6b5: return 2;
-        case rf_pixel_format_r4g4b4a4: return 2;
-        case rf_pixel_format_r8g8b8a8: return 4;
-        case rf_pixel_format_r8g8b8: return 3;
-        case rf_pixel_format_r32: return 4;
-        case rf_pixel_format_r32g32b32: return 12;
+        case rf_pixel_format_grayscale:    return 1;
+        case rf_pixel_format_gray_alpha:   return 2;
+        case rf_pixel_format_r5g5b5a1:     return 2;
+        case rf_pixel_format_r5g6b5:       return 2;
+        case rf_pixel_format_r4g4b4a4:     return 2;
+        case rf_pixel_format_r8g8b8a8:     return 4;
+        case rf_pixel_format_r8g8b8:       return 3;
+        case rf_pixel_format_r32:          return 4;
+        case rf_pixel_format_r32g32b32:    return 12;
         case rf_pixel_format_r32g32b32a32: return 16;
-        default: return 0;
+        default:                           return 0;
     }
 }
 

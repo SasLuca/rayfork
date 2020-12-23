@@ -561,39 +561,42 @@ rf_public rf_image rf_image_crop_to_buffer(rf_image image, rf_rec crop, void* ds
     if (image.valid)
     {
         // Security checks to validate crop rectangle
-        if (crop.x < 0) { crop.width += crop.x; crop.x = 0; }
-        if (crop.y < 0) { crop.height += crop.y; crop.y = 0; }
-        if ((crop.x + crop.width) > image.width) { crop.width = image.width - crop.x; }
-        if ((crop.y + crop.height) > image.height) { crop.height = image.height - crop.y; }
+        if (crop.x < 0) {
+            crop.width += crop.x; crop.x = 0;
+        }
+        if (crop.y < 0) {
+            crop.height += crop.y; crop.y = 0;
+        }
+        if ((crop.x + crop.width) > image.width) {
+            crop.width = image.width - crop.x;
+        }
+        if ((crop.y + crop.height) > image.height) {
+            crop.height = image.height - crop.y;
+        }
 
         if ((crop.x < image.width) && (crop.y < image.height))
         {
-            int expected_size = rf_pixel_buffer_size(crop.width, crop.height, dst_format);
+            rf_int expected_size = rf_pixel_buffer_size(crop.width, crop.height, dst_format);
             if (dst_size >= expected_size)
             {
                 rf_pixel_format src_format = image.format;
-                int src_size = rf_image_size(image);
+                rf_int src_size = rf_image_size(image);
 
                 unsigned char* src_ptr = image.data;
                 unsigned char* dst_ptr = dst;
 
-                int src_bpp = rf_bytes_per_pixel(image.format);
-                int dst_bpp = rf_bytes_per_pixel(dst_format);
+                rf_int src_bpp = rf_bytes_per_pixel(image.format);
+                rf_int dst_bpp = rf_bytes_per_pixel(dst_format);
 
-                int crop_y = crop.y;
-                int crop_h = crop.height;
-                int crop_x = crop.x;
-                int crop_w = crop.width;
-
-                for (rf_int y = 0; y < crop_h; y++)
+                for (rf_int y = 0; y < crop.height; y++)
                 {
-                    for (rf_int x = 0; x < crop_w; x++)
+                    for (rf_int x = 0; x < crop.width; x++)
                     {
-                        int src_x = x + crop_x;
-                        int src_y = y + crop_y;
+                        rf_int src_x = x + crop.x;
+                        rf_int src_y = y + crop.y;
 
-                        int src_pixel = (src_y * image.width + src_x) * src_bpp;
-                        int dst_pixel = (y * crop_w + x) * src_bpp;
+                        rf_int src_pixel = (src_y * image.width + src_x) * src_bpp;
+                        rf_int dst_pixel = (y * crop.width + x) * src_bpp;
                         rf_assert(src_pixel < src_size);
                         rf_assert(dst_pixel < dst_size);
 

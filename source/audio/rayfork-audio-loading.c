@@ -13,32 +13,6 @@
 #include "jar_mod.h"
 #include "stb_vorbis.h"
 
-#pragma region drlibs allocator wrappers
-
-rf_internal void* rf_drlib_malloc_wrapper(size_t sz, void* pUserData)
-{
-    void* result = 0;
-    rf_allocator* allocator = pUserData;
-    result = RF_ALLOC(*allocator, sz);
-    return result;
-}
-
-rf_internal void* rf_drlib_realloc_wrapper(void* p, size_t szNew, size_t szOld, void* pUserData)
-{
-    void* result = 0;
-    rf_allocator* allocator = pUserData;
-    result = RF_REALLOC(*allocator, p, szNew, szOld);
-    return result;
-}
-
-rf_internal void rf_drlib_free_wrapper(void* p, void* pUserData)
-{
-    rf_allocator* allocator = pUserData;
-    RF_FREE(*allocator, p);
-}
-
-#pragma endregion
-
 #pragma region audio loading
 RF_API rf_audio_player rf_load_static_audio_player_from_wav_to_buffer (const void* src, int src_size, void* dst, int dst_size, rf_allocator temp_allocator)
 {

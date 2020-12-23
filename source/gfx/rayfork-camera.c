@@ -42,12 +42,12 @@ rf_public rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, 
 
     rf_mat mat_proj = rf_mat_identity();
 
-    if (camera.type == RF_CAMERA_PERSPECTIVE)
+    if (camera.type == rf_camera_type_perspective)
     {
         // Calculate projection matrix from perspective
         mat_proj = rf_mat_perspective(camera.fovy * rf_deg2rad, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
-    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
+    else if (camera.type == rf_camera_type_orthographic)
     {
         float aspect = (float) screen_size.width / (float) screen_size.height;
         double top = camera.fovy / 2.0;
@@ -70,11 +70,11 @@ rf_public rf_ray rf_get_mouse_ray(rf_sizei screen_size, rf_vec2 mouse_position, 
     // Calculate normalized direction vector
     rf_vec3 direction = rf_vec3_normalize(rf_vec3_sub(far_point, near_point));
 
-    if (camera.type == RF_CAMERA_PERSPECTIVE)
+    if (camera.type == rf_camera_type_perspective)
     {
         ray.position = camera.position;
     }
-    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
+    else if (camera.type == rf_camera_type_orthographic)
     {
         ray.position = camera_plane_pointer_pos;
     }
@@ -125,12 +125,12 @@ rf_public rf_vec2 rf_get_world_to_screen(rf_sizei screen_size, rf_vec3 position,
     // Calculate projection matrix from perspective instead of frustum
     rf_mat mat_proj = rf_mat_identity();
 
-    if (camera.type == RF_CAMERA_PERSPECTIVE)
+    if (camera.type == rf_camera_type_perspective)
     {
         // Calculate projection matrix from perspective
         mat_proj = rf_mat_perspective(camera.fovy * rf_deg2rad, ((double) screen_size.width / (double) screen_size.height), 0.01, 1000.0);
     }
-    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
+    else if (camera.type == rf_camera_type_orthographic)
     {
         float aspect = (float) screen_size.width / (float) screen_size.height;
         double top = camera.fovy / 2.0;
@@ -218,40 +218,40 @@ rf_public void rf_set_camera3d_mode(rf_camera3d_state* state, rf_camera3d camera
 rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state, rf_input_state_for_update_camera input_state)
 {
     // rf_camera3d mouse movement sensitivity
-    #define RF_CAMERA_MOUSE_MOVE_SENSITIVITY 0.003f
-    #define RF_CAMERA_MOUSE_SCROLL_SENSITIVITY 1.5f
+    #define rf_camera_mouse_move_sensitivity 0.003f
+    #define rf_camera_mouse_scroll_sensitivity 1.5f
 
     // FREE_CAMERA
-    #define RF_CAMERA_FREE_MOUSE_SENSITIVITY 0.01f
-    #define RF_CAMERA_FREE_DISTANCE_MIN_CLAMP 0.3f
-    #define RF_CAMERA_FREE_DISTANCE_MAX_CLAMP 120.0f
-    #define RF_CAMERA_FREE_MIN_CLAMP 85.0f
-    #define RF_CAMERA_FREE_MAX_CLAMP -85.0f
-    #define RF_CAMERA_FREE_SMOOTH_ZOOM_SENSITIVITY 0.05f
-    #define RF_CAMERA_FREE_PANNING_DIVIDER 5.1f
+    #define rf_camera_free_mouse_sensitivity 0.01f
+    #define rf_camera_free_distance_min_clamp 0.3f
+    #define rf_camera_free_distance_max_clamp 120.0f
+    #define rf_camera_free_min_clamp 85.0f
+    #define rf_camera_free_max_clamp -85.0f
+    #define rf_camera_free_smooth_zoom_sensitivity 0.05f
+    #define rf_camera_free_panning_divider 5.1f
 
     // ORBITAL_CAMERA
-    #define RF_CAMERA_ORBITAL_SPEED 0.01f // Radians per frame
+    #define rf_camera_orbital_speed 0.01f // Radians per frame
 
     // FIRST_PERSON
     //#define CAMERA_FIRST_PERSON_MOUSE_SENSITIVITY           0.003f
-    #define RF_CAMERA_FIRST_PERSON_FOCUS_DISTANCE 25.0f
-    #define RF_CAMERA_FIRST_PERSON_MIN_CLAMP 85.0f
-    #define RF_CAMERA_FIRST_PERSON_MAX_CLAMP -85.0f
+    #define rf_camera_first_person_focus_distance 25.0f
+    #define rf_camera_first_person_min_clamp 85.0f
+    #define rf_camera_first_person_max_clamp -85.0f
 
-    #define RF_CAMERA_FIRST_PERSON_STEP_TRIGONOMETRIC_DIVIDER 5.0f
-    #define RF_CAMERA_FIRST_PERSON_STEP_DIVIDER 30.0f
-    #define RF_CAMERA_FIRST_PERSON_WAVING_DIVIDER 200.0f
+    #define rf_camera_first_person_step_trigonometric_divider 5.0f
+    #define rf_camera_first_person_step_divider 30.0f
+    #define rf_camera_first_person_waving_divider 200.0f
 
     // THIRD_PERSON
     //#define CAMERA_THIRD_PERSON_MOUSE_SENSITIVITY           0.003f
-    #define RF_CAMERA_THIRD_PERSON_DISTANCE_CLAMP 1.2f
-    #define RF_CAMERA_THIRD_PERSON_MIN_CLAMP 5.0f
-    #define RF_CAMERA_THIRD_PERSON_MAX_CLAMP -85.0f
-    #define RF_CAMERA_THIRD_PERSON_OFFSET (rf_vec3) { 0.4f, 0.0f, 0.0f }
+    #define rf_camera_third_person_distance_clamp 1.2f
+    #define rf_camera_third_person_min_clamp 5.0f
+    #define rf_camera_third_person_max_clamp -85.0f
+    #define rf_camera_third_person_offset (rf_vec3) { 0.4f, 0.0f, 0.0f }
 
     // PLAYER (used by camera)
-    #define RF_PLAYER_MOVEMENT_SENSITIVITY 20.0f
+    #define rf_player_movement_sensitivity 20.0f
 
     // rf_camera3d move modes (first person and third person cameras)
     typedef enum rf_camera_move
@@ -264,7 +264,7 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
         rf_move_down
     } rf_camera_move;
 
-    // rf_internal float player_eyes_position = 1.85f;
+    // static float player_eyes_position = 1.85f;
 
     // TODO: CRF_INTERNAL rf_ctx->gl_ctx.camera_target_distance and rf_ctx->gl_ctx.camera_angle here
 
@@ -302,58 +302,58 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
         case RF_CAMERA_FREE:
         {
             // Camera zoom
-            if ((state->camera_target_distance < RF_CAMERA_FREE_DISTANCE_MAX_CLAMP) && (mouse_wheel_move < 0))
+            if ((state->camera_target_distance < rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                state->camera_target_distance -= (mouse_wheel_move * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY);
+                state->camera_target_distance -= (mouse_wheel_move * rf_camera_mouse_scroll_sensitivity);
 
-                if (state->camera_target_distance > RF_CAMERA_FREE_DISTANCE_MAX_CLAMP) {
-                    state->camera_target_distance = RF_CAMERA_FREE_DISTANCE_MAX_CLAMP;
+                if (state->camera_target_distance > rf_camera_free_distance_max_clamp) {
+                    state->camera_target_distance = rf_camera_free_distance_max_clamp;
                 }
             }
             // Camera looking down
             // TODO: Review, weird comparisson of rf_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y > camera->target.y) && (state->camera_target_distance == RF_CAMERA_FREE_DISTANCE_MAX_CLAMP) && (mouse_wheel_move < 0))
+            else if ((camera->position.y > camera->target.y) && (state->camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
+                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y >= 0))
             {
-                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
+                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
 
                 // if (camera->target.y < 0) camera->target.y = -0.001;
             }
             else if ((camera->position.y > camera->target.y) && (camera->target.y < 0) && (mouse_wheel_move > 0))
             {
-                state->camera_target_distance -= (mouse_wheel_move * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY);
-                if (state->camera_target_distance < RF_CAMERA_FREE_DISTANCE_MIN_CLAMP) {
-                    state->camera_target_distance = RF_CAMERA_FREE_DISTANCE_MIN_CLAMP;
+                state->camera_target_distance -= (mouse_wheel_move * rf_camera_mouse_scroll_sensitivity);
+                if (state->camera_target_distance < rf_camera_free_distance_min_clamp) {
+                    state->camera_target_distance = rf_camera_free_distance_min_clamp;
                 }
             }
             // Camera looking up
             // TODO: Review, weird comparisson of rf_ctx->gl_ctx.camera_target_distance == 120.0f?
-            else if ((camera->position.y < camera->target.y) && (state->camera_target_distance == RF_CAMERA_FREE_DISTANCE_MAX_CLAMP) && (mouse_wheel_move < 0))
+            else if ((camera->position.y < camera->target.y) && (state->camera_target_distance == rf_camera_free_distance_max_clamp) && (mouse_wheel_move < 0))
             {
-                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
+                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y <= 0))
             {
-                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
-                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY / state->camera_target_distance;
+                camera->target.x += mouse_wheel_move * (camera->target.x - camera->position.x) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.y += mouse_wheel_move * (camera->target.y - camera->position.y) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
+                camera->target.z += mouse_wheel_move * (camera->target.z - camera->position.z) * rf_camera_mouse_scroll_sensitivity / state->camera_target_distance;
 
                 // if (camera->target.y > 0) camera->target.y = 0.001;
             }
             else if ((camera->position.y < camera->target.y) && (camera->target.y > 0) && (mouse_wheel_move > 0))
             {
-                state->camera_target_distance -= (mouse_wheel_move * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY);
-                if (state->camera_target_distance < RF_CAMERA_FREE_DISTANCE_MIN_CLAMP) {
-                    state->camera_target_distance = RF_CAMERA_FREE_DISTANCE_MIN_CLAMP;
+                state->camera_target_distance -= (mouse_wheel_move * rf_camera_mouse_scroll_sensitivity);
+                if (state->camera_target_distance < rf_camera_free_distance_min_clamp) {
+                    state->camera_target_distance = rf_camera_free_distance_min_clamp;
                 }
             }
 
@@ -365,29 +365,29 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
                     if (szoom_key)
                     {
                         // Camera smooth zoom
-                        state->camera_target_distance += (mouse_position_delta.y * RF_CAMERA_FREE_SMOOTH_ZOOM_SENSITIVITY);
+                        state->camera_target_distance += (mouse_position_delta.y * rf_camera_free_smooth_zoom_sensitivity);
                     }
                     else
                     {
                         // Camera rotation
-                        state->camera_angle.x += mouse_position_delta.x*-RF_CAMERA_FREE_MOUSE_SENSITIVITY;
-                        state->camera_angle.y += mouse_position_delta.y*-RF_CAMERA_FREE_MOUSE_SENSITIVITY;
+                        state->camera_angle.x += mouse_position_delta.x*-rf_camera_free_mouse_sensitivity;
+                        state->camera_angle.y += mouse_position_delta.y*-rf_camera_free_mouse_sensitivity;
 
                         // Angle clamp
-                        if (state->camera_angle.y > RF_CAMERA_FREE_MIN_CLAMP * rf_deg2rad) {
-                            state->camera_angle.y = RF_CAMERA_FREE_MIN_CLAMP * rf_deg2rad;
+                        if (state->camera_angle.y > rf_camera_free_min_clamp * rf_deg2rad) {
+                            state->camera_angle.y = rf_camera_free_min_clamp * rf_deg2rad;
                         }
-                        else if (state->camera_angle.y < RF_CAMERA_FREE_MAX_CLAMP * rf_deg2rad) {
-                            state->camera_angle.y = RF_CAMERA_FREE_MAX_CLAMP * rf_deg2rad;
+                        else if (state->camera_angle.y < rf_camera_free_max_clamp * rf_deg2rad) {
+                            state->camera_angle.y = rf_camera_free_max_clamp * rf_deg2rad;
                         }
                     }
                 }
                 else
                 {
                     // Camera panning
-                    camera->target.x += ((mouse_position_delta.x*-RF_CAMERA_FREE_MOUSE_SENSITIVITY) * cosf(state->camera_angle.x) + (mouse_position_delta.y * RF_CAMERA_FREE_MOUSE_SENSITIVITY) * sinf(state->camera_angle.x) * sinf(state->camera_angle.y)) * (state->camera_target_distance / RF_CAMERA_FREE_PANNING_DIVIDER);
-                    camera->target.y += ((mouse_position_delta.y * RF_CAMERA_FREE_MOUSE_SENSITIVITY) * cosf(state->camera_angle.y)) * (state->camera_target_distance / RF_CAMERA_FREE_PANNING_DIVIDER);
-                    camera->target.z += ((mouse_position_delta.x * RF_CAMERA_FREE_MOUSE_SENSITIVITY) * sinf(state->camera_angle.x) + (mouse_position_delta.y * RF_CAMERA_FREE_MOUSE_SENSITIVITY) * cosf(state->camera_angle.x) * sinf(state->camera_angle.y)) * (state->camera_target_distance / RF_CAMERA_FREE_PANNING_DIVIDER);
+                    camera->target.x += ((mouse_position_delta.x*-rf_camera_free_mouse_sensitivity) * cosf(state->camera_angle.x) + (mouse_position_delta.y * rf_camera_free_mouse_sensitivity) * sinf(state->camera_angle.x) * sinf(state->camera_angle.y)) * (state->camera_target_distance / rf_camera_free_panning_divider);
+                    camera->target.y += ((mouse_position_delta.y * rf_camera_free_mouse_sensitivity) * cosf(state->camera_angle.y)) * (state->camera_target_distance / rf_camera_free_panning_divider);
+                    camera->target.z += ((mouse_position_delta.x * rf_camera_free_mouse_sensitivity) * sinf(state->camera_angle.x) + (mouse_position_delta.y * rf_camera_free_mouse_sensitivity) * cosf(state->camera_angle.x) * sinf(state->camera_angle.y)) * (state->camera_target_distance / rf_camera_free_panning_divider);
                 }
             }
 
@@ -400,12 +400,12 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
 
         case RF_CAMERA_ORBITAL:
         {
-            state->camera_angle.x += RF_CAMERA_ORBITAL_SPEED; // Camera orbit angle
-            state->camera_target_distance -= (mouse_wheel_move * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY); // Camera zoom
+            state->camera_angle.x += rf_camera_orbital_speed; // Camera orbit angle
+            state->camera_target_distance -= (mouse_wheel_move * rf_camera_mouse_scroll_sensitivity); // Camera zoom
 
             // Camera distance clamp
-            if (state->camera_target_distance < RF_CAMERA_THIRD_PERSON_DISTANCE_CLAMP) {
-                state->camera_target_distance = RF_CAMERA_THIRD_PERSON_DISTANCE_CLAMP;
+            if (state->camera_target_distance < rf_camera_third_person_distance_clamp) {
+                state->camera_target_distance = rf_camera_third_person_distance_clamp;
             }
 
             // Update camera position with changes
@@ -417,51 +417,60 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
 
         case RF_CAMERA_FIRST_PERSON:
         {
-            camera->position.x += (sinf(state->camera_angle.x)*direction[rf_move_back] -
-                                   sinf(state->camera_angle.x)*direction[rf_move_front] -
-                                   cosf(state->camera_angle.x)*direction[rf_move_left] +
-                                   cosf(state->camera_angle.x)*direction[rf_move_right]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+            camera->position.x += (sinf(state->camera_angle.x) * direction[rf_move_back ] -
+                                   sinf(state->camera_angle.x) * direction[rf_move_front] -
+                                   cosf(state->camera_angle.x) * direction[rf_move_left ] +
+                                   cosf(state->camera_angle.x) * direction[rf_move_right]) / rf_player_movement_sensitivity;
 
-            camera->position.y += (sinf(state->camera_angle.y)*direction[rf_move_front] -
-                                   sinf(state->camera_angle.y)*direction[rf_move_back] +
-                                   1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+            camera->position.y += (sinf(state->camera_angle.y) * direction[rf_move_front] -
+                                   sinf(state->camera_angle.y) * direction[rf_move_back ] +
+                                   1.0f * direction[rf_move_up] - 1.0f * direction[rf_move_down]) / rf_player_movement_sensitivity;
 
-            camera->position.z += (cosf(state->camera_angle.x)*direction[rf_move_back] -
-                                   cosf(state->camera_angle.x)*direction[rf_move_front] +
-                                   sinf(state->camera_angle.x)*direction[rf_move_left] -
-                                   sinf(state->camera_angle.x)*direction[rf_move_right]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+            camera->position.z += (cosf(state->camera_angle.x) *direction[rf_move_back ] -
+                                   cosf(state->camera_angle.x) *direction[rf_move_front] +
+                                   sinf(state->camera_angle.x) *direction[rf_move_left ] -
+                                   sinf(state->camera_angle.x) *direction[rf_move_right]) / rf_player_movement_sensitivity;
 
             rf_bool is_moving = 0; // Required for swinging
 
-            for (rf_int i = 0; i < 6; i++) if (direction[i]) { is_moving = 1; break; }
+            for (rf_int i = 0; i < 6; i++)
+            {
+                if (direction[i])
+                {
+                    is_moving = 1; break;
+                }
+            }
 
             // Camera orientation calculation
-            state->camera_angle.x += (mouse_position_delta.x*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
-            state->camera_angle.y += (mouse_position_delta.y*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
+            state->camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            state->camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (state->camera_angle.y > RF_CAMERA_FIRST_PERSON_MIN_CLAMP * rf_deg2rad) {
-                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MIN_CLAMP * rf_deg2rad;
+            if (state->camera_angle.y > rf_camera_first_person_min_clamp * rf_deg2rad)
+            {
+                state->camera_angle.y = rf_camera_first_person_min_clamp * rf_deg2rad;
             }
-            else if (state->camera_angle.y < RF_CAMERA_FIRST_PERSON_MAX_CLAMP * rf_deg2rad) {
-                state->camera_angle.y = RF_CAMERA_FIRST_PERSON_MAX_CLAMP * rf_deg2rad;
+            else if (state->camera_angle.y < rf_camera_first_person_max_clamp * rf_deg2rad)
+            {
+                state->camera_angle.y = rf_camera_first_person_max_clamp * rf_deg2rad;
             }
 
             // Camera is always looking at player
-            camera->target.x = camera->position.x - sinf(state->camera_angle.x) * RF_CAMERA_FIRST_PERSON_FOCUS_DISTANCE;
-            camera->target.y = camera->position.y + sinf(state->camera_angle.y) * RF_CAMERA_FIRST_PERSON_FOCUS_DISTANCE;
-            camera->target.z = camera->position.z - cosf(state->camera_angle.x) * RF_CAMERA_FIRST_PERSON_FOCUS_DISTANCE;
+            camera->target.x = camera->position.x - sinf(state->camera_angle.x) * rf_camera_first_person_focus_distance;
+            camera->target.y = camera->position.y + sinf(state->camera_angle.y) * rf_camera_first_person_focus_distance;
+            camera->target.z = camera->position.z - cosf(state->camera_angle.x) * rf_camera_first_person_focus_distance;
 
-            if (is_moving) {
+            if (is_moving)
+            {
                 state->swing_counter++;
             }
 
             // Camera position update
             // NOTE: On RF_CAMERA_FIRST_PERSON player Y-movement is limited to player 'eyes position'
-            camera->position.y = state->player_eyes_position - sinf(state->swing_counter / RF_CAMERA_FIRST_PERSON_STEP_TRIGONOMETRIC_DIVIDER) / RF_CAMERA_FIRST_PERSON_STEP_DIVIDER;
+            camera->position.y = state->player_eyes_position - sinf(state->swing_counter / rf_camera_first_person_step_trigonometric_divider) / rf_camera_first_person_step_divider;
 
-            camera->up.x = sinf(state->swing_counter/(RF_CAMERA_FIRST_PERSON_STEP_TRIGONOMETRIC_DIVIDER * 2)) / RF_CAMERA_FIRST_PERSON_WAVING_DIVIDER;
-            camera->up.z = -sinf(state->swing_counter/(RF_CAMERA_FIRST_PERSON_STEP_TRIGONOMETRIC_DIVIDER * 2)) / RF_CAMERA_FIRST_PERSON_WAVING_DIVIDER;
+            camera->up.x = sinf(state->swing_counter/(rf_camera_first_person_step_trigonometric_divider * 2)) / rf_camera_first_person_waving_divider;
+            camera->up.z = -sinf(state->swing_counter/(rf_camera_first_person_step_trigonometric_divider * 2)) / rf_camera_first_person_waving_divider;
 
 
         } break;
@@ -471,38 +480,38 @@ rf_public void rf_update_camera3d(rf_camera3d* camera, rf_camera3d_state* state,
             camera->position.x += (sinf(state->camera_angle.x)*direction[rf_move_back] -
                                    sinf(state->camera_angle.x)*direction[rf_move_front] -
                                    cosf(state->camera_angle.x)*direction[rf_move_left] +
-                                   cosf(state->camera_angle.x)*direction[rf_move_right]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+                                   cosf(state->camera_angle.x)*direction[rf_move_right]) / rf_player_movement_sensitivity;
 
             camera->position.y += (sinf(state->camera_angle.y)*direction[rf_move_front] -
                                    sinf(state->camera_angle.y)*direction[rf_move_back] +
-                                   1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+                                   1.0f*direction[rf_move_up] - 1.0f*direction[rf_move_down]) / rf_player_movement_sensitivity;
 
             camera->position.z += (cosf(state->camera_angle.x)*direction[rf_move_back] -
                                    cosf(state->camera_angle.x)*direction[rf_move_front] +
                                    sinf(state->camera_angle.x)*direction[rf_move_left] -
-                                   sinf(state->camera_angle.x)*direction[rf_move_right]) / RF_PLAYER_MOVEMENT_SENSITIVITY;
+                                   sinf(state->camera_angle.x)*direction[rf_move_right]) / rf_player_movement_sensitivity;
 
             // Camera orientation calculation
-            state->camera_angle.x += (mouse_position_delta.x*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
-            state->camera_angle.y += (mouse_position_delta.y*-RF_CAMERA_MOUSE_MOVE_SENSITIVITY);
+            state->camera_angle.x += (mouse_position_delta.x*-rf_camera_mouse_move_sensitivity);
+            state->camera_angle.y += (mouse_position_delta.y*-rf_camera_mouse_move_sensitivity);
 
             // Angle clamp
-            if (state->camera_angle.y > RF_CAMERA_THIRD_PERSON_MIN_CLAMP * rf_deg2rad)
+            if (state->camera_angle.y > rf_camera_third_person_min_clamp * rf_deg2rad)
             {
-                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MIN_CLAMP * rf_deg2rad;
+                state->camera_angle.y = rf_camera_third_person_min_clamp * rf_deg2rad;
             }
-            else if (state->camera_angle.y < RF_CAMERA_THIRD_PERSON_MAX_CLAMP * rf_deg2rad)
+            else if (state->camera_angle.y < rf_camera_third_person_max_clamp * rf_deg2rad)
             {
-                state->camera_angle.y = RF_CAMERA_THIRD_PERSON_MAX_CLAMP * rf_deg2rad;
+                state->camera_angle.y = rf_camera_third_person_max_clamp * rf_deg2rad;
             }
 
             // Camera zoom
-            state->camera_target_distance -= (mouse_wheel_move * RF_CAMERA_MOUSE_SCROLL_SENSITIVITY);
+            state->camera_target_distance -= (mouse_wheel_move * rf_camera_mouse_scroll_sensitivity);
 
             // Camera distance clamp
-            if (state->camera_target_distance < RF_CAMERA_THIRD_PERSON_DISTANCE_CLAMP)
+            if (state->camera_target_distance < rf_camera_third_person_distance_clamp)
             {
-                state->camera_target_distance = RF_CAMERA_THIRD_PERSON_DISTANCE_CLAMP;
+                state->camera_target_distance = rf_camera_third_person_distance_clamp;
             }
 
             // TODO: It seems camera->position is not correctly updated or some rounding issue makes the camera move straight to camera->target...

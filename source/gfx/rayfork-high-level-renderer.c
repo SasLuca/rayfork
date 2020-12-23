@@ -90,7 +90,7 @@ rf_public void rf_begin_3d(rf_camera3d camera)
 
     float aspect = (float) rf_ctx.current_width / (float)rf_ctx.current_height;
 
-    if (camera.type == RF_CAMERA_PERSPECTIVE)
+    if (camera.type == rf_camera_type_perspective)
     {
         // Setup perspective GL_PROJECTION
         double top = 0.01 * tan(camera.fovy * 0.5 * rf_deg2rad);
@@ -98,7 +98,7 @@ rf_public void rf_begin_3d(rf_camera3d camera)
 
         rf_gfx_frustum(-right, right, -top, top, 0.01, 1000.0);
     }
-    else if (camera.type == RF_CAMERA_ORTHOGRAPHIC)
+    else if (camera.type == rf_camera_type_orthographic)
     {
         // Setup orthographic GL_PROJECTION
         double top = camera.fovy/2.0;

@@ -4,10 +4,10 @@
 #include "rayfork-str.c"
 #include "rayfork-math.c"
 
-#if !defined(RAYFORK_NO_GFX)
+#if !defined(rayfork_no_gfx)
 #include "rayfork-gfx.c"
 #endif
 
-#if defined(RAYFORK_NO_AUDIO)
+#if !defined(rayfork_no_audio)
 #include "rayfork-audio.c"
 #endif

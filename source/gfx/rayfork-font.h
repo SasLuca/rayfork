@@ -3,27 +3,27 @@
 
 #include "rayfork-low-level-renderer.h"
 
-#define RF_SDF_CHAR_PADDING         (4)
-#define RF_SDF_ON_EDGE_VALUE        (128)
-#define RF_SDF_PIXEL_DIST_SCALE     (64.0f)
+#define rf_sdf_char_padding         (4)
+#define rf_sdf_on_edge_value        (128)
+#define rf_sdf_pixel_dist_scale     (64.0f)
 
-#define RF_BITMAP_ALPHA_THRESHOLD   (80)
-#define RF_DEFAULT_FONT_SIZE        (64)
+#define rf_bitmap_alpha_threshold   (80)
+#define rf_default_font_size        (64)
 
-#define RF_BUILTIN_FONT_CHARS       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
-#define RF_BUILTIN_FONT_FIRST_CHAR  (32)
-#define RF_BUILTIN_FONT_LAST_CHAR   (126)
-#define RF_BUILTIN_CODEPOINTS_COUNT (96) // ASCII 32 up to 126 is 96 glyphs (note that the range is inclusive)
-#define RF_BUILTIN_FONT_PADDING     (2)
+#define rf_builtin_font_chars       { ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_','`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~', }
+#define rf_builtin_font_first_char  (32)
+#define rf_builtin_font_last_char   (126)
+#define rf_builtin_codepoints_count (96) // ASCII 32 up to 126 is 96 glyphs (note that the range is inclusive)
+#define rf_builtin_font_padding     (2)
 
-#define RF_GLYPH_NOT_FOUND          (-1)
+#define rf_glyph_not_found          (-1)
 
-#define RF_BUILTIN_FONT_CHARS_COUNT (224) // Number of characters in the raylib font
+#define rf_builtin_font_chars_count (224) // Number of characters in the raylib font
 
 typedef enum rf_font_antialias
 {
-    RF_FONT_ANTIALIAS = 0, // Default font generation, anti-aliased
-    RF_FONT_NO_ANTIALIAS,  // Bitmap font generation, no anti-aliasing
+    rf_font_antialias_enabled = 0, // Default font generation, anti-aliased
+    rf_font_antialias_disabled,  // Bitmap font generation, no anti-aliasing
 } rf_font_antialias;
 
 typedef struct rf_glyph_info
@@ -85,11 +85,11 @@ typedef int rf_glyph_index;
 rf_public rf_ttf_font_info rf_parse_ttf_font(const void* ttf_data, rf_int font_size);
 rf_public void rf_compute_ttf_font_glyph_metrics(rf_ttf_font_info* font_info, const int* codepoints, rf_int codepoints_count, rf_glyph_info* dst, rf_int dst_count);
 rf_public int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
-rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator);
+rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias_enabled antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator);
 rf_public rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph_info* glyph_metrics, rf_int glyphs_count);
 
-rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator);
-rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
+rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias_enabled antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator);
+rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias_enabled antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io);
 #pragma endregion
 
 #pragma region image font

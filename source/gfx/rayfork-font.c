@@ -113,7 +113,7 @@ rf_public int rf_compute_ttf_font_atlas_width(int padding, rf_glyph_info* glyph_
     return result;
 }
 
-rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator)
+rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int atlas_width, int padding, rf_glyph_info* glyphs, rf_int glyphs_count, rf_font_antialias_enabled antialias, unsigned short* dst, rf_int dst_count, rf_allocator temp_allocator)
 {
     rf_image result = {0};
 
@@ -142,8 +142,8 @@ rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int a
             if (glyph_buffer)
             {
                 // We update these for every pixel in the loop
-                int offset_x = RF_BUILTIN_FONT_PADDING;
-                int offset_y = RF_BUILTIN_FONT_PADDING;
+                int offset_x = rf_builtin_font_padding;
+                int offset_y = rf_builtin_font_padding;
 
                 // Set the allocator for stbtt
                 rf_set_global_dependencies_allocator(temp_allocator);
@@ -163,7 +163,7 @@ rf_public rf_image rf_generate_ttf_font_atlas(rf_ttf_font_info* font_info, int a
                             for (rf_int x = 0; x < glyphs[i].rec.width; x++)
                             {
                                 unsigned char glyph_pixel = glyph_buffer[y * ((int)glyphs[i].rec.width) + x];
-                                if (antialias == RF_FONT_NO_ANTIALIAS && glyph_pixel > RF_BITMAP_ALPHA_THRESHOLD) glyph_pixel = 0;
+                                if (antialias == rf_font_antialias_disabled && glyph_pixel > rf_bitmap_alpha_threshold) glyph_pixel = 0;
 
                                 int dst_index = (offset_y + y) * atlas_width + (offset_x + x);
                                 // dst is in RF_UNCOMPRESSED_GRAY_ALPHA which is 2 bytes
@@ -229,7 +229,7 @@ rf_public rf_font rf_ttf_font_from_atlas(int font_size, rf_image atlas, rf_glyph
 // Load rf_font from TTF font file with generation parameters
 // NOTE: You can pass an array with desired characters, those characters should be available in the font
 // if array is NULL, default char set is selected 32..126
-rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator)
+rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int font_size, rf_font_antialias_enabled antialias, const int* chars, rf_int char_count, rf_allocator allocator, rf_allocator temp_allocator)
 {
     rf_font result = {0};
 
@@ -240,10 +240,10 @@ rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int fon
     rf_compute_ttf_font_glyph_metrics(&font_info, chars, char_count, glyph_metrics, char_count);
 
     // Build the atlas and font
-    int atlas_size = rf_compute_ttf_font_atlas_width(RF_BUILTIN_FONT_PADDING, glyph_metrics, char_count);
+    int atlas_size = rf_compute_ttf_font_atlas_width(rf_builtin_font_padding, glyph_metrics, char_count);
     int atlas_pixel_count = atlas_size * atlas_size;
     unsigned short* atlas_buffer = rf_alloc(temp_allocator, atlas_pixel_count * sizeof(unsigned short));
-    rf_image atlas = rf_generate_ttf_font_atlas(&font_info, atlas_size, RF_BUILTIN_FONT_PADDING, glyph_metrics, char_count, antialias, atlas_buffer, atlas_pixel_count, temp_allocator);
+    rf_image atlas = rf_generate_ttf_font_atlas(&font_info, atlas_size, rf_builtin_font_padding, glyph_metrics, char_count, antialias, atlas_buffer, atlas_pixel_count, temp_allocator);
 
     // Get the font
     result = rf_ttf_font_from_atlas(font_size, atlas, glyph_metrics, char_count);
@@ -255,7 +255,7 @@ rf_public rf_font rf_load_ttf_font_from_data(const void* font_file_data, int fon
 }
 
 // Load rf_font from file into GPU memory (VRAM)
-rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
+rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size, rf_font_antialias_enabled antialias, rf_allocator allocator, rf_allocator temp_allocator, rf_io_callbacks io)
 {
     rf_font font = {0};
 
@@ -266,7 +266,7 @@ rf_public rf_font rf_load_ttf_font_from_file(const char* filename, int font_size
 
         if (rf_read_file(io, filename, data, file_size))
         {
-            font = rf_load_ttf_font_from_data(data, RF_DEFAULT_FONT_SIZE, antialias, (int[]) RF_BUILTIN_FONT_CHARS, RF_BUILTIN_CODEPOINTS_COUNT, allocator, temp_allocator);
+            font = rf_load_ttf_font_from_data(data, rf_default_font_size, antialias, (int[]) rf_builtin_font_chars, rf_builtin_codepoints_count, allocator, temp_allocator);
 
             // By default we set point filter (best performance)
             rf_set_texture_filter(font.texture, RF_FILTER_POINT);
@@ -390,8 +390,8 @@ rf_public rf_font rf_load_image_font(rf_image image, rf_color key, rf_allocator 
 
     if (image.valid)
     {
-        const int codepoints[]     = RF_BUILTIN_FONT_CHARS;
-        const int codepoints_count = RF_BUILTIN_CODEPOINTS_COUNT;
+        const int codepoints[]     = rf_builtin_font_chars;
+        const int codepoints_count = rf_builtin_codepoints_count;
 
         rf_glyph_info* glyphs = rf_alloc(allocator, codepoints_count * sizeof(rf_glyph_info));
 
@@ -431,7 +431,7 @@ rf_public void rf_unload_font(rf_font font, rf_allocator allocator)
 // Returns index position for a unicode character on spritefont
 rf_public rf_glyph_index rf_get_glyph_index(rf_font font, int character)
 {
-    rf_glyph_index result = RF_GLYPH_NOT_FOUND;
+    rf_glyph_index result = rf_glyph_not_found;
 
     for (rf_int i = 0; i < font.glyphs_count; i++)
     {

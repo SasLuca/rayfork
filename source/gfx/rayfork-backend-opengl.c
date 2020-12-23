@@ -1604,7 +1604,7 @@ rf_public void rf_gfx_matrix_mode(rf_matrix_mode mode)
 // Push the current matrix into rf_ctx->gl_ctx.stack
 rf_public void rf_gfx_push_matrix()
 {
-    if (rf_ctx.stack_counter >= RF_MAX_MATRIX_STACK_SIZE) rf_log_error(rf_limit_reached, "Matrix stack limit reached.");
+    if (rf_ctx.stack_counter >= rf_max_matrix_stack_size) rf_log_error(rf_limit_reached, "Matrix stack limit reached.");
 
     if (rf_ctx.current_matrix_mode == GL_MODELVIEW)
     {
