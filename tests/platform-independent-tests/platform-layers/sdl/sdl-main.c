@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 
 	SDL_Event event = {0};
 
-	game_init(RF_DEFAULT_GFX_BACKEND_INIT_DATA);
+	game_init(rf_default_gfx_backend_data);
 
     bool run = true;
 	while (run)

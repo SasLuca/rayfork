@@ -38,14 +38,14 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
 
     for (int i = 0; i < max_buildings; i++)
     {
-        buildings[i].width = rf_libc_rand_wrapper(50, 100);
-        buildings[i].height = rf_libc_rand_wrapper(100, 800);
+        buildings[i].width = rf_default_rand_in_range(50, 100);
+        buildings[i].height = rf_default_rand_in_range(100, 800);
         buildings[i].y = window.height - 130 - buildings[i].height;
         buildings[i].x = -6000 + spacing;
 
         spacing += buildings[i].width;
 
-        buildColors[i] = (rf_color) { rf_libc_rand_wrapper(200, 240), rf_libc_rand_wrapper(200, 240), rf_libc_rand_wrapper(200, 250), 255 };
+        buildColors[i] = (rf_color) { rf_default_rand_in_range(200, 240), rf_default_rand_in_range(200, 240), rf_default_rand_in_range(200, 250), 255 };
     }
 }
 

@@ -18,7 +18,7 @@ typedef struct {
     float alpha;
     float size;
     float rotation;
-    rf_bool active;        // NOTE: Use it to activate/deactive particle
+    bool active;        // NOTE: Use it to activate/deactive particle
 } particle;
 
 // Particles pool, reuse them!
@@ -41,14 +41,14 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     for (int i = 0; i < MAX_PARTICLES; i++)
     {
         mouse_tail[i].position = (rf_vec2){ 0, 0 };
-        mouse_tail[i].color    = (rf_color){ rf_libc_rand_wrapper(0, 255), rf_libc_rand_wrapper(0, 255), rf_libc_rand_wrapper(0, 255), 255 };
+        mouse_tail[i].color    = (rf_color){ rf_default_rand_in_range(0, 255), rf_default_rand_in_range(0, 255), rf_default_rand_in_range(0, 255), 255 };
         mouse_tail[i].alpha    = 1.0f;
-        mouse_tail[i].size     = (float)rf_libc_rand_wrapper(1, 30) / 20.0f;
-        mouse_tail[i].rotation = (float)rf_libc_rand_wrapper(0, 360);
+        mouse_tail[i].size     = (float)rf_default_rand_in_range(1, 30) / 20.0f;
+        mouse_tail[i].rotation = (float)rf_default_rand_in_range(0, 360);
         mouse_tail[i].active   = 0;
     }
 
-    smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", rf_default_allocator, rf_default_io);
+    smoke = rf_load_texture_from_file(ASSETS_PATH"smoke.png", rf_default_allocator, &rf_default_io);
 }
 
 extern void game_update(const platform_input_state* input)

@@ -39,7 +39,7 @@ void on_init(void)
 
     resizer = (rf_rec){ container.x + container.width - 17, container.y + container.height - 17, 14, 14 };
     
-    font = rf_get_default_font();       // Get default system font
+    font = rf_get_builtin_bitmap_font();       // Get default system font
 }
 
 void on_frame(const input_data input)

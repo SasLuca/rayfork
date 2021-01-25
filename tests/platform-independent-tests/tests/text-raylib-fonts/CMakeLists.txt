@@ -5,6 +5,6 @@ set(CMAKE_C_STANDARD 99)
 add_executable(text-raylib-fonts
         main.c
         game.c
-        ../../platform-layers/sokol/glad/glad.c)
+        ../../../libs/glad/glad.c)
 
 target_link_libraries(text-raylib-fonts PRIVATE rayfork)

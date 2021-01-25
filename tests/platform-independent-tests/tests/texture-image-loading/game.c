@@ -29,7 +29,7 @@ void on_init(void)
     texture = rf_load_texture_from_image(image);
 
     // Once image has been converted to texture and uploaded to VRAM, it can be unloaded from RAM
-    rf_unload_image(image, RF_DEFAULT_ALLOCATOR);
+    rf_image_free(image, RF_DEFAULT_ALLOCATOR);
 }
 
 void on_frame(const input_data input)

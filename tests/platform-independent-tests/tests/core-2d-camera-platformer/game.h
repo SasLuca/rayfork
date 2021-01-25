@@ -3,8 +3,7 @@
 #define SCREEN_WIDTH  (800)
 #define SCREEN_HEIGHT (450)
 
-typedef struct input_data input_data;
-struct input_data
+typedef struct input_data
 {
     int left_pressed;
     int right_pressed;
@@ -18,7 +17,7 @@ struct input_data
     int r_down;
 
     float mouse_scroll_y;
-};
+} input_data;
 
 void on_init(void);
 void on_frame(input_data);

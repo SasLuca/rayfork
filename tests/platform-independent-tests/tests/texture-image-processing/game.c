@@ -75,7 +75,7 @@ void on_frame(const input_data input)
 
     if (texture_reload)
     {
-        rf_unload_image(image, RF_DEFAULT_ALLOCATOR); // Unload current image data
+        rf_image_free(image, RF_DEFAULT_ALLOCATOR); // Unload current image data
         image = rf_load_image_from_file(ASSETS_PATH"parrots.png", RF_DEFAULT_ALLOCATOR, RF_DEFAULT_ALLOCATOR, RF_DEFAULT_IO); // Re-load image data
 
         // NOTE: Image processing is a costly CPU process to be done every frame,
@@ -116,7 +116,7 @@ void on_frame(const input_data input)
             rf_draw_rectangle_rec(select_recs[i], (i == current_process) ? RF_SKYBLUE : RF_LIGHTGRAY);
             rf_draw_rectangle_outline((rf_rec){ (int)select_recs[i].x, (int) select_recs[i].y, (int) select_recs[i].width, (int) select_recs[i].height }, 1.0f, (i == current_process) ? RF_BLUE : RF_GRAY);
 
-            rf_sizef text_size = rf_measure_text(rf_get_default_font(), process_text[i], strlen(process_text[i]), 10, 1.0f);
+            rf_sizef text_size = rf_measure_text(rf_get_builtin_bitmap_font(), process_text[i], strlen(process_text[i]), 10, 1.0f);
             rf_draw_text(process_text[i],
                     (int)(select_recs[i].x + select_recs[i].width / 2 - text_size.width / 2),
                     (int) select_recs[i].y + 11, 10,

@@ -5,6 +5,6 @@ set(CMAKE_C_STANDARD 99)
 add_executable(geometric-shapes
         main.c
         game.c
-        ../../platform-layers/sokol/glad/glad.c)
+        ../../../libs/glad/glad.c)
 
 target_link_libraries(geometric-shapes PRIVATE rayfork)

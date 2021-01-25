@@ -9,12 +9,12 @@ TEST_CASE( "rf_for_str_split", "[str]" )
     {
         if (i == 0)
         {
-            rf_bool result = rf_str_match(str, rf_cstr("Hello"));
+            bool result = rf_str_match(str, rf_cstr("Hello"));
             REQUIRE(result);
         }
         else if (i == 1)
         {
-            rf_bool result = rf_str_match(str, rf_cstr("World"));
+            bool result = rf_str_match(str, rf_cstr("World"));
             REQUIRE(result);
         }
 
@@ -25,23 +25,23 @@ TEST_CASE( "rf_for_str_split", "[str]" )
 TEST_CASE("rf_str_contains", "[str]")
 {
     SECTION("\"Foo\" should contain \"o\"") {
-        rf_bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr("o"));
+        bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr("o"));
         REQUIRE(contains);
     }
     SECTION("\"Foo\" shouldn't contain \"a\"") {
-        rf_bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr("a"));
+        bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr("a"));
         REQUIRE(!contains);
     }
     SECTION("\"Foo\" should contain \"\"") {
-        rf_bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr(""));
+        bool contains = rf_str_contains(rf_cstr("Foo"), rf_cstr(""));
         REQUIRE(contains);
     }
     SECTION("\"\" shouldn't contain \"a\"") {
-        rf_bool contains = rf_str_contains(rf_cstr(""), rf_cstr("a"));
+        bool contains = rf_str_contains(rf_cstr(""), rf_cstr("a"));
         REQUIRE(!contains);
     }
     SECTION("\"\" should contain \"\"") {
-        rf_bool contains = rf_str_contains(rf_cstr(""), rf_cstr(""));
+        bool contains = rf_str_contains(rf_cstr(""), rf_cstr(""));
         REQUIRE(contains);
     }
 }
@@ -132,22 +132,22 @@ TEST_CASE("rf_str_match", "[str]")
 {
     SECTION("\"Foo\" should match \"Foo\"")
     {
-        rf_bool match = rf_str_match(rf_cstr("Foo"), rf_cstr("Foo"));
+        bool match = rf_str_match(rf_cstr("Foo"), rf_cstr("Foo"));
         REQUIRE(match);
     }
     SECTION("\"\" should match \"\"")
     {
-        rf_bool match = rf_str_match(rf_cstr(""), rf_cstr(""));
+        bool match = rf_str_match(rf_cstr(""), rf_cstr(""));
         REQUIRE(match);
     }
     SECTION("\"Foo\" should not match \"\"")
     {
-        rf_bool match = rf_str_match(rf_cstr("Foo"), rf_cstr(""));
+        bool match = rf_str_match(rf_cstr("Foo"), rf_cstr(""));
         REQUIRE(!match);
     }
     SECTION("\"Foo\" should not match \"foo\"")
     {
-        rf_bool match = rf_str_match(rf_cstr("Foo"), rf_cstr("foo"));
+        bool match = rf_str_match(rf_cstr("Foo"), rf_cstr("foo"));
         REQUIRE(!match);
     }
 }

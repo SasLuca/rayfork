@@ -22,15 +22,15 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     rf_set_active_render_batch(&batch);
 
     // NOTE: Textures MUST be loaded after Window initialization (OpenGL context is required)
-    image = rf_load_image_from_file(ASSETS_PATH"raylib_logo.png", rf_default_allocator, rf_default_allocator, rf_default_io);  // Load image data into CPU memory (RAM)
+    image = rf_load_image_from_file(ASSETS_PATH"raylib_logo.png", rf_default_allocator, rf_default_allocator, &rf_default_io);  // Load image data into CPU memory (RAM)
     texture = rf_load_texture_from_image(image);  // Image converted to texture, GPU memory (RAM -> VRAM)
-    rf_unload_image(image, rf_default_allocator); // Unload image data from CPU memory (RAM)
+    rf_image_free(image, rf_default_allocator); // Unload image data from CPU memory (RAM)
 
     image = rf_gfx_read_texture_pixels(texture, rf_default_allocator); // Retrieve image data from GPU memory (VRAM -> RAM)
-    rf_unload_texture(texture);                   // Unload texture from GPU memory (VRAM)
+    rf_texture_free(texture);                   // Unload texture from GPU memory (VRAM)
 
     texture = rf_load_texture_from_image(image);  // Recreate texture from retrieved image data (RAM -> VRAM)
-    rf_unload_image(image, rf_default_allocator); // Unload retrieved image data from CPU memory (RAM)
+    rf_image_free(image, rf_default_allocator); // Unload retrieved image data from CPU memory (RAM)
 }
 
 extern void game_update(const platform_input_state* input)

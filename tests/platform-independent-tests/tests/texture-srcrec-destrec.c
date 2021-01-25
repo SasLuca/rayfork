@@ -34,7 +34,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
-    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", rf_default_allocator, rf_default_io);
+    scarfy = rf_load_texture_from_file(ASSETS_PATH"scarfy.png", rf_default_allocator, &rf_default_io);
 
     frame_width = scarfy.width / 6;
     frame_height = scarfy.height;

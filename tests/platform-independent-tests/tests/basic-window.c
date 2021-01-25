@@ -26,7 +26,7 @@ extern void game_update(const platform_input_state* input)
         rf_clear(rf_raywhite);
 
         char*    text = "Congrats! You created your first window!";
-        rf_sizef size = rf_measure_text(rf_get_default_font(), text, 20, 2);
+        rf_sizef size = rf_measure_text(rf_get_builtin_bitmap_font(), text, 20, 2);
         rf_vec2  pos  = rf_center_to_screen(size.width, size.height);
         rf_draw_text(text, pos.x, pos.y, 20, rf_black);
     }

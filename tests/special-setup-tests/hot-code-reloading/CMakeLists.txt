@@ -6,7 +6,7 @@ add_executable(hot-code-reloading win32_main.c)
 
 add_library(hot-code-reloading-dynamic SHARED
         game.c
-        ../../platform-independent-tests/platform-layers/sokol/glad/glad.c)
+        ../../libs/glad/glad.c)
 
 target_link_libraries(hot-code-reloading PRIVATE rayfork)
 target_link_libraries(hot-code-reloading-dynamic PRIVATE rayfork)

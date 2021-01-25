@@ -137,7 +137,7 @@ void on_frame(const input_data input)
 //        rf_image image = rf_get_texture_data(target.texture, RF_DEFAULT_ALLOCATOR);
 //        rf_image_flip_vertical(&image, RF_DEFAULT_ALLOCATOR);
 //        rf_export_image(image, "my_amazing_texture_painting.png");
-//        rf_unload_image(image);
+//        rf_image_free(image);
         show_save_message = true;
     }
 

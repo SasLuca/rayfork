@@ -35,13 +35,13 @@ void on_init(void)
     // Crop resulting image
     rf_image_crop(parrots, (rf_rec){ 0, 50, parrots.width, parrots.height - 100 }, RF_DEFAULT_ALLOCATOR);
 
-    rf_unload_image_ez(cat);
+    rf_image_free_ez(cat);
 
     // Image converted to texture, uploaded to GPU memory (VRAM)
     texture = rf_load_texture_from_image(parrots);
 
     // Once image has been converted to texture and uploaded to VRAM, it can be unloaded from RAM
-    rf_unload_image_ez(parrots);
+    rf_image_free_ez(parrots);
 }
 
 void on_frame(const input_data input)

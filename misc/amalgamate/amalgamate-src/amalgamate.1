@@ -1,0 +1,64 @@
+.TH AMALGAMATE "1" "August 2016" "amalgamate 0.2.0" "User Commands"
+.SH NAME
+amalgamate \- produce an amalgamation of C/C++ source files
+.SH SYNOPSIS
+amalgamate
+[\-s]
+[\-w {wildcards}]
+[\-f {file|macro}]...
+[\-p {file|macro}]...
+[\-d {name}={file}]...
+[\-i {dir}]...
+[\-v]
+{inputFile} {outputFile}
+.SH DESCRIPTION
+Produces an amalgamation of {inputFile} by replacing #include statements with
+the contents of the file they refer to. This replacement will only occur if
+the file was located in the same directory, or one of the additional include
+paths added with the \fB\-i\fR option.
+
+Files included in angle brackets (system includes) are only inlined if the
+\fB\-s\fR option is specified.
+
+If an #include line contains a macro instead of a string literal, the list
+of definitions provided through the \fB\-d\fR option is consulted to convert the
+macro into a string.
+
+A file will only be inlined once, with subsequent #include lines for the same
+file silently ignored, unless the \fB\-f\fR option is specified for the file.
+
+.SH OPTIONS
+.TP
+\fB\-s\fR
+Process #include lines containing angle brackets (i.e.
+system includes). Normally these are not inlined.
+.TP
+\fB\-t\fR
+Convert spaces into tabs.
+.TP
+\fB\-w\fR {wildcards}
+Specify a comma separated list of file name patterns to
+match when deciding to inline (assuming the file can be
+located). The default setting is "*.cpp;*.c;*.hpp;*.h".
+.TP
+\fB\-f\fR {file|macro}
+Force reinclusion of the specified file or macro on
+all appearances in #include lines.
+.TP
+\fB\-p\fR {file|macro}
+Prevent reinclusion of the specified file or macro on
+subsequent appearances in #include lines.
+.TP
+\fB\-d\fR {name}={file}
+Use {file} for macro {name} if it appears in an #include
+line.
+.TP
+\fB\-i\fR {dir}
+Additionally look in the specified directory for files when
+processing #include lines.
+.TP
+\fB\-h\fR
+Print this help and exit
+.TP
+\fB\-v\fR
+Verbose output mode

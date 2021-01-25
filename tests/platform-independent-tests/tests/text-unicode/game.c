@@ -261,7 +261,7 @@ void on_frame(const input_data input)
 
             const char info[50];
             snprintf(info, 50, "%s %u characters %i bytes", messages[message].language, len, size);
-            sz = rf_measure_text(rf_get_default_font(), info, strlen(info), 10, 1.0f);
+            sz = rf_measure_text(rf_get_builtin_bitmap_font(), info, strlen(info), 10, 1.0f);
             rf_vec2 pos = { textRect.x + textRect.width - sz.width,  msgRect.y + msgRect.height - sz.height - 2 };
             rf_draw_text(info, pos.x, pos.y, 10, RF_RAYWHITE);
         }

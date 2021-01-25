@@ -47,13 +47,13 @@ void on_init(void)
     textures[5] = rf_load_texture_from_image(perlin_noise);
     textures[6] = rf_load_texture_from_image(cellular);
 
-    rf_unload_image_ez(vertical_gradient);
-    rf_unload_image_ez(horizontal_gradient);
-    rf_unload_image_ez(radial_gradient);
-    rf_unload_image_ez(checked);
-    rf_unload_image_ez(white_noise);
-    rf_unload_image_ez(perlin_noise);
-    rf_unload_image_ez(cellular);
+    rf_image_free_ez(vertical_gradient);
+    rf_image_free_ez(horizontal_gradient);
+    rf_image_free_ez(radial_gradient);
+    rf_image_free_ez(checked);
+    rf_image_free_ez(white_noise);
+    rf_image_free_ez(perlin_noise);
+    rf_image_free_ez(cellular);
 }
 
 void on_frame(const input_data input)

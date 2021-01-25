@@ -24,10 +24,10 @@ rf_rec box_collision;
 const int screen_upper_limit = 40;
 
 // Movement pause
-rf_bool pause;
+bool pause;
 
 // Collision detection
-rf_bool collision;
+bool collision;
 
 extern void game_init(rf_gfx_backend_data* gfx_data)
 {
@@ -86,7 +86,7 @@ extern void game_update(const platform_input_state* input)
             rf_draw_rectangle_rec(box_collision, rf_lime);
 
             // Draw collision message
-            const int text_width = rf_measure_text(rf_get_default_font(), "COLLISION!", 20, 1).width;
+            const int text_width = rf_measure_text(rf_get_builtin_bitmap_font(), "COLLISION!", 20, 1).width;
             rf_draw_text("COLLISION!", window.width / 2 - text_width / 2, screen_upper_limit / 2 - 10, 20, rf_black);
 
             // Draw collision area

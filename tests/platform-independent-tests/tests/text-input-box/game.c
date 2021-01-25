@@ -78,7 +78,7 @@ void on_frame(const input_data input)
             if (letter_count < MAX_INPUT_CHARS) {
                 // Draw blinking underscore char
                 if (((frames_counter / 20) % 2) == 0)
-                    rf_draw_text("_", text_box.x + 8 + rf_measure_text(rf_get_default_font(), name, strlen(name), 40, 1.0f).width, text_box.y + 12, 40, RF_MAROON);
+                    rf_draw_text("_", text_box.x + 8 + rf_measure_text(rf_get_builtin_bitmap_font(), name, strlen(name), 40, 1.0f).width, text_box.y + 12, 40, RF_MAROON);
             }
             else rf_draw_text("Press BACKSPACE to delete chars...", 230, 300, 20, RF_GRAY);
         }

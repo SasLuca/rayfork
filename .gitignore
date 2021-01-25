@@ -2,20 +2,25 @@
 *
 
 # Except
-!CMakeLists.txt
-!README.md
-!LICENSE.md
-!CODE_OF_CONDUCT.md
-
 !.gitattributes
 !.gitignore
+!CMakeLists.txt
+!options.cmake
+!code-of-conduct.md
+!license.md
+!readme.md
 
-!source/
+!misc/
+!misc/**
+
+!include/
+!include/**
+
+!sources/
+!sources/**
+
 !tests/
-!graphics/
-!devutils/
+!tests/**
 
-!source/**
-!libs/**
-!graphics/**
-!devutils/**
+!thirdparty/
+!thirdparty/**

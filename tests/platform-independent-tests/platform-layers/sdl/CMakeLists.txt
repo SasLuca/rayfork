@@ -8,9 +8,9 @@ add_compile_definitions(SDL_MAIN_HANDLED)
 
 add_library(sdl-platform-layer)
 target_sources(sdl-platform-layer PRIVATE sdl-main.c glad/glad.c)
-target_include_directories(sdl-platform-layer PUBLIC "${platform_header_path}" "${SDL2_INCLUDE_DIR}" ".")
+target_include_directories(sdl-platform-layer PUBLIC ${platform_header_path} ${SDL2_INCLUDE_DIR} "." ${RAYFORK_INCLUDE})
 target_link_libraries(sdl-platform-layer PRIVATE SDL2-static)
-target_link_libraries(sdl-platform-layer PUBLIC ${rayfork} common-platform-interface)
+target_link_libraries(sdl-platform-layer PUBLIC common-platform-interface)
 
 if (APPLE)
     target_link_libraries(sdl-platform-layer PUBLIC "-framework Cocoa" "-framework QuartzCore" "-framework OpenGL")
