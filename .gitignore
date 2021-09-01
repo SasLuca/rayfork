@@ -4,8 +4,11 @@
 # Except
 !.gitattributes
 !.gitignore
+
 !CMakeLists.txt
 !options.cmake
+!tests.cmake
+
 !code-of-conduct.md
 !license.md
 !readme.md
@@ -13,11 +16,11 @@
 !misc/
 !misc/**
 
-!include/
-!include/**
+!rayfork-foundation/
+!rayfork-foundation/**
 
-!sources/
-!sources/**
+!rayfork/
+!rayfork/**
 
 !tests/
 !tests/**

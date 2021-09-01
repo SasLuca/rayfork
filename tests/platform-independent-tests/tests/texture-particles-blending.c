@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "platform-common/platform.h"
 
 platform_window_details window = {
     .width  = 800,
@@ -18,7 +18,7 @@ typedef struct {
     float alpha;
     float size;
     float rotation;
-    bool active;        // NOTE: Use it to activate/deactive particle
+    bool active; // NOTE: Use it to activate/deactive particle
 } particle;
 
 // Particles pool, reuse them!
@@ -90,7 +90,7 @@ extern void game_update(const platform_input_state* input)
 
     // Draw
     rf_begin();
-
+    {
         rf_clear(rf_dark_gray);
         rf_begin_blend_mode(blending);
 
@@ -109,6 +109,6 @@ extern void game_update(const platform_input_state* input)
 
         if (blending == RF_BLEND_ALPHA) rf_draw_text("ALPHA BLENDING", 290, window.height - 40, 20, rf_black);
         else rf_draw_text("ADDITIVE BLENDING", 280, window.height - 40, 20, rf_raywhite);
-
+    }
     rf_end();
 }

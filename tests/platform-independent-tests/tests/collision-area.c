@@ -1,5 +1,5 @@
 #include "stdio.h"
-#include "platform.h"
+#include "platform-common/platform.h"
 
 platform_window_details window = {
     .width  = 800,
@@ -40,7 +40,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     box_b = (rf_rec) {(float) window.width / 2 - 30, (float) window.height / 2 - 30, 60, 60 };
 }
 
-extern void game_update(const platform_input_state* input)
+extern void game_update(const platform_input_state* input, float delta)
 {
     if (input->any_key_pressed) { pause = !pause; }
 

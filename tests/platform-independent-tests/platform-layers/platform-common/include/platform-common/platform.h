@@ -162,5 +162,5 @@ typedef struct platform_window_details
 // The game program must define these functions and global variables
 extern platform_window_details window;
 extern void game_init(rf_gfx_backend_data*);
-extern void game_update(const platform_input_state* input);
+extern void game_update(const platform_input_state* input, float delta);
 #endif // PLATFORM_H

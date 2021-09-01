@@ -4,7 +4,7 @@ set(CMAKE_C_STANDARD 99)
 
 add_executable(core-2d-camera-platformer
         main.c
-        game.c
+        ../core-2d-camera-platformer.c
         ../../../libs/glad/glad.c)
 
 target_link_libraries(core-2d-camera-platformer PRIVATE rayfork)

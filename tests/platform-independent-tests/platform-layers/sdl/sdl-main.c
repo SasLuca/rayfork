@@ -1,6 +1,10 @@
 #include "SDL.h"
 #include "glad/glad.h"
-#include "platform.h"
+#include "rayfork/rayfork.h"
+#include "platform-common/platform.h"
+
+#define SOKOL_IMPL
+#include "sokol_time/sokol_time.h"
 
 platform_input_state input_state;
 
@@ -129,7 +133,7 @@ static int sdl_key(SDL_Event event)
     }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char** args)
 {
     // Init SDL
     SDL_Init(SDL_INIT_VIDEO);
@@ -153,7 +157,11 @@ int main(int argc, char* argv[])
 
 	SDL_Event event = {0};
 
-	game_init(rf_default_gfx_backend_data);
+	stm_setup();
+    uint64_t time_begin = 0;
+    float delta_time = 0.16f;
+
+	game_init(rf_default_gfx_backend_init_data);
 
     bool run = true;
 	while (run)
@@ -212,7 +220,7 @@ int main(int argc, char* argv[])
 		}
 
         // Game Update
-		game_update(&input_state);
+		game_update(&input_state, delta_time);
 
         for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
         {
@@ -234,6 +242,8 @@ int main(int argc, char* argv[])
         if (input_state.left_mouse_btn  == BTN_PRESSED_DOWN) input_state.left_mouse_btn  = BTN_HOLD_DOWN;
         if (input_state.right_mouse_btn == BTN_RELEASE)      input_state.right_mouse_btn = BTN_DEFAULT_STATE;
         if (input_state.right_mouse_btn == BTN_PRESSED_DOWN) input_state.right_mouse_btn = BTN_HOLD_DOWN;
+
+        delta_time = stm_diff(stm_now(), time_begin);
 	}
 
 	SDL_DestroyWindow(sdl_window);

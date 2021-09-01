@@ -1,6 +1,4 @@
-#include "stdlib.h"
-#include "platform.h"
-#include "time.h"
+#include "platform-common/platform.h"
 
 platform_window_details window = {
     .width  = 800,
@@ -29,8 +27,6 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     batch = rf_create_default_render_batch(rf_default_allocator);
     rf_set_active_render_batch(&batch);
 
-    srand(time(NULL));
-
     camera.target = (rf_vec2) { player.x + 20, player.y + 20 };
     camera.offset = (rf_vec2) {window.width / 2, window.height / 2 };
     camera.rotation = 0.0f;
@@ -49,7 +45,7 @@ extern void game_init(rf_gfx_backend_data* gfx_data)
     }
 }
 
-extern void game_update(const platform_input_state* input)
+extern void game_update(const platform_input_state* input, float delta)
 {
     // Player movement
     if (input->keys[KEYCODE_RIGHT] & (KEY_PRESSED_DOWN | KEY_HOLD_DOWN)) { player.x += 2; }

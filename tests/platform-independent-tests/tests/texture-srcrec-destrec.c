@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "platform-common/platform.h"
 
 platform_window_details window = {
     .width  = 800,

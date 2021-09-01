@@ -1,6 +1,9 @@
-#include "platform-common//platform.h"
+#include "platform-common/platform.h"
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+
+#define SOKOL_IMPL
+#include "sokol_time/sokol_time.h"
 
 platform_input_state input_state;
 
@@ -72,17 +75,23 @@ int main()
     glfwMakeContextCurrent(glfw_window);
     // glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // We only need this for the fps test
 
+    stm_setup();
+    uint64_t time_begin = 0;
+    float delta_time = 0.016f;
+
     gladLoadGL();
     glfwSwapInterval(1);
 
-    game_init(RF_DEFAULT_GFX_BACKEND_INIT_DATA);
+    game_init(rf_default_gfx_backend_init_data);
 
     while (!glfwWindowShouldClose(glfw_window))
     {
+        time_begin = stm_now();
+
         glfwSwapBuffers(glfw_window);
         glfwPollEvents();
 
-        game_update(&input_state);
+        game_update(&input_state, delta_time);
 
         for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
         {
@@ -104,5 +113,7 @@ int main()
         if (input_state.left_mouse_btn  == BTN_PRESSED_DOWN) input_state.left_mouse_btn  = BTN_HOLD_DOWN;
         if (input_state.right_mouse_btn == BTN_RELEASE)      input_state.right_mouse_btn = BTN_DEFAULT_STATE;
         if (input_state.right_mouse_btn == BTN_PRESSED_DOWN) input_state.right_mouse_btn = BTN_HOLD_DOWN;
+
+        delta_time = stm_since(time_begin);
     }
 }

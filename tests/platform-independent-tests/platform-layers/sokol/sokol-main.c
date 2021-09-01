@@ -3,7 +3,8 @@
 #define SOKOL_WIN32_NO_GL_LOADER
 #define SOKOL_WIN32_FORCE_MAIN
 #include "glad/glad.h"
-#include "sokol/sokol_app.h"
+#include "sokol_app/sokol_app.h"
+#include "sokol_time/sokol_time.h"
 #include "rayfork/rayfork.h"
 #include "platform-common/platform.h"
 
@@ -14,17 +15,23 @@
 //#endif
 
 static platform_input_state input_state;
+static uint64_t time_begin;
+static float delta_time = 0.16f;
 
 static void sokol_on_init(void)
 {
     gladLoadGL();
 
-    game_init(RF_DEFAULT_GFX_BACKEND_INIT_DATA);
+    stm_setup();
+    time_begin = 0;
+    delta_time = 0.16f;
+
+    game_init(rf_default_gfx_backend_init_data);
 }
 
 static void sokol_on_frame(void)
 {
-    game_update(&input_state);
+    game_update(&input_state, delta_time);
 
     for (int i = 0; i < sizeof(input_state.keys) / sizeof(input_state.keys[0]); i++)
     {
@@ -46,6 +53,8 @@ static void sokol_on_frame(void)
     if (input_state.left_mouse_btn  == BTN_PRESSED_DOWN) input_state.left_mouse_btn  = BTN_HOLD_DOWN;
     if (input_state.right_mouse_btn == BTN_RELEASE)      input_state.right_mouse_btn = BTN_DEFAULT_STATE;
     if (input_state.right_mouse_btn == BTN_PRESSED_DOWN) input_state.right_mouse_btn = BTN_HOLD_DOWN;
+
+    delta_time = stm_diff(stm_now(), time_begin);
 }
 
 static void sokol_on_event(const sapp_event* event)

@@ -2,9 +2,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static on
 
 # select lib type
 set(RAYFORK_LIB_TYPE "STATIC" CACHE STRING "Set the library type to be STATIC (.lib/.a) or SHARED(.dll/.so)")
-set_property(CACHE RAYFORK_LIB_TYPE PROPERTY STRINGS
-    "STATIC"
-    "SHARED")
+set_property(CACHE RAYFORK_LIB_TYPE PROPERTY STRINGS "STATIC" "SHARED")
 
 if (NOT ${RAYFORK_LIB_TYPE} MATCHES "STATIC" AND
     NOT ${RAYFORK_LIB_TYPE} MATCHES "SHARED")
@@ -12,16 +10,16 @@ if (NOT ${RAYFORK_LIB_TYPE} MATCHES "STATIC" AND
 endif()
 
 # select gfx backend
-set(RAYFORK_GFX_BACKEND "RAYFORK_GRAPHICS_BACKEND_GL_33" CACHE STRING "Set the gfx backend for rayfork")
+set(RAYFORK_GFX_BACKEND "rayfork_graphics_backend_gl33" CACHE STRING "Set the gfx backend for rayfork")
 set_property(CACHE RAYFORK_GFX_BACKEND PROPERTY STRINGS
-    "RAYFORK_GRAPHICS_BACKEND_GL_33"
-    "RAYFORK_GRAPHICS_BACKEND_GL_ES3"
-    "RAYFORK_GRAPHICS_BACKEND_METAL"
-    "RAYFORK_GRAPHICS_BACKEND_DIRECTX")
+    "rayfork_graphics_backend_gl33"
+    "rayfork_graphics_backend_gl_es3"
+    "rayfork_graphics_backend_metal"
+    "rayfork_graphics_backend_directx")
 
-if (NOT ${RAYFORK_GFX_BACKEND} MATCHES "RAYFORK_GRAPHICS_BACKEND_GL_33"   AND
-    NOT ${RAYFORK_GFX_BACKEND} MATCHES "RAYFORK_GRAPHICS_BACKEND_GL_ES3"  AND
-    NOT ${RAYFORK_GFX_BACKEND} MATCHES "RAYFORK_GRAPHICS_BACKEND_METAL"   AND
-    NOT ${RAYFORK_GFX_BACKEND} MATCHES "RAYFORK_GRAPHICS_BACKEND_DIRECTX")
-    message(FATAL_ERROR "RAYFORK_GFX_BACKEND must be one of [ \"RAYFORK_GRAPHICS_BACKEND_GL_33\", \"RAYFORK_GRAPHICS_BACKEND_GL_ES3\", \"RAYFORK_GRAPHICS_BACKEND_METAL\", \"RAYFORK_GRAPHICS_BACKEND_DIRECTX\" ] but was set to \"${RAYFORK_GFX_BACKEND}\"")
+if (NOT ${RAYFORK_GFX_BACKEND} MATCHES "rayfork_graphics_backend_gl33"    AND
+    NOT ${RAYFORK_GFX_BACKEND} MATCHES "rayfork_graphics_backend_gl_es3"  AND
+    NOT ${RAYFORK_GFX_BACKEND} MATCHES "rayfork_graphics_backend_metal"   AND
+    NOT ${RAYFORK_GFX_BACKEND} MATCHES "rayfork_graphics_backend_directx")
+    message(FATAL_ERROR "RAYFORK_GFX_BACKEND must be one of [ \"rayfork_graphics_backend_gl33\", \"rayfork_graphics_backend_gl_es3\", \"rayfork_graphics_backend_metal\", \"rayfork_graphics_backend_directx\" ] but was set to \"${RAYFORK_GFX_BACKEND}\"")
 endif()
