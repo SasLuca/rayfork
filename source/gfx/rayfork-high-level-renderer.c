@@ -185,7 +185,7 @@ rf_public void rf_begin_scissor_mode(int x, int y, int width, int height)
     rf_gfx_draw(); // Force drawing elements
 
     rf_gfx_enable_scissor_test();
-    rf_gfx_scissor(x, rf_ctx.render_width - (y + height), width, height);
+    rf_gfx_scissor(x, rf_ctx.render_height - (y + height), width, height);
 }
 
 // End scissor mode
