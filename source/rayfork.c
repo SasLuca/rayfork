@@ -8,6 +8,6 @@
 #include "rayfork-gfx.c"
 #endif
 
-#if defined(RAYFORK_NO_AUDIO)
+#if !defined(RAYFORK_NO_AUDIO)
 #include "rayfork-audio.c"
 #endif
